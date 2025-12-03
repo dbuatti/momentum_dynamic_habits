@@ -8,6 +8,11 @@ interface NextBadgeCardProps {
   badge: {
     name: string;
     icon_name: string;
+    progress: {
+      progressValue: number;
+      value: number;
+      unit: string;
+    };
   } | null;
 }
 
@@ -37,8 +42,10 @@ export const NextBadgeCard: React.FC<NextBadgeCardProps> = ({ badge }) => {
         <p className="text-sm text-muted-foreground">Next badge</p>
         <p className="font-semibold">{badge.name}</p>
         <div className="flex items-center space-x-2 mt-1">
-          <Progress value={66} className="h-1.5 [&>div]:bg-orange-400" />
-          <p className="text-sm font-semibold text-orange-600">3 <span className="font-normal text-muted-foreground">days left</span></p>
+          <Progress value={badge.progress.progressValue} className="h-1.5 [&>div]:bg-orange-400" />
+          <p className="text-sm text-muted-foreground whitespace-nowrap">
+            <span className="font-semibold text-orange-600">{badge.progress.value}</span> {badge.progress.unit}
+          </p>
         </div>
       </div>
     </div>

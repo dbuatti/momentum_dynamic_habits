@@ -7,7 +7,7 @@ const fetchDashboardData = async (userId: string) => {
     // 1. Fetch raw data from Supabase
     const profilePromise = supabase.from('profiles').select('journey_start_date, daily_streak').eq('id', userId).single();
     const habitsPromise = supabase.from('user_habits').select('*').eq('user_id', userId);
-    const allBadgesPromise = supabase.from('badges').select('id, name, icon_name');
+    const allBadgesPromise = supabase.from('badges').select('id, name, icon_name, requirement_type, requirement_value, habit_key');
     const achievedBadgesPromise = supabase.from('user_badges').select('badge_id').eq('user_id', userId);
     
     const today = new Date();
@@ -91,7 +91,32 @@ const fetchDashboardData = async (userId: string) => {
     });
 
     const achievedBadgeIds = new Set(achievedBadges.map(b => b.badge_id));
-    const nextBadge = allBadges.find(b => !achievedBadgeIds.has(b.id)) || null;
+    const nextBadgeData = allBadges.find(b => !achievedBadgeIds.has(b.id)) || null;
+
+    let nextBadgeProgress = { progressValue: 0, value: 0, unit: '' };
+
+    if (nextBadgeData) {
+        const reqType = nextBadgeData.requirement_type;
+        const reqValue = nextBadgeData.requirement_value;
+
+        if (reqType === 'days_active') {
+            const progress = Math.min((daysActive / reqValue) * 100, 100);
+            nextBadgeProgress = { progressValue: progress, value: Math.max(0, reqValue - daysActive), unit: 'days left' };
+        } else if (reqType === 'streak') {
+            const currentStreak = profile.daily_streak || 0;
+            const progress = Math.min((currentStreak / reqValue) * 100, 100);
+            nextBadgeProgress = { progressValue: progress, value: Math.max(0, reqValue - currentStreak), unit: 'days left' };
+        } else if (reqType === 'lifetime_progress') {
+            const habit = processedHabits.find(h => h.key === nextBadgeData.habit_key);
+            if (habit) {
+                const currentProgress = habit.lifetimeProgress;
+                const progress = Math.min((currentProgress / reqValue) * 100, 100);
+                const remaining = Math.max(0, reqValue - currentProgress);
+                const unit = habit.unit === 'm' ? 'min left' : `${habit.key} left`;
+                nextBadgeProgress = { progressValue: progress, value: remaining, unit: unit };
+            }
+        }
+    }
 
     const totalJourneyDays = habits.length > 0 ? differenceInDays(new Date(habits[0].target_completion_date), startDate) : 0;
     const nextMonthDate = addMonths(startDate, 1);
@@ -112,7 +137,7 @@ const fetchDashboardData = async (userId: string) => {
             consistency: consistency,
             bestTime: bestTime,
         },
-        nextBadge,
+        nextBadge: nextBadgeData ? { ...nextBadgeData, progress: nextBadgeProgress } : null,
     };
 };
 
