@@ -316,6 +316,9 @@ const Settings = () => {
                 ))}
               </SelectContent>
             </Select>
+            <p className="text-sm text-muted-foreground mt-2">
+              Setting your timezone ensures that daily progress and "Best time" calculations are accurate for your local time.
+            </p>
           </CardContent>
         </Card>
 
