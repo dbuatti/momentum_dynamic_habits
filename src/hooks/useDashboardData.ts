@@ -13,20 +13,23 @@ const fetchDashboardData = async (userId: string) => {
     const today = new Date();
     const completedTodayPromise = supabase.from('completedtasks')
         .select('original_source, duration_used')
+        .eq('user_id', userId)
         .gte('completed_at', startOfDay(today).toISOString())
         .lte('completed_at', endOfDay(today).toISOString());
 
     const completedThisWeekPromise = supabase.from('completedtasks')
         .select('original_source, duration_used, completed_at')
+        .eq('user_id', userId)
         .gte('completed_at', startOfWeek(today).toISOString())
         .lte('completed_at', endOfWeek(today).toISOString());
     
     const completedLastWeekPromise = supabase.from('completedtasks')
         .select('original_source, duration_used')
+        .eq('user_id', userId)
         .gte('completed_at', startOfWeek(subWeeks(today, 1)).toISOString())
         .lte('completed_at', endOfWeek(subWeeks(today, 1)).toISOString());
 
-    const totalCompletedPromise = supabase.from('completedtasks').select('id', { count: 'exact', head: true });
+    const totalCompletedPromise = supabase.from('completedtasks').select('id', { count: 'exact', head: true }).eq('user_id', userId);
     
     const distinctDaysPromise = supabase.rpc('get_distinct_completed_days', { p_user_id: userId });
     const bestTimePromise = supabase.rpc('get_best_time', { p_user_id: userId });
@@ -58,13 +61,13 @@ const fetchDashboardData = async (userId: string) => {
     const daysActive = differenceInDays(startOfDay(new Date()), startOfDay(startDate)) + 1;
 
     const dailyProgressMap = new Map<string, number>();
-    completedToday.forEach(task => {
+    (completedToday || []).forEach(task => {
         const key = task.original_source;
         const progress = key === 'meditation' ? (task.duration_used || 0) : 1;
         dailyProgressMap.set(key, (dailyProgressMap.get(key) || 0) + progress);
     });
 
-    const processedHabits = habits.map(h => ({
+    const processedHabits = (habits || []).map(h => ({
         key: h.habit_key,
         name: h.habit_key.charAt(0).toUpperCase() + h.habit_key.slice(1),
         dailyGoal: h.current_daily_goal,
@@ -79,19 +82,19 @@ const fetchDashboardData = async (userId: string) => {
     const weeklySummary = {
         pushups: { current: 0, previous: 0 },
         meditation: { current: 0, previous: 0 },
-        activeDays: new Set(completedThisWeek.map(t => startOfDay(new Date(t.completed_at)).toISOString())).size
+        activeDays: new Set((completedThisWeek || []).map(t => startOfDay(new Date(t.completed_at)).toISOString())).size
     };
-    completedThisWeek.forEach(task => {
+    (completedThisWeek || []).forEach(task => {
         if (task.original_source === 'pushups') weeklySummary.pushups.current += 1;
         if (task.original_source === 'meditation') weeklySummary.meditation.current += task.duration_used || 0;
     });
-    completedLastWeek.forEach(task => {
+    (completedLastWeek || []).forEach(task => {
         if (task.original_source === 'pushups') weeklySummary.pushups.previous += 1;
         if (task.original_source === 'meditation') weeklySummary.meditation.previous += task.duration_used || 0;
     });
 
-    const achievedBadgeIds = new Set(achievedBadges.map(b => b.badge_id));
-    const nextBadgeData = allBadges.find(b => !achievedBadgeIds.has(b.id)) || null;
+    const achievedBadgeIds = new Set((achievedBadges || []).map(b => b.badge_id));
+    const nextBadgeData = (allBadges || []).find(b => !achievedBadgeIds.has(b.id)) || null;
 
     let nextBadgeProgress = { progressValue: 0, value: 0, unit: '' };
 
@@ -103,7 +106,7 @@ const fetchDashboardData = async (userId: string) => {
             const progress = Math.min((daysActive / reqValue) * 100, 100);
             nextBadgeProgress = { progressValue: progress, value: Math.max(0, reqValue - daysActive), unit: 'days left' };
         } else if (reqType === 'streak') {
-            const currentStreak = profile.daily_streak || 0;
+            const currentStreak = profile?.daily_streak || 0;
             const progress = Math.min((currentStreak / reqValue) * 100, 100);
             nextBadgeProgress = { progressValue: progress, value: Math.max(0, reqValue - currentStreak), unit: 'days left' };
         } else if (reqType === 'lifetime_progress') {
@@ -118,12 +121,12 @@ const fetchDashboardData = async (userId: string) => {
         }
     }
 
-    const totalJourneyDays = habits.length > 0 ? differenceInDays(new Date(habits[0].target_completion_date), startDate) : 0;
+    const totalJourneyDays = habits && habits.length > 0 ? differenceInDays(new Date(habits[0].target_completion_date), startDate) : 0;
     const nextMonthDate = addMonths(startDate, 1);
     const daysToNextMonth = differenceInDays(nextMonthDate, new Date());
     
     const totalDaysSinceStart = differenceInDays(startOfDay(new Date()), startOfDay(startDate)) + 1;
-    const consistency = totalDaysSinceStart > 0 && distinctDays > 0 ? Math.round((distinctDays / totalDaysSinceStart) * 100) : 0;
+    const consistency = totalDaysSinceStart > 0 && typeof distinctDays === 'number' ? Math.round((distinctDays / totalDaysSinceStart) * 100) : 0;
 
     return {
         daysActive,
@@ -132,10 +135,10 @@ const fetchDashboardData = async (userId: string) => {
         habits: processedHabits,
         weeklySummary,
         patterns: {
-            streak: profile.daily_streak || 0,
+            streak: profile?.daily_streak || 0,
             totalSessions: totalSessions || 0,
             consistency: consistency,
-            bestTime: bestTime,
+            bestTime: bestTime || '—',
         },
         nextBadge: nextBadgeData ? { ...nextBadgeData, progress: nextBadgeProgress } : null,
     };
