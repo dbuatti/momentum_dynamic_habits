@@ -100,7 +100,7 @@ const Index = () => {
           goal={`Goal: ${pushups.dailyGoal} today`}
           progressText={`${pushups.dailyProgress}/${pushups.dailyGoal}`}
           progressValue={(pushups.dailyProgress / pushups.dailyGoal) * 100}
-          color="orange"
+          color="orange" /* Using orange for pushups */
           isComplete={pushups.isComplete}
           daysCompletedLast7Days={pushups.daysCompletedLast7Days}
         />}
@@ -114,6 +114,28 @@ const Index = () => {
           color="blue"
           isComplete={meditation.isComplete}
           daysCompletedLast7Days={meditation.daysCompletedLast7Days}
+        />}
+        {kinesiology && <HabitDetailCard 
+          icon={<BookOpen className="w-5 h-5 text-habit-green" />}
+          title={kinesiology.name}
+          momentum={kinesiology.momentum}
+          goal={`Goal: ${kinesiology.dailyGoal} min today`}
+          progressText={`${kinesiology.dailyProgress}/${kinesiology.dailyGoal}`}
+          progressValue={(kinesiology.dailyProgress / kinesiology.dailyGoal) * 100}
+          color="orange" /* Using orange for kinesiology, can be adjusted */
+          isComplete={kinesiology.isComplete}
+          daysCompletedLast7Days={kinesiology.daysCompletedLast7Days}
+        />}
+        {piano && <HabitDetailCard 
+          icon={<Music className="w-5 h-5 text-habit-purple" />}
+          title={piano.name}
+          momentum={piano.momentum}
+          goal={`Goal: ${piano.dailyGoal} min today`}
+          progressText={`${piano.dailyProgress}/${piano.dailyGoal}`}
+          progressValue={(piano.dailyProgress / piano.dailyGoal) * 100}
+          color="blue" /* Using blue for piano, can be adjusted */
+          isComplete={piano.isComplete}
+          daysCompletedLast7Days={piano.daysCompletedLast7Days}
         />}
 
         {reviewQuestion && (
