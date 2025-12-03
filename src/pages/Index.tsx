@@ -90,7 +90,7 @@ const Index = () => {
         </div>
 
         <DisciplineBanner />
-        <TodaysProgressCard pushups={pushups} meditation={meditation} />
+        <TodaysProgressCard habits={habits} /> {/* Updated to pass all habits */}
         <JourneyProgressCard daysActive={daysActive} totalJourneyDays={totalJourneyDays} daysToNextMonth={daysToNextMonth} />
 
         {pushups && <HabitDetailCard 
