@@ -67,6 +67,7 @@ const Index = () => {
           />}
           {kinesiology && <QuickLogButton 
             route="/log/study"
+            state={{ duration: kinesiology.dailyGoal }}
             icon={<BookOpen className="w-5 h-5" />}
             title={kinesiology.name}
             progress={`${kinesiology.dailyProgress}/${kinesiology.dailyGoal}m`}
@@ -75,6 +76,7 @@ const Index = () => {
           />}
           {piano && <QuickLogButton 
             route="/log/piano"
+            state={{ duration: piano.dailyGoal }}
             icon={<Music className="w-5 h-5" />}
             title={piano.name}
             progress={`${piano.dailyProgress}/${piano.dailyGoal}m`}
