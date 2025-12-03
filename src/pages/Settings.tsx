@@ -27,7 +27,14 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
 import { SettingsSkeleton } from '@/components/dashboard/SettingsSkeleton';
-import { useUpdateProfile } from '@/hooks/useUpdateProfile'; // Import the new hook
+import { useUpdateProfile } from '@/hooks/useUpdateProfile';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const iconMap: { [key: string]: React.ElementType } = { Star, Flame, Shield, Target, Crown, Zap, Trophy, Sparkles, Mountain, Award, Sun, Moon, Heart };
 
@@ -80,6 +87,20 @@ const MomentumBadge = ({ level }: { level: string }) => {
   return <Badge variant="secondary">Building steadily</Badge>;
 };
 
+const commonTimezones = [
+  'UTC',
+  'America/New_York',
+  'America/Chicago',
+  'America/Denver',
+  'America/Los_Angeles',
+  'Europe/London',
+  'Europe/Paris',
+  'Europe/Berlin',
+  'Asia/Tokyo',
+  'Asia/Shanghai',
+  'Australia/Sydney',
+];
+
 const Settings = () => {
   const { session, signOut } = useSession();
   const { data, isLoading, isError } = useJourneyData();
@@ -106,7 +127,7 @@ const Settings = () => {
   };
 
   if (isLoading) {
-    return <SettingsSkeleton />; // Use the new skeleton here
+    return <SettingsSkeleton />;
   }
 
   if (isError || !data) {
@@ -129,6 +150,7 @@ const Settings = () => {
   const daysActive = differenceInDays(startOfDay(new Date()), startOfDay(startDate)) + 1;
   const totalJourneyDays = meditationHabit ? differenceInDays(new Date(meditationHabit.target_completion_date), startDate) : 0;
   const selectedMeditationSound = profile?.meditation_sound || 'Forest';
+  const selectedTimezone = profile?.timezone || 'UTC';
 
   const meditationSounds = [
     { label: "Silence", icon: Smile, key: "Silence" },
@@ -144,6 +166,12 @@ const Settings = () => {
   const handleSoundSelect = (soundKey: string) => {
     if (soundKey !== selectedMeditationSound) {
       updateProfile({ meditation_sound: soundKey });
+    }
+  };
+
+  const handleTimezoneSelect = (timezone: string) => {
+    if (timezone !== selectedTimezone) {
+      updateProfile({ timezone: timezone });
     }
   };
 
@@ -270,6 +298,24 @@ const Settings = () => {
                 disabled={isUpdatingProfile}
               />
             ))}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center space-x-2"><Calendar className="w-5 h-5 text-muted-foreground" /><CardTitle className="text-lg">Timezone</CardTitle></CardHeader>
+          <CardContent>
+            <Select value={selectedTimezone} onValueChange={handleTimezoneSelect} disabled={isUpdatingProfile}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select a timezone" />
+              </SelectTrigger>
+              <SelectContent>
+                {commonTimezones.map((tz) => (
+                  <SelectItem key={tz} value={tz}>
+                    {tz}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </CardContent>
         </Card>
 
