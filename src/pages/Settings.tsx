@@ -6,13 +6,27 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-  ArrowLeft, Calendar, Target, TrendingUp, Star, Flame, Shield, Crown, Zap, Trophy, Sparkles, Mountain, Award, Sun, Moon, Heart, Smile, CloudRain, Trees, Waves, Wind, Bird, Droplets, Volume2, Dumbbell, Timer, LogOut, AlertCircle
+  ArrowLeft, Calendar, Target, TrendingUp, Star, Flame, Shield, Crown, Zap, Trophy, Sparkles, Mountain, Award, Sun, Moon, Heart, Smile, CloudRain, Trees, Waves, Wind, Bird, Droplets, Volume2, Dumbbell, Timer, LogOut, AlertCircle, Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSession } from '@/contexts/SessionContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useJourneyData } from '@/hooks/useJourneyData';
 import { format, differenceInDays, startOfDay } from 'date-fns';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { showError, showSuccess } from '@/utils/toast';
 
 const iconMap: { [key: string]: React.ElementType } = { Star, Flame, Shield, Target, Crown, Zap, Trophy, Sparkles, Mountain, Award, Sun, Moon, Heart };
 
@@ -50,6 +64,22 @@ const MomentumBadge = ({ level }: { level: string }) => {
 const Settings = () => {
   const { session, signOut } = useSession();
   const { data, isLoading, isError } = useJourneyData();
+  const queryClient = useQueryClient();
+
+  const { mutate: resetProgress, isPending: isResetting } = useMutation({
+      mutationFn: async () => {
+          const { error } = await supabase.functions.invoke('reset-user-progress');
+          if (error) throw error;
+      },
+      onSuccess: () => {
+          showSuccess('Your progress has been reset.');
+          queryClient.invalidateQueries({ queryKey: ['dashboardData', session?.user?.id] });
+          queryClient.invalidateQueries({ queryKey: ['journeyData', session?.user?.id] });
+      },
+      onError: (error) => {
+          showError(`Failed to reset progress: ${error.message}`);
+      }
+  });
 
   const handleSignOut = async () => {
     await signOut();
@@ -203,6 +233,39 @@ const Settings = () => {
             {meditationHabit && <div className="flex items-center space-x-2"><Timer className="w-5 h-5 text-indigo-500" /><div><p className="text-2xl font-bold">{meditationHabit.lifetime_progress}m</p><p className="text-xs text-muted-foreground">meditation</p></div></div>}
           </div>
         </div>
+
+        <Card>
+            <CardHeader>
+                <CardTitle className="text-lg text-destructive">Danger Zone</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className="flex justify-between items-center">
+                    <div>
+                        <p className="font-semibold">Reset All Progress</p>
+                        <p className="text-sm text-muted-foreground">This will permanently delete all your logged habits and badges. This action cannot be undone.</p>
+                    </div>
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="destructive" disabled={isResetting}>
+                                {isResetting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Reset'}
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This action cannot be undone. This will permanently delete all your progress, including completed tasks, badges, and streaks.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => resetProgress()}>Continue</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </div>
+            </CardContent>
+        </Card>
       </main>
     </div>
   );
