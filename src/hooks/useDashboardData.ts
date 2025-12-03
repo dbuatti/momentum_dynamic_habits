@@ -5,7 +5,7 @@ import { startOfDay, endOfDay, differenceInDays, startOfWeek, endOfWeek, subWeek
 
 const fetchDashboardData = async (userId: string) => {
     // 1. Fetch raw data from Supabase
-    const profilePromise = supabase.from('profiles').select('journey_start_date, daily_streak, last_active_at').eq('id', userId).single();
+    const profilePromise = supabase.from('profiles').select('journey_start_date, daily_streak, last_active_at, first_name').eq('id', userId).single();
     const habitsPromise = supabase.from('user_habits').select('*').eq('user_id', userId);
     const allBadgesPromise = supabase.from('badges').select('id, name, icon_name, requirement_type, requirement_value, habit_key');
     const achievedBadgesPromise = supabase.from('user_badges').select('badge_id').eq('user_id', userId);
@@ -170,6 +170,7 @@ const fetchDashboardData = async (userId: string) => {
         },
         nextBadge: nextBadgeData ? { ...nextBadgeData, progress: nextBadgeProgress } : null,
         lastActiveText,
+        firstName: profile?.first_name || null, // Add first_name here
     };
 };
 

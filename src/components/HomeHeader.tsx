@@ -7,16 +7,20 @@ import { Link } from 'react-router-dom';
 interface HomeHeaderProps {
   dayCounter: number;
   lastActiveText: string;
+  firstName: string | null; // New prop for first name
 }
 
-const getGreeting = () => {
+const getGreeting = (firstName: string | null) => {
   const hour = new Date().getHours();
-  if (hour < 12) return "Good morning";
-  if (hour < 18) return "Good afternoon";
-  return "Good evening";
+  let greeting = "";
+  if (hour < 12) greeting = "Good morning";
+  else if (hour < 18) greeting = "Good afternoon";
+  else greeting = "Good evening";
+
+  return firstName ? `${greeting}, ${firstName}` : greeting;
 };
 
-const HomeHeader: React.FC<HomeHeaderProps> = ({ dayCounter, lastActiveText }) => {
+const HomeHeader: React.FC<HomeHeaderProps> = ({ dayCounter, lastActiveText, firstName }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
@@ -31,7 +35,7 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({ dayCounter, lastActiveText }) =
   return (
     <header className="flex justify-between items-start p-4 sticky top-0 bg-background z-10">
       <div>
-        <h1 className="text-3xl font-bold text-foreground">{getGreeting()}</h1>
+        <h1 className="text-3xl font-bold text-foreground">{getGreeting(firstName)}</h1>
         <p className="text-md text-muted-foreground mt-1">
           Day {dayCounter} • {formattedTime}
         </p>
