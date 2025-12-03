@@ -49,6 +49,7 @@ const Index = () => {
         
         <div className="grid grid-cols-2 gap-3">
           {pushups && <QuickLogButton 
+            route="/log/pushups"
             icon={<Dumbbell className="w-5 h-5" />}
             title="complete!"
             progress={`${pushups.dailyProgress}/${pushups.dailyGoal}`}
@@ -56,6 +57,7 @@ const Index = () => {
             isComplete={pushups.isComplete}
           />}
           {meditation && <QuickLogButton 
+            route="/log/meditation"
             icon={<Wind className="w-5 h-5" />}
             title={`min ${meditation.name}`}
             progress={`${meditation.dailyProgress}/${meditation.dailyGoal}`}
@@ -63,6 +65,7 @@ const Index = () => {
             isComplete={meditation.isComplete}
           />}
           {kinesiology && <QuickLogButton 
+            route="/log/study"
             icon={<BookOpen className="w-5 h-5" />}
             title={kinesiology.name}
             progress={`${kinesiology.dailyProgress}/${kinesiology.dailyGoal}m`}
@@ -70,6 +73,7 @@ const Index = () => {
             isComplete={kinesiology.isComplete}
           />}
           {piano && <QuickLogButton 
+            route="/log/piano"
             icon={<Music className="w-5 h-5" />}
             title={piano.name}
             progress={`${piano.dailyProgress}/${piano.dailyGoal}m`}
