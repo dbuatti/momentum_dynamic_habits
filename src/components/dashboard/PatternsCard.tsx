@@ -5,6 +5,8 @@ interface PatternsCardProps {
   patterns: {
     streak: number;
     totalSessions: number;
+    consistency: number;
+    bestTime: string;
   };
 }
 
@@ -19,8 +21,8 @@ export const PatternsCard: React.FC<PatternsCardProps> = ({ patterns }) => (
   <div className="bg-card rounded-2xl p-4 shadow-sm">
     <h3 className="font-semibold mb-3">Your Patterns</h3>
     <div className="grid grid-cols-2 gap-3">
-      <PatternItem icon={<Clock className="w-4 h-4" />} title="Best time" value="🌙 Night owl" />
-      <PatternItem icon={<Target className="w-4 h-4" />} title="Consistency" value="100% of days" />
+      <PatternItem icon={<Clock className="w-4 h-4" />} title="Best time" value={patterns.bestTime} />
+      <PatternItem icon={<Target className="w-4 h-4" />} title="Consistency" value={`${patterns.consistency}% of days`} />
       <PatternItem icon={<Zap className="w-4 h-4" />} title="Best streak" value={`${patterns.streak} days`} />
       <PatternItem icon={<BarChart className="w-4 h-4" />} title="Total sessions" value={`${patterns.totalSessions}`} />
     </div>

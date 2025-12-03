@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
-import { startOfDay, endOfDay, differenceInDays, startOfWeek, endOfWeek, subWeeks, addMonths, formatDistanceToNowStrict } from 'date-fns';
+import { startOfDay, endOfDay, differenceInDays, startOfWeek, endOfWeek, subWeeks, addMonths } from 'date-fns';
 
 const fetchDashboardData = async (userId: string) => {
     // 1. Fetch raw data from Supabase
@@ -27,6 +27,9 @@ const fetchDashboardData = async (userId: string) => {
         .lte('completed_at', endOfWeek(subWeeks(today, 1)).toISOString());
 
     const totalCompletedPromise = supabase.from('completedtasks').select('id', { count: 'exact', head: true });
+    
+    const distinctDaysPromise = supabase.rpc('get_distinct_completed_days', { p_user_id: userId });
+    const bestTimePromise = supabase.rpc('get_best_time', { p_user_id: userId });
 
     const [
         { data: profile, error: profileError },
@@ -37,13 +40,16 @@ const fetchDashboardData = async (userId: string) => {
         { data: completedThisWeek, error: completedThisWeekError },
         { data: completedLastWeek, error: completedLastWeekError },
         { count: totalSessions, error: totalCompletedError },
+        { data: distinctDays, error: distinctDaysError },
+        { data: bestTime, error: bestTimeError },
     ] = await Promise.all([
         profilePromise, habitsPromise, allBadgesPromise, achievedBadgesPromise,
-        completedTodayPromise, completedThisWeekPromise, completedLastWeekPromise, totalCompletedPromise
+        completedTodayPromise, completedThisWeekPromise, completedLastWeekPromise, totalCompletedPromise,
+        distinctDaysPromise, bestTimePromise
     ]);
 
-    if (profileError || habitsError || allBadgesError || achievedBadgesError || completedTodayError || completedThisWeekError || completedLastWeekError || totalCompletedError) {
-        console.error('Error fetching dashboard data:', profileError || habitsError || allBadgesError || achievedBadgesError || completedTodayError || completedThisWeekError || completedLastWeekError || totalCompletedError);
+    if (profileError || habitsError || allBadgesError || achievedBadgesError || completedTodayError || completedThisWeekError || completedLastWeekError || totalCompletedError || distinctDaysError || bestTimeError) {
+        console.error('Error fetching dashboard data:', profileError || habitsError || allBadgesError || achievedBadgesError || completedTodayError || completedThisWeekError || completedLastWeekError || totalCompletedError || distinctDaysError || bestTimeError);
         throw new Error('Failed to fetch dashboard data');
     }
 
@@ -90,6 +96,9 @@ const fetchDashboardData = async (userId: string) => {
     const totalJourneyDays = habits.length > 0 ? differenceInDays(new Date(habits[0].target_completion_date), startDate) : 0;
     const nextMonthDate = addMonths(startDate, 1);
     const daysToNextMonth = differenceInDays(nextMonthDate, new Date());
+    
+    const totalDaysSinceStart = differenceInDays(startOfDay(new Date()), startOfDay(startDate)) + 1;
+    const consistency = totalDaysSinceStart > 0 && distinctDays > 0 ? Math.round((distinctDays / totalDaysSinceStart) * 100) : 0;
 
     return {
         daysActive,
@@ -100,6 +109,8 @@ const fetchDashboardData = async (userId: string) => {
         patterns: {
             streak: profile.daily_streak || 0,
             totalSessions: totalSessions || 0,
+            consistency: consistency,
+            bestTime: bestTime,
         },
         nextBadge,
     };
