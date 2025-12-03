@@ -8,7 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
-import { differenceInDays, startOfDay } from 'date-fns';
+import { differenceInDays, startOfDay, subDays } from 'date-fns';
 
 const Index = () => {
   const habits = getHabits();
@@ -18,8 +18,8 @@ const Index = () => {
   const overallProgress = (completedHabits / totalHabits) * 100;
 
   // Calculate the day counter dynamically
-  const startDate = new Date('2024-08-01');
   const today = startOfDay(new Date());
+  const startDate = subDays(today, 2); // Start the count 2 days ago to make today Day 3
   const dayCounter = differenceInDays(today, startDate) + 1;
 
   return (

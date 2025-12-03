@@ -35,11 +35,11 @@ const GoalButton: React.FC<GoalButtonProps> = ({ habit }) => {
     <Link to={habit.route} className="w-full block">
       <Button 
         className={cn(
-          "w-full h-28 flex items-center justify-center shadow-lg transition-transform duration-150 ease-in-out active:scale-[0.98] relative rounded-2xl",
+          "w-full h-28 flex items-center justify-between p-6 shadow-lg transition-transform duration-150 ease-in-out active:scale-[0.98] rounded-2xl",
           buttonColorClass
         )}
       >
-        <div className="absolute top-4 left-4 flex items-center space-x-2">
+        <div className="flex items-center space-x-2">
           {getIcon(habit.id)}
           <span className="font-semibold text-base">{habit.name}</span>
         </div>
