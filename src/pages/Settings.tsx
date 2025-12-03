@@ -54,8 +54,10 @@ interface SoundOptionProps {
 const SoundOption: React.FC<SoundOptionProps> = ({ icon: Icon, label, selected, onClick, disabled }) => (
   <button
     className={cn(
-      "p-3 rounded-lg flex flex-col items-center space-y-1 cursor-pointer transition-colors",
-      selected ? 'bg-blue-100 dark:bg-blue-900/50 border-2 border-blue-400' : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700',
+      "p-3 rounded-lg flex flex-col items-center space-y-1 cursor-pointer transition-colors duration-200",
+      selected
+        ? 'bg-blue-100 dark:bg-blue-900/50 border-2 border-blue-400'
+        : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700',
       disabled && 'opacity-50 cursor-not-allowed'
     )}
     onClick={onClick}
@@ -82,7 +84,7 @@ const Settings = () => {
   const { session, signOut } = useSession();
   const { data, isLoading, isError } = useJourneyData();
   const queryClient = useQueryClient();
-  const { mutate: updateProfileMutation, isPending: isUpdatingProfile } = useUpdateProfile();
+  const { mutate: updateProfile, isPending: isUpdatingProfile } = useUpdateProfile();
 
   const { mutate: resetProgress, isPending: isResetting } = useMutation({
       mutationFn: async () => {
@@ -103,12 +105,8 @@ const Settings = () => {
     await signOut();
   };
 
-  const handleSoundSelect = (sound: string) => {
-    updateProfileMutation({ meditation_sound: sound });
-  };
-
   if (isLoading) {
-    return <SettingsSkeleton />;
+    return <SettingsSkeleton />; // Use the new skeleton here
   }
 
   if (isError || !data) {
@@ -130,18 +128,24 @@ const Settings = () => {
   const startDate = profile?.journey_start_date ? new Date(profile.journey_start_date) : new Date();
   const daysActive = differenceInDays(startOfDay(new Date()), startOfDay(startDate)) + 1;
   const totalJourneyDays = meditationHabit ? differenceInDays(new Date(meditationHabit.target_completion_date), startDate) : 0;
-  const selectedMeditationSound = profile?.meditation_sound || 'Forest'; // Default to 'Forest' if not set
+  const selectedMeditationSound = profile?.meditation_sound || 'Forest';
 
-  const meditationSoundOptions = [
-    { icon: Smile, label: "Silence" },
-    { icon: CloudRain, label: "Rain" },
-    { icon: Trees, label: "Forest" },
-    { icon: Waves, label: "Ocean" },
-    { icon: Flame, label: "Fire" },
-    { icon: Wind, label: "Wind" },
-    { icon: Bird, label: "Birds" },
-    { icon: Droplets, label: "Stream" },
+  const meditationSounds = [
+    { label: "Silence", icon: Smile, key: "Silence" },
+    { label: "Rain", icon: CloudRain, key: "Rain" },
+    { label: "Forest", icon: Trees, key: "Forest" },
+    { label: "Ocean", icon: Waves, key: "Ocean" },
+    { label: "Fire", icon: Flame, key: "Fire" },
+    { label: "Wind", icon: Wind, key: "Wind" },
+    { label: "Birds", icon: Bird, key: "Birds" },
+    { label: "Stream", icon: Droplets, key: "Stream" },
   ];
+
+  const handleSoundSelect = (soundKey: string) => {
+    if (soundKey !== selectedMeditationSound) {
+      updateProfile({ meditation_sound: soundKey });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-black">
@@ -256,13 +260,13 @@ const Settings = () => {
         <Card>
           <CardHeader className="flex flex-row items-center space-x-2"><Volume2 className="w-5 h-5 text-muted-foreground" /><CardTitle className="text-lg">Meditation Sound</CardTitle></CardHeader>
           <CardContent className="grid grid-cols-4 gap-2">
-            {meditationSoundOptions.map((option) => (
+            {meditationSounds.map((sound) => (
               <SoundOption
-                key={option.label}
-                icon={option.icon}
-                label={option.label}
-                selected={selectedMeditationSound === option.label}
-                onClick={() => handleSoundSelect(option.label)}
+                key={sound.key}
+                icon={sound.icon}
+                label={sound.label}
+                selected={selectedMeditationSound === sound.key}
+                onClick={() => handleSoundSelect(sound.key)}
                 disabled={isUpdatingProfile}
               />
             ))}
