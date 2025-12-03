@@ -10,6 +10,8 @@ export interface Habit {
   currentProgress: number;
   momentum: MomentumLevel;
   route: string; // Route for the dedicated logging screen
+  xpPerUnit: number; // XP earned per unit of progress
+  energyCostPerUnit: number; // Energy cost per unit of progress
 }
 
 export interface PianoHabit extends Habit {

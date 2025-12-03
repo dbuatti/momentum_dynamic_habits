@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { useNavigate } from 'react-router-dom';
 import { showSuccess, showError } from '@/utils/toast';
+import { initialHabits } from '@/lib/habit-data'; // Import initialHabits to get XP and energy cost per unit
 
 interface LogHabitParams {
   habitKey: string;
@@ -11,15 +12,26 @@ interface LogHabitParams {
 }
 
 const logHabit = async ({ userId, habitKey, value, taskName }: LogHabitParams & { userId: string }) => {
+  const habitConfig = initialHabits.find(h => h.id === habitKey);
+
+  if (!habitConfig) {
+    throw new Error(`Habit configuration not found for key: ${habitKey}`);
+  }
+
+  // Convert value to seconds for time-based habits if the unit is minutes in the log page
+  const actualValue = habitConfig.type === 'time' && habitConfig.unit === 'minutes' ? value * 60 : value;
+
+  const xpEarned = Math.round(actualValue * habitConfig.xpPerUnit);
+  const energyCost = Math.round(actualValue * habitConfig.energyCostPerUnit);
+
   // 1. Insert into completedtasks
   const { error: insertError } = await supabase.from('completedtasks').insert({
     user_id: userId,
     original_source: habitKey,
     task_name: taskName,
-    // For count-based habits, we log reps in `xp_earned` for simplicity, and time in `duration_used`
-    duration_used: habitKey === 'pushups' ? null : value,
-    xp_earned: habitKey === 'pushups' ? value : 10,
-    energy_cost: 5,
+    duration_used: habitConfig.type === 'time' ? actualValue : null, // Log actualValue (in seconds) for time-based
+    xp_earned: xpEarned,
+    energy_cost: energyCost,
   });
 
   if (insertError) throw insertError;
@@ -28,7 +40,7 @@ const logHabit = async ({ userId, habitKey, value, taskName }: LogHabitParams & 
     const { error: rpcError } = await supabase.rpc('increment_lifetime_progress', {
         p_user_id: userId,
         p_habit_key: habitKey,
-        p_increment_value: value,
+        p_increment_value: actualValue, // Increment lifetime progress by actualValue (in seconds for time)
     });
 
   if (rpcError) throw rpcError;

@@ -76,7 +76,7 @@ const fetchDashboardData = async (userId: string) => {
         throw new Error('Failed to fetch dashboard data');
     }
 
-    // Create a map for initial habit data to easily get units
+    // Create a map for initial habit data to easily get units, XP, and energy cost
     const initialHabitsMap = new Map(initialHabits.map(h => [h.id, h]));
 
     // Fetch 7-day completion history for each habit
@@ -117,6 +117,8 @@ const fetchDashboardData = async (userId: string) => {
     const processedHabits = (habits || []).map(h => {
         const initialHabit = initialHabitsMap.get(h.habit_key);
         const unit = initialHabit?.unit || ''; // Get unit from initialHabits
+        const xpPerUnit = initialHabit?.xpPerUnit || 0;
+        const energyCostPerUnit = initialHabit?.energyCostPerUnit || 0;
         const dailyProgress = dailyProgressMap.get(h.habit_key) || 0;
         const dailyGoal = h.current_daily_goal;
 
@@ -130,6 +132,8 @@ const fetchDashboardData = async (userId: string) => {
             longTermGoal: h.long_term_goal,
             lifetimeProgress: h.lifetime_progress,
             unit: unit, // Use the fetched unit
+            xpPerUnit: xpPerUnit,
+            energyCostPerUnit: energyCostPerUnit,
             daysCompletedLast7Days: habitCompletionMap.get(h.habit_key) || 0,
         };
     });
