@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Session, User } from '@supabase/supabase-js';
+import { Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
 interface SessionContextType {
@@ -15,39 +15,6 @@ export const SessionContextProvider = ({ children }: { children: ReactNode }) =>
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // In development, we can mock the session to bypass login for UI work
-    if (import.meta.env.DEV) {
-      const mockUser: User = {
-        id: 'mock-user-id-12345',
-        aud: 'authenticated',
-        role: 'authenticated',
-        email: 'dev@example.com',
-        email_confirmed_at: new Date().toISOString(),
-        phone: '',
-        confirmed_at: new Date().toISOString(),
-        last_sign_in_at: new Date().toISOString(),
-        app_metadata: { provider: 'email' },
-        user_metadata: { name: 'Dev User' },
-        identities: [],
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-
-      const mockSession: Session = {
-        access_token: 'mock-access-token',
-        token_type: 'bearer',
-        user: mockUser,
-        refresh_token: 'mock-refresh-token',
-        expires_in: 3600,
-        expires_at: Math.floor(Date.now() / 1000) + 3600,
-      };
-      
-      setSession(mockSession);
-      setLoading(false);
-      return; // Skip real auth logic in dev mode
-    }
-
-    // Production logic
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setLoading(false);
@@ -65,12 +32,8 @@ export const SessionContextProvider = ({ children }: { children: ReactNode }) =>
   }, []);
 
   const signOut = async () => {
-    if (import.meta.env.DEV) {
-      setSession(null);
-    } else {
-      await supabase.auth.signOut();
-      // onAuthStateChange will handle setting session to null
-    }
+    await supabase.auth.signOut();
+    // onAuthStateChange will handle setting session to null
   };
 
   const value = {
