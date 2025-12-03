@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Settings, Clock } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface HomeHeaderProps {
   dayCounter: number;
@@ -39,9 +40,11 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({ dayCounter }) => {
         </div>
       </div>
       <div className="flex items-center">
-        <Button variant="ghost" size="icon" aria-label="Settings">
-          <Settings className="w-5 h-5 text-muted-foreground" />
-        </Button>
+        <Link to="/settings">
+          <Button variant="ghost" size="icon" aria-label="Settings">
+            <Settings className="w-5 h-5 text-muted-foreground" />
+          </Button>
+        </Link>
       </div>
     </header>
   );

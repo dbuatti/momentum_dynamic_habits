@@ -11,6 +11,7 @@ import StudyLog from "./pages/StudyLog";
 import PianoLog from "./pages/PianoLog";
 import Journey from "./pages/Journey";
 import Login from "./pages/Login";
+import Settings from "./pages/Settings";
 import { SessionContextProvider, useSession } from "./contexts/SessionContext";
 
 const queryClient = new QueryClient();
@@ -52,6 +53,10 @@ const AppRoutes = () => {
       <Route
         path="/journey"
         element={<ProtectedRoute><Journey /></ProtectedRoute>}
+      />
+      <Route
+        path="/settings"
+        element={<ProtectedRoute><Settings /></ProtectedRoute>}
       />
       <Route path="*" element={<NotFound />} />
     </Routes>
