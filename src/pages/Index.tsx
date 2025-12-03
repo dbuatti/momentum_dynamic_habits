@@ -58,6 +58,7 @@ const Index = () => {
           />}
           {meditation && <QuickLogButton 
             route="/log/meditation"
+            state={{ duration: meditation.dailyGoal }}
             icon={<Wind className="w-5 h-5" />}
             title={`min ${meditation.name}`}
             progress={`${meditation.dailyProgress}/${meditation.dailyGoal}`}
