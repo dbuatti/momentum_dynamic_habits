@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import { differenceInDays, startOfDay } from 'date-fns';
 
 const Index = () => {
   const habits = getHabits();
@@ -16,9 +17,14 @@ const Index = () => {
   const totalHabits = habits.length;
   const overallProgress = (completedHabits / totalHabits) * 100;
 
+  // Calculate the day counter dynamically
+  const startDate = new Date('2024-08-01');
+  const today = startOfDay(new Date());
+  const dayCounter = differenceInDays(today, startDate) + 1;
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <HomeHeader dayCounter={42} />
+      <HomeHeader dayCounter={dayCounter} />
       
       <main className="flex-grow p-4 space-y-8 max-w-lg mx-auto w-full">
         
