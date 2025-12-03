@@ -27,6 +27,7 @@ import {
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
+import { SettingsSkeleton } from '@/components/dashboard/SettingsSkeleton'; // Import the new skeleton
 
 const iconMap: { [key: string]: React.ElementType } = { Star, Flame, Shield, Target, Crown, Zap, Trophy, Sparkles, Mountain, Award, Sun, Moon, Heart };
 
@@ -86,15 +87,15 @@ const Settings = () => {
   };
 
   if (isLoading) {
-    return <div className="p-4"><Skeleton className="w-full h-screen" /></div>;
+    return <SettingsSkeleton />; // Use the new skeleton here
   }
 
   if (isError || !data) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center text-center p-4">
+      <div className="min-h-screen flex flex-col items-center justify-center text-center p-4 bg-background">
         <AlertCircle className="w-12 h-12 text-destructive mb-4" />
-        <h2 className="text-2xl font-bold mb-2">Could not load Journey Data</h2>
-        <p className="text-muted-foreground">There was an error fetching your progress. Please try again later.</p>
+        <h2 className="text-2xl font-bold mb-2 text-foreground">Could not load Journey Data</h2>
+        <p className="text-lg text-muted-foreground">There was an error fetching your progress. Please try again later.</p>
         <Link to="/"><Button variant="outline" className="mt-4">Go Home</Button></Link>
       </div>
     );
