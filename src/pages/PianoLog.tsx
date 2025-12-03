@@ -42,7 +42,7 @@ const PianoLog = () => {
 
   const handleReset = () => {
     setIsActive(false);
-    setIsFinished(false); // Corrected typo here
+    setIsFinished(false); // Fixed: Changed isFinished(false) to setIsFinished(false)
     setTimeRemaining(initialTime);
     setCompletedSongs([]);
     if (intervalRef.current) clearInterval(intervalRef.current);
