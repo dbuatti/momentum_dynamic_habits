@@ -1,30 +1,45 @@
 import { Progress } from '@/components/ui/progress';
-import { Dumbbell, Wind } from 'lucide-react';
 
-export const TodaysProgressCard = () => {
+interface Habit {
+  name: string;
+  dailyProgress: number;
+  dailyGoal: number;
+  unit: string;
+}
+
+interface TodaysProgressCardProps {
+  pushups?: Habit;
+  meditation?: Habit;
+}
+
+export const TodaysProgressCard: React.FC<TodaysProgressCardProps> = ({ pushups, meditation }) => {
   return (
     <div className="bg-card rounded-2xl p-4 space-y-3 shadow-sm">
       <h3 className="font-semibold text-base">Today's progress</h3>
-      <div className="space-y-2">
-        <div className="flex items-center justify-between text-sm">
-          <div className="flex items-center space-x-2 text-muted-foreground">
-            <div className="w-2 h-2 rounded-full bg-habit-orange"></div>
-            <span>Push-ups</span>
+      {pushups && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center space-x-2 text-muted-foreground">
+              <div className="w-2 h-2 rounded-full bg-habit-orange"></div>
+              <span>{pushups.name}</span>
+            </div>
+            <span className="font-medium text-foreground">{pushups.dailyProgress}/{pushups.dailyGoal}</span>
           </div>
-          <span className="font-medium text-foreground">17/8</span>
+          <Progress value={(pushups.dailyProgress / pushups.dailyGoal) * 100} className="h-2 [&>div]:bg-habit-orange" />
         </div>
-        <Progress value={(17/8)*100} className="h-2 [&>div]:bg-habit-orange" />
-      </div>
-      <div className="space-y-2">
-        <div className="flex items-center justify-between text-sm">
-          <div className="flex items-center space-x-2 text-muted-foreground">
-            <div className="w-2 h-2 rounded-full bg-habit-blue"></div>
-            <span>Breathe</span>
+      )}
+      {meditation && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center space-x-2 text-muted-foreground">
+              <div className="w-2 h-2 rounded-full bg-habit-blue"></div>
+              <span>{meditation.name}</span>
+            </div>
+            <span className="font-medium text-foreground">{meditation.dailyProgress}/{meditation.dailyGoal}{meditation.unit}</span>
           </div>
-          <span className="font-medium text-foreground">2/4m</span>
+          <Progress value={(meditation.dailyProgress / meditation.dailyGoal) * 100} className="h-2 [&>div]:bg-habit-blue" />
         </div>
-        <Progress value={(2/4)*100} className="h-2 [&>div]:bg-habit-blue" />
-      </div>
+      )}
     </div>
   );
 };
