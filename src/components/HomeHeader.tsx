@@ -1,46 +1,47 @@
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { LogOut } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useSession } from '@/contexts/SessionContext';
+import { Settings, Clock } from 'lucide-react';
 
 interface HomeHeaderProps {
   dayCounter: number;
 }
 
+const getGreeting = () => {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
+};
+
 const HomeHeader: React.FC<HomeHeaderProps> = ({ dayCounter }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
-  const { session } = useSession();
 
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
-    }, 1000);
+    }, 60000); // Update every minute
     return () => clearInterval(timer);
   }, []);
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-  };
-
-  const formattedTime = format(currentTime, 'h:mm a');
+  const formattedTime = format(currentTime, 'HH:mm');
 
   return (
-    <header className="flex justify-between items-center p-4 sticky top-0 bg-background z-10">
-      <div className="text-2xl font-bold text-foreground">
-        {formattedTime}
+    <header className="flex justify-between items-start p-4 sticky top-0 bg-background z-10">
+      <div>
+        <h1 className="text-3xl font-bold text-foreground">{getGreeting()}</h1>
+        <p className="text-md text-muted-foreground mt-1">
+          Day {dayCounter} • {formattedTime}
+        </p>
+        <div className="flex items-center text-sm text-muted-foreground mt-2">
+          <Clock className="w-4 h-4 mr-1.5" />
+          <span>Last: about 11 hours ago</span>
+        </div>
       </div>
-      <div className="flex items-center space-x-4">
-        <Badge variant="outline" className="text-sm font-medium">
-          Day {dayCounter}
-        </Badge>
-        {session && (
-          <Button variant="ghost" size="icon" onClick={handleLogout} aria-label="Log out">
-            <LogOut className="w-5 h-5" />
-          </Button>
-        )}
+      <div className="flex items-center">
+        <Button variant="ghost" size="icon" aria-label="Settings">
+          <Settings className="w-5 h-5 text-muted-foreground" />
+        </Button>
       </div>
     </header>
   );
