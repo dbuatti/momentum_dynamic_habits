@@ -9,16 +9,38 @@ import { HabitDetailCard } from "@/components/dashboard/HabitDetailCard";
 import { QuickReviewCard } from "@/components/dashboard/QuickReviewCard";
 import { TipCard } from "@/components/dashboard/TipCard";
 import { WeeklySummaryCard } from "@/components/dashboard/WeeklySummaryCard";
-import { PatternsCard } from "@/components/dashboard/PatternsCard";
+import { PatternsCard } from "@/components/dashboard/PatternsCard"; // Corrected import path
 import { NextBadgeCard } from "@/components/dashboard/NextBadgeCard";
 import { FooterStats } from "@/components/dashboard/FooterStats";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { DashboardSkeleton } from "@/components/dashboard/DashboardSkeleton";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import React from "react"; // Import React for React.ElementType
+
+const habitIconMap: { [key: string]: React.ElementType } = {
+  pushups: Dumbbell,
+  meditation: Wind,
+  kinesiology: BookOpen,
+  piano: Music,
+};
+
+const quickLogVariantMap: { [key: string]: 'green' | 'purple' } = {
+  pushups: 'green',
+  meditation: 'purple',
+  kinesiology: 'purple',
+  piano: 'purple',
+};
+
+const habitDetailColorMap: { [key: string]: 'orange' | 'blue' } = {
+  pushups: 'orange',
+  meditation: 'blue',
+  kinesiology: 'orange',
+  piano: 'blue',
+};
 
 const Index = () => {
-  const { data, isLoading, isError, refetch } = useDashboardData(); // Added refetch
+  const { data, isLoading, isError, refetch } = useDashboardData();
 
   if (isLoading) {
     return <DashboardSkeleton />;
@@ -36,10 +58,6 @@ const Index = () => {
   }
 
   const { daysActive, totalJourneyDays, daysToNextMonth, habits, weeklySummary, patterns, nextBadge, lastActiveText, firstName, reviewQuestion, tip } = data;
-  const pushups = habits.find(h => h.key === 'pushups');
-  const meditation = habits.find(h => h.key === 'meditation');
-  const kinesiology = habits.find(h => h.key === 'kinesiology');
-  const piano = habits.find(h => h.key === 'piano');
 
   const handleNextReviewQuestion = () => {
     refetch(); // Refetch dashboard data to get a new random question
@@ -52,91 +70,46 @@ const Index = () => {
       <main className="flex-grow p-4 space-y-6 max-w-lg mx-auto w-full">
         
         <div className="grid grid-cols-2 gap-3">
-          {pushups && <QuickLogButton 
-            route="/log/pushups"
-            icon={<Dumbbell className="w-5 h-5" />}
-            title="complete!"
-            progress={`${pushups.dailyProgress}/${pushups.dailyGoal}`}
-            variant="green"
-            isComplete={pushups.isComplete}
-          />}
-          {meditation && <QuickLogButton 
-            route="/log/meditation"
-            state={{ duration: meditation.dailyGoal }}
-            icon={<Wind className="w-5 h-5" />}
-            title={`min ${meditation.name}`}
-            progress={`${meditation.dailyProgress}/${meditation.dailyGoal}`}
-            variant="purple"
-            isComplete={meditation.isComplete}
-          />}
-          {kinesiology && <QuickLogButton 
-            route="/log/study"
-            state={{ duration: kinesiology.dailyGoal }}
-            icon={<BookOpen className="w-5 h-5" />}
-            title={kinesiology.name}
-            progress={`${kinesiology.dailyProgress}/${kinesiology.dailyGoal}m`}
-            variant="purple"
-            isComplete={kinesiology.isComplete}
-          />}
-          {piano && <QuickLogButton 
-            route="/log/piano"
-            state={{ duration: piano.dailyGoal }}
-            icon={<Music className="w-5 h-5" />}
-            title={piano.name}
-            progress={`${piano.dailyProgress}/${piano.dailyGoal}m`}
-            variant="purple"
-            isComplete={piano.isComplete}
-          />}
+          {habits.map(habit => {
+            const Icon = habitIconMap[habit.key];
+            const variant = quickLogVariantMap[habit.key];
+            return (
+              <QuickLogButton 
+                key={habit.key}
+                route={`/log/${habit.key}`}
+                state={{ duration: habit.dailyGoal }}
+                icon={Icon ? <Icon className="w-5 h-5" /> : null}
+                title={habit.name}
+                progress={`${habit.dailyProgress}/${habit.dailyGoal}${habit.unit}`}
+                variant={variant}
+                isComplete={habit.isComplete}
+              />
+            );
+          })}
         </div>
 
         <DisciplineBanner />
         <TodaysProgressCard habits={habits} />
         <JourneyProgressCard daysActive={daysActive} totalJourneyDays={totalJourneyDays} daysToNextMonth={daysToNextMonth} />
 
-        {pushups && <HabitDetailCard 
-          icon={<Dumbbell className="w-5 h-5 text-habit-orange" />}
-          title={pushups.name}
-          momentum={pushups.momentum}
-          goal={`Goal: ${pushups.dailyGoal} ${pushups.unit} today`}
-          progressText={`${pushups.dailyProgress}/${pushups.dailyGoal}${pushups.unit}`}
-          progressValue={(pushups.dailyProgress / pushups.dailyGoal) * 100}
-          color="orange" /* Using orange for pushups */
-          isComplete={pushups.isComplete}
-          daysCompletedLast7Days={pushups.daysCompletedLast7Days}
-        />}
-        {meditation && <HabitDetailCard 
-          icon={<Wind className="w-5 h-5 text-habit-blue" />}
-          title={meditation.name}
-          momentum={meditation.momentum}
-          goal={`Goal: ${meditation.dailyGoal} ${meditation.unit} today`}
-          progressText={`${meditation.dailyProgress}/${meditation.dailyGoal}${meditation.unit}`}
-          progressValue={(meditation.dailyProgress / meditation.dailyGoal) * 100}
-          color="blue"
-          isComplete={meditation.isComplete}
-          daysCompletedLast7Days={meditation.daysCompletedLast7Days}
-        />}
-        {kinesiology && <HabitDetailCard 
-          icon={<BookOpen className="w-5 h-5 text-habit-green" />}
-          title={kinesiology.name}
-          momentum={kinesiology.momentum}
-          goal={`Goal: ${kinesiology.dailyGoal} ${kinesiology.unit} today`}
-          progressText={`${kinesiology.dailyProgress}/${kinesiology.dailyGoal}${kinesiology.unit}`}
-          progressValue={(kinesiology.dailyProgress / kinesiology.dailyGoal) * 100}
-          color="orange" /* Using orange for kinesiology, can be adjusted */
-          isComplete={kinesiology.isComplete}
-          daysCompletedLast7Days={kinesiology.daysCompletedLast7Days}
-        />}
-        {piano && <HabitDetailCard 
-          icon={<Music className="w-5 h-5 text-habit-purple" />}
-          title={piano.name}
-          momentum={piano.momentum}
-          goal={`Goal: ${piano.dailyGoal} ${piano.unit} today`}
-          progressText={`${piano.dailyProgress}/${piano.dailyGoal}${piano.unit}`}
-          progressValue={(piano.dailyProgress / piano.dailyGoal) * 100}
-          color="blue" /* Using blue for piano, can be adjusted */
-          isComplete={piano.isComplete}
-          daysCompletedLast7Days={piano.daysCompletedLast7Days}
-        />}
+        {habits.map(habit => {
+          const Icon = habitIconMap[habit.key];
+          const color = habitDetailColorMap[habit.key];
+          return (
+            <HabitDetailCard 
+              key={habit.key}
+              icon={Icon ? <Icon className="w-5 h-5" /> : null}
+              title={habit.name}
+              momentum={habit.momentum}
+              goal={`Goal: ${habit.dailyGoal} ${habit.unit} today`}
+              progressText={`${habit.dailyProgress}/${habit.dailyGoal}${habit.unit}`}
+              progressValue={(habit.dailyProgress / habit.dailyGoal) * 100}
+              color={color}
+              isComplete={habit.isComplete}
+              daysCompletedLast7Days={habit.daysCompletedLast7Days}
+            />
+          );
+        })}
 
         {reviewQuestion && (
           <QuickReviewCard 
@@ -152,8 +125,8 @@ const Index = () => {
         <FooterStats 
           streak={patterns.streak} 
           daysActive={daysActive}
-          totalPushups={pushups?.lifetimeProgress || 0}
-          totalMeditation={meditation?.lifetimeProgress || 0}
+          totalPushups={habits.find(h => h.key === 'pushups')?.lifetimeProgress || 0}
+          totalMeditation={habits.find(h => h.key === 'meditation')?.lifetimeProgress || 0}
         />
       </main>
       
