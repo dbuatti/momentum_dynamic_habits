@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
 const Index = () => {
-  const { data, isLoading, isError } = useDashboardData();
+  const { data, isLoading, isError, refetch } = useDashboardData(); // Added refetch
 
   if (isLoading) {
     return <DashboardSkeleton />;
@@ -35,11 +35,15 @@ const Index = () => {
     );
   }
 
-  const { daysActive, totalJourneyDays, daysToNextMonth, habits, weeklySummary, patterns, nextBadge, lastActiveText, firstName } = data;
+  const { daysActive, totalJourneyDays, daysToNextMonth, habits, weeklySummary, patterns, nextBadge, lastActiveText, firstName, reviewQuestion } = data;
   const pushups = habits.find(h => h.key === 'pushups');
   const meditation = habits.find(h => h.key === 'meditation');
   const kinesiology = habits.find(h => h.key === 'kinesiology');
   const piano = habits.find(h => h.key === 'piano');
+
+  const handleNextReviewQuestion = () => {
+    refetch(); // Refetch dashboard data to get a new random question
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -112,7 +116,13 @@ const Index = () => {
           daysCompletedLast7Days={meditation.daysCompletedLast7Days}
         />}
 
-        <QuickReviewCard />
+        {reviewQuestion && (
+          <QuickReviewCard 
+            question={reviewQuestion.question} 
+            answer={reviewQuestion.answer} 
+            onNext={handleNextReviewQuestion} 
+          />
+        )}
         <TipCard />
         <WeeklySummaryCard summary={weeklySummary} />
         <PatternsCard patterns={patterns} />

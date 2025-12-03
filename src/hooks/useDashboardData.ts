@@ -34,6 +34,15 @@ const fetchDashboardData = async (userId: string) => {
     const distinctDaysPromise = supabase.rpc('get_distinct_completed_days', { p_user_id: userId });
     const bestTimePromise = supabase.rpc('get_best_time', { p_user_id: userId });
 
+    // Fetch a random review question
+    const randomReviewQuestionPromise = supabase
+        .from('review_questions')
+        .select('question, answer')
+        .order('created_at', { ascending: false }) // Order by created_at to get recent, then limit 1 and offset random
+        .limit(1)
+        .single();
+
+
     const [
         { data: profile, error: profileError },
         { data: habits, error: habitsError },
@@ -45,14 +54,15 @@ const fetchDashboardData = async (userId: string) => {
         { count: totalSessions, error: totalCompletedError },
         { data: distinctDays, error: distinctDaysError },
         { data: bestTime, error: bestTimeError },
+        { data: randomReviewQuestion, error: randomReviewQuestionError },
     ] = await Promise.all([
         profilePromise, habitsPromise, allBadgesPromise, achievedBadgesPromise,
         completedTodayPromise, completedThisWeekPromise, completedLastWeekPromise, totalCompletedPromise,
-        distinctDaysPromise, bestTimePromise
+        distinctDaysPromise, bestTimePromise, randomReviewQuestionPromise
     ]);
 
-    if (profileError || habitsError || allBadgesError || achievedBadgesError || completedTodayError || completedThisWeekError || completedLastWeekError || totalCompletedError || distinctDaysError || bestTimeError) {
-        console.error('Error fetching dashboard data:', profileError || habitsError || allBadgesError || achievedBadgesError || completedTodayError || completedThisWeekError || completedLastWeekError || totalCompletedError || distinctDaysError || bestTimeError);
+    if (profileError || habitsError || allBadgesError || achievedBadgesError || completedTodayError || completedThisWeekError || completedLastWeekError || totalCompletedError || distinctDaysError || bestTimeError || randomReviewQuestionError) {
+        console.error('Error fetching dashboard data:', profileError || habitsError || allBadgesError || achievedBadgesError || completedTodayError || completedThisWeekError || completedLastWeekError || totalCompletedError || distinctDaysError || bestTimeError || randomReviewQuestionError);
         throw new Error('Failed to fetch dashboard data');
     }
 
@@ -170,7 +180,8 @@ const fetchDashboardData = async (userId: string) => {
         },
         nextBadge: nextBadgeData ? { ...nextBadgeData, progress: nextBadgeProgress } : null,
         lastActiveText,
-        firstName: profile?.first_name || null, // Add first_name here
+        firstName: profile?.first_name || null,
+        reviewQuestion: randomReviewQuestion || null, // Add the random review question here
     };
 };
 
