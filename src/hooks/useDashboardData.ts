@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { startOfDay, endOfDay, differenceInDays, startOfWeek, endOfWeek, subWeeks, addMonths, subDays, formatDistanceToNowStrict } from 'date-fns';
+import { initialHabits } from '@/lib/habit-data'; // Import initialHabits
 
 const fetchDashboardData = async (userId: string) => {
     // 1. Fetch raw data from Supabase
@@ -75,6 +76,9 @@ const fetchDashboardData = async (userId: string) => {
         throw new Error('Failed to fetch dashboard data');
     }
 
+    // Create a map for initial habit data to easily get units
+    const initialHabitsMap = new Map(initialHabits.map(h => [h.id, h]));
+
     // Fetch 7-day completion history for each habit
     const sevenDaysAgo = subDays(today, 6);
     const habitCompletionHistoryPromises = (habits || []).map(async (h) => {
@@ -105,22 +109,30 @@ const fetchDashboardData = async (userId: string) => {
     const dailyProgressMap = new Map<string, number>();
     (completedToday || []).forEach(task => {
         const key = task.original_source;
-        const progress = key === 'meditation' ? (task.duration_used || 0) : 1;
+        // Use duration_used for time-based habits, and count as 1 for count-based habits (or actual value if available)
+        const progress = initialHabitsMap.get(key)?.type === 'time' ? (task.duration_used || 0) : 1; // Assuming 1 rep per log for count-based
         dailyProgressMap.set(key, (dailyProgressMap.get(key) || 0) + progress);
     });
 
-    const processedHabits = (habits || []).map(h => ({
-        key: h.habit_key,
-        name: h.habit_key.charAt(0).toUpperCase() + h.habit_key.slice(1),
-        dailyGoal: h.current_daily_goal,
-        dailyProgress: dailyProgressMap.get(h.habit_key) || 0,
-        isComplete: (dailyProgressMap.get(h.habit_key) || 0) >= h.current_daily_goal,
-        momentum: h.momentum_level,
-        longTermGoal: h.long_term_goal,
-        lifetimeProgress: h.lifetime_progress,
-        unit: h.habit_key === 'meditation' ? 'm' : '',
-        daysCompletedLast7Days: habitCompletionMap.get(h.habit_key) || 0, // Add this new prop
-    }));
+    const processedHabits = (habits || []).map(h => {
+        const initialHabit = initialHabitsMap.get(h.habit_key);
+        const unit = initialHabit?.unit || ''; // Get unit from initialHabits
+        const dailyProgress = dailyProgressMap.get(h.habit_key) || 0;
+        const dailyGoal = h.current_daily_goal;
+
+        return {
+            key: h.habit_key,
+            name: initialHabit?.name || h.habit_key.charAt(0).toUpperCase() + h.habit_key.slice(1),
+            dailyGoal: dailyGoal,
+            dailyProgress: dailyProgress,
+            isComplete: dailyProgress >= dailyGoal,
+            momentum: h.momentum_level,
+            longTermGoal: h.long_term_goal,
+            lifetimeProgress: h.lifetime_progress,
+            unit: unit, // Use the fetched unit
+            daysCompletedLast7Days: habitCompletionMap.get(h.habit_key) || 0,
+        };
+    });
 
     const weeklySummary = {
         pushups: { current: 0, previous: 0 },
@@ -192,7 +204,7 @@ const fetchDashboardData = async (userId: string) => {
         firstName: profile?.first_name || null,
         reviewQuestion: randomReviewQuestion || null,
         tip: randomTip || null,
-        timezone: profile?.timezone || 'UTC', // Add timezone here
+        timezone: profile?.timezone || 'UTC',
     };
 };
 

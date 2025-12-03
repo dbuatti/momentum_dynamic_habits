@@ -97,8 +97,8 @@ const Index = () => {
           icon={<Dumbbell className="w-5 h-5 text-habit-orange" />}
           title={pushups.name}
           momentum={pushups.momentum}
-          goal={`Goal: ${pushups.dailyGoal} today`}
-          progressText={`${pushups.dailyProgress}/${pushups.dailyGoal}`}
+          goal={`Goal: ${pushups.dailyGoal} ${pushups.unit} today`}
+          progressText={`${pushups.dailyProgress}/${pushups.dailyGoal}${pushups.unit}`}
           progressValue={(pushups.dailyProgress / pushups.dailyGoal) * 100}
           color="orange" /* Using orange for pushups */
           isComplete={pushups.isComplete}
@@ -108,8 +108,8 @@ const Index = () => {
           icon={<Wind className="w-5 h-5 text-habit-blue" />}
           title={meditation.name}
           momentum={meditation.momentum}
-          goal={`Goal: ${meditation.dailyGoal} min today`}
-          progressText={`${meditation.dailyProgress}/${meditation.dailyGoal}`}
+          goal={`Goal: ${meditation.dailyGoal} ${meditation.unit} today`}
+          progressText={`${meditation.dailyProgress}/${meditation.dailyGoal}${meditation.unit}`}
           progressValue={(meditation.dailyProgress / meditation.dailyGoal) * 100}
           color="blue"
           isComplete={meditation.isComplete}
@@ -119,8 +119,8 @@ const Index = () => {
           icon={<BookOpen className="w-5 h-5 text-habit-green" />}
           title={kinesiology.name}
           momentum={kinesiology.momentum}
-          goal={`Goal: ${kinesiology.dailyGoal} min today`}
-          progressText={`${kinesiology.dailyProgress}/${kinesiology.dailyGoal}`}
+          goal={`Goal: ${kinesiology.dailyGoal} ${kinesiology.unit} today`}
+          progressText={`${kinesiology.dailyProgress}/${kinesiology.dailyGoal}${kinesiology.unit}`}
           progressValue={(kinesiology.dailyProgress / kinesiology.dailyGoal) * 100}
           color="orange" /* Using orange for kinesiology, can be adjusted */
           isComplete={kinesiology.isComplete}
@@ -130,8 +130,8 @@ const Index = () => {
           icon={<Music className="w-5 h-5 text-habit-purple" />}
           title={piano.name}
           momentum={piano.momentum}
-          goal={`Goal: ${piano.dailyGoal} min today`}
-          progressText={`${piano.dailyProgress}/${piano.dailyGoal}`}
+          goal={`Goal: ${piano.dailyGoal} ${piano.unit} today`}
+          progressText={`${piano.dailyProgress}/${piano.dailyGoal}${piano.unit}`}
           progressValue={(piano.dailyProgress / piano.dailyGoal) * 100}
           color="blue" /* Using blue for piano, can be adjusted */
           isComplete={piano.isComplete}
