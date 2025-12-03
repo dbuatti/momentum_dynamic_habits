@@ -126,7 +126,8 @@ const fetchDashboardData = async (userId: string) => {
     const daysToNextMonth = differenceInDays(nextMonthDate, new Date());
     
     const totalDaysSinceStart = differenceInDays(startOfDay(new Date()), startOfDay(startDate)) + 1;
-    const consistency = totalDaysSinceStart > 0 && typeof distinctDays === 'number' ? Math.round((distinctDays / totalDaysSinceStart) * 100) : 0;
+    const rawConsistency = totalDaysSinceStart > 0 && typeof distinctDays === 'number' ? distinctDays / totalDaysSinceStart : 0;
+    const consistency = Math.round(Math.min(rawConsistency, 1) * 100);
 
     return {
         daysActive,
