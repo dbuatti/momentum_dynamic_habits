@@ -35,7 +35,7 @@ const Index = () => {
     );
   }
 
-  const { daysActive, totalJourneyDays, daysToNextMonth, habits, weeklySummary, patterns, nextBadge } = data;
+  const { daysActive, totalJourneyDays, daysToNextMonth, habits, weeklySummary, patterns, nextBadge, lastActiveText } = data;
   const pushups = habits.find(h => h.key === 'pushups');
   const meditation = habits.find(h => h.key === 'meditation');
   const kinesiology = habits.find(h => h.key === 'kinesiology');
@@ -43,7 +43,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <HomeHeader dayCounter={daysActive} />
+      <HomeHeader dayCounter={daysActive} lastActiveText={lastActiveText} />
       
       <main className="flex-grow p-4 space-y-6 max-w-lg mx-auto w-full">
         

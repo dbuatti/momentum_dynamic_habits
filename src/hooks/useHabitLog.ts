@@ -33,6 +33,14 @@ const logHabit = async ({ userId, habitKey, value, taskName }: LogHabitParams & 
 
   if (rpcError) throw rpcError;
 
+  // 3. Update last_active_at in profiles
+  const { error: profileUpdateError } = await supabase
+    .from('profiles')
+    .update({ last_active_at: new Date().toISOString() })
+    .eq('id', userId);
+
+  if (profileUpdateError) throw profileUpdateError;
+
   return { success: true };
 };
 
@@ -49,6 +57,7 @@ export const useHabitLog = () => {
     onSuccess: () => {
       showSuccess('Habit logged successfully!');
       queryClient.invalidateQueries({ queryKey: ['dashboardData', session?.user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['journeyData', session?.user?.id] }); // Invalidate journey data too
       navigate('/');
     },
     onError: (error) => {

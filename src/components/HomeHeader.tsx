@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 
 interface HomeHeaderProps {
   dayCounter: number;
+  lastActiveText: string;
 }
 
 const getGreeting = () => {
@@ -15,7 +16,7 @@ const getGreeting = () => {
   return "Good evening";
 };
 
-const HomeHeader: React.FC<HomeHeaderProps> = ({ dayCounter }) => {
+const HomeHeader: React.FC<HomeHeaderProps> = ({ dayCounter, lastActiveText }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
@@ -36,7 +37,7 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({ dayCounter }) => {
         </p>
         <div className="flex items-center text-sm text-muted-foreground mt-2">
           <Clock className="w-4 h-4 mr-1.5" />
-          <span>Last: about 11 hours ago</span>
+          <span>Last: {lastActiveText}</span>
         </div>
       </div>
       <div className="flex items-center">

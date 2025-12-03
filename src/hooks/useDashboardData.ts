@@ -1,11 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
-import { startOfDay, endOfDay, differenceInDays, startOfWeek, endOfWeek, subWeeks, addMonths, subDays } from 'date-fns';
+import { startOfDay, endOfDay, differenceInDays, startOfWeek, endOfWeek, subWeeks, addMonths, subDays, formatDistanceToNowStrict } from 'date-fns';
 
 const fetchDashboardData = async (userId: string) => {
     // 1. Fetch raw data from Supabase
-    const profilePromise = supabase.from('profiles').select('journey_start_date, daily_streak').eq('id', userId).single();
+    const profilePromise = supabase.from('profiles').select('journey_start_date, daily_streak, last_active_at').eq('id', userId).single();
     const habitsPromise = supabase.from('user_habits').select('*').eq('user_id', userId);
     const allBadgesPromise = supabase.from('badges').select('id, name, icon_name, requirement_type, requirement_value, habit_key');
     const achievedBadgesPromise = supabase.from('user_badges').select('badge_id').eq('user_id', userId);
@@ -153,6 +153,9 @@ const fetchDashboardData = async (userId: string) => {
     const rawConsistency = totalDaysSinceStart > 0 && typeof distinctDays === 'number' ? distinctDays / totalDaysSinceStart : 0;
     const consistency = Math.round(Math.min(rawConsistency, 1) * 100);
 
+    const lastActiveAt = profile?.last_active_at ? new Date(profile.last_active_at) : null;
+    const lastActiveText = lastActiveAt ? formatDistanceToNowStrict(lastActiveAt, { addSuffix: true }) : 'Never';
+
     return {
         daysActive,
         totalJourneyDays,
@@ -166,6 +169,7 @@ const fetchDashboardData = async (userId: string) => {
             bestTime: bestTime || '—',
         },
         nextBadge: nextBadgeData ? { ...nextBadgeData, progress: nextBadgeProgress } : null,
+        lastActiveText,
     };
 };
 
