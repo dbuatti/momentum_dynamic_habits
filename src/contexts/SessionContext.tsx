@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 interface SessionContextType {
   session: Session | null;
   loading: boolean;
+  signOut: () => Promise<void>;
 }
 
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
@@ -63,9 +64,19 @@ export const SessionContextProvider = ({ children }: { children: ReactNode }) =>
     };
   }, []);
 
+  const signOut = async () => {
+    if (import.meta.env.DEV) {
+      setSession(null);
+    } else {
+      await supabase.auth.signOut();
+      // onAuthStateChange will handle setting session to null
+    }
+  };
+
   const value = {
     session,
     loading,
+    signOut,
   };
 
   return (

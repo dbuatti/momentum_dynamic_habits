@@ -31,8 +31,11 @@ import {
   Volume2,
   Dumbbell,
   Timer,
+  LogOut,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useSession } from '@/contexts/SessionContext';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const BadgeIcon = ({ icon: Icon, label, achieved }: { icon: React.ElementType, label: string, achieved?: boolean }) => (
   <div className="flex flex-col items-center space-y-1 text-center">
@@ -51,6 +54,12 @@ const SoundOption = ({ icon: Icon, label, selected }: { icon: React.ElementType,
 );
 
 const Settings = () => {
+  const { session, signOut } = useSession();
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-black">
       <header className="sticky top-0 bg-gray-50/80 dark:bg-black/80 backdrop-blur-sm z-10 flex items-center p-4 border-b">
@@ -64,6 +73,27 @@ const Settings = () => {
       </header>
 
       <main className="p-4 space-y-6 max-w-2xl mx-auto">
+        {/* User Profile Card */}
+        {session?.user && (
+          <Card>
+            <CardContent className="p-4 flex items-center space-x-4">
+              <Avatar>
+                <AvatarImage src={session.user.user_metadata?.avatar_url} />
+                <AvatarFallback>
+                  {session.user.user_metadata?.name?.charAt(0) || session.user.email?.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-grow">
+                <p className="font-semibold">{session.user.user_metadata?.name || session.user.email}</p>
+                <p className="text-sm text-muted-foreground">Logged in with Google</p>
+              </div>
+              <Button variant="ghost" size="icon" onClick={handleSignOut} aria-label="Sign out">
+                <LogOut className="w-5 h-5" />
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Adaptive Goals */}
         <Card>
           <CardContent className="p-4 flex items-start space-x-4">
