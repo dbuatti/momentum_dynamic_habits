@@ -13,9 +13,10 @@ interface HabitDetailCardProps {
   progressValue: number;
   color: 'orange' | 'blue';
   isComplete: boolean;
+  daysCompletedLast7Days: number; // New prop
 }
 
-export const HabitDetailCard: React.FC<HabitDetailCardProps> = ({ icon, title, momentum, goal, progressText, progressValue, color, isComplete }) => {
+export const HabitDetailCard: React.FC<HabitDetailCardProps> = ({ icon, title, momentum, goal, progressText, progressValue, color, isComplete, daysCompletedLast7Days }) => {
   const progressColorClass = color === 'orange' ? '[&>div]:bg-habit-orange' : '[&>div]:bg-habit-blue';
 
   return (
@@ -41,7 +42,7 @@ export const HabitDetailCard: React.FC<HabitDetailCardProps> = ({ icon, title, m
             <div className="flex justify-between items-center mt-2">
               <div className="flex space-x-1.5">
                 {[...Array(7)].map((_, i) => (
-                  <div key={i} className={cn("w-2 h-2 rounded-full", i < 5 ? (color === 'orange' ? 'bg-habit-orange' : 'bg-habit-blue') : 'bg-gray-200')}></div>
+                  <div key={i} className={cn("w-2 h-2 rounded-full", i < daysCompletedLast7Days ? (color === 'orange' ? 'bg-habit-orange' : 'bg-habit-blue') : 'bg-gray-200')}></div>
                 ))}
               </div>
               {isComplete ? (

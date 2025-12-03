@@ -96,6 +96,7 @@ const Index = () => {
           progressValue={(pushups.dailyProgress / pushups.dailyGoal) * 100}
           color="orange"
           isComplete={pushups.isComplete}
+          daysCompletedLast7Days={pushups.daysCompletedLast7Days}
         />}
         {meditation && <HabitDetailCard 
           icon={<Wind className="w-5 h-5 text-habit-blue" />}
@@ -106,6 +107,7 @@ const Index = () => {
           progressValue={(meditation.dailyProgress / meditation.dailyGoal) * 100}
           color="blue"
           isComplete={meditation.isComplete}
+          daysCompletedLast7Days={meditation.daysCompletedLast7Days}
         />}
 
         <QuickReviewCard />

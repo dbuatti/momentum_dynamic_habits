@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
-import { startOfDay, endOfDay, differenceInDays, startOfWeek, endOfWeek, subWeeks, addMonths } from 'date-fns';
+import { startOfDay, endOfDay, differenceInDays, startOfWeek, endOfWeek, subWeeks, addMonths, subDays } from 'date-fns';
 
 const fetchDashboardData = async (userId: string) => {
     // 1. Fetch raw data from Supabase
@@ -56,6 +56,29 @@ const fetchDashboardData = async (userId: string) => {
         throw new Error('Failed to fetch dashboard data');
     }
 
+    // Fetch 7-day completion history for each habit
+    const sevenDaysAgo = subDays(today, 6);
+    const habitCompletionHistoryPromises = (habits || []).map(async (h) => {
+        const { data: completions, error } = await supabase.from('completedtasks')
+            .select('completed_at')
+            .eq('user_id', userId)
+            .eq('original_source', h.habit_key)
+            .gte('completed_at', startOfDay(sevenDaysAgo).toISOString())
+            .lte('completed_at', endOfDay(today).toISOString());
+
+        if (error) {
+            console.error(`Error fetching completion history for ${h.habit_key}:`, error);
+            return { habitKey: h.habit_key, daysCompletedLast7Days: 0 };
+        }
+
+        const distinctCompletionDays = new Set(completions.map(c => startOfDay(new Date(c.completed_at)).toISOString())).size;
+        return { habitKey: h.habit_key, daysCompletedLast7Days: distinctCompletionDays };
+    });
+
+    const habitCompletionHistory = await Promise.all(habitCompletionHistoryPromises);
+    const habitCompletionMap = new Map(habitCompletionHistory.map(item => [item.habitKey, item.daysCompletedLast7Days]));
+
+
     // 2. Process and calculate derived data
     const startDate = profile?.journey_start_date ? new Date(profile.journey_start_date) : new Date();
     const daysActive = differenceInDays(startOfDay(new Date()), startOfDay(startDate)) + 1;
@@ -77,6 +100,7 @@ const fetchDashboardData = async (userId: string) => {
         longTermGoal: h.long_term_goal,
         lifetimeProgress: h.lifetime_progress,
         unit: h.habit_key === 'meditation' ? 'm' : '',
+        daysCompletedLast7Days: habitCompletionMap.get(h.habit_key) || 0, // Add this new prop
     }));
 
     const weeklySummary = {
