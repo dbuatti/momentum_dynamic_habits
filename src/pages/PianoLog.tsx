@@ -10,7 +10,7 @@ const PianoLog = () => {
 
   return (
     <div className="min-h-screen flex flex-col items-center p-4 bg-background">
-      <Link to="/dashboard" className="absolute top-4 left-4">
+      <Link to="/" className="absolute top-4 left-4">
         <Button variant="ghost" size="icon">
           <ArrowLeft className="w-6 h-6" />
         </Button>

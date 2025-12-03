@@ -8,7 +8,7 @@ const Login = () => {
   const { session } = useSession();
 
   if (session) {
-    return <Navigate to="/dashboard" />;
+    return <Navigate to="/" />;
   }
 
   return (
