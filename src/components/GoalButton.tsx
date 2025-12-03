@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Habit } from '../../types/habit';
+import { Habit } from '../types/habit';
 import { cn } from '@/lib/utils';
 
 interface GoalButtonProps {

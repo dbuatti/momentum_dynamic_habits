@@ -5,7 +5,7 @@ export const initialHabits: (Habit | PianoHabit)[] = [
     id: "pushups",
     name: "Push-ups",
     type: "count",
-    targetGoal: 10, // Adaptive to 100/day
+    targetGoal: 1, // Updated from 10 to 1 rep
     unit: "reps",
     currentProgress: 0,
     momentum: "Building",
@@ -15,8 +15,8 @@ export const initialHabits: (Habit | PianoHabit)[] = [
     id: "meditation",
     name: "Meditation",
     type: "time",
-    targetGoal: 5, // Adaptive to 60 mins/day
-    unit: "minutes",
+    targetGoal: 30, // Updated from 5 minutes to 30 seconds
+    unit: "seconds", // Unit changed for clarity
     currentProgress: 0,
     momentum: "Building",
     route: "/log/meditation",
@@ -25,8 +25,8 @@ export const initialHabits: (Habit | PianoHabit)[] = [
     id: "kinesiology",
     name: "Kinesiology Study",
     type: "time",
-    targetGoal: 1, // Adaptive to 60 mins/day (starting low)
-    unit: "minutes",
+    targetGoal: 30, // Updated from 1 minute to 30 seconds
+    unit: "seconds", // Unit changed for clarity
     currentProgress: 0,
     momentum: "Struggling",
     route: "/log/study",
@@ -35,8 +35,8 @@ export const initialHabits: (Habit | PianoHabit)[] = [
     id: "piano",
     name: "Piano Practice",
     type: "time",
-    targetGoal: 5, // Adaptive time goal
-    unit: "minutes",
+    targetGoal: 30, // Updated from 5 minutes to 30 seconds
+    unit: "seconds", // Unit changed for clarity
     currentProgress: 0,
     momentum: "Strong",
     route: "/log/piano",

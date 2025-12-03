@@ -1,5 +1,5 @@
 import React from 'react';
-import { Habit, PianoHabit, MomentumLevel } from '../../types/habit';
+import { Habit, PianoHabit, MomentumLevel } from '../types/habit';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 import {
