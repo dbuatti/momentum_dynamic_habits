@@ -9,7 +9,7 @@ import { HabitDetailCard } from "@/components/dashboard/HabitDetailCard";
 import { QuickReviewCard } from "@/components/dashboard/QuickReviewCard";
 import { TipCard } from "@/components/dashboard/TipCard";
 import { WeeklySummaryCard } from "@/components/dashboard/WeeklySummaryCard";
-import { PatternsCard } from "@/components/dashboard/PatternsCard"; // Corrected import path
+import { PatternsCard } from "@/components/dashboard/PatternsCard";
 import { NextBadgeCard } from "@/components/dashboard/NextBadgeCard";
 import { FooterStats } from "@/components/dashboard/FooterStats";
 import { useDashboardData } from "@/hooks/useDashboardData";
