@@ -8,7 +8,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import { Clock, Dumbbell, BookOpen, Music } from 'lucide-react';
+import { Clock, Dumbbell, BookOpen, Music, ArrowRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -52,66 +52,65 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit }) => {
   const progressPercentage = Math.min(100, (habit.currentProgress / habit.targetGoal) * 100);
   const isComplete = habit.currentProgress >= habit.targetGoal;
 
-  const displayProgress = habit.type === 'time'
-    ? `${habit.currentProgress} / ${habit.targetGoal} ${habit.unit}`
-    : `${habit.currentProgress} / ${habit.targetGoal} ${habit.unit}`;
+  const displayProgress = `${habit.currentProgress} / ${habit.targetGoal} ${habit.unit}`;
 
   return (
     <Accordion type="single" collapsible className="w-full">
-      <AccordionItem value={habit.id} className="border rounded-lg shadow-sm bg-card px-4 mb-2">
-        <AccordionTrigger className="py-4 hover:no-underline">
-          <div className="flex items-center justify-between w-full pr-2">
-            <div className="flex items-center space-x-3">
-              <Icon className="w-5 h-5 text-primary" />
-              <span className="font-semibold text-lg">{habit.name}</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              {isComplete && <Badge variant="default" className="bg-green-500">Done</Badge>}
-              <span className="text-sm text-muted-foreground">{displayProgress}</span>
-            </div>
-          </div>
-        </AccordionTrigger>
-        <AccordionContent className="pt-0 pb-4">
-          <div className="space-y-3">
-            <Progress value={progressPercentage} className="h-2" />
-            
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>Goal: {habit.targetGoal} {habit.unit}</span>
-              <Badge className={cn("text-xs text-white", getMomentumColor(habit.momentum))}>
-                Momentum: {habit.momentum}
-              </Badge>
-            </div>
-
-            {habit.id === 'piano' && (
-              <div className="mt-2">
-                <h4 className="text-sm font-medium mb-1">Target Songs:</h4>
-                <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
-                  {(habit as PianoHabit).targetSongs.map((song, index) => (
-                    <li key={index} className={cn((habit as PianoHabit).songsCompletedToday.includes(song) ? 'line-through text-green-600 dark:text-green-400' : '')}>
-                      {song}
-                    </li>
-                  ))}
-                </ul>
+      <AccordionItem value={habit.id} className="border-none">
+        <div className="bg-card rounded-lg shadow-sm">
+          <AccordionTrigger className="p-4 hover:no-underline w-full">
+            <div className="flex items-center justify-between w-full">
+              <div className="flex items-center space-x-4">
+                <Icon className="w-6 h-6 text-muted-foreground" />
+                <div className="flex flex-col items-start">
+                  <span className="font-semibold text-base text-foreground">{habit.name}</span>
+                  <span className="text-sm text-muted-foreground">{displayProgress}</span>
+                </div>
               </div>
-            )}
-
-            {habit.id === 'kinesiology' && (
-              <div className="mt-2 p-3 bg-accent rounded-md border border-border">
-                <p className="text-sm font-medium text-accent-foreground">
-                  Action Prompt: Go to your desk.
-                </p>
-              </div>
-            )}
-
-            <div className="flex justify-end">
-              <Link to={habit.route}>
-                <Button variant="secondary" size="sm">
-                  Log More
-                </Button>
-              </Link>
+              {isComplete && <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300">Done</Badge>}
             </div>
-          </div>
-        </AccordionContent>
+          </AccordionTrigger>
+          <AccordionContent className="px-4 pb-4 pt-0">
+            <div className="border-t pt-4 space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium text-muted-foreground">Momentum</span>
+                <Badge className={cn("text-xs text-white", getMomentumColor(habit.momentum))}>
+                  {habit.momentum}
+                </Badge>
+              </div>
+              <Progress value={progressPercentage} className="h-2" />
+
+              {habit.id === 'piano' && (
+                <div className="mt-2">
+                  <h4 className="text-sm font-medium mb-1">Target Songs:</h4>
+                  <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
+                    {(habit as PianoHabit).targetSongs.map((song, index) => (
+                      <li key={index} className={cn((habit as PianoHabit).songsCompletedToday.includes(song) ? 'line-through text-green-600 dark:text-green-400' : '')}>
+                        {song}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {habit.id === 'kinesiology' && (
+                <div className="mt-2 p-3 bg-accent rounded-md border border-border">
+                  <p className="text-sm font-medium text-accent-foreground">
+                    Action Prompt: Go to your desk.
+                  </p>
+                </div>
+              )}
+
+              <div className="flex justify-end">
+                <Link to={habit.route}>
+                  <Button variant="ghost" size="sm">
+                    Log More <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </AccordionContent>
+        </div>
       </AccordionItem>
     </Accordion>
   );
