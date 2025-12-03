@@ -62,6 +62,22 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        'habit-green': {
+          DEFAULT: 'hsl(var(--habit-green))',
+          foreground: 'hsl(var(--habit-green-foreground))',
+          border: 'hsl(var(--habit-green-border))',
+        },
+        'habit-purple': {
+          DEFAULT: 'hsl(var(--habit-purple))',
+          foreground: 'hsl(var(--habit-purple-foreground))',
+          border: 'hsl(var(--habit-purple-border))',
+        },
+        'habit-orange': {
+          DEFAULT: 'hsl(var(--habit-orange))',
+        },
+        'habit-blue': {
+          DEFAULT: 'hsl(var(--habit-blue))',
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

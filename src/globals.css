@@ -49,6 +49,15 @@
     --sidebar-border: 220 13% 91%;
 
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    --habit-green: 145 73% 94%;
+    --habit-green-foreground: 145 40% 30%;
+    --habit-green-border: 145 50% 80%;
+    --habit-purple: 250 100% 97%;
+    --habit-purple-foreground: 250 50% 50%;
+    --habit-purple-border: 250 70% 85%;
+    --habit-orange: 25 95% 60%;
+    --habit-blue: 220 80% 65%;
   }
 
   .dark {

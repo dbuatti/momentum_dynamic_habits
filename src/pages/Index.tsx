@@ -1,72 +1,89 @@
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import HomeHeader from "@/components/HomeHeader";
-import GoalButton from "@/components/GoalButton";
-import HabitCard from "@/components/HabitCard";
-import { getHabits } from "@/lib/habit-data";
-import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
-import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
 import { differenceInDays, startOfDay, subDays } from 'date-fns';
+import { QuickLogButton } from "@/components/dashboard/QuickLogButton";
+import { BookOpen, Dumbbell, Music, Wind } from "lucide-react";
+import { DisciplineBanner } from "@/components/dashboard/DisciplineBanner";
+import { TodaysProgressCard } from "@/components/dashboard/TodaysProgressCard";
+import { JourneyProgressCard } from "@/components/dashboard/JourneyProgressCard";
+import { HabitDetailCard } from "@/components/dashboard/HabitDetailCard";
+import { QuickReviewCard } from "@/components/dashboard/QuickReviewCard";
+import { TipCard } from "@/components/dashboard/TipCard";
+import { WeeklySummaryCard } from "@/components/dashboard/WeeklySummaryCard";
+import { PatternsCard } from "@/components/dashboard/PatternsCard";
+import { NextBadgeCard } from "@/components/dashboard/NextBadgeCard";
+import { FooterStats } from "@/components/dashboard/FooterStats";
 
 const Index = () => {
-  const habits = getHabits();
-  
-  const completedHabits = habits.filter(h => h.currentProgress >= h.targetGoal).length;
-  const totalHabits = habits.length;
-  const overallProgress = (completedHabits / totalHabits) * 100;
-
-  // Calculate the day counter dynamically
   const today = startOfDay(new Date());
-  const startDate = subDays(today, 2); // Start the count 2 days ago to make today Day 3
+  const startDate = subDays(today, 6); // Start the count 6 days ago to make today Day 7
   const dayCounter = differenceInDays(today, startDate) + 1;
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <HomeHeader dayCounter={dayCounter} />
       
-      <main className="flex-grow p-4 space-y-8 max-w-lg mx-auto w-full">
+      <main className="flex-grow p-4 space-y-6 max-w-lg mx-auto w-full">
         
-        <section className="space-y-4">
-          <h2 className="text-sm font-semibold text-muted-foreground tracking-wider uppercase">Immediate Start</h2>
-          {habits.map((habit) => (
-            <GoalButton key={habit.id} habit={habit} />
-          ))}
-        </section>
+        <div className="grid grid-cols-2 gap-3">
+          <QuickLogButton 
+            icon={<Dumbbell className="w-5 h-5" />}
+            title="complete!"
+            progress="17/8"
+            variant="green"
+            isComplete
+          />
+          <QuickLogButton 
+            icon={<Wind className="w-5 h-5" />}
+            title="min breathe"
+            progress="2/4"
+            variant="purple"
+          />
+          <QuickLogButton 
+            icon={<BookOpen className="w-5 h-5" />}
+            title="kinesiology"
+            progress="0s/1m"
+            variant="purple"
+          />
+          <QuickLogButton 
+            icon={<Music className="w-5 h-5" />}
+            title="Blues pno"
+            progress="0s/30s"
+            variant="purple"
+          />
+        </div>
 
-        <Separator />
+        <DisciplineBanner />
+        <TodaysProgressCard />
+        <JourneyProgressCard />
 
-        <section className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h2 className="text-sm font-semibold text-muted-foreground tracking-wider uppercase">Today's Progress</h2>
-            <Link to="/journey">
-              <Button variant="ghost" size="sm" className="text-sm text-primary">
-                Journey <ArrowRight className="w-4 h-4 ml-1" />
-              </Button>
-            </Link>
-          </div>
-          <Progress value={overallProgress} className="h-3" />
-          <p className="text-sm text-muted-foreground text-center">
-            {completedHabits} of {totalHabits} habits completed
-          </p>
-        </section>
+        <HabitDetailCard 
+          icon={<Dumbbell className="w-5 h-5 text-habit-orange" />}
+          title="Push-ups"
+          momentum="building"
+          goal="Goal: 8 today"
+          progressText="17/8"
+          progressValue={100}
+          color="orange"
+          isComplete={true}
+        />
+        <HabitDetailCard 
+          icon={<Wind className="w-5 h-5 text-habit-blue" />}
+          title="Meditation"
+          momentum="crushing it"
+          goal="Goal: 4 min today"
+          progressText="2/4"
+          progressValue={50}
+          color="blue"
+          isComplete={false}
+        />
 
-        <Separator />
-
-        <section className="space-y-2">
-          <h2 className="text-sm font-semibold text-muted-foreground tracking-wider uppercase">Habit Details</h2>
-          {habits.map((habit) => (
-            <HabitCard key={habit.id} habit={habit} />
-          ))}
-        </section>
-        
-        <section className="flex justify-center pt-4">
-          <Button variant="outline" className="text-sm">
-            Rest Day (Guilt-Free Break)
-          </Button>
-        </section>
-
+        <QuickReviewCard />
+        <TipCard />
+        <WeeklySummaryCard />
+        <PatternsCard />
+        <NextBadgeCard />
+        <FooterStats />
       </main>
       
       <MadeWithDyad />
