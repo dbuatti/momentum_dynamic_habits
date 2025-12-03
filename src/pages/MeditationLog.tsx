@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Play, Pause, RotateCcw, Loader2 } from 'lucide-react';
 import { useHabitLog } from '@/hooks/useHabitLog';
+import { useJourneyData } from '@/hooks/useJourneyData'; // Import useJourneyData
 
 const MeditationLog = () => {
   const location = useLocation();
@@ -15,18 +16,75 @@ const MeditationLog = () => {
   const { mutate: logHabit, isPending } = useHabitLog();
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const playSound = () => {
+  const { data: journeyData } = useJourneyData(); // Fetch journey data
+  const selectedMeditationSound = journeyData?.profile?.meditation_sound || 'Forest'; // Get selected sound
+
+  const playSound = useCallback((soundKey: string) => {
+    if (soundKey === 'Silence') {
+      console.log('Meditation finished: Silence selected, no sound played.');
+      return;
+    }
+
     const audioContext = new (window.AudioContext)();
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
     oscillator.connect(gainNode);
     gainNode.connect(audioContext.destination);
-    oscillator.type = 'sine';
-    oscillator.frequency.setValueAtTime(523.25, audioContext.currentTime); // C5 note
+
+    let frequency = 523.25; // Default C5
+    let duration = 0.5; // Default duration
+    let type: OscillatorType = 'sine';
+
+    switch (soundKey) {
+      case 'Rain':
+        frequency = 220; // A3
+        duration = 0.7;
+        type = 'sawtooth';
+        break;
+      case 'Forest':
+        frequency = 330; // E4
+        duration = 0.6;
+        type = 'sine';
+        break;
+      case 'Ocean':
+        frequency = 277; // C#4
+        duration = 0.8;
+        type = 'triangle';
+        break;
+      case 'Fire':
+        frequency = 554; // C#5
+        duration = 0.4;
+        type = 'square';
+        break;
+      case 'Wind':
+        frequency = 494; // B4
+        duration = 0.7;
+        type = 'sine';
+        break;
+      case 'Birds':
+        frequency = 880; // A5
+        duration = 0.3;
+        type = 'sine';
+        break;
+      case 'Stream':
+        frequency = 392; // G4
+        duration = 0.9;
+        type = 'triangle';
+        break;
+      default:
+        // Default to 'Forest' sound if not explicitly handled
+        frequency = 330; // E4
+        duration = 0.6;
+        type = 'sine';
+    }
+
+    oscillator.type = type;
+    oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
     gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
     oscillator.start();
-    oscillator.stop(audioContext.currentTime + 0.5);
-  };
+    oscillator.stop(audioContext.currentTime + duration);
+    console.log(`Meditation finished: Playing ${soundKey} sound.`);
+  }, []); // No dependencies needed for useCallback as soundKey is passed directly
 
   useEffect(() => {
     if (isActive && timeRemaining > 0) {
@@ -36,13 +94,13 @@ const MeditationLog = () => {
     } else if (timeRemaining === 0 && isActive) {
       setIsActive(false);
       setIsFinished(true);
-      playSound();
+      playSound(selectedMeditationSound); // Play the selected sound
       if (intervalRef.current) clearInterval(intervalRef.current);
     }
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [isActive, timeRemaining]);
+  }, [isActive, timeRemaining, playSound, selectedMeditationSound]); // Add playSound and selectedMeditationSound to dependencies
 
   const handleToggle = () => {
     if (isFinished) return;
