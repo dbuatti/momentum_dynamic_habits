@@ -11,6 +11,7 @@ import StudyLog from "./pages/StudyLog";
 import PianoLog from "./pages/PianoLog";
 import Journey from "./pages/Journey";
 import Login from "./pages/Login";
+import PublicHome from "./pages/PublicHome";
 import { SessionContextProvider, useSession } from "./contexts/SessionContext";
 
 const queryClient = new QueryClient();
@@ -18,7 +19,6 @@ const queryClient = new QueryClient();
 const AppRoutes = () => {
   const { session } = useSession();
 
-  // A simple protected route component
   const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
     if (!session) {
       return <Navigate to="/login" replace />;
@@ -26,11 +26,16 @@ const AppRoutes = () => {
     return children;
   };
 
+  const Root = () => {
+    return session ? <Navigate to="/dashboard" /> : <PublicHome />;
+  }
+
   return (
     <Routes>
+      <Route path="/" element={<Root />} />
       <Route path="/login" element={<Login />} />
       <Route
-        path="/"
+        path="/dashboard"
         element={<ProtectedRoute><Index /></ProtectedRoute>}
       />
       <Route
