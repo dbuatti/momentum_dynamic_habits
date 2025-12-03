@@ -42,6 +42,14 @@ const fetchDashboardData = async (userId: string) => {
         .limit(1)
         .single();
 
+    // Fetch a random tip
+    const randomTipPromise = supabase
+        .from('tips')
+        .select('content, related_habit_key')
+        .order('created_at', { ascending: false }) // Order by created_at to get recent, then limit 1 and offset random
+        .limit(1)
+        .single();
+
 
     const [
         { data: profile, error: profileError },
@@ -55,14 +63,15 @@ const fetchDashboardData = async (userId: string) => {
         { data: distinctDays, error: distinctDaysError },
         { data: bestTime, error: bestTimeError },
         { data: randomReviewQuestion, error: randomReviewQuestionError },
+        { data: randomTip, error: randomTipError },
     ] = await Promise.all([
         profilePromise, habitsPromise, allBadgesPromise, achievedBadgesPromise,
         completedTodayPromise, completedThisWeekPromise, completedLastWeekPromise, totalCompletedPromise,
-        distinctDaysPromise, bestTimePromise, randomReviewQuestionPromise
+        distinctDaysPromise, bestTimePromise, randomReviewQuestionPromise, randomTipPromise
     ]);
 
-    if (profileError || habitsError || allBadgesError || achievedBadgesError || completedTodayError || completedThisWeekError || completedLastWeekError || totalCompletedError || distinctDaysError || bestTimeError || randomReviewQuestionError) {
-        console.error('Error fetching dashboard data:', profileError || habitsError || allBadgesError || achievedBadgesError || completedTodayError || completedThisWeekError || completedLastWeekError || totalCompletedError || distinctDaysError || bestTimeError || randomReviewQuestionError);
+    if (profileError || habitsError || allBadgesError || achievedBadgesError || completedTodayError || completedThisWeekError || completedLastWeekError || totalCompletedError || distinctDaysError || bestTimeError || randomReviewQuestionError || randomTipError) {
+        console.error('Error fetching dashboard data:', profileError || habitsError || allBadgesError || achievedBadgesError || completedTodayError || completedThisWeekError || completedLastWeekError || totalCompletedError || distinctDaysError || bestTimeError || randomReviewQuestionError || randomTipError);
         throw new Error('Failed to fetch dashboard data');
     }
 
@@ -181,7 +190,8 @@ const fetchDashboardData = async (userId: string) => {
         nextBadge: nextBadgeData ? { ...nextBadgeData, progress: nextBadgeProgress } : null,
         lastActiveText,
         firstName: profile?.first_name || null,
-        reviewQuestion: randomReviewQuestion || null, // Add the random review question here
+        reviewQuestion: randomReviewQuestion || null,
+        tip: randomTip || null, // Add the random tip here
     };
 };
 

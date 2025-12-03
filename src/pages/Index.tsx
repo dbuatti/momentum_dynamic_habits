@@ -35,7 +35,7 @@ const Index = () => {
     );
   }
 
-  const { daysActive, totalJourneyDays, daysToNextMonth, habits, weeklySummary, patterns, nextBadge, lastActiveText, firstName, reviewQuestion } = data;
+  const { daysActive, totalJourneyDays, daysToNextMonth, habits, weeklySummary, patterns, nextBadge, lastActiveText, firstName, reviewQuestion, tip } = data;
   const pushups = habits.find(h => h.key === 'pushups');
   const meditation = habits.find(h => h.key === 'meditation');
   const kinesiology = habits.find(h => h.key === 'kinesiology');
@@ -123,7 +123,7 @@ const Index = () => {
             onNext={handleNextReviewQuestion} 
           />
         )}
-        <TipCard />
+        {tip && <TipCard tip={tip} />}
         <WeeklySummaryCard summary={weeklySummary} />
         <PatternsCard patterns={patterns} />
         <NextBadgeCard badge={nextBadge} />
