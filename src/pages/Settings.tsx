@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
 import {
   ArrowLeft, Calendar, Target, TrendingUp, Star, Flame, Shield, Crown, Zap, Trophy, Sparkles, Mountain, Award, Sun, Moon, Heart, Smile, CloudRain, Trees, Waves, Wind, Bird, Droplets, Volume2, Dumbbell, Timer, LogOut, AlertCircle, Loader2
 } from 'lucide-react';
@@ -27,7 +26,8 @@ import {
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
-import { SettingsSkeleton } from '@/components/dashboard/SettingsSkeleton'; // Import the new skeleton
+import { SettingsSkeleton } from '@/components/dashboard/SettingsSkeleton';
+import { useUpdateProfile } from '@/hooks/useUpdateProfile'; // Import the new hook
 
 const iconMap: { [key: string]: React.ElementType } = { Star, Flame, Shield, Target, Crown, Zap, Trophy, Sparkles, Mountain, Award, Sun, Moon, Heart };
 
@@ -43,11 +43,27 @@ const BadgeIcon = ({ iconName, label, achieved }: { iconName: string, label: str
   );
 };
 
-const SoundOption = ({ icon: Icon, label, selected }: { icon: React.ElementType, label: string, selected?: boolean }) => (
-  <div className={cn("p-3 rounded-lg flex flex-col items-center space-y-1 cursor-pointer", selected ? 'bg-blue-100 dark:bg-blue-900/50 border-2 border-blue-400' : 'bg-gray-100 dark:bg-gray-800')}>
+interface SoundOptionProps {
+  icon: React.ElementType;
+  label: string;
+  selected: boolean;
+  onClick: () => void;
+  disabled: boolean;
+}
+
+const SoundOption: React.FC<SoundOptionProps> = ({ icon: Icon, label, selected, onClick, disabled }) => (
+  <button
+    className={cn(
+      "p-3 rounded-lg flex flex-col items-center space-y-1 cursor-pointer transition-colors",
+      selected ? 'bg-blue-100 dark:bg-blue-900/50 border-2 border-blue-400' : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700',
+      disabled && 'opacity-50 cursor-not-allowed'
+    )}
+    onClick={onClick}
+    disabled={disabled}
+  >
     <Icon className={cn("w-6 h-6", selected ? 'text-blue-600 dark:text-blue-300' : 'text-muted-foreground')} />
     <p className="text-sm font-medium">{label}</p>
-  </div>
+  </button>
 );
 
 const MomentumBadge = ({ level }: { level: string }) => {
@@ -66,6 +82,7 @@ const Settings = () => {
   const { session, signOut } = useSession();
   const { data, isLoading, isError } = useJourneyData();
   const queryClient = useQueryClient();
+  const { mutate: updateProfileMutation, isPending: isUpdatingProfile } = useUpdateProfile();
 
   const { mutate: resetProgress, isPending: isResetting } = useMutation({
       mutationFn: async () => {
@@ -86,8 +103,12 @@ const Settings = () => {
     await signOut();
   };
 
+  const handleSoundSelect = (sound: string) => {
+    updateProfileMutation({ meditation_sound: sound });
+  };
+
   if (isLoading) {
-    return <SettingsSkeleton />; // Use the new skeleton here
+    return <SettingsSkeleton />;
   }
 
   if (isError || !data) {
@@ -109,6 +130,18 @@ const Settings = () => {
   const startDate = profile?.journey_start_date ? new Date(profile.journey_start_date) : new Date();
   const daysActive = differenceInDays(startOfDay(new Date()), startOfDay(startDate)) + 1;
   const totalJourneyDays = meditationHabit ? differenceInDays(new Date(meditationHabit.target_completion_date), startDate) : 0;
+  const selectedMeditationSound = profile?.meditation_sound || 'Forest'; // Default to 'Forest' if not set
+
+  const meditationSoundOptions = [
+    { icon: Smile, label: "Silence" },
+    { icon: CloudRain, label: "Rain" },
+    { icon: Trees, label: "Forest" },
+    { icon: Waves, label: "Ocean" },
+    { icon: Flame, label: "Fire" },
+    { icon: Wind, label: "Wind" },
+    { icon: Bird, label: "Birds" },
+    { icon: Droplets, label: "Stream" },
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-black">
@@ -223,7 +256,16 @@ const Settings = () => {
         <Card>
           <CardHeader className="flex flex-row items-center space-x-2"><Volume2 className="w-5 h-5 text-muted-foreground" /><CardTitle className="text-lg">Meditation Sound</CardTitle></CardHeader>
           <CardContent className="grid grid-cols-4 gap-2">
-            <SoundOption icon={Smile} label="Silence" /><SoundOption icon={CloudRain} label="Rain" /><SoundOption icon={Trees} label="Forest" selected /><SoundOption icon={Waves} label="Ocean" /><SoundOption icon={Flame} label="Fire" /><SoundOption icon={Wind} label="Wind" /><SoundOption icon={Bird} label="Birds" /><SoundOption icon={Droplets} label="Stream" />
+            {meditationSoundOptions.map((option) => (
+              <SoundOption
+                key={option.label}
+                icon={option.icon}
+                label={option.label}
+                selected={selectedMeditationSound === option.label}
+                onClick={() => handleSoundSelect(option.label)}
+                disabled={isUpdatingProfile}
+              />
+            ))}
           </CardContent>
         </Card>
 
