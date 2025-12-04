@@ -32,7 +32,7 @@ export const WeeklySummaryCard: React.FC<WeeklySummaryCardProps> = ({ summary })
         </div>
         <div>
           <p className="text-sm text-muted-foreground">Meditation</p>
-          <p className="text-2xl font-bold">{summary.meditation.current}m</p>
+          <p className="text-2xl font-bold">{Math.round(summary.meditation.current)}m</p>
           <div className="flex items-center text-sm text-green-600 font-medium">
             <TrendingUp className="w-4 h-4 mr-1" />
             <span>{meditationChange}% vs last week</span>
