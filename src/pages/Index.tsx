@@ -1,6 +1,6 @@
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import HomeHeader from "@/components/HomeHeader";
-import { QuickLogButton } from "@/components/dashboard/QuickLogButton";
+import { QuickLogButton } => "@/components/dashboard/QuickLogButton";
 import { BookOpen, Dumbbell, Music, Wind, AlertCircle } from "lucide-react";
 import { DisciplineBanner } from "@/components/dashboard/DisciplineBanner";
 import { TodaysProgressCard } from "@/components/dashboard/TodaysProgressCard";
