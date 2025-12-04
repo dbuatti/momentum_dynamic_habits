@@ -14,9 +14,7 @@ export const FooterStats: React.FC<FooterStatsProps> = ({ streak, daysActive, to
     <p className="text-muted-foreground italic">"You're not behind. You're exactly where you need to be."</p>
     <div className="flex justify-center space-x-4">
       <Button variant="outline" className="rounded-full px-6 py-3 h-auto text-base font-semibold"><BarChart className="w-5 h-5 mr-2" /> History</Button>
-      <Link to="/journey"> {/* Corrected link to /journey */}
-        <Button variant="outline" className="rounded-full px-6 py-3 h-auto text-base font-semibold"><Settings className="w-5 h-5 mr-2" /> Journey</Button>
-      </Link>
+      {/* Removed Journey button as navigation is now handled by the sidebar */}
     </div>
     <div className="border-t w-1/2 mx-auto pt-6">
       <div className="flex justify-center space-x-8 text-muted-foreground">

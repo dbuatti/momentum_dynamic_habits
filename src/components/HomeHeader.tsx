@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { Clock } from 'lucide-react'; // Removed Settings import
-// Removed Link import as Settings button is removed
+import { Clock } from 'lucide-react';
 
 interface HomeHeaderProps {
   dayCounter: number;
@@ -32,7 +31,7 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({ dayCounter, lastActiveText, fir
   const formattedTime = format(currentTime, 'HH:mm');
 
   return (
-    <header className="flex justify-between items-start p-4 sticky top-0 bg-background z-10">
+    <header className="flex justify-between items-start p-4 bg-background"> {/* Removed sticky top-0 z-10 */}
       <div>
         <h1 className="text-3xl font-bold text-foreground">{getGreeting(firstName)}</h1>
         <p className="text-md text-muted-foreground mt-1">
@@ -43,7 +42,6 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({ dayCounter, lastActiveText, fir
           <span>Last: {lastActiveText}</span>
         </div>
       </div>
-      {/* Removed Settings button as navigation is now handled by the sidebar */}
     </header>
   );
 };
