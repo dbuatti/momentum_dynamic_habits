@@ -29,7 +29,7 @@ const Journey = () => {
     );
   }
 
-  const { profile, habits, allBadges, achievedBadges } = data;
+  const { profile, habits, allBadges, achievedBadges, bestTime } = data;
   const achievedBadgeIds = new Set(achievedBadges.map(b => b.badge_id));
 
   const startDate = profile?.journey_start_date ? new Date(profile.journey_start_date) : new Date();
@@ -80,11 +80,11 @@ const Journey = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-muted-foreground">
-              Insight Action Prompt (Option A): The app identifies a high-performance window (e.g., Tuesday mornings) and suggests an action.
+              Based on your activity, your most productive time is:
           </p>
           <div className="p-3 bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 rounded-md">
               <p className="font-semibold text-yellow-800 dark:text-yellow-300">
-                  Double Down Nudge: You crushed Meditation last Tuesday at 9 AM. Try a 10-minute session right now!
+                  {bestTime !== '—' ? `You're a ${bestTime} person! Try scheduling your most important tasks then.` : 'Log more tasks to discover your best time!'}
               </p>
           </div>
         </CardContent>
