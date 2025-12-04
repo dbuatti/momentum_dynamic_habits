@@ -12,8 +12,6 @@ import { WeeklySummaryCard } from "@/components/dashboard/WeeklySummaryCard";
 import { PatternsCard } from "@/components/dashboard/PatternsCard";
 import { NextBadgeCard } from "@/components/dashboard/NextBadgeCard";
 import { FooterStats } from "@/components/dashboard/FooterStats";
-import { DailyChallengeCard } from "@/components/dashboard/DailyChallengeCard"; // Import new component
-import { EnergyDisplayCard } from "@/components/dashboard/EnergyDisplayCard"; // Import new component
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { DashboardSkeleton } from "@/components/dashboard/DashboardSkeleton";
 import { Button } from "@/components/ui/button";
@@ -60,7 +58,7 @@ const Index = () => {
     );
   }
 
-  const { daysActive, totalJourneyDays, daysToNextMonth, habits, weeklySummary, patterns, nextBadge, lastActiveText, firstName, reviewQuestion, tip, dailyChallengeTarget, tasksCompletedToday, xp, level, energy, isInRegenPod, regenPodStartTime, lastEnergyRegenAt } = data;
+  const { daysActive, totalJourneyDays, daysToNextMonth, habits, weeklySummary, patterns, nextBadge, lastActiveText, firstName, reviewQuestion, tip, xp, level } = data;
 
   const handleNextReviewQuestion = () => {
     refetch(); // Refetch dashboard data to get a new random question
@@ -94,14 +92,8 @@ const Index = () => {
           </div>
 
           <DisciplineBanner />
-          <DailyChallengeCard tasksCompletedToday={tasksCompletedToday} dailyChallengeTarget={dailyChallengeTarget} /> {/* New Daily Challenge Card */}
-          <EnergyDisplayCard 
-            currentEnergy={energy} 
-            maxEnergy={100} // Assuming max energy is 100
-            isInRegenPod={isInRegenPod}
-            regenPodStartTime={regenPodStartTime}
-            lastEnergyRegenAt={lastEnergyRegenAt}
-          />
+          {/* Removed DailyChallengeCard */}
+          {/* Removed EnergyDisplayCard */}
           <TodaysProgressCard habits={habits} />
           <JourneyProgressCard daysActive={daysActive} totalJourneyDays={totalJourneyDays} daysToNextMonth={daysToNextMonth} />
 
