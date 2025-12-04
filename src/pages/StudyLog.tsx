@@ -3,21 +3,25 @@ import { useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Play, Pause, RotateCcw, Loader2 } from 'lucide-react';
 import { useHabitLog } from '@/hooks/useHabitLog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 
 interface TimerState {
   timeRemaining: number;
   isActive: boolean;
   isFinished: boolean;
   startTime: number | null; // Timestamp when timer was last started/resumed (Date.now())
-  durationInMinutes: number; // Initial duration for reset
+  selectedDuration: number; // The duration chosen by the user in minutes
 }
 
 const LOCAL_STORAGE_KEY = 'kinesiologyTimerState';
 
 const StudyLog = () => {
   const location = useLocation();
-  const initialDurationInMinutes = location.state?.duration || 1;
-  const initialTimeInSeconds = initialDurationInMinutes * 60;
+  const initialDurationFromState = location.state?.duration || 1; // Default from dashboard or 1 min
+
+  const [selectedDuration, setSelectedDuration] = useState<number>(initialDurationFromState);
+  const initialTimeInSeconds = selectedDuration * 60;
 
   // Initialize state from localStorage or defaults
   const getInitialState = useCallback((): TimerState => {
@@ -26,14 +30,14 @@ const StudyLog = () => {
       if (savedState) {
         const parsedState: TimerState = JSON.parse(savedState);
         // If the saved state is for a different initial duration, reset it
-        if (parsedState.durationInMinutes !== initialDurationInMinutes) {
+        if (parsedState.selectedDuration !== selectedDuration) {
           localStorage.removeItem(LOCAL_STORAGE_KEY);
           return {
             timeRemaining: initialTimeInSeconds,
             isActive: false,
             isFinished: false,
             startTime: null,
-            durationInMinutes: initialDurationInMinutes,
+            selectedDuration: selectedDuration,
           };
         }
 
@@ -54,12 +58,12 @@ const StudyLog = () => {
       isActive: false,
       isFinished: false,
       startTime: null,
-      durationInMinutes: initialDurationInMinutes,
+      selectedDuration: selectedDuration,
     };
-  }, [initialDurationInMinutes, initialTimeInSeconds]);
+  }, [selectedDuration, initialTimeInSeconds]);
 
   const [timerState, setTimerState] = useState<TimerState>(getInitialState);
-  const { timeRemaining, isActive, isFinished, durationInMinutes } = timerState;
+  const { timeRemaining, isActive, isFinished } = timerState;
 
   const { mutate: logHabit, isPending } = useHabitLog();
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -70,6 +74,11 @@ const StudyLog = () => {
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(timerState));
     }
   }, [timerState]);
+
+  // Reset timer state if selectedDuration changes
+  useEffect(() => {
+    handleReset();
+  }, [selectedDuration]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Timer logic
   useEffect(() => {
@@ -123,20 +132,20 @@ const StudyLog = () => {
   const handleReset = () => {
     if (intervalRef.current) clearInterval(intervalRef.current);
     setTimerState({
-      timeRemaining: initialTimeInSeconds,
+      timeRemaining: selectedDuration * 60,
       isActive: false,
       isFinished: false,
       startTime: null,
-      durationInMinutes: initialDurationInMinutes,
+      selectedDuration: selectedDuration,
     });
     localStorage.removeItem(LOCAL_STORAGE_KEY); // Clear from localStorage
   };
 
   const handleLog = () => {
-    if (durationInMinutes > 0) {
+    if (selectedDuration > 0) {
       logHabit({
         habitKey: 'kinesiology',
-        value: durationInMinutes,
+        value: selectedDuration,
         taskName: 'Kinesiology Study',
       });
       localStorage.removeItem(LOCAL_STORAGE_KEY); // Clear from localStorage after logging
@@ -149,11 +158,29 @@ const StudyLog = () => {
     return `${mins}:${secs}`;
   };
 
+  const durationOptions = [1, 5, 10, 15, 20, 30, 45, 60];
+
   return (
     <div className="flex flex-col items-center justify-center">
       <div className="text-center space-y-8 w-full max-w-xs">
         <h1 className="text-4xl font-bold text-habit-green-foreground">Kinesiology Study</h1>
         
+        <div className="space-y-2">
+          <Label htmlFor="study-duration" className="text-lg font-medium text-muted-foreground">Duration (minutes)</Label>
+          <Select value={String(selectedDuration)} onValueChange={(value) => setSelectedDuration(Number(value))} disabled={isActive || isPending}>
+            <SelectTrigger id="study-duration" className="w-full text-lg h-12">
+              <SelectValue placeholder="Select duration" />
+            </SelectTrigger>
+            <SelectContent>
+              {durationOptions.map(option => (
+                <SelectItem key={option} value={String(option)}>
+                  {option} minutes
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
         <div className="p-10 bg-card rounded-xl shadow-lg border-4 border-habit-green-border">
             <p className="text-6xl font-extrabold tracking-tighter">{formatTime(timeRemaining)}</p>
             <div className="flex items-center justify-center space-x-4 mt-4">
@@ -179,7 +206,7 @@ const StudyLog = () => {
             onClick={handleLog} 
             disabled={isPending}
           >
-            {isPending ? <Loader2 className="w-6 h-6 animate-spin" /> : `Log ${durationInMinutes} minute session`}
+            {isPending ? <Loader2 className="w-6 h-6 animate-spin" /> : `Log ${selectedDuration} minute session`}
           </Button>
         )}
         <div className="p-3 bg-accent rounded-md border border-border">

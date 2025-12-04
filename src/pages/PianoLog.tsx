@@ -5,13 +5,14 @@ import { Music, Play, Pause, RotateCcw, Loader2 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { useHabitLog } from '@/hooks/useHabitLog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface TimerState {
   timeRemaining: number;
   isActive: boolean;
   isFinished: boolean;
   startTime: number | null; // Timestamp when timer was last started/resumed (Date.now())
-  durationInMinutes: number; // Initial duration for reset
+  selectedDuration: number; // The duration chosen by the user in minutes
   completedSongs: string[]; // Persist completed songs for PianoLog
 }
 
@@ -19,8 +20,10 @@ const LOCAL_STORAGE_KEY = 'pianoTimerState';
 
 const PianoLog = () => {
   const location = useLocation();
-  const initialDurationInMinutes = location.state?.duration || 1;
-  const initialTimeInSeconds = initialDurationInMinutes * 60;
+  const initialDurationFromState = location.state?.duration || 1; // Default from dashboard or 1 min
+
+  const [selectedDuration, setSelectedDuration] = useState<number>(initialDurationFromState);
+  const initialTimeInSeconds = selectedDuration * 60;
 
   const targetSongs = ["Song A", "Song B", "Song C", "Song D", "Song E"];
 
@@ -31,14 +34,14 @@ const PianoLog = () => {
       if (savedState) {
         const parsedState: TimerState = JSON.parse(savedState);
         // If the saved state is for a different initial duration, reset it
-        if (parsedState.durationInMinutes !== initialDurationInMinutes) {
+        if (parsedState.selectedDuration !== selectedDuration) {
           localStorage.removeItem(LOCAL_STORAGE_KEY);
           return {
             timeRemaining: initialTimeInSeconds,
             isActive: false,
             isFinished: false,
             startTime: null,
-            durationInMinutes: initialDurationInMinutes,
+            selectedDuration: selectedDuration,
             completedSongs: [],
           };
         }
@@ -60,13 +63,13 @@ const PianoLog = () => {
       isActive: false,
       isFinished: false,
       startTime: null,
-      durationInMinutes: initialDurationInMinutes,
+      selectedDuration: selectedDuration,
       completedSongs: [],
     };
-  }, [initialDurationInMinutes, initialTimeInSeconds]);
+  }, [selectedDuration, initialTimeInSeconds]);
 
   const [timerState, setTimerState] = useState<TimerState>(getInitialState);
-  const { timeRemaining, isActive, isFinished, durationInMinutes, completedSongs } = timerState;
+  const { timeRemaining, isActive, isFinished, completedSongs } = timerState;
 
   const { mutate: logHabit, isPending } = useHabitLog();
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -77,6 +80,11 @@ const PianoLog = () => {
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(timerState));
     }
   }, [timerState]);
+
+  // Reset timer state if selectedDuration changes
+  useEffect(() => {
+    handleReset();
+  }, [selectedDuration]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Timer logic
   useEffect(() => {
@@ -130,21 +138,21 @@ const PianoLog = () => {
   const handleReset = () => {
     if (intervalRef.current) clearInterval(intervalRef.current);
     setTimerState({
-      timeRemaining: initialTimeInSeconds,
+      timeRemaining: selectedDuration * 60,
       isActive: false,
       isFinished: false,
       startTime: null,
-      durationInMinutes: initialDurationInMinutes,
+      selectedDuration: selectedDuration,
       completedSongs: [],
     });
     localStorage.removeItem(LOCAL_STORAGE_KEY); // Clear from localStorage
   };
 
   const handleLog = () => {
-    if (durationInMinutes > 0) {
+    if (selectedDuration > 0) {
       logHabit({
         habitKey: 'piano',
-        value: durationInMinutes,
+        value: selectedDuration,
         taskName: 'Piano Practice',
       });
       localStorage.removeItem(LOCAL_STORAGE_KEY); // Clear from localStorage after logging
@@ -166,11 +174,29 @@ const PianoLog = () => {
     return `${mins}:${secs}`;
   };
 
+  const durationOptions = [1, 5, 10, 15, 20, 30, 45, 60];
+
   return (
     <div className="flex flex-col items-center">
       <div className="text-center space-y-6 mt-12 w-full max-w-md">
         <h1 className="text-4xl font-bold text-habit-purple-foreground">Piano Practice</h1>
         
+        <div className="space-y-2">
+          <Label htmlFor="piano-duration" className="text-lg font-medium text-muted-foreground">Duration (minutes)</Label>
+          <Select value={String(selectedDuration)} onValueChange={(value) => setSelectedDuration(Number(value))} disabled={isActive || isPending}>
+            <SelectTrigger id="piano-duration" className="w-full text-lg h-12">
+              <SelectValue placeholder="Select duration" />
+            </SelectTrigger>
+            <SelectContent>
+              {durationOptions.map(option => (
+                <SelectItem key={option} value={String(option)}>
+                  {option} minutes
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
         <div className="p-6 bg-card rounded-xl shadow-lg border-4 border-habit-purple-border">
             <p className="text-4xl font-extrabold">{formatTime(timeRemaining)}</p>
             <div className="flex items-center justify-center space-x-4 mt-4">
@@ -213,7 +239,7 @@ const PianoLog = () => {
             onClick={handleLog} 
             disabled={isPending}
           >
-            {isPending ? <Loader2 className="w-6 h-6 animate-spin" /> : `Log ${durationInMinutes} minute session`}
+            {isPending ? <Loader2 className="w-6 h-6 animate-spin" /> : `Log ${selectedDuration} minute session`}
           </Button>
         )}
       </div>
