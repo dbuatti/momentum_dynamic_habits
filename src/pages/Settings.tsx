@@ -35,6 +35,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Input } from '@/components/ui/input'; // Import Input component
+import { Label } from '@/components/ui/label'; // Import Label component
 
 const iconMap: { [key: string]: React.ElementType } = { Star, Flame, Shield, Target, Crown, Zap, Trophy, Sparkles, Mountain, Award, Sun, Moon, Heart };
 
@@ -157,6 +159,8 @@ const Settings = () => {
   const selectedTimezone = profile?.timezone || 'UTC';
   const defaultAutoScheduleStartTime = profile?.default_auto_schedule_start_time || '09:00';
   const defaultAutoScheduleEndTime = profile?.default_auto_schedule_end_time || '17:00';
+  const firstName = profile?.first_name || '';
+  const lastName = profile?.last_name || '';
 
 
   const meditationSounds = [
@@ -194,6 +198,20 @@ const Settings = () => {
     }
   };
 
+  const handleFirstNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newFirstName = e.target.value;
+    if (newFirstName !== firstName) {
+      updateProfile({ first_name: newFirstName });
+    }
+  };
+
+  const handleLastNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newLastName = e.target.value;
+    if (newLastName !== lastName) {
+      updateProfile({ last_name: newLastName });
+    }
+  };
+
   return (
     <div className="w-full max-w-2xl mx-auto space-y-6"> {/* Removed min-h-screen bg-gray-50 dark:bg-black and p-4 */}
       {/* Removed custom header */}
@@ -213,6 +231,34 @@ const Settings = () => {
           </CardContent>
         </Card>
       )}
+
+      <Card>
+        <CardHeader><CardTitle className="text-lg">Profile Information</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label htmlFor="first-name">First Name</Label>
+            <Input
+              id="first-name"
+              value={firstName}
+              onChange={(e) => profile && updateProfile({ first_name: e.target.value })}
+              onBlur={handleFirstNameChange}
+              disabled={isUpdatingProfile}
+              className="mt-1"
+            />
+          </div>
+          <div>
+            <Label htmlFor="last-name">Last Name</Label>
+            <Input
+              id="last-name"
+              value={lastName}
+              onChange={(e) => profile && updateProfile({ last_name: e.target.value })}
+              onBlur={handleLastNameChange}
+              disabled={isUpdatingProfile}
+              className="mt-1"
+            />
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardContent className="p-4 flex items-start space-x-4">
