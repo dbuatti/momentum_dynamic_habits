@@ -12,6 +12,7 @@ import { WeeklySummaryCard } from "@/components/dashboard/WeeklySummaryCard";
 import { PatternsCard } from "@/components/dashboard/PatternsCard";
 import { NextBadgeCard } from "@/components/dashboard/NextBadgeCard";
 import { FooterStats } from "@/components/dashboard/FooterStats";
+import { DailyChallengeCard } from "@/components/dashboard/DailyChallengeCard"; // Import new component
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { DashboardSkeleton } from "@/components/dashboard/DashboardSkeleton";
 import { Button } from "@/components/ui/button";
@@ -57,7 +58,7 @@ const Index = () => {
     );
   }
 
-  const { daysActive, totalJourneyDays, daysToNextMonth, habits, weeklySummary, patterns, nextBadge, lastActiveText, firstName, reviewQuestion, tip } = data;
+  const { daysActive, totalJourneyDays, daysToNextMonth, habits, weeklySummary, patterns, nextBadge, lastActiveText, firstName, reviewQuestion, tip, dailyChallengeTarget, tasksCompletedToday } = data;
 
   const handleNextReviewQuestion = () => {
     refetch(); // Refetch dashboard data to get a new random question
@@ -90,6 +91,7 @@ const Index = () => {
           </div>
 
           <DisciplineBanner />
+          <DailyChallengeCard tasksCompletedToday={tasksCompletedToday} dailyChallengeTarget={dailyChallengeTarget} /> {/* New Daily Challenge Card */}
           <TodaysProgressCard habits={habits} />
           <JourneyProgressCard daysActive={daysActive} totalJourneyDays={totalJourneyDays} daysToNextMonth={daysToNextMonth} />
 
