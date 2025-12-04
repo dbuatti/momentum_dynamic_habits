@@ -13,7 +13,7 @@ import Journey from "./pages/Journey";
 import Login from "./pages/Login";
 import Settings from "./pages/Settings";
 import { SessionContextProvider, useSession } from "./contexts/SessionContext";
-import Layout from "@/components/layout/Layout"; // Corrected import path
+import Layout from "@/components/layout/Layout";
 
 const queryClient = new QueryClient();
 
@@ -62,7 +62,8 @@ const AppRoutes = () => {
         path="/settings"
         element={<ProtectedRoute><Settings /></ProtectedRoute>}
       />
-      <Route path="*" element={<NotFound />} />
+      {/* Wrap NotFound with Layout for consistent styling */}
+      <Route path="*" element={<Layout><NotFound /></Layout>} />
     </Routes>
   );
 };
