@@ -26,7 +26,7 @@ const habitIconMap: { [key: string]: React.ElementType } = {
   piano: Music,
 };
 
-// Define unique colors for each habit
+// Define unique colors for each habit using custom Tailwind classes
 const quickLogVariantMap: { [key: string]: 'green' | 'purple' | 'orange' | 'blue' } = {
   pushups: 'orange',
   meditation: 'blue',
@@ -59,7 +59,7 @@ const Index = () => {
     );
   }
 
-  const { daysActive, totalJourneyDays, daysToNextMonth, habits, weeklySummary, patterns, nextBadge, lastActiveText, firstName, reviewQuestion, tip, xp, level } = data;
+  const { daysActive, totalJourneyDays, daysToNextMonth, habits, weeklySummary, patterns, nextBadge, lastActiveText, firstName, reviewQuestion, tip, xp, level, averageDailyTasks } = data;
 
   const handleNextReviewQuestion = () => {
     refetch(); // Refetch dashboard data to get a new random question
@@ -132,6 +132,7 @@ const Index = () => {
             daysActive={daysActive}
             totalPushups={habits.find(h => h.key === 'pushups')?.lifetimeProgress || 0}
             totalMeditation={habits.find(h => h.key === 'meditation')?.lifetimeProgress || 0}
+            averageDailyTasks={averageDailyTasks} // Pass average daily tasks
           />
         </main>
         

@@ -30,7 +30,7 @@ const fetchDashboardData = async (userId: string) => {
         .gte('completed_at', startOfWeek(subWeeks(today, 1)).toISOString())
         .lte('completed_at', endOfWeek(subWeeks(today, 1)).toISOString());
 
-    const totalCompletedPromise = supabase.from('completedtasks').select('id', { count: 'exact', head: true }).eq('user_id', userId);
+    const totalCompletedPromise = supabase.from('completedtasks').select('id', { count: 'exact' }); // Fetch total count
     
     const distinctDaysPromise = supabase.rpc('get_distinct_completed_days', { p_user_id: userId });
     const bestTimePromise = supabase.rpc('get_best_time', { p_user_id: userId });
@@ -191,6 +191,8 @@ const fetchDashboardData = async (userId: string) => {
     const lastActiveAt = profile?.last_active_at ? new Date(profile.last_active_at) : null;
     const lastActiveText = lastActiveAt ? formatDistanceToNowStrict(lastActiveAt, { addSuffix: true }) : 'Never';
 
+    const averageDailyTasks = totalSessions && daysActive > 0 ? (totalSessions / daysActive).toFixed(1) : '0.0';
+
     return {
         daysActive,
         totalJourneyDays,
@@ -211,6 +213,7 @@ const fetchDashboardData = async (userId: string) => {
         timezone: profile?.timezone || 'UTC',
         xp: profile?.xp || 0, // Include XP
         level: profile?.level || 1, // Include Level
+        averageDailyTasks,
     };
 };
 

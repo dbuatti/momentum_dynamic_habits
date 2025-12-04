@@ -53,7 +53,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick }) => {
     { to: "/history", icon: BarChart, label: "History" }, // Added History link
     { to: "/log/pushups", icon: Dumbbell, label: "Push-ups" },
     { to: "/log/meditation", icon: Wind, label: "Meditation" },
-    { to: "/log/study", icon: BookOpen, label: "Study" },
+    { to: "/log/kinesiology", icon: BookOpen, label: "Study" },
     { to: "/log/piano", icon: Music, label: "Piano" },
     { to: "/settings", icon: Settings, label: "Settings" },
   ];

@@ -7,9 +7,10 @@ interface FooterStatsProps {
   daysActive: number;
   totalPushups: number;
   totalMeditation: number;
+  averageDailyTasks: string; // New prop for average daily tasks
 }
 
-export const FooterStats: React.FC<FooterStatsProps> = ({ streak, daysActive, totalPushups, totalMeditation }) => (
+export const FooterStats: React.FC<FooterStatsProps> = ({ streak, daysActive, totalPushups, totalMeditation, averageDailyTasks }) => (
   <div className="text-center space-y-6 py-8">
     <p className="text-muted-foreground italic">"You're not behind. You're exactly where you need to be."</p>
     <div className="flex justify-center space-x-4">
@@ -20,7 +21,7 @@ export const FooterStats: React.FC<FooterStatsProps> = ({ streak, daysActive, to
     <div className="border-t w-1/2 mx-auto pt-6">
       <div className="flex justify-center space-x-8 text-muted-foreground">
         <div className="text-center"><p className="font-bold text-xl text-foreground">{streak}</p><p className="text-xs">streak</p></div>
-        <div className="text-center"><p className="font-bold text-xl text-foreground">0</p><p className="text-xs">avg</p></div>
+        <div className="text-center"><p className="font-bold text-xl text-foreground">{averageDailyTasks}</p><p className="text-xs">avg</p></div> {/* Display average daily tasks */}
         <div className="text-center"><p className="font-bold text-xl text-foreground">{daysActive}</p><p className="text-xs">days</p></div>
       </div>
     </div>
