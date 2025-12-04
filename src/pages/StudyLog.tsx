@@ -61,14 +61,14 @@ const StudyLog = () => {
   return (
     <div className="flex flex-col items-center justify-center"> {/* Removed flex-grow */}
       <div className="text-center space-y-8 w-full max-w-xs">
-        <h1 className="text-4xl font-bold text-green-600">Kinesiology Study</h1>
+        <h1 className="text-4xl font-bold text-habit-green-foreground">Kinesiology Study</h1>
         
-        <div className="p-10 bg-card rounded-xl shadow-lg border-4 border-green-300">
+        <div className="p-10 bg-card rounded-xl shadow-lg border-4 border-habit-green-border">
             <p className="text-6xl font-extrabold tracking-tighter">{formatTime(timeRemaining)}</p>
             <div className="flex items-center justify-center space-x-4 mt-4">
                 <Button 
                     size="lg" 
-                    className="w-32 h-16 rounded-full bg-green-600 hover:bg-green-700"
+                    className="w-32 h-16 rounded-full bg-habit-green-foreground hover:bg-habit-green-foreground/90"
                     onClick={handleToggle}
                     disabled={isFinished || isPending}
                 >

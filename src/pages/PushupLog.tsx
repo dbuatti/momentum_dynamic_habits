@@ -21,7 +21,7 @@ const PushupLog = () => {
   return (
     <div className="flex flex-col items-center justify-center"> {/* Removed flex-grow */}
       <div className="text-center space-y-8 w-full max-w-xs">
-        <h1 className="text-4xl font-bold text-orange-500">Log Push-ups</h1>
+        <h1 className="text-4xl font-bold text-habit-orange">Log Push-ups</h1>
         
         <div 
           className="p-10 bg-card rounded-full w-48 h-48 flex items-center justify-center mx-auto shadow-xl border-4 border-orange-300 cursor-pointer select-none"
@@ -40,7 +40,7 @@ const PushupLog = () => {
         </div>
 
         <Button 
-          className="w-full bg-orange-500 hover:bg-orange-600 text-lg py-6" 
+          className="w-full bg-habit-orange hover:bg-orange-600 text-lg py-6" 
           onClick={handleLog} 
           disabled={count === 0 || isPending}
         >

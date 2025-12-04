@@ -73,14 +73,14 @@ const PianoLog = () => {
   return (
     <div className="flex flex-col items-center"> {/* Removed flex-grow */}
       <div className="text-center space-y-6 mt-12 w-full max-w-md">
-        <h1 className="text-4xl font-bold text-green-600">Piano Practice</h1>
+        <h1 className="text-4xl font-bold text-habit-purple-foreground">Piano Practice</h1>
         
-        <div className="p-6 bg-card rounded-xl shadow-lg border-4 border-green-300">
+        <div className="p-6 bg-card rounded-xl shadow-lg border-4 border-habit-purple-border">
             <p className="text-4xl font-extrabold">{formatTime(timeRemaining)}</p>
             <div className="flex items-center justify-center space-x-4 mt-4">
                 <Button 
                     size="lg" 
-                    className="w-32 h-16 rounded-full bg-green-600 hover:bg-green-700"
+                    className="w-32 h-16 rounded-full bg-habit-purple-foreground hover:bg-habit-purple-foreground/90"
                     onClick={handleToggle}
                     disabled={isFinished || isPending}
                 >

@@ -11,13 +11,40 @@ interface HabitDetailCardProps {
   goal: string;
   progressText: string;
   progressValue: number;
-  color: 'orange' | 'blue';
+  color: 'orange' | 'blue' | 'green' | 'purple'; // Updated to include all habit colors
   isComplete: boolean;
   daysCompletedLast7Days: number; // New prop
 }
 
 export const HabitDetailCard: React.FC<HabitDetailCardProps> = ({ icon, title, momentum, goal, progressText, progressValue, color, isComplete, daysCompletedLast7Days }) => {
-  const progressColorClass = color === 'orange' ? '[&>div]:bg-habit-orange' : '[&>div]:bg-habit-blue';
+  // Map color prop to Tailwind classes
+  const iconBgClass = {
+    orange: 'bg-orange-100',
+    blue: 'bg-blue-100',
+    green: 'bg-habit-green',
+    purple: 'bg-habit-purple',
+  }[color];
+
+  const iconTextColorClass = {
+    orange: 'text-orange-500',
+    blue: 'text-blue-500',
+    green: 'text-habit-green-foreground',
+    purple: 'text-habit-purple-foreground',
+  }[color];
+
+  const progressColorClass = {
+    orange: '[&>div]:bg-habit-orange',
+    blue: '[&>div]:bg-habit-blue',
+    green: '[&>div]:bg-habit-green',
+    purple: '[&>div]:bg-habit-purple',
+  }[color];
+
+  const dotColorClass = {
+    orange: 'bg-habit-orange',
+    blue: 'bg-habit-blue',
+    green: 'bg-habit-green',
+    purple: 'bg-habit-purple',
+  }[color];
 
   return (
     <Accordion type="single" collapsible className="w-full">
@@ -26,8 +53,8 @@ export const HabitDetailCard: React.FC<HabitDetailCardProps> = ({ icon, title, m
           <AccordionTrigger className="hover:no-underline p-0 w-full">
             <div className="flex justify-between items-center w-full">
               <div className="flex items-center space-x-3">
-                <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", color === 'orange' ? 'bg-orange-100' : 'bg-blue-100')}>
-                  {icon}
+                <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", iconBgClass)}>
+                  {React.cloneElement(icon as React.ReactElement, { className: cn("w-5 h-5", iconTextColorClass) })}
                 </div>
                 <div>
                   <h4 className="font-semibold text-left">{title} <span className="text-xs font-normal text-muted-foreground">• {momentum}</span></h4>
@@ -42,7 +69,7 @@ export const HabitDetailCard: React.FC<HabitDetailCardProps> = ({ icon, title, m
             <div className="flex justify-between items-center mt-2">
               <div className="flex space-x-1.5">
                 {[...Array(7)].map((_, i) => (
-                  <div key={i} className={cn("w-2 h-2 rounded-full", i < daysCompletedLast7Days ? (color === 'orange' ? 'bg-habit-orange' : 'bg-habit-blue') : 'bg-gray-200')}></div>
+                  <div key={i} className={cn("w-2 h-2 rounded-full", i < daysCompletedLast7Days ? dotColorClass : "bg-gray-200")}></div>
                 ))}
               </div>
               {isComplete ? (

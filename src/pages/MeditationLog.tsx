@@ -133,7 +133,7 @@ const MeditationLog = () => {
   return (
     <div className="flex flex-col items-center justify-center"> {/* Removed flex-grow */}
       <div className="text-center space-y-8 w-full max-w-xs">
-        <h1 className="text-4xl font-bold text-indigo-500">Meditation Timer</h1>
+        <h1 className="text-4xl font-bold text-habit-blue">Meditation Timer</h1>
         
         <div className="p-10 bg-card rounded-full w-56 h-56 flex items-center justify-center mx-auto shadow-xl border-4 border-indigo-300">
           <p className="text-6xl font-extrabold tracking-tighter">{formatTime(timeRemaining)}</p>
@@ -142,7 +142,7 @@ const MeditationLog = () => {
         <div className="flex items-center justify-center space-x-4">
           <Button 
             size="lg" 
-            className="w-32 h-16 rounded-full bg-indigo-500 hover:bg-indigo-600"
+            className="w-32 h-16 rounded-full bg-habit-blue hover:bg-blue-600"
             onClick={handleToggle}
             disabled={isFinished || isPending}
           >

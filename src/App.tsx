@@ -47,8 +47,9 @@ const AppRoutes = () => {
         path="/log/meditation"
         element={<ProtectedRoute><MeditationLog /></ProtectedRoute>}
       />
+      {/* Changed from /log/study to /log/kinesiology */}
       <Route
-        path="/log/study"
+        path="/log/kinesiology"
         element={<ProtectedRoute><StudyLog /></ProtectedRoute>}
       />
       <Route

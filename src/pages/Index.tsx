@@ -26,18 +26,19 @@ const habitIconMap: { [key: string]: React.ElementType } = {
   piano: Music,
 };
 
-const quickLogVariantMap: { [key: string]: 'green' | 'purple' } = {
-  pushups: 'green',
-  meditation: 'purple',
-  kinesiology: 'purple',
+// Define unique colors for each habit
+const quickLogVariantMap: { [key: string]: 'green' | 'purple' | 'orange' | 'blue' } = {
+  pushups: 'orange',
+  meditation: 'blue',
+  kinesiology: 'green',
   piano: 'purple',
 };
 
-const habitDetailColorMap: { [key: string]: 'orange' | 'blue' } = {
+const habitDetailColorMap: { [key: string]: 'orange' | 'blue' | 'green' | 'purple' } = {
   pushups: 'orange',
   meditation: 'blue',
-  kinesiology: 'orange',
-  piano: 'blue',
+  kinesiology: 'green',
+  piano: 'purple',
 };
 
 const Index = () => {
@@ -85,6 +86,7 @@ const Index = () => {
                   progress={`${Math.round(habit.dailyProgress)}/${habit.dailyGoal} ${habit.unit}`} // Will now show X/Y min
                   variant={variant}
                   isComplete={habit.isComplete}
+                  completedColorClass="bg-green-100 border-green-300 text-green-700" // Pass completed color
                 />
               );
             })}
