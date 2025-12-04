@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import {
-  Calendar, Target, TrendingUp, Star, Flame, Shield, Crown, Zap, Trophy, Sparkles, Mountain, Award, Sun, Moon, Heart, Smile, CloudRain, Trees, Waves, Wind, Bird, Droplets, Volume2, Dumbbell, Timer, LogOut, AlertCircle, Loader2
+  Calendar, Target, TrendingUp, Star, Flame, Shield, Crown, Zap, Trophy, Sparkles, Mountain, Award, Sun, Moon, Heart, Smile, CloudRain, Trees, Waves, Wind, Bird, Droplets, Volume2, Dumbbell, Timer, LogOut, AlertCircle, Loader2, Clock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSession } from '@/contexts/SessionContext';
@@ -101,6 +101,10 @@ const commonTimezones = [
   'Australia/Sydney',
 ];
 
+const timeOptions = Array.from({ length: 24 }, (_, i) => 
+  i.toString().padStart(2, '0') + ':00'
+);
+
 const Settings = () => {
   const { session, signOut } = useSession();
   const { data, isLoading, isError } = useJourneyData();
@@ -151,6 +155,9 @@ const Settings = () => {
   const totalJourneyDays = meditationHabit ? differenceInDays(new Date(meditationHabit.target_completion_date), startDate) : 0;
   const selectedMeditationSound = profile?.meditation_sound || 'Forest';
   const selectedTimezone = profile?.timezone || 'UTC';
+  const defaultAutoScheduleStartTime = profile?.default_auto_schedule_start_time || '09:00';
+  const defaultAutoScheduleEndTime = profile?.default_auto_schedule_end_time || '17:00';
+
 
   const meditationSounds = [
     { label: "Silence", icon: Smile, key: "Silence" },
@@ -172,6 +179,18 @@ const Settings = () => {
   const handleTimezoneSelect = (timezone: string) => {
     if (timezone !== selectedTimezone) {
       updateProfile({ timezone: timezone });
+    }
+  };
+
+  const handleStartTimeSelect = (time: string) => {
+    if (time !== defaultAutoScheduleStartTime) {
+      updateProfile({ default_auto_schedule_start_time: time });
+    }
+  };
+
+  const handleEndTimeSelect = (time: string) => {
+    if (time !== defaultAutoScheduleEndTime) {
+      updateProfile({ default_auto_schedule_end_time: time });
     }
   };
 
@@ -309,6 +328,45 @@ const Settings = () => {
           </Select>
           <p className="text-sm text-muted-foreground mt-2">
             Setting your timezone ensures that daily progress and "Best time" calculations are accurate for your local time.
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center space-x-2"><Clock className="w-5 h-5 text-muted-foreground" /><CardTitle className="text-lg">Auto-Schedule Defaults</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <p className="text-sm font-medium mb-2">Default Start Time</p>
+            <Select value={defaultAutoScheduleStartTime} onValueChange={handleStartTimeSelect} disabled={isUpdatingProfile}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select start time" />
+              </SelectTrigger>
+              <SelectContent>
+                {timeOptions.map((time) => (
+                  <SelectItem key={time} value={time}>
+                    {time}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <p className="text-sm font-medium mb-2">Default End Time</p>
+            <Select value={defaultAutoScheduleEndTime} onValueChange={handleEndTimeSelect} disabled={isUpdatingProfile}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select end time" />
+              </SelectTrigger>
+              <SelectContent>
+                {timeOptions.map((time) => (
+                  <SelectItem key={time} value={time}>
+                    {time}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            These times will be used as defaults when generating your daily schedule.
           </p>
         </CardContent>
       </Card>
