@@ -1,17 +1,26 @@
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { supabase } from '@/integrations/supabase/client';
-import { Navigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 import { useSession } from '@/contexts/SessionContext';
+import { useEffect } from 'react'; // Import useEffect
 
 const Login = () => {
-  const { session } = useSession();
+  const { session, loading } = useSession();
+  const navigate = useNavigate(); // Initialize useNavigate
 
-  if (session) {
-    return <Navigate to="/" />;
-  }
+  useEffect(() => {
+    // If not loading and a session exists, navigate to the home page
+    if (!loading && session) {
+      console.log('Login useEffect - Session found, navigating to /');
+      navigate('/');
+      // Clean up the URL hash after successful login
+      if (window.location.hash) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    }
+  }, [session, loading, navigate]); // Depend on session, loading, and navigate
 
-  // Dynamically determine the redirect URL based on the current origin
   const redirectToUrl = window.location.origin;
 
   return (
@@ -28,7 +37,7 @@ const Login = () => {
             appearance={{ theme: ThemeSupa }}
             providers={['google']}
             theme="light"
-            redirectTo={redirectToUrl} // Explicitly set redirectTo
+            redirectTo={redirectToUrl}
           />
         </div>
       </div>
