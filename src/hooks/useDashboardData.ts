@@ -110,7 +110,8 @@ const fetchDashboardData = async (userId: string) => {
     (completedToday || []).forEach(task => {
         const key = task.original_source;
         // Use duration_used for time-based habits, and count as 1 for count-based habits (or actual value if available)
-        const progress = initialHabitsMap.get(key)?.type === 'time' ? (task.duration_used || 0) : 1; // Assuming 1 rep per log for count-based
+        // For display, we want minutes if the habit unit is 'min', but duration_used is in seconds.
+        const progress = initialHabitsMap.get(key)?.type === 'time' && initialHabitsMap.get(key)?.unit === 'min' ? (task.duration_used || 0) / 60 : 1; 
         dailyProgressMap.set(key, (dailyProgressMap.get(key) || 0) + progress);
     });
 
@@ -145,11 +146,11 @@ const fetchDashboardData = async (userId: string) => {
     };
     (completedThisWeek || []).forEach(task => {
         if (task.original_source === 'pushups') weeklySummary.pushups.current += 1;
-        if (task.original_source === 'meditation') weeklySummary.meditation.current += task.duration_used || 0;
+        if (task.original_source === 'meditation') weeklySummary.meditation.current += (task.duration_used || 0) / 60; // Convert to minutes
     });
     (completedLastWeek || []).forEach(task => {
         if (task.original_source === 'pushups') weeklySummary.pushups.previous += 1;
-        if (task.original_source === 'meditation') weeklySummary.meditation.previous += task.duration_used || 0;
+        if (task.original_source === 'meditation') weeklySummary.meditation.previous += (task.duration_used || 0) / 60; // Convert to minutes
     });
 
     const achievedBadgeIds = new Set((achievedBadges || []).map(b => b.badge_id));
@@ -174,7 +175,7 @@ const fetchDashboardData = async (userId: string) => {
                 const currentProgress = habit.lifetimeProgress;
                 const progress = Math.min((currentProgress / reqValue) * 100, 100);
                 const remaining = Math.max(0, reqValue - currentProgress);
-                const unit = habit.unit === 'm' ? 'min left' : `${habit.key} left`;
+                const unit = habit.unit === 'min' ? 'min left' : `${habit.key} left`; // Use 'min' for meditation
                 nextBadgeProgress = { progressValue: progress, value: remaining, unit: unit };
             }
         }

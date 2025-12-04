@@ -19,7 +19,7 @@ const logHabit = async ({ userId, habitKey, value, taskName }: LogHabitParams & 
   }
 
   // Convert value to seconds for time-based habits if the unit is minutes in the log page
-  const actualValue = habitConfig.type === 'time' && habitConfig.unit === 'minutes' ? value * 60 : value;
+  const actualValue = habitConfig.type === 'time' && habitConfig.unit === 'min' ? value * 60 : value;
 
   const xpEarned = Math.round(actualValue * habitConfig.xpPerUnit);
   const energyCost = Math.round(actualValue * habitConfig.energyCostPerUnit);

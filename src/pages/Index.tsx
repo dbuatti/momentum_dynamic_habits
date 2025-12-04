@@ -79,10 +79,10 @@ const Index = () => {
                 <QuickLogButton 
                   key={habit.key}
                   route={`/log/${habit.key}`}
-                  state={{ duration: habit.dailyGoal }}
+                  state={{ duration: habit.dailyGoal }} // habit.dailyGoal is now in minutes for time-based
                   icon={Icon ? <Icon className="w-5 h-5" /> : null}
                   title={habit.name}
-                  progress={`${habit.dailyProgress}/${habit.dailyGoal}${habit.unit}`}
+                  progress={`${habit.dailyProgress}/${habit.dailyGoal}${habit.unit}`} // Will now show X/Ymin
                   variant={variant}
                   isComplete={habit.isComplete}
                 />
@@ -104,8 +104,8 @@ const Index = () => {
                 icon={Icon ? <Icon className="w-5 h-5" /> : null}
                 title={habit.name}
                 momentum={habit.momentum}
-                goal={`Goal: ${habit.dailyGoal} ${habit.unit} today`}
-                progressText={`${habit.dailyProgress}/${habit.dailyGoal}${habit.unit}`}
+                goal={`Goal: ${habit.dailyGoal} ${habit.unit} today`} // Will now show Goal: Y min today
+                progressText={`${habit.dailyProgress}/${habit.dailyGoal}${habit.unit}`} // Will now show X/Ymin
                 progressValue={(habit.dailyProgress / habit.dailyGoal) * 100}
                 color={color}
                 isComplete={habit.isComplete}

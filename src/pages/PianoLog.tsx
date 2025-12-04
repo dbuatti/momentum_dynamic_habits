@@ -8,8 +8,8 @@ import { useHabitLog } from '@/hooks/useHabitLog';
 
 const PianoLog = () => {
   const location = useLocation();
-  const durationInMinutes = location.state?.duration || 1;
-  const initialTime = durationInMinutes * 60;
+  const durationInMinutes = location.state?.duration || 1; // Duration is now in minutes
+  const initialTime = durationInMinutes * 60; // Convert to seconds for timer
 
   const [timeRemaining, setTimeRemaining] = useState(initialTime);
   const [isActive, setIsActive] = useState(false);
@@ -52,7 +52,7 @@ const PianoLog = () => {
     if (durationInMinutes > 0) {
       logHabit({
         habitKey: 'piano',
-        value: durationInMinutes,
+        value: durationInMinutes, // Value is in minutes
         taskName: 'Piano Practice',
       });
     }
