@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom'; // Keep Link for potential future use, but remove the back button instance
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Play, Pause, RotateCcw, Loader2 } from 'lucide-react';
 import { useHabitLog } from '@/hooks/useHabitLog';
 
 const StudyLog = () => {
   const location = useLocation();
-  const durationInMinutes = location.state?.duration || 1; // Default to 1 minute if not passed
+  const durationInMinutes = location.state?.duration || 1;
   const initialTime = durationInMinutes * 60;
 
   const [timeRemaining, setTimeRemaining] = useState(initialTime);
@@ -59,12 +59,8 @@ const StudyLog = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-background">
-      <Link to="/" className="absolute top-4 left-4">
-        <Button variant="ghost" size="icon" disabled={isPending || isActive}>
-          <ArrowLeft className="w-6 h-6" />
-        </Button>
-      </Link>
+    <div className="flex flex-col items-center justify-center flex-grow"> {/* Adjusted styling */}
+      {/* Removed Link to="/" back button */}
       <div className="text-center space-y-8 w-full max-w-xs">
         <h1 className="text-4xl font-bold text-green-600">Kinesiology Study</h1>
         

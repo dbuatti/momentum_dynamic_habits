@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom'; // Keep Link for potential future use, but remove the back button instance
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Music, Play, Pause, RotateCcw, Loader2 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -8,7 +8,7 @@ import { useHabitLog } from '@/hooks/useHabitLog';
 
 const PianoLog = () => {
   const location = useLocation();
-  const durationInMinutes = location.state?.duration || 1; // Default to 1 minute if not passed
+  const durationInMinutes = location.state?.duration || 1;
   const initialTime = durationInMinutes * 60;
 
   const [timeRemaining, setTimeRemaining] = useState(initialTime);
@@ -42,7 +42,7 @@ const PianoLog = () => {
 
   const handleReset = () => {
     setIsActive(false);
-    setIsFinished(false); // Fixed: Changed isFinished(false) to setIsFinished(false)
+    setIsFinished(false);
     setTimeRemaining(initialTime);
     setCompletedSongs([]);
     if (intervalRef.current) clearInterval(intervalRef.current);
@@ -71,12 +71,8 @@ const PianoLog = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center p-4 bg-background">
-      <Link to="/" className="absolute top-4 left-4">
-        <Button variant="ghost" size="icon" disabled={isPending || isActive}>
-          <ArrowLeft className="w-6 h-6" />
-        </Button>
-      </Link>
+    <div className="flex flex-col items-center flex-grow"> {/* Adjusted styling */}
+      {/* Removed Link to="/" back button */}
       <div className="text-center space-y-6 mt-12 w-full max-w-md">
         <h1 className="text-4xl font-bold text-green-600">Piano Practice</h1>
         

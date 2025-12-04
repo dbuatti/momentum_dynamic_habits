@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom'; // Keep Link for potential future use, but remove the back button instance
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Play, Pause, RotateCcw, Loader2 } from 'lucide-react';
 import { useHabitLog } from '@/hooks/useHabitLog';
-import { useJourneyData } from '@/hooks/useJourneyData'; // Import useJourneyData
+import { useJourneyData } from '@/hooks/useJourneyData';
 
 const MeditationLog = () => {
   const location = useLocation();
@@ -16,8 +16,8 @@ const MeditationLog = () => {
   const { mutate: logHabit, isPending } = useHabitLog();
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const { data: journeyData } = useJourneyData(); // Fetch journey data
-  const selectedMeditationSound = journeyData?.profile?.meditation_sound || 'Forest'; // Get selected sound
+  const { data: journeyData } = useJourneyData();
+  const selectedMeditationSound = journeyData?.profile?.meditation_sound || 'Forest';
 
   const playSound = useCallback((soundKey: string) => {
     if (soundKey === 'Silence') {
@@ -84,7 +84,7 @@ const MeditationLog = () => {
     oscillator.start();
     oscillator.stop(audioContext.currentTime + duration);
     console.log(`Meditation finished: Playing ${soundKey} sound.`);
-  }, []); // No dependencies needed for useCallback as soundKey is passed directly
+  }, []);
 
   useEffect(() => {
     if (isActive && timeRemaining > 0) {
@@ -94,13 +94,13 @@ const MeditationLog = () => {
     } else if (timeRemaining === 0 && isActive) {
       setIsActive(false);
       setIsFinished(true);
-      playSound(selectedMeditationSound); // Play the selected sound
+      playSound(selectedMeditationSound);
       if (intervalRef.current) clearInterval(intervalRef.current);
     }
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [isActive, timeRemaining, playSound, selectedMeditationSound]); // Add playSound and selectedMeditationSound to dependencies
+  }, [isActive, timeRemaining, playSound, selectedMeditationSound]);
 
   const handleToggle = () => {
     if (isFinished) return;
@@ -131,12 +131,8 @@ const MeditationLog = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-background">
-      <Link to="/" className="absolute top-4 left-4">
-        <Button variant="ghost" size="icon" disabled={isPending || isActive}>
-          <ArrowLeft className="w-6 h-6" />
-        </Button>
-      </Link>
+    <div className="flex flex-col items-center justify-center flex-grow"> {/* Adjusted styling */}
+      {/* Removed Link to="/" back button */}
       <div className="text-center space-y-8 w-full max-w-xs">
         <h1 className="text-4xl font-bold text-indigo-500">Meditation Timer</h1>
         
