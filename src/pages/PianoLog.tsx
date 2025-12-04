@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useLocation } from 'react-router-dom'; // Keep Link for potential future use, but remove the back button instance
+import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Music, Play, Pause, RotateCcw, Loader2 } from 'lucide-react';
+import { Music, Play, Pause, RotateCcw, Loader2 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { useHabitLog } from '@/hooks/useHabitLog';
@@ -71,8 +71,7 @@ const PianoLog = () => {
   };
 
   return (
-    <div className="flex flex-col items-center flex-grow"> {/* Adjusted styling */}
-      {/* Removed Link to="/" back button */}
+    <div className="flex flex-col items-center"> {/* Removed flex-grow */}
       <div className="text-center space-y-6 mt-12 w-full max-w-md">
         <h1 className="text-4xl font-bold text-green-600">Piano Practice</h1>
         

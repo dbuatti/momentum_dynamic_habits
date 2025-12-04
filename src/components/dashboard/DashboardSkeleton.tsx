@@ -1,7 +1,7 @@
 import { Skeleton } from "@/components/ui/skeleton";
 
 export const DashboardSkeleton = () => (
-  <div className="p-4 space-y-6 max-w-lg mx-auto w-full animate-pulse">
+  <div className="space-y-6 max-w-lg mx-auto w-full animate-pulse"> {/* Removed p-4 */}
     <div className="flex justify-between items-start">
       <div>
         <Skeleton className="h-8 w-48 mb-2" />

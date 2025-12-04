@@ -1,7 +1,7 @@
 import { Skeleton } from "@/components/ui/skeleton";
 
 export const SettingsSkeleton = () => (
-  <div className="min-h-screen bg-gray-50 dark:bg-black p-4 space-y-6 max-w-2xl mx-auto animate-pulse">
+  <div className="min-h-screen bg-gray-50 dark:bg-black space-y-6 max-w-2xl mx-auto animate-pulse"> {/* Removed p-4 */}
     <div className="flex items-center justify-between border-b pb-4">
       <Skeleton className="w-10 h-10 rounded-full" />
       <Skeleton className="h-6 w-48" />

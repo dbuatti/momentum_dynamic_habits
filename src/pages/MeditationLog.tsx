@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Link, useLocation } from 'react-router-dom'; // Keep Link for potential future use, but remove the back button instance
+import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Play, Pause, RotateCcw, Loader2 } from 'lucide-react';
+import { Play, Pause, RotateCcw, Loader2 } from 'lucide-react';
 import { useHabitLog } from '@/hooks/useHabitLog';
 import { useJourneyData } from '@/hooks/useJourneyData';
 
@@ -131,8 +131,7 @@ const MeditationLog = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center flex-grow"> {/* Adjusted styling */}
-      {/* Removed Link to="/" back button */}
+    <div className="flex flex-col items-center justify-center"> {/* Removed flex-grow */}
       <div className="text-center space-y-8 w-full max-w-xs">
         <h1 className="text-4xl font-bold text-indigo-500">Meditation Timer</h1>
         
