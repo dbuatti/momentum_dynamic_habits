@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { BarChart, Settings } from 'lucide-react';
+import { BarChart } from 'lucide-react'; // Removed Settings as it's not used here
 import { Link } from 'react-router-dom';
 
 interface FooterStatsProps {
@@ -13,8 +13,9 @@ export const FooterStats: React.FC<FooterStatsProps> = ({ streak, daysActive, to
   <div className="text-center space-y-6 py-8">
     <p className="text-muted-foreground italic">"You're not behind. You're exactly where you need to be."</p>
     <div className="flex justify-center space-x-4">
-      <Button variant="outline" className="rounded-full px-6 py-3 h-auto text-base font-semibold"><BarChart className="w-5 h-5 mr-2" /> History</Button>
-      {/* Removed Journey button as navigation is now handled by the sidebar */}
+      <Link to="/history"> {/* Link to the new History page */}
+        <Button variant="outline" className="rounded-full px-6 py-3 h-auto text-base font-semibold"><BarChart className="w-5 h-5 mr-2" /> History</Button>
+      </Link>
     </div>
     <div className="border-t w-1/2 mx-auto pt-6">
       <div className="flex justify-center space-x-8 text-muted-foreground">

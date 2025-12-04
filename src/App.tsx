@@ -12,6 +12,7 @@ import PianoLog from "./pages/PianoLog";
 import Journey from "./pages/Journey";
 import Login from "./pages/Login";
 import Settings from "./pages/Settings";
+import History from "./pages/History"; // Import the new History page
 import { SessionContextProvider, useSession } from "./contexts/SessionContext";
 import Layout from "@/components/layout/Layout";
 
@@ -61,6 +62,10 @@ const AppRoutes = () => {
       <Route
         path="/settings"
         element={<ProtectedRoute><Settings /></ProtectedRoute>}
+      />
+      <Route
+        path="/history" // Add the new history route
+        element={<ProtectedRoute><History /></ProtectedRoute>}
       />
       {/* Wrap NotFound with Layout for consistent styling */}
       <Route path="*" element={<Layout><NotFound /></Layout>} />
