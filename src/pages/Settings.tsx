@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import {
-  ArrowLeft, Calendar, Target, TrendingUp, Star, Flame, Shield, Crown, Zap, Trophy, Sparkles, Mountain, Award, Sun, Moon, Heart, Smile, CloudRain, Trees, Waves, Wind, Bird, Droplets, Volume2, Dumbbell, Timer, LogOut, AlertCircle, Loader2
+  Calendar, Target, TrendingUp, Star, Flame, Shield, Crown, Zap, Trophy, Sparkles, Mountain, Award, Sun, Moon, Heart, Smile, CloudRain, Trees, Waves, Wind, Bird, Droplets, Volume2, Dumbbell, Timer, LogOut, AlertCircle, Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSession } from '@/contexts/SessionContext';
@@ -176,189 +176,183 @@ const Settings = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-black">
-      <header className="sticky top-0 bg-gray-50/80 dark:bg-black/80 backdrop-blur-sm z-10 flex items-center p-4 border-b">
-        {/* Removed back button */}
-        <h1 className="text-xl font-bold text-center flex-grow">Your Journey</h1>
-        {/* Removed spacer */}
-      </header>
+    <div className="w-full max-w-2xl mx-auto space-y-6"> {/* Removed min-h-screen bg-gray-50 dark:bg-black and p-4 */}
+      {/* Removed custom header */}
 
-      <main className="p-4 space-y-6 max-w-2xl mx-auto">
-        {session?.user && (
-          <Card>
-            <CardContent className="p-4 flex items-center space-x-4">
-              <Avatar>
-                <AvatarImage src={session.user.user_metadata?.avatar_url} />
-                <AvatarFallback>{session.user.email?.charAt(0).toUpperCase()}</AvatarFallback>
-              </Avatar>
-              <div>
-                <p className="font-semibold">{session.user.email}</p>
-                <p className="text-sm text-muted-foreground">Logged in</p>
-              </div>
-              <Button variant="ghost" size="icon" onClick={handleSignOut} className="ml-auto"><LogOut className="w-5 h-5" /></Button>
-            </CardContent>
-          </Card>
-        )}
-
+      {session?.user && (
         <Card>
-          <CardContent className="p-4 flex items-start space-x-4">
-            <div className="w-1 h-1 bg-gray-400 rounded-full mt-2 shrink-0"></div>
+          <CardContent className="p-4 flex items-center space-x-4">
+            <Avatar>
+              <AvatarImage src={session.user.user_metadata?.avatar_url} />
+              <AvatarFallback>{session.user.email?.charAt(0).toUpperCase()}</AvatarFallback>
+            </Avatar>
             <div>
-              <h3 className="font-semibold">Adaptive Goals</h3>
-              <p className="text-sm text-muted-foreground">Your daily goals adjust automatically based on your performance. If you're struggling, we'll ease up. If you're crushing it, we'll challenge you more.</p>
+              <p className="font-semibold">{session.user.email}</p>
+              <p className="text-sm text-muted-foreground">Logged in</p>
+            </div>
+            <Button variant="ghost" size="icon" onClick={handleSignOut} className="ml-auto"><LogOut className="w-5 h-5" /></Button>
+          </CardContent>
+        </Card>
+      )}
+
+      <Card>
+        <CardContent className="p-4 flex items-start space-x-4">
+          <div className="w-1 h-1 bg-gray-400 rounded-full mt-2 shrink-0"></div>
+          <div>
+            <h3 className="font-semibold">Adaptive Goals</h3>
+            <p className="text-sm text-muted-foreground">Your daily goals adjust automatically based on your performance. If you're struggling, we'll ease up. If you're crushing it, we'll challenge you more.</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle className="text-lg">Overview</CardTitle></CardHeader>
+        <CardContent className="grid grid-cols-2 gap-x-8 gap-y-4">
+          <div><p className="text-3xl font-bold">{daysActive}</p><p className="text-sm text-muted-foreground">days active</p></div>
+          <div><p className="text-3xl font-bold">{totalJourneyDays}</p><p className="text-sm text-muted-foreground">total journey days</p></div>
+          <div><p className="text-xl font-semibold">{format(startDate, 'MMM d')}</p><p className="text-sm text-muted-foreground">started</p></div>
+          {meditationHabit && <div><p className="text-xl font-semibold">{format(new Date(meditationHabit.target_completion_date), 'MMM d, yyyy')}</p><p className="text-sm text-muted-foreground">target completion</p></div>}
+        </CardContent>
+      </Card>
+
+      {pushupHabit && (
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-lg">Push-Ups Journey</CardTitle>
+            <MomentumBadge level={pushupHabit.momentum_level} />
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-baseline space-x-2">
+              <span className="text-4xl font-bold">{pushupHabit.current_daily_goal}</span>
+              <span className="text-muted-foreground">/day</span>
+              <span className="flex-grow text-right text-sm text-muted-foreground">target: <span className="font-semibold text-foreground">{pushupHabit.long_term_goal}</span></span>
+            </div>
+            <Progress value={(pushupHabit.current_daily_goal / pushupHabit.long_term_goal) * 100} className="w-full h-2 my-3" />
+            <div className="flex justify-between text-sm text-muted-foreground">
+              <div className="flex items-center space-x-1.5"><Calendar className="w-4 h-4" /><span>{differenceInDays(new Date(pushupHabit.target_completion_date), new Date())} days to go</span></div>
+              <div className="flex items-center space-x-1.5"><Target className="w-4 h-4" /><span>{format(new Date(pushupHabit.target_completion_date), 'MMM yyyy')}</span></div>
             </div>
           </CardContent>
         </Card>
+      )}
 
+      {meditationHabit && (
         <Card>
-          <CardHeader><CardTitle className="text-lg">Overview</CardTitle></CardHeader>
-          <CardContent className="grid grid-cols-2 gap-x-8 gap-y-4">
-            <div><p className="text-3xl font-bold">{daysActive}</p><p className="text-sm text-muted-foreground">days active</p></div>
-            <div><p className="text-3xl font-bold">{totalJourneyDays}</p><p className="text-sm text-muted-foreground">total journey days</p></div>
-            <div><p className="text-xl font-semibold">{format(startDate, 'MMM d')}</p><p className="text-sm text-muted-foreground">started</p></div>
-            {meditationHabit && <div><p className="text-xl font-semibold">{format(new Date(meditationHabit.target_completion_date), 'MMM d, yyyy')}</p><p className="text-sm text-muted-foreground">target completion</p></div>}
-          </CardContent>
-        </Card>
-
-        {pushupHabit && (
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-lg">Push-Ups Journey</CardTitle>
-              <MomentumBadge level={pushupHabit.momentum_level} />
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-baseline space-x-2">
-                <span className="text-4xl font-bold">{pushupHabit.current_daily_goal}</span>
-                <span className="text-muted-foreground">/day</span>
-                <span className="flex-grow text-right text-sm text-muted-foreground">target: <span className="font-semibold text-foreground">{pushupHabit.long_term_goal}</span></span>
-              </div>
-              <Progress value={(pushupHabit.current_daily_goal / pushupHabit.long_term_goal) * 100} className="w-full h-2 my-3" />
-              <div className="flex justify-between text-sm text-muted-foreground">
-                <div className="flex items-center space-x-1.5"><Calendar className="w-4 h-4" /><span>{differenceInDays(new Date(pushupHabit.target_completion_date), new Date())} days to go</span></div>
-                <div className="flex items-center space-x-1.5"><Target className="w-4 h-4" /><span>{format(new Date(pushupHabit.target_completion_date), 'MMM yyyy')}</span></div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {meditationHabit && (
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-lg">Meditation Journey</CardTitle>
-              <MomentumBadge level={meditationHabit.momentum_level} />
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-baseline space-x-2">
-                <span className="text-4xl font-bold">{meditationHabit.current_daily_goal}</span>
-                <span className="text-muted-foreground">min/day</span>
-                <span className="flex-grow text-right text-sm text-muted-foreground">target: <span className="font-semibold text-foreground">{meditationHabit.long_term_goal} min</span></span>
-              </div>
-              <Progress value={(meditationHabit.current_daily_goal / meditationHabit.long_term_goal) * 100} className="w-full h-2 my-3" />
-              <div className="flex justify-between text-sm text-muted-foreground">
-                <div className="flex items-center space-x-1.5"><Calendar className="w-4 h-4" /><span>{differenceInDays(new Date(meditationHabit.target_completion_date), new Date())} days to go</span></div>
-                <div className="flex items-center space-x-1.5"><Target className="w-4 h-4" /><span>{format(new Date(meditationHabit.target_completion_date), 'MMM yyyy')}</span></div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        <Card>
-          <CardHeader><CardTitle className="text-lg">BADGES ({achievedBadgeIds.size}/{allBadges.length})</CardTitle></CardHeader>
-          <CardContent className="grid grid-cols-4 gap-4">
-            {allBadges.map(badge => (
-              <BadgeIcon key={badge.id} iconName={badge.icon_name} label={badge.name} achieved={achievedBadgeIds.has(badge.id)} />
-            ))}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader><CardTitle className="text-lg">Momentum Levels</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-start space-x-3"><div className="w-3 h-3 rounded-full bg-yellow-500 mt-1.5 shrink-0"></div><div><h4 className="font-semibold">Struggling</h4><p className="text-sm text-muted-foreground">Goals reduced, timeline may extend. Focus on showing up.</p></div></div>
-            <div className="flex items-start space-x-3"><div className="w-3 h-3 rounded-full bg-gray-400 mt-1.5 shrink-0"></div><div><h4 className="font-semibold">Building</h4><p className="text-sm text-muted-foreground">Steady progress. Goals increase gradually.</p></div></div>
-            <div className="flex items-start space-x-3"><div className="w-3 h-3 rounded-full bg-green-500 mt-1.5 shrink-0"></div><div><h4 className="font-semibold">Strong</h4><p className="text-sm text-muted-foreground">Great consistency! Goals increasing faster.</p></div></div>
-            <div className="flex items-start space-x-3"><div className="w-3 h-3 rounded-full bg-blue-500 mt-1.5 shrink-0"></div><div><h4 className="font-semibold">Crushing</h4><p className="text-sm text-muted-foreground">Ahead of schedule! Maximum progression.</p></div></div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center space-x-2"><Volume2 className="w-5 h-5 text-muted-foreground" /><CardTitle className="text-lg">Meditation Sound</CardTitle></CardHeader>
-          <CardContent className="grid grid-cols-4 gap-2">
-            {meditationSounds.map((sound) => (
-              <SoundOption
-                key={sound.key}
-                icon={sound.icon}
-                label={sound.label}
-                selected={selectedMeditationSound === sound.key}
-                onClick={() => handleSoundSelect(sound.key)}
-                disabled={isUpdatingProfile}
-              />
-            ))}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center space-x-2"><Calendar className="w-5 h-5 text-muted-foreground" /><CardTitle className="text-lg">Timezone</CardTitle></CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-lg">Meditation Journey</CardTitle>
+            <MomentumBadge level={meditationHabit.momentum_level} />
+          </CardHeader>
           <CardContent>
-            <Select value={selectedTimezone} onValueChange={handleTimezoneSelect} disabled={isUpdatingProfile}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select a timezone" />
-              </SelectTrigger>
-              <SelectContent>
-                {commonTimezones.map((tz) => (
-                  <SelectItem key={tz} value={tz}>
-                    {tz}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-sm text-muted-foreground mt-2">
-              Setting your timezone ensures that daily progress and "Best time" calculations are accurate for your local time.
-            </p>
+            <div className="flex items-baseline space-x-2">
+              <span className="text-4xl font-bold">{meditationHabit.current_daily_goal}</span>
+              <span className="text-muted-foreground">min/day</span>
+              <span className="flex-grow text-right text-sm text-muted-foreground">target: <span className="font-semibold text-foreground">{meditationHabit.long_term_goal} min</span></span>
+            </div>
+            <Progress value={(meditationHabit.current_daily_goal / meditationHabit.long_term_goal) * 100} className="w-full h-2 my-3" />
+            <div className="flex justify-between text-sm text-muted-foreground">
+              <div className="flex items-center space-x-1.5"><Calendar className="w-4 h-4" /><span>{differenceInDays(new Date(meditationHabit.target_completion_date), new Date())} days to go</span></div>
+              <div className="flex items-center space-x-1.5"><Target className="w-4 h-4" /><span>{format(new Date(meditationHabit.target_completion_date), 'MMM yyyy')}</span></div>
+            </div>
           </CardContent>
         </Card>
+      )}
 
-        <div className="text-center py-6">
-          <p className="text-sm font-semibold text-muted-foreground tracking-widest mb-4">LIFETIME PROGRESS</p>
-          <div className="flex justify-center items-baseline space-x-8">
-            {pushupHabit && <div className="flex items-center space-x-2"><Dumbbell className="w-5 h-5 text-orange-500" /><div><p className="text-2xl font-bold">{pushupHabit.lifetime_progress}</p><p className="text-xs text-muted-foreground">push-ups</p></div></div>}
-            {meditationHabit && <div className="flex items-center space-x-2"><Timer className="w-5 h-5 text-indigo-500" /><div><p className="text-2xl font-bold">{meditationHabit.lifetime_progress}m</p><p className="text-xs text-muted-foreground">meditation</p></div></div>}
-          </div>
+      <Card>
+        <CardHeader><CardTitle className="text-lg">BADGES ({achievedBadgeIds.size}/{allBadges.length})</CardTitle></CardHeader>
+        <CardContent className="grid grid-cols-4 gap-4">
+          {allBadges.map(badge => (
+            <BadgeIcon key={badge.id} iconName={badge.icon_name} label={badge.name} achieved={achievedBadgeIds.has(badge.id)} />
+          ))}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle className="text-lg">Momentum Levels</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-start space-x-3"><div className="w-3 h-3 rounded-full bg-yellow-500 mt-1.5 shrink-0"></div><div><h4 className="font-semibold">Struggling</h4><p className="text-sm text-muted-foreground">Goals reduced, timeline may extend. Focus on showing up.</p></div></div>
+          <div className="flex items-start space-x-3"><div className="w-3 h-3 rounded-full bg-gray-400 mt-1.5 shrink-0"></div><div><h4 className="font-semibold">Building</h4><p className="text-sm text-muted-foreground">Steady progress. Goals increase gradually.</p></div></div>
+          <div className="flex items-start space-x-3"><div className="w-3 h-3 rounded-full bg-green-500 mt-1.5 shrink-0"></div><div><h4 className="font-semibold">Strong</h4><p className="text-sm text-muted-foreground">Great consistency! Goals increasing faster.</p></div></div>
+          <div className="flex items-start space-x-3"><div className="w-3 h-3 rounded-full bg-blue-500 mt-1.5 shrink-0"></div><div><h4 className="font-semibold">Crushing</h4><p className="text-sm text-muted-foreground">Ahead of schedule! Maximum progression.</p></div></div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center space-x-2"><Volume2 className="w-5 h-5 text-muted-foreground" /><CardTitle className="text-lg">Meditation Sound</CardTitle></CardHeader>
+        <CardContent className="grid grid-cols-4 gap-2">
+          {meditationSounds.map((sound) => (
+            <SoundOption
+              key={sound.key}
+              icon={sound.icon}
+              label={sound.label}
+              selected={selectedMeditationSound === sound.key}
+              onClick={() => handleSoundSelect(sound.key)}
+              disabled={isUpdatingProfile}
+            />
+          ))}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center space-x-2"><Calendar className="w-5 h-5 text-muted-foreground" /><CardTitle className="text-lg">Timezone</CardTitle></CardHeader>
+        <CardContent>
+          <Select value={selectedTimezone} onValueChange={handleTimezoneSelect} disabled={isUpdatingProfile}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select a timezone" />
+            </SelectTrigger>
+            <SelectContent>
+              {commonTimezones.map((tz) => (
+                <SelectItem key={tz} value={tz}>
+                  {tz}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-sm text-muted-foreground mt-2">
+            Setting your timezone ensures that daily progress and "Best time" calculations are accurate for your local time.
+          </p>
+        </CardContent>
+      </Card>
+
+      <div className="text-center py-6">
+        <p className="text-sm font-semibold text-muted-foreground tracking-widest mb-4">LIFETIME PROGRESS</p>
+        <div className="flex justify-center items-baseline space-x-8">
+          {pushupHabit && <div className="flex items-center space-x-2"><Dumbbell className="w-5 h-5 text-orange-500" /><div><p className="text-2xl font-bold">{pushupHabit.lifetime_progress}</p><p className="text-xs text-muted-foreground">push-ups</p></div></div>}
+          {meditationHabit && <div className="flex items-center space-x-2"><Timer className="w-5 h-5 text-indigo-500" /><div><p className="text-2xl font-bold">{meditationHabit.lifetime_progress}m</p><p className="text-xs text-muted-foreground">meditation</p></div></div>}
         </div>
+      </div>
 
-        <Card>
-            <CardHeader>
-                <CardTitle className="text-lg text-destructive">Danger Zone</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <div className="flex justify-between items-center">
-                    <div>
-                        <p className="font-semibold">Reset All Progress</p>
-                        <p className="text-sm text-muted-foreground">This will permanently delete all your logged habits and badges. This action cannot be undone.</p>
-                    </div>
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="destructive" disabled={isResetting}>
-                                {isResetting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Reset'}
-                            </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    This action cannot be undone. This will permanently delete all your progress, including completed tasks, badges, and streaks.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => resetProgress()}>Continue</AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                </div>
-            </CardContent>
-        </Card>
-      </main>
+      <Card>
+          <CardHeader>
+              <CardTitle className="text-lg text-destructive">Danger Zone</CardTitle>
+          </CardHeader>
+          <CardContent>
+              <div className="flex justify-between items-center">
+                  <div>
+                      <p className="font-semibold">Reset All Progress</p>
+                      <p className="text-sm text-muted-foreground">This will permanently delete all your logged habits and badges. This action cannot be undone.</p>
+                  </div>
+                  <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                          <Button variant="destructive" disabled={isResetting}>
+                              {isResetting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Reset'}
+                          </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                          <AlertDialogHeader>
+                              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                  This action cannot be undone. This will permanently delete all your progress, including completed tasks, badges, and streaks.
+                              </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => resetProgress()}>Continue</AlertDialogAction>
+                          </AlertDialogFooter>
+                      </AlertDialogContent>
+                  </AlertDialog>
+              </div>
+          </CardContent>
+      </Card>
     </div>
   );
 };
