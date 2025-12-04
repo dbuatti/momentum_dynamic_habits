@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { Button } from '@/components/ui/button';
-import { Settings, Clock } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Clock } from 'lucide-react'; // Removed Settings import
+// Removed Link import as Settings button is removed
 
 interface HomeHeaderProps {
   dayCounter: number;
   lastActiveText: string;
-  firstName: string | null; // New prop for first name
+  firstName: string | null;
 }
 
 const getGreeting = (firstName: string | null) => {
@@ -44,13 +43,7 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({ dayCounter, lastActiveText, fir
           <span>Last: {lastActiveText}</span>
         </div>
       </div>
-      <div className="flex items-center">
-        <Link to="/settings">
-          <Button variant="ghost" size="icon" aria-label="Settings">
-            <Settings className="w-5 h-5 text-muted-foreground" />
-          </Button>
-        </Link>
-      </div>
+      {/* Removed Settings button as navigation is now handled by the sidebar */}
     </header>
   );
 };

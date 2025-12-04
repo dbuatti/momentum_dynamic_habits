@@ -178,13 +178,9 @@ const Settings = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-black">
       <header className="sticky top-0 bg-gray-50/80 dark:bg-black/80 backdrop-blur-sm z-10 flex items-center p-4 border-b">
-        <Link to="/">
-          <Button variant="ghost" size="icon">
-            <ArrowLeft className="w-6 h-6" />
-          </Button>
-        </Link>
+        {/* Removed back button */}
         <h1 className="text-xl font-bold text-center flex-grow">Your Journey</h1>
-        <div className="w-10"></div> {/* Spacer */}
+        {/* Removed spacer */}
       </header>
 
       <main className="p-4 space-y-6 max-w-2xl mx-auto">

@@ -66,12 +66,8 @@ const Journey = () => {
 
   return (
     <div className="min-h-screen flex flex-col p-4 bg-background">
-      <Link to="/" className="absolute top-4 left-4">
-        <Button variant="ghost" size="icon">
-          <ArrowLeft className="w-6 h-6" />
-        </Button>
-      </Link>
-      <div className="mt-12 w-full max-w-lg mx-auto space-y-8">
+      {/* Removed back button */}
+      <div className="mt-4 w-full max-w-lg mx-auto space-y-8"> {/* Adjusted mt-12 to mt-4 */}
         <h1 className="text-4xl font-bold text-foreground text-center">Your Growth Journey</h1>
         <p className="text-center text-muted-foreground">Started on {format(startDate, 'PPP')} • Day {daysActive}</p>
         
