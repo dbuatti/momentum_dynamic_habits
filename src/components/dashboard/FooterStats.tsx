@@ -31,7 +31,7 @@ export const FooterStats: React.FC<FooterStatsProps> = ({ streak, daysActive, to
         <p className="text-sm text-muted-foreground">TOTAL PUSH-UPS</p>
       </div>
       <div>
-        <p className="text-3xl font-bold">{totalMeditation}m</p>
+        <p className="text-3xl font-bold">{Math.round(totalMeditation)}m</p>
         <p className="text-sm text-muted-foreground">TOTAL MEDITATION</p>
       </div>
     </div>

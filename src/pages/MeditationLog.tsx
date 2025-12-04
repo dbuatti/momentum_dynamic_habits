@@ -255,7 +255,7 @@ const MeditationLog = () => {
           </Select>
         </div>
 
-        <div className="p-10 bg-card rounded-full w-56 h-56 flex items-center justify-center mx-auto shadow-xl border-4 border-indigo-300">
+        <div className="p-10 bg-card rounded-full w-56 h-56 flex items-center justify-center mx-auto shadow-xl border-4 border-habit-blue">
           <p className="text-6xl font-extrabold tracking-tighter">{formatTime(timeRemaining)}</p>
         </div>
 
