@@ -13,18 +13,22 @@ import Journey from "./pages/Journey";
 import Login from "./pages/Login";
 import Settings from "./pages/Settings";
 import { SessionContextProvider, useSession } from "./contexts/SessionContext";
+import Layout from "@/components/layout/Layout"; // Corrected import path
 
 const queryClient = new QueryClient();
 
 const AppRoutes = () => {
-  const { session } = useSession();
+  const { session, loading } = useSession();
 
   // A simple protected route component
   const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
+    if (loading) {
+      return null; // Or a loading spinner
+    }
     if (!session) {
       return <Navigate to="/login" replace />;
     }
-    return children;
+    return <Layout>{children}</Layout>; // Wrap children with Layout
   };
 
   return (
