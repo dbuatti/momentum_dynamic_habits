@@ -12,6 +12,7 @@ import { WeeklySummaryCard } from "@/components/dashboard/WeeklySummaryCard";
 import { PatternsCard } from "@/components/dashboard/PatternsCard";
 import { NextBadgeCard } from "@/components/dashboard/NextBadgeCard";
 import { FooterStats } from "@/components/dashboard/FooterStats";
+import { LevelProgressCard } from "@/components/dashboard/LevelProgressCard"; // Import new component
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { DashboardSkeleton } from "@/components/dashboard/DashboardSkeleton";
 import { Button } from "@/components/ui/button";
@@ -92,8 +93,7 @@ const Index = () => {
           </div>
 
           <DisciplineBanner />
-          {/* Removed DailyChallengeCard */}
-          {/* Removed EnergyDisplayCard */}
+          <LevelProgressCard currentXp={xp} currentLevel={level} /> {/* New Level Progress Card */}
           <TodaysProgressCard habits={habits} />
           <JourneyProgressCard daysActive={daysActive} totalJourneyDays={totalJourneyDays} daysToNextMonth={daysToNextMonth} />
 
