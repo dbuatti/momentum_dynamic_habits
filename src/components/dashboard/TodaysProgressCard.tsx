@@ -35,7 +35,7 @@ export const TodaysProgressCard: React.FC<TodaysProgressCardProps> = ({ habits }
                 <div className={cn("w-2 h-2 rounded-full", `bg-${progressColorClass}`)}></div>
                 <span>{habit.name}</span>
               </div>
-              <span className="font-medium text-foreground">{habit.dailyProgress}/{habit.dailyGoal}{habit.unit}</span>
+              <span className="font-medium text-foreground">{Math.round(habit.dailyProgress)}/{habit.dailyGoal} {habit.unit}</span>
             </div>
             <Progress value={progressValue} className={cn("h-2", `[&>div]:bg-${progressColorClass}`)} />
           </div>

@@ -109,7 +109,6 @@ const fetchDashboardData = async (userId: string) => {
     const dailyProgressMap = new Map<string, number>();
     (completedToday || []).forEach(task => {
         const key = task.original_source;
-        // Use duration_used for time-based habits, and count as 1 for count-based habits (or actual value if available)
         // For display, we want minutes if the habit unit is 'min', but duration_used is in seconds.
         const progress = initialHabitsMap.get(key)?.type === 'time' && initialHabitsMap.get(key)?.unit === 'min' ? (task.duration_used || 0) / 60 : 1; 
         dailyProgressMap.set(key, (dailyProgressMap.get(key) || 0) + progress);
@@ -131,7 +130,7 @@ const fetchDashboardData = async (userId: string) => {
             isComplete: dailyProgress >= dailyGoal,
             momentum: h.momentum_level,
             longTermGoal: h.long_term_goal,
-            lifetimeProgress: h.lifetime_progress,
+            lifetimeProgress: initialHabit?.type === 'time' && initialHabit?.unit === 'min' ? Math.round((h.lifetime_progress || 0) / 60) : (h.lifetime_progress || 0), // Convert lifetime progress to minutes for display
             unit: unit, // Use the fetched unit
             xpPerUnit: xpPerUnit,
             energyCostPerUnit: energyCostPerUnit,

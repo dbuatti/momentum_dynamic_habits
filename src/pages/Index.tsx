@@ -82,7 +82,7 @@ const Index = () => {
                   state={{ duration: habit.dailyGoal }} // habit.dailyGoal is now in minutes for time-based
                   icon={Icon ? <Icon className="w-5 h-5" /> : null}
                   title={habit.name}
-                  progress={`${habit.dailyProgress}/${habit.dailyGoal}${habit.unit}`} // Will now show X/Ymin
+                  progress={`${Math.round(habit.dailyProgress)}/${habit.dailyGoal} ${habit.unit}`} // Will now show X/Y min
                   variant={variant}
                   isComplete={habit.isComplete}
                 />
@@ -105,7 +105,7 @@ const Index = () => {
                 title={habit.name}
                 momentum={habit.momentum}
                 goal={`Goal: ${habit.dailyGoal} ${habit.unit} today`} // Will now show Goal: Y min today
-                progressText={`${habit.dailyProgress}/${habit.dailyGoal}${habit.unit}`} // Will now show X/Ymin
+                progressText={`${Math.round(habit.dailyProgress)}/${habit.dailyGoal} ${habit.unit}`} // Will now show X/Y min
                 progressValue={(habit.dailyProgress / habit.dailyGoal) * 100}
                 color={color}
                 isComplete={habit.isComplete}
