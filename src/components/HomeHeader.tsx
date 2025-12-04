@@ -6,6 +6,8 @@ interface HomeHeaderProps {
   dayCounter: number;
   lastActiveText: string;
   firstName: string | null;
+  xp: number; // New prop for XP
+  level: number; // New prop for Level
 }
 
 const getGreeting = (firstName: string | null) => {
@@ -18,7 +20,7 @@ const getGreeting = (firstName: string | null) => {
   return firstName ? `${greeting}, ${firstName}` : greeting;
 };
 
-const HomeHeader: React.FC<HomeHeaderProps> = ({ dayCounter, lastActiveText, firstName }) => {
+const HomeHeader: React.FC<HomeHeaderProps> = ({ dayCounter, lastActiveText, firstName, xp, level }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
@@ -31,7 +33,7 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({ dayCounter, lastActiveText, fir
   const formattedTime = format(currentTime, 'HH:mm');
 
   return (
-    <header className="flex justify-between items-start bg-background"> {/* Removed p-4 */}
+    <header className="flex justify-between items-start bg-background">
       <div>
         <h1 className="text-3xl font-bold text-foreground">{getGreeting(firstName)}</h1>
         <p className="text-md text-muted-foreground mt-1">
@@ -41,6 +43,10 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({ dayCounter, lastActiveText, fir
           <Clock className="w-4 h-4 mr-1.5" />
           <span>Last: {lastActiveText}</span>
         </div>
+      </div>
+      <div className="text-right">
+        <p className="text-sm font-semibold text-muted-foreground">LVL {level}</p>
+        <p className="text-lg font-bold text-foreground">{xp} XP</p>
       </div>
     </header>
   );

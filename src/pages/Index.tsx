@@ -58,7 +58,7 @@ const Index = () => {
     );
   }
 
-  const { daysActive, totalJourneyDays, daysToNextMonth, habits, weeklySummary, patterns, nextBadge, lastActiveText, firstName, reviewQuestion, tip, dailyChallengeTarget, tasksCompletedToday } = data;
+  const { daysActive, totalJourneyDays, daysToNextMonth, habits, weeklySummary, patterns, nextBadge, lastActiveText, firstName, reviewQuestion, tip, dailyChallengeTarget, tasksCompletedToday, xp, level } = data;
 
   const handleNextReviewQuestion = () => {
     refetch(); // Refetch dashboard data to get a new random question
@@ -67,7 +67,7 @@ const Index = () => {
   return (
     <div className="flex flex-col bg-background">
       <div className="max-w-lg mx-auto w-full"> {/* New wrapper div for consistent width and centering */}
-        <HomeHeader dayCounter={daysActive} lastActiveText={lastActiveText} firstName={firstName} />
+        <HomeHeader dayCounter={daysActive} lastActiveText={lastActiveText} firstName={firstName} xp={xp} level={level} />
         
         <main className="space-y-6"> {/* Removed p-4, now relies on Layout's padding */}
           
