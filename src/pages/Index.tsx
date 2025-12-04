@@ -131,7 +131,7 @@ const Index = () => {
           />
         </main>
         
-        <MadeWithDyad />
+        <MadeWithDyad /> {/* Moved inside the wrapper div */}
       </div>
     </div>
   );
