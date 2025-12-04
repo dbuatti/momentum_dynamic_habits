@@ -1,20 +1,24 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Play, Pause, RotateCcw, Loader2 } from 'lucide-react';
 import { useHabitLog } from '@/hooks/useHabitLog';
 import { useJourneyData } from '@/hooks/useJourneyData';
 
+interface TimerState {
+  timeRemaining: number;
+  isActive: boolean;
+  isFinished: boolean;
+  startTime: number | null; // Timestamp when timer was last started/resumed (Date.now())
+  durationInMinutes: number; // Initial duration for reset
+}
+
+const LOCAL_STORAGE_KEY = 'meditationTimerState';
+
 const MeditationLog = () => {
   const location = useLocation();
-  const durationInMinutes = location.state?.duration || 1; // Duration is now in minutes
-  const initialTime = durationInMinutes * 60; // Convert to seconds for timer
-
-  const [timeRemaining, setTimeRemaining] = useState(initialTime);
-  const [isActive, setIsActive] = useState(false);
-  const [isFinished, setIsFinished] = useState(false);
-  const { mutate: logHabit, isPending } = useHabitLog();
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const initialDurationInMinutes = location.state?.duration || 1;
+  const initialTimeInSeconds = initialDurationInMinutes * 60;
 
   const { data: journeyData } = useJourneyData();
   const selectedMeditationSound = journeyData?.profile?.meditation_sound || 'Forest';
@@ -84,43 +88,132 @@ const MeditationLog = () => {
     oscillator.start();
     oscillator.stop(audioContext.currentTime + duration);
     console.log(`Meditation finished: Playing ${soundKey} sound.`);
-  }, []);
+  }, []); // No dependencies needed here as selectedMeditationSound is used in the effect below
 
+  // Initialize state from localStorage or defaults
+  const getInitialState = useCallback((): TimerState => {
+    if (typeof window !== 'undefined') {
+      const savedState = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (savedState) {
+        const parsedState: TimerState = JSON.parse(savedState);
+        // If the saved state is for a different initial duration, reset it
+        if (parsedState.durationInMinutes !== initialDurationInMinutes) {
+          localStorage.removeItem(LOCAL_STORAGE_KEY);
+          return {
+            timeRemaining: initialTimeInSeconds,
+            isActive: false,
+            isFinished: false,
+            startTime: null,
+            durationInMinutes: initialDurationInMinutes,
+          };
+        }
+
+        // Recalculate time if timer was active when user left
+        if (parsedState.isActive && parsedState.startTime) {
+          const elapsedTime = Math.floor((Date.now() - parsedState.startTime) / 1000);
+          const newTimeRemaining = parsedState.timeRemaining - elapsedTime;
+          if (newTimeRemaining <= 0) {
+            playSound(selectedMeditationSound); // Play sound if it finished in background
+            return { ...parsedState, timeRemaining: 0, isActive: false, isFinished: true, startTime: null };
+          }
+          return { ...parsedState, timeRemaining: newTimeRemaining, startTime: Date.now() }; // Update startTime to now for accurate resume
+        }
+        return parsedState;
+      }
+    }
+    return {
+      timeRemaining: initialTimeInSeconds,
+      isActive: false,
+      isFinished: false,
+      startTime: null,
+      durationInMinutes: initialDurationInMinutes,
+    };
+  }, [initialDurationInMinutes, initialTimeInSeconds, playSound, selectedMeditationSound]);
+
+  const [timerState, setTimerState] = useState<TimerState>(getInitialState);
+  const { timeRemaining, isActive, isFinished, durationInMinutes } = timerState;
+
+  const { mutate: logHabit, isPending } = useHabitLog();
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(timerState));
+    }
+  }, [timerState]);
+
+  // Timer logic
   useEffect(() => {
     if (isActive && timeRemaining > 0) {
       intervalRef.current = setInterval(() => {
-        setTimeRemaining((prevTime) => prevTime - 1);
+        setTimerState(prevState => {
+          const newTime = prevState.timeRemaining - 1;
+          if (newTime <= 0) {
+            if (intervalRef.current) clearInterval(intervalRef.current);
+            playSound(selectedMeditationSound);
+            return { ...prevState, timeRemaining: 0, isActive: false, isFinished: true, startTime: null };
+          }
+          return { ...prevState, timeRemaining: newTime };
+        });
       }, 1000);
     } else if (timeRemaining === 0 && isActive) {
-      setIsActive(false);
-      setIsFinished(true);
-      playSound(selectedMeditationSound);
       if (intervalRef.current) clearInterval(intervalRef.current);
+      setTimerState(prevState => ({ ...prevState, isActive: false, isFinished: true, startTime: null }));
+      playSound(selectedMeditationSound);
     }
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, [isActive, timeRemaining, playSound, selectedMeditationSound]);
 
+  // Handle visibility changes
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // Recalculate time when tab becomes active
+        setTimerState(getInitialState()); // Re-initialize to recalculate based on current time
+      } else {
+        // Clear interval when tab is hidden to prevent throttling issues
+        if (intervalRef.current) clearInterval(intervalRef.current);
+      }
+    };
+
+    window.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      window.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [getInitialState]);
+
   const handleToggle = () => {
     if (isFinished) return;
-    setIsActive(!isActive);
+    setTimerState(prevState => ({
+      ...prevState,
+      isActive: !prevState.isActive,
+      startTime: !prevState.isActive ? Date.now() : null, // Record start time when activating
+    }));
   };
 
   const handleReset = () => {
-    setIsActive(false);
-    setIsFinished(false);
-    setTimeRemaining(initialTime);
     if (intervalRef.current) clearInterval(intervalRef.current);
+    setTimerState({
+      timeRemaining: initialTimeInSeconds,
+      isActive: false,
+      isFinished: false,
+      startTime: null,
+      durationInMinutes: initialDurationInMinutes,
+    });
+    localStorage.removeItem(LOCAL_STORAGE_KEY); // Clear from localStorage
   };
 
   const handleLog = () => {
     if (durationInMinutes > 0) {
       logHabit({
         habitKey: 'meditation',
-        value: durationInMinutes, // Value is in minutes
+        value: durationInMinutes,
         taskName: 'Meditation',
       });
+      localStorage.removeItem(LOCAL_STORAGE_KEY); // Clear from localStorage after logging
     }
   };
 
@@ -131,7 +224,7 @@ const MeditationLog = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center"> {/* Removed flex-grow */}
+    <div className="flex flex-col items-center justify-center">
       <div className="text-center space-y-8 w-full max-w-xs">
         <h1 className="text-4xl font-bold text-habit-blue">Meditation Timer</h1>
         
