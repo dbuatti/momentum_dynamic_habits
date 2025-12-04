@@ -11,9 +11,12 @@ const Login = () => {
     return <Navigate to="/" />;
   }
 
+  // Dynamically determine the redirect URL based on the current origin
+  const redirectToUrl = window.location.origin;
+
   return (
-    <div className="bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 min-h-screen flex items-center justify-center"> {/* Kept min-h-screen, flex, items-center, justify-center for full page centering */}
-      <div className="max-w-md w-full space-y-8"> {/* This div already has max-w-md w-full space-y-8 */}
+    <div className="bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 min-h-screen flex items-center justify-center">
+      <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
             Adaptive Growth Coach
@@ -25,6 +28,7 @@ const Login = () => {
             appearance={{ theme: ThemeSupa }}
             providers={['google']}
             theme="light"
+            redirectTo={redirectToUrl} // Explicitly set redirectTo
           />
         </div>
       </div>
