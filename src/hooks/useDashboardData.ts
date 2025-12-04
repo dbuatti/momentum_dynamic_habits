@@ -6,7 +6,7 @@ import { initialHabits } from '@/lib/habit-data'; // Import initialHabits
 
 const fetchDashboardData = async (userId: string) => {
     // 1. Fetch raw data from Supabase
-    const profilePromise = supabase.from('profiles').select('journey_start_date, daily_streak, last_active_at, first_name, last_name, timezone, daily_challenge_target, tasks_completed_today, xp, level').eq('id', userId).single();
+    const profilePromise = supabase.from('profiles').select('journey_start_date, daily_streak, last_active_at, first_name, last_name, timezone, daily_challenge_target, tasks_completed_today, xp, level, energy, is_in_regen_pod, regen_pod_start_time, last_energy_regen_at').eq('id', userId).single();
     const habitsPromise = supabase.from('user_habits').select('*').eq('user_id', userId);
     const allBadgesPromise = supabase.from('badges').select('id, name, icon_name, requirement_type, requirement_value, habit_key');
     const achievedBadgesPromise = supabase.from('user_badges').select('badge_id').eq('user_id', userId);
@@ -213,6 +213,10 @@ const fetchDashboardData = async (userId: string) => {
         tasksCompletedToday: profile?.tasks_completed_today || 0,
         xp: profile?.xp || 0, // Include XP
         level: profile?.level || 1, // Include Level
+        energy: profile?.energy || 0,
+        isInRegenPod: profile?.is_in_regen_pod || false,
+        regenPodStartTime: profile?.regen_pod_start_time ? new Date(profile.regen_pod_start_time) : null,
+        lastEnergyRegenAt: profile?.last_energy_regen_at ? new Date(profile.last_energy_regen_at) : null,
     };
 };
 
