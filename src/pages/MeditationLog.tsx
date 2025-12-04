@@ -88,7 +88,7 @@ const MeditationLog = () => {
     oscillator.start();
     oscillator.stop(audioContext.currentTime + duration);
     console.log(`Meditation finished: Playing ${soundKey} sound.`);
-  }, []); // No dependencies needed here as selectedMeditationSound is used in the effect below
+  }, [selectedMeditationSound]); // selectedMeditationSound is a dependency
 
   // Initialize state from localStorage or defaults
   const getInitialState = useCallback((): TimerState => {
