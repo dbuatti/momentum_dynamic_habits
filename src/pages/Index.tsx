@@ -64,73 +64,75 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <HomeHeader dayCounter={daysActive} lastActiveText={lastActiveText} firstName={firstName} />
-      
-      <main className="flex-grow p-4 space-y-6 max-w-lg mx-auto w-full">
+    <div className="flex flex-col bg-background">
+      <div className="max-w-lg mx-auto w-full"> {/* New wrapper div for consistent width and centering */}
+        <HomeHeader dayCounter={daysActive} lastActiveText={lastActiveText} firstName={firstName} />
         
-        <div className="grid grid-cols-2 gap-3">
+        <main className="space-y-6"> {/* Removed p-4, now relies on Layout's padding */}
+          
+          <div className="grid grid-cols-2 gap-3">
+            {habits.map(habit => {
+              const Icon = habitIconMap[habit.key];
+              const variant = quickLogVariantMap[habit.key];
+              return (
+                <QuickLogButton 
+                  key={habit.key}
+                  route={`/log/${habit.key}`}
+                  state={{ duration: habit.dailyGoal }}
+                  icon={Icon ? <Icon className="w-5 h-5" /> : null}
+                  title={habit.name}
+                  progress={`${habit.dailyProgress}/${habit.dailyGoal}${habit.unit}`}
+                  variant={variant}
+                  isComplete={habit.isComplete}
+                />
+              );
+            })}
+          </div>
+
+          <DisciplineBanner />
+          <TodaysProgressCard habits={habits} />
+          <JourneyProgressCard daysActive={daysActive} totalJourneyDays={totalJourneyDays} daysToNextMonth={daysToNextMonth} />
+
           {habits.map(habit => {
             const Icon = habitIconMap[habit.key];
-            const variant = quickLogVariantMap[habit.key];
+            const color = habitDetailColorMap[habit.key];
             return (
-              <QuickLogButton 
+              <HabitDetailCard 
                 key={habit.key}
-                route={`/log/${habit.key}`}
-                state={{ duration: habit.dailyGoal }}
                 icon={Icon ? <Icon className="w-5 h-5" /> : null}
                 title={habit.name}
-                progress={`${habit.dailyProgress}/${habit.dailyGoal}${habit.unit}`}
-                variant={variant}
+                momentum={habit.momentum}
+                goal={`Goal: ${habit.dailyGoal} ${habit.unit} today`}
+                progressText={`${habit.dailyProgress}/${habit.dailyGoal}${habit.unit}`}
+                progressValue={(habit.dailyProgress / habit.dailyGoal) * 100}
+                color={color}
                 isComplete={habit.isComplete}
+                daysCompletedLast7Days={habit.daysCompletedLast7Days}
               />
             );
           })}
-        </div>
 
-        <DisciplineBanner />
-        <TodaysProgressCard habits={habits} />
-        <JourneyProgressCard daysActive={daysActive} totalJourneyDays={totalJourneyDays} daysToNextMonth={daysToNextMonth} />
-
-        {habits.map(habit => {
-          const Icon = habitIconMap[habit.key];
-          const color = habitDetailColorMap[habit.key];
-          return (
-            <HabitDetailCard 
-              key={habit.key}
-              icon={Icon ? <Icon className="w-5 h-5" /> : null}
-              title={habit.name}
-              momentum={habit.momentum}
-              goal={`Goal: ${habit.dailyGoal} ${habit.unit} today`}
-              progressText={`${habit.dailyProgress}/${habit.dailyGoal}${habit.unit}`}
-              progressValue={(habit.dailyProgress / habit.dailyGoal) * 100}
-              color={color}
-              isComplete={habit.isComplete}
-              daysCompletedLast7Days={habit.daysCompletedLast7Days}
+          {reviewQuestion && (
+            <QuickReviewCard 
+              question={reviewQuestion.question} 
+              answer={reviewQuestion.answer} 
+              onNext={handleNextReviewQuestion} 
             />
-          );
-        })}
-
-        {reviewQuestion && (
-          <QuickReviewCard 
-            question={reviewQuestion.question} 
-            answer={reviewQuestion.answer} 
-            onNext={handleNextReviewQuestion} 
+          )}
+          {tip && <TipCard tip={tip} />}
+          <WeeklySummaryCard summary={weeklySummary} />
+          <PatternsCard patterns={patterns} />
+          <NextBadgeCard badge={nextBadge} />
+          <FooterStats 
+            streak={patterns.streak} 
+            daysActive={daysActive}
+            totalPushups={habits.find(h => h.key === 'pushups')?.lifetimeProgress || 0}
+            totalMeditation={habits.find(h => h.key === 'meditation')?.lifetimeProgress || 0}
           />
-        )}
-        {tip && <TipCard tip={tip} />}
-        <WeeklySummaryCard summary={weeklySummary} />
-        <PatternsCard patterns={patterns} />
-        <NextBadgeCard badge={nextBadge} />
-        <FooterStats 
-          streak={patterns.streak} 
-          daysActive={daysActive}
-          totalPushups={habits.find(h => h.key === 'pushups')?.lifetimeProgress || 0}
-          totalMeditation={habits.find(h => h.key === 'meditation')?.lifetimeProgress || 0}
-        />
-      </main>
-      
-      <MadeWithDyad />
+        </main>
+        
+        <MadeWithDyad />
+      </div>
     </div>
   );
 };
