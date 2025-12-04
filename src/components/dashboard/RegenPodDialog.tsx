@@ -44,18 +44,18 @@ export const RegenPodDialog: React.FC<RegenPodDialogProps> = ({
     energy: number,
     inPod: boolean,
     podStartTime: Date | null,
-    lastRegenTime: Date | null
+    lastRegenTime: Date | null,
+    currentTime: Date = new Date()
   ) => {
     let calculatedEnergy = energy;
-    let lastCalcTime = lastRegenTime || new Date(); // Use lastRegenTime or now if not set
+    let lastCalcTime = lastRegenTime || currentTime;
 
     if (inPod && podStartTime) {
       // If in pod, regen starts from pod start time
       lastCalcTime = podStartTime;
     }
 
-    const now = new Date();
-    const minutesPassed = Math.floor((now.getTime() - lastCalcTime.getTime()) / (1000 * 60));
+    const minutesPassed = Math.floor((currentTime.getTime() - lastCalcTime.getTime()) / (1000 * 60));
     
     if (minutesPassed > 0) {
       const rate = inPod ? ENERGY_REGEN_RATE_PER_MINUTE * REGEN_POD_RATE_MULTIPLIER : ENERGY_REGEN_RATE_PER_MINUTE;
@@ -64,43 +64,37 @@ export const RegenPodDialog: React.FC<RegenPodDialogProps> = ({
     return calculatedEnergy;
   }, [maxEnergy]);
 
-  // Effect to update energy when dialog opens or relevant props change
+  // Effect to initialize/update energy when dialog opens or relevant props change
   useEffect(() => {
+    const now = new Date();
     const newEnergy = calculateEnergy(
       initialEnergy,
       initialIsInRegenPod,
       initialRegenPodStartTime,
-      initialLastEnergyRegenAt
+      initialLastEnergyRegenAt,
+      now
     );
     setCurrentEnergy(newEnergy);
     setIsInRegenPod(initialIsInRegenPod);
     setRegenPodStartTime(initialRegenPodStartTime);
-    setLastEnergyRegenAt(initialLastEnergyRegenAt);
+    setLastEnergyRegenAt(initialLastEnergyRegenAt || now); // Ensure lastEnergyRegenAt is set
   }, [initialEnergy, initialIsInRegenPod, initialRegenPodStartTime, initialLastEnergyRegenAt, calculateEnergy]);
 
-  // Timer for real-time energy regeneration display
+  // Timer for real-time energy regeneration display within the dialog
   useEffect(() => {
     if (currentEnergy < maxEnergy) {
       intervalRef.current = setInterval(() => {
         setCurrentEnergy(prevEnergy => {
           const now = new Date();
-          const lastCalcTime = lastEnergyRegenAt || now; // Use lastEnergyRegenAt for continuous regen
-          const minutesPassed = Math.floor((now.getTime() - lastCalcTime.getTime()) / (1000 * 60));
+          const rate = isInRegenPod ? ENERGY_REGEN_RATE_PER_MINUTE * REGEN_POD_RATE_MULTIPLIER : ENERGY_REGEN_RATE_PER_MINUTE;
           
-          if (minutesPassed > 0) {
-            const rate = isInRegenPod ? ENERGY_REGEN_RATE_PER_MINUTE * REGEN_POD_RATE_MULTIPLIER : ENERGY_REGEN_RATE_PER_MINUTE;
-            const newEnergy = Math.min(maxEnergy, prevEnergy + (minutesPassed * rate));
-            
-            // Update lastEnergyRegenAt in state to reflect the new calculation point
-            setLastEnergyRegenAt(now); 
-            
-            // Also update in DB if significant regen happened
-            if (newEnergy !== prevEnergy) {
-                updateProfile({ energy: newEnergy, last_energy_regen_at: now.toISOString() });
-            }
-            return newEnergy;
-          }
-          return prevEnergy;
+          // Calculate energy based on the last known regen time (from state)
+          const newEnergy = calculateEnergy(prevEnergy, isInRegenPod, regenPodStartTime, lastEnergyRegenAt, now);
+          
+          // Update lastEnergyRegenAt in local state to reflect the new calculation point
+          setLastEnergyRegenAt(now); 
+          
+          return newEnergy;
         });
       }, 1000 * 60); // Check every minute
     } else {
@@ -110,22 +104,24 @@ export const RegenPodDialog: React.FC<RegenPodDialogProps> = ({
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [currentEnergy, maxEnergy, isInRegenPod, lastEnergyRegenAt, updateProfile]);
+  }, [currentEnergy, maxEnergy, isInRegenPod, regenPodStartTime, lastEnergyRegenAt, calculateEnergy]);
 
 
   const handleEnterRegenPod = () => {
     const now = new Date();
+    const finalEnergy = calculateEnergy(currentEnergy, false, null, lastEnergyRegenAt, now); // Calculate energy up to now before entering
     const updates = {
       is_in_regen_pod: true,
       regen_pod_start_time: now.toISOString(),
-      last_energy_regen_at: now.toISOString(), // Reset regen timer
-      energy: currentEnergy, // Save current energy before entering
+      last_energy_regen_at: now.toISOString(), // Reset regen timer to now
+      energy: finalEnergy, // Save final calculated energy before entering
     };
     updateProfile(updates, {
       onSuccess: () => {
         setIsInRegenPod(true);
         setRegenPodStartTime(now);
         setLastEnergyRegenAt(now);
+        setCurrentEnergy(finalEnergy); // Update local state to match DB
         showSuccess('Entered Regen Pod! Energy will regenerate faster.');
       },
       onError: (error) => showError(`Failed to enter Regen Pod: ${error.message}`),
@@ -134,7 +130,7 @@ export const RegenPodDialog: React.FC<RegenPodDialogProps> = ({
 
   const handleExitRegenPod = () => {
     const now = new Date();
-    const finalEnergy = calculateEnergy(currentEnergy, isInRegenPod, regenPodStartTime, lastEnergyRegenAt);
+    const finalEnergy = calculateEnergy(currentEnergy, isInRegenPod, regenPodStartTime, lastEnergyRegenAt, now); // Calculate energy up to now before exiting
     const updates = {
       is_in_regen_pod: false,
       regen_pod_start_time: null,
@@ -146,7 +142,7 @@ export const RegenPodDialog: React.FC<RegenPodDialogProps> = ({
         setIsInRegenPod(false);
         setRegenPodStartTime(null);
         setLastEnergyRegenAt(now);
-        setCurrentEnergy(finalEnergy);
+        setCurrentEnergy(finalEnergy); // Update local state to match DB
         showSuccess('Exited Regen Pod. Energy regeneration rate is now normal.');
       },
       onError: (error) => showError(`Failed to exit Regen Pod: ${error.message}`),
