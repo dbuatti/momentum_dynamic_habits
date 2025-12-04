@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Home, Dumbbell, Wind, BookOpen, Music, Trophy, Settings, Menu, LogOut } from 'lucide-react';
+import { Home, Dumbbell, Wind, BookOpen, Music, Trophy, Settings, Menu, LogOut, BarChart } from 'lucide-react'; // Added BarChart for History
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useSession } from '@/contexts/SessionContext';
@@ -50,6 +50,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick }) => {
   const navItems = [
     { to: "/", icon: Home, label: "Home" },
     { to: "/journey", icon: Trophy, label: "Journey" },
+    { to: "/history", icon: BarChart, label: "History" }, // Added History link
     { to: "/log/pushups", icon: Dumbbell, label: "Push-ups" },
     { to: "/log/meditation", icon: Wind, label: "Meditation" },
     { to: "/log/study", icon: BookOpen, label: "Study" },
