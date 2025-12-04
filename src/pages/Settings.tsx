@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from '@/components/ui/input'; // Import Input component
 import { Label } from '@/components/ui/label'; // Import Label component
+import { PageHeader } from '@/components/layout/PageHeader'; // Import PageHeader
 
 const iconMap: { [key: string]: React.ElementType } = { Star, Flame, Shield, Target, Crown, Zap, Trophy, Sparkles, Mountain, Award, Sun, Moon, Heart };
 
@@ -214,7 +215,7 @@ const Settings = () => {
 
   return (
     <div className="w-full max-w-2xl mx-auto space-y-6"> {/* Removed min-h-screen bg-gray-50 dark:bg-black and p-4 */}
-      {/* Removed custom header */}
+      <PageHeader title="Settings" backLink="/" /> {/* Using the new PageHeader */}
 
       {session?.user && (
         <Card>

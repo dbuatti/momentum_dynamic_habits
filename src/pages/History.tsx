@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { PageHeader } from '@/components/layout/PageHeader'; // Import PageHeader
 
 const habitIconMap: { [key: string]: React.ElementType } = {
   pushups: Dumbbell,
@@ -59,15 +60,7 @@ const History = () => {
 
   return (
     <div className="w-full max-w-lg mx-auto space-y-8">
-      <div className="flex items-center justify-between">
-        <Link to="/">
-          <Button variant="ghost" size="icon">
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-        </Link>
-        <h1 className="text-3xl font-bold text-foreground">Activity History</h1>
-        <div className="w-10"></div> {/* Placeholder for alignment */}
-      </div>
+      <PageHeader title="Activity History" backLink="/" /> {/* Using the new PageHeader */}
 
       {completedTasks && completedTasks.length === 0 ? (
         <div className="bg-card rounded-2xl p-6 shadow-sm text-center">
