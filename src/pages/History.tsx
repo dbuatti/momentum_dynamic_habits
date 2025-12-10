@@ -61,7 +61,7 @@ const History = () => {
   }, {} as Record<string, typeof completedTasks>);
 
   return (
-    <div className="w-full max-w-lg mx-auto space-y-8">
+    <div className="w-full max-w-lg mx-auto space-y-8"> {/* Removed p-4 */}
       <PageHeader title="Activity History" backLink="/" />
 
       {completedTasks && completedTasks.length === 0 ? (

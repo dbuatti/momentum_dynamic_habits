@@ -72,7 +72,7 @@ const Index = () => {
   };
 
   return (
-    <div className="flex flex-col bg-background">
+    <div className="flex flex-col"> {/* Removed bg-background */}
       <div className="max-w-lg mx-auto w-full">
         <HomeHeader 
           dayCounter={daysActive} 
