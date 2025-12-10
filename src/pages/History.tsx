@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Dumbbell, Wind, BookOpen, Music, AlertCircle, Loader2, Zap, Home, Code, ClipboardList } from 'lucide-react';
+import { ArrowLeft, Dumbbell, Wind, BookOpen, Music, AlertCircle, Loader2, Zap, Home, Code, ClipboardList, Calendar, Filter } from 'lucide-react';
 import { useCompletedTasks } from '@/hooks/useCompletedTasks';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, isSameDay } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 import { PageHeader } from '@/components/layout/PageHeader';
 import HabitHeatmap from '@/components/dashboard/HabitHeatmap';
 import { useHabitHeatmapData } from '@/hooks/useHabitHeatmapData';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const habitIconMap: { [key: string]: React.ElementType } = {
   pushups: Dumbbell,
@@ -24,6 +25,25 @@ const habitIconMap: { [key: string]: React.ElementType } = {
 const History = () => {
   const { data: completedTasks, isLoading, isError } = useCompletedTasks();
   const { data: heatmapData, isLoading: isHeatmapLoading } = useHabitHeatmapData();
+  const [filter, setFilter] = useState<string>('all');
+  
+  // Get unique habit types for filter
+  const habitTypes = [...new Set(completedTasks?.map(task => task.original_source) || [])];
+
+  // Filter tasks based on selected filter
+  const filteredTasks = filter === 'all' 
+    ? completedTasks 
+    : completedTasks?.filter(task => task.original_source === filter);
+
+  // Group tasks by date
+  const groupedTasks = filteredTasks?.reduce((acc, task) => {
+    const date = format(parseISO(task.completed_at), 'PPP'); // e.g., "Oct 27, 2023"
+    if (!acc[date]) {
+      acc[date] = [];
+    }
+    acc[date].push(task);
+    return acc;
+  }, {} as Record<string, typeof completedTasks>);
 
   if (isLoading || isHeatmapLoading) {
     return (
@@ -51,26 +71,40 @@ const History = () => {
     );
   }
 
-  // Group tasks by date
-  const groupedTasks = completedTasks?.reduce((acc, task) => {
-    const date = format(parseISO(task.completed_at), 'PPP'); // e.g., "Oct 27, 2023"
-    if (!acc[date]) {
-      acc[date] = [];
-    }
-    acc[date].push(task);
-    return acc;
-  }, {} as Record<string, typeof completedTasks>);
-
   return (
     <div className="w-full max-w-lg mx-auto px-4 py-6">
       <PageHeader title="Activity History" backLink="/" />
+      
+      {/* Filter Controls */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center space-x-2">
+          <Filter className="w-4 h-4 text-muted-foreground" />
+          <Select value={filter} onValueChange={setFilter}>
+            <SelectTrigger className="w-32 h-9 text-sm">
+              <SelectValue placeholder="Filter" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Habits</SelectItem>
+              {habitTypes.map(type => (
+                <SelectItem key={type} value={type}>
+                  {type.charAt(0).toUpperCase() + type.slice(1)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        
+        <div className="text-sm text-muted-foreground">
+          {filteredTasks?.length || 0} activities
+        </div>
+      </div>
       
       {/* Habit Consistency Heatmap */}
       <div className="mb-6">
         <HabitHeatmap completions={heatmapData || []} habitName="All Habits" />
       </div>
       
-      {completedTasks && completedTasks.length === 0 ? (
+      {filteredTasks && filteredTasks.length === 0 ? (
         <div className="bg-card rounded-2xl p-8 shadow-sm text-center space-y-4">
           <ClipboardList className="w-16 h-16 text-muted-foreground mx-auto" />
           <p className="text-xl font-semibold text-foreground">
@@ -86,7 +120,10 @@ const History = () => {
           {Object.entries(groupedTasks || {}).map(([date, tasks]) => (
             <Card key={date} className="rounded-2xl shadow-sm border-0">
               <CardHeader className="p-5 pb-3">
-                <CardTitle className="text-xl font-semibold">{date}</CardTitle>
+                <CardTitle className="text-xl font-semibold flex items-center">
+                  <Calendar className="w-5 h-5 mr-2 text-muted-foreground" />
+                  {date}
+                </CardTitle>
               </CardHeader>
               <CardContent className="p-5 pt-0">
                 <div className="space-y-4">

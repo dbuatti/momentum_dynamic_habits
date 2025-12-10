@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Target, TrendingUp, Star, Flame, Shield, Crown, Zap, Trophy, Sparkles, Mountain, Award, Sun, Moon, Heart, Dumbbell, Timer, LogOut, AlertCircle, Loader2, Clock } from 'lucide-react';
+import { Calendar, Target, TrendingUp, Star, Flame, Shield, Crown, Zap, Trophy, Sparkles, Mountain, Award, Sun, Moon, Heart, Dumbbell, Timer, LogOut, AlertCircle, Loader2, Clock, User, Palette } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSession } from '@/contexts/SessionContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -53,17 +53,25 @@ const BadgeIcon = ({
     <div className="flex flex-col items-center space-y-2 text-center">
       <div className={cn(
         "w-16 h-16 rounded-full flex items-center justify-center",
-        achieved ? 'bg-yellow-100 border-2 border-yellow-300' : 'bg-gray-100 dark:bg-gray-800'
+        achieved 
+          ? 'bg-yellow-100 border-2 border-yellow-300' 
+          : 'bg-gray-100 dark:bg-gray-800'
       )}>
         <Icon className={cn(
           "w-8 h-8",
-          achieved ? 'text-yellow-500' : 'text-gray-400 dark:text-gray-500'
+          achieved 
+            ? 'text-yellow-500' 
+            : 'text-gray-400 dark:text-gray-500'
         )} />
       </div>
       <p className={cn(
         "text-xs font-medium",
-        achieved ? 'text-foreground' : 'text-muted-foreground'
-      )}>{label}</p>
+        achieved 
+          ? 'text-foreground' 
+          : 'text-muted-foreground'
+      )}>
+        {label}
+      </p>
     </div>
   );
 };
@@ -72,7 +80,8 @@ const MomentumBadge = ({ level }: { level: string }) => {
   if (level === 'Strong' || level === 'Crushing') {
     return (
       <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/50 dark:text-blue-300">
-        <TrendingUp className="w-4 h-4 mr-1.5" /> Ahead of schedule
+        <TrendingUp className="w-4 h-4 mr-1.5" />
+        Ahead of schedule
       </Badge>
     );
   }
@@ -101,7 +110,7 @@ const Settings = () => {
   const queryClient = useQueryClient();
   const { mutate: updateProfile, isPending: isUpdatingProfile } = useUpdateProfile();
   const { theme, setTheme } = useTheme();
-
+  
   const { mutate: resetProgress, isPending: isResetting } = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.functions.invoke('reset-user-progress');
@@ -151,7 +160,7 @@ const Settings = () => {
   
   const [firstName, setFirstName] = useState(profile?.first_name || '');
   const [lastName, setLastName] = useState(profile?.last_name || '');
-
+  
   // Update local state when profile data changes
   React.useEffect(() => {
     setFirstName(profile?.first_name || '');
@@ -196,16 +205,17 @@ const Settings = () => {
     <div className="w-full max-w-2xl mx-auto px-4 py-6 space-y-6">
       <PageHeader title="Settings" backLink="/" />
       
+      {/* Profile Card */}
       <Card className="rounded-2xl shadow-sm border-0">
         <CardContent className="p-5 flex items-center space-x-4">
-          <Avatar className="w-14 h-14">
+          <Avatar className="w-16 h-16">
             <AvatarImage src={session?.user?.user_metadata?.avatar_url} />
-            <AvatarFallback className="bg-habit-purple text-habit-purple-foreground">
+            <AvatarFallback className="bg-primary text-primary-foreground text-xl">
               {session?.user?.email?.charAt(0).toUpperCase()}
             </AvatarFallback>
           </Avatar>
           <div className="flex-grow">
-            <p className="font-semibold">{session?.user?.email}</p>
+            <p className="font-semibold text-lg">{session?.user?.email}</p>
             <p className="text-sm text-muted-foreground">Logged in</p>
           </div>
           <Button 
@@ -219,9 +229,13 @@ const Settings = () => {
         </CardContent>
       </Card>
       
+      {/* Profile Information */}
       <Card className="rounded-2xl shadow-sm border-0">
         <CardHeader className="p-5 pb-3">
-          <CardTitle className="text-lg">Profile Information</CardTitle>
+          <CardTitle className="text-lg flex items-center">
+            <User className="w-5 h-5 mr-2 text-muted-foreground" />
+            Profile Information
+          </CardTitle>
         </CardHeader>
         <CardContent className="p-5 pt-0 space-y-4">
           <div>
@@ -230,9 +244,9 @@ const Settings = () => {
               id="first-name" 
               value={firstName} 
               onChange={(e) => setFirstName(e.target.value)} 
-              onBlur={handleFirstNameBlur}
+              onBlur={handleFirstNameBlur} 
               disabled={isUpdatingProfile}
-              className="mt-1 h-12 rounded-xl"
+              className="mt-1 h-12 rounded-xl" 
             />
           </div>
           <div>
@@ -241,17 +255,21 @@ const Settings = () => {
               id="last-name" 
               value={lastName} 
               onChange={(e) => setLastName(e.target.value)} 
-              onBlur={handleLastNameBlur}
+              onBlur={handleLastNameBlur} 
               disabled={isUpdatingProfile}
-              className="mt-1 h-12 rounded-xl"
+              className="mt-1 h-12 rounded-xl" 
             />
           </div>
         </CardContent>
       </Card>
       
+      {/* Appearance */}
       <Card className="rounded-2xl shadow-sm border-0">
         <CardHeader className="p-5 pb-3">
-          <CardTitle className="text-lg">Appearance</CardTitle>
+          <CardTitle className="text-lg flex items-center">
+            <Palette className="w-5 h-5 mr-2 text-muted-foreground" />
+            Appearance
+          </CardTitle>
         </CardHeader>
         <CardContent className="p-5 pt-0 space-y-4">
           <div>
@@ -270,6 +288,7 @@ const Settings = () => {
         </CardContent>
       </Card>
       
+      {/* Adaptive Goals Explanation */}
       <Card className="rounded-2xl shadow-sm border-0">
         <CardContent className="p-5">
           <div className="flex items-start space-x-4">
@@ -277,13 +296,15 @@ const Settings = () => {
             <div>
               <h3 className="font-semibold">Adaptive Goals</h3>
               <p className="text-sm text-muted-foreground mt-1">
-                Your daily goals adjust automatically based on your performance. If you're struggling, we'll ease up. If you're crushing it, we'll challenge you more.
+                Your daily goals adjust automatically based on your performance. 
+                If you're struggling, we'll ease up. If you're crushing it, we'll challenge you more.
               </p>
             </div>
           </div>
         </CardContent>
       </Card>
       
+      {/* Overview */}
       <Card className="rounded-2xl shadow-sm border-0">
         <CardHeader className="p-5 pb-3">
           <CardTitle className="text-lg">Overview</CardTitle>
@@ -312,6 +333,7 @@ const Settings = () => {
         </CardContent>
       </Card>
       
+      {/* Push-Ups Journey */}
       {pushupHabit && (
         <Card className="rounded-2xl shadow-sm border-0">
           <CardHeader className="p-5 pb-3 flex flex-row items-center justify-between">
@@ -344,6 +366,7 @@ const Settings = () => {
         </Card>
       )}
       
+      {/* Meditation Journey */}
       {meditationHabit && (
         <Card className="rounded-2xl shadow-sm border-0">
           <CardHeader className="p-5 pb-3 flex flex-row items-center justify-between">
@@ -376,6 +399,7 @@ const Settings = () => {
         </Card>
       )}
       
+      {/* Badges */}
       <Card className="rounded-2xl shadow-sm border-0">
         <CardHeader className="p-5 pb-3">
           <CardTitle className="text-lg">BADGES ({achievedBadgeIds.size}/{allBadges.length})</CardTitle>
@@ -394,6 +418,7 @@ const Settings = () => {
         </CardContent>
       </Card>
       
+      {/* Momentum Levels */}
       <Card className="rounded-2xl shadow-sm border-0">
         <CardHeader className="p-5 pb-3">
           <CardTitle className="text-lg">Momentum Levels</CardTitle>
@@ -438,6 +463,7 @@ const Settings = () => {
         </CardContent>
       </Card>
       
+      {/* Timezone */}
       <Card className="rounded-2xl shadow-sm border-0">
         <CardHeader className="p-5 pb-3 flex flex-row items-center space-x-2">
           <Calendar className="w-5 h-5 text-muted-foreground" />
@@ -446,7 +472,7 @@ const Settings = () => {
         <CardContent className="p-5 pt-0">
           <Select 
             value={selectedTimezone} 
-            onValueChange={handleTimezoneSelect}
+            onValueChange={handleTimezoneSelect} 
             disabled={isUpdatingProfile}
           >
             <SelectTrigger className="w-full h-12 rounded-xl">
@@ -466,6 +492,7 @@ const Settings = () => {
         </CardContent>
       </Card>
       
+      {/* Auto-Schedule Defaults */}
       <Card className="rounded-2xl shadow-sm border-0">
         <CardHeader className="p-5 pb-3 flex flex-row items-center space-x-2">
           <Clock className="w-5 h-5 text-muted-foreground" />
@@ -476,7 +503,7 @@ const Settings = () => {
             <p className="text-sm font-medium mb-2">Default Start Time</p>
             <Select 
               value={defaultAutoScheduleStartTime} 
-              onValueChange={handleStartTimeSelect}
+              onValueChange={handleStartTimeSelect} 
               disabled={isUpdatingProfile}
             >
               <SelectTrigger className="w-full h-12 rounded-xl">
@@ -495,7 +522,7 @@ const Settings = () => {
             <p className="text-sm font-medium mb-2">Default End Time</p>
             <Select 
               value={defaultAutoScheduleEndTime} 
-              onValueChange={handleEndTimeSelect}
+              onValueChange={handleEndTimeSelect} 
               disabled={isUpdatingProfile}
             >
               <SelectTrigger className="w-full h-12 rounded-xl">
@@ -516,6 +543,7 @@ const Settings = () => {
         </CardContent>
       </Card>
       
+      {/* Lifetime Progress */}
       <div className="text-center py-8">
         <p className="text-sm font-semibold text-muted-foreground tracking-widest mb-6">LIFETIME PROGRESS</p>
         <div className="flex justify-center items-baseline space-x-10">
@@ -540,9 +568,13 @@ const Settings = () => {
         </div>
       </div>
       
+      {/* Danger Zone */}
       <Card className="rounded-2xl shadow-sm border-0">
         <CardHeader className="p-5 pb-3">
-          <CardTitle className="text-lg text-destructive">Danger Zone</CardTitle>
+          <CardTitle className="text-lg text-destructive flex items-center">
+            <AlertCircle className="w-5 h-5 mr-2" />
+            Danger Zone
+          </CardTitle>
         </CardHeader>
         <CardContent className="p-5 pt-0">
           <div className="flex justify-between items-center">
@@ -554,7 +586,11 @@ const Settings = () => {
             </div>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="destructive" disabled={isResetting} className="rounded-xl">
+                <Button 
+                  variant="destructive" 
+                  disabled={isResetting} 
+                  className="rounded-xl"
+                >
                   {isResetting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Reset'}
                 </Button>
               </AlertDialogTrigger>
@@ -562,7 +598,8 @@ const Settings = () => {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete all your progress, including completed tasks, badges, and streaks.
+                    This action cannot be undone. This will permanently delete all your progress, 
+                    including completed tasks, badges, and streaks.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

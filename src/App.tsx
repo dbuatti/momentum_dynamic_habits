@@ -27,13 +27,17 @@ const AppRoutes = () => {
   // A simple protected route component
   const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
     if (loading) {
-      return null; // Or a loading spinner
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-background">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+        </div>
+      );
     }
-
+    
     if (!session) {
       return <Navigate to="/login" replace />;
     }
-
+    
     return <Layout>{children}</Layout>; // Wrap children with Layout
   };
 
@@ -51,8 +55,7 @@ const AppRoutes = () => {
       <Route path="/log/projectwork" element={<ProtectedRoute><ProjectWorkLog /></ProtectedRoute>} />
       <Route path="/journey" element={<ProtectedRoute><Journey /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-      <Route path="/history" // Add the new history route
-        element={<ProtectedRoute><History /></ProtectedRoute>} />
+      <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
       {/* Wrap NotFound with Layout for consistent styling */}
       <Route path="*" element={<ProtectedRoute><NotFound /></ProtectedRoute>} />
     </Routes>

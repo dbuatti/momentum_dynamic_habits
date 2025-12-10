@@ -6,7 +6,23 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Home, Dumbbell, Wind, BookOpen, Music, Trophy, Settings, Menu, LogOut, BarChart, Code, Moon, Sun } from 'lucide-react';
+import { 
+  Home, 
+  Dumbbell, 
+  Wind, 
+  BookOpen, 
+  Music, 
+  Trophy, 
+  Settings, 
+  Menu, 
+  LogOut, 
+  BarChart, 
+  Code, 
+  Moon, 
+  Sun,
+  Calendar,
+  Target
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useSession } from '@/contexts/SessionContext';
@@ -23,15 +39,14 @@ interface NavLinkProps {
 
 const NavLink: React.FC<NavLinkProps> = ({ to, icon: Icon, label, currentPath, onClick }) => {
   const isActive = currentPath === to;
-  
   return (
-    <Link
-      to={to}
+    <Link 
+      to={to} 
       onClick={onClick}
       className={cn(
-        "flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-        isActive
-          ? "bg-sidebar-primary text-sidebar-primary-foreground"
+        "flex items-center gap-3 rounded-lg px-3 py-2.5 transition-all hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+        isActive 
+          ? "bg-sidebar-primary text-sidebar-primary-foreground font-medium" 
           : "text-sidebar-foreground"
       )}
     >
@@ -61,15 +76,20 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick }) => {
   };
 
   const navItems = [
-    { to: "/", icon: Home, label: "Home" },
+    { to: "/", icon: Home, label: "Dashboard" },
     { to: "/journey", icon: Trophy, label: "Journey" },
     { to: "/history", icon: BarChart, label: "History" },
-    { to: "/log/pushups", icon: Dumbbell, label: "Push-ups" },
-    { to: "/log/meditation", icon: Wind, label: "Meditation" },
-    { to: "/log/kinesiology", icon: BookOpen, label: "Study" },
-    { to: "/log/piano", icon: Music, label: "Piano" },
-    { to: "/log/housework", icon: Home, label: "House Work" },
-    { to: "/log/projectwork", icon: Code, label: "Project Work" },
+    { 
+      label: "Habits", 
+      items: [
+        { to: "/log/pushups", icon: Dumbbell, label: "Push-ups" },
+        { to: "/log/meditation", icon: Wind, label: "Meditation" },
+        { to: "/log/kinesiology", icon: BookOpen, label: "Study" },
+        { to: "/log/piano", icon: Music, label: "Piano" },
+        { to: "/log/housework", icon: Home, label: "House Work" },
+        { to: "/log/projectwork", icon: Code, label: "Project Work" },
+      ]
+    },
     { to: "/settings", icon: Settings, label: "Settings" },
   ];
 
@@ -79,44 +99,83 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick }) => {
 
   return (
     <div className="flex h-full max-h-screen flex-col gap-2">
-      <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
-        <Link to="/" className="flex items-center gap-2 font-semibold" onClick={onLinkClick}>
+      <div className="flex h-16 items-center border-b px-4 lg:h-[60px] lg:px-6">
+        <Link 
+          to="/" 
+          className="flex items-center gap-2 font-semibold" 
+          onClick={onLinkClick}
+        >
+          <div className="bg-primary w-8 h-8 rounded-lg flex items-center justify-center">
+            <Target className="h-5 w-5 text-primary-foreground" />
+          </div>
           <span className="text-lg">Adaptive Growth</span>
         </Link>
       </div>
+      
       <ScrollArea className="flex-1 overflow-auto py-2">
         <nav className="grid items-start px-4 text-sm font-medium lg:px-6 gap-1">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              icon={item.icon}
-              label={item.label}
-              currentPath={location.pathname}
-              onClick={onLinkClick}
-            />
+          {navItems.map((section, index) => (
+            <div key={index}>
+              {section.items ? (
+                <>
+                  <div className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider mt-2">
+                    {section.label}
+                  </div>
+                  {section.items.map((item) => (
+                    <NavLink 
+                      key={item.to} 
+                      to={item.to} 
+                      icon={item.icon} 
+                      label={item.label} 
+                      currentPath={location.pathname} 
+                      onClick={onLinkClick} 
+                    />
+                  ))}
+                </>
+              ) : (
+                <NavLink 
+                  key={section.to} 
+                  to={section.to} 
+                  icon={section.icon} 
+                  label={section.label} 
+                  currentPath={location.pathname} 
+                  onClick={onLinkClick} 
+                />
+              )}
+            </div>
           ))}
         </nav>
       </ScrollArea>
+      
       <div className="mt-auto p-4 border-t">
         {session?.user && (
           <div className="flex items-center gap-3 mb-4">
-            <Avatar>
+            <Avatar className="h-10 w-10">
               <AvatarImage src={session.user.user_metadata?.avatar_url} />
               <AvatarFallback>{displayName?.charAt(0).toUpperCase() || '?'}</AvatarFallback>
             </Avatar>
-            <div className="flex-grow">
-              <p className="font-semibold text-sm">{displayName}</p>
-              <p className="text-xs text-muted-foreground">Logged in</p>
+            <div className="flex-grow min-w-0">
+              <p className="font-semibold text-sm truncate">{displayName}</p>
+              <p className="text-xs text-muted-foreground truncate">Logged in</p>
             </div>
           </div>
         )}
+        
         <div className="flex gap-2">
-          <Button variant="secondary" className="flex-1" onClick={handleSignOut}>
+          <Button 
+            variant="secondary" 
+            className="flex-1" 
+            onClick={handleSignOut}
+          >
             <LogOut className="h-4 w-4 mr-2" />
             Sign Out
           </Button>
-          <Button variant="outline" size="icon" onClick={toggleTheme}>
+          <Button 
+            variant="outline" 
+            size="icon" 
+            onClick={toggleTheme}
+            aria-label="Toggle theme"
+          >
             {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
         </div>
@@ -138,14 +197,10 @@ export const Sidebar: React.FC<{ children: React.ReactNode }> = ({ children }) =
   if (isMobile) {
     return (
       <div className="flex min-h-screen w-full flex-col">
-        <header className="sticky top-0 flex h-14 items-center gap-4 border-b bg-background px-4 lg:h-[60px] lg:px-6 z-20">
+        <header className="sticky top-0 flex h-16 items-center gap-4 border-b bg-background px-4 lg:h-[60px] lg:px-6 z-20">
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
-              <Button
-                variant="outline"
-                size="icon"
-                className="shrink-0 md:hidden"
-              >
+              <Button variant="outline" size="icon" className="shrink-0 md:hidden">
                 <Menu className="h-5 w-5" />
                 <span className="sr-only">Toggle navigation menu</span>
               </Button>

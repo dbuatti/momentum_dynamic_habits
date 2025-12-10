@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { BarChart } from 'lucide-react';
+import { BarChart, Zap, Calendar, Target } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -15,7 +15,7 @@ export const FooterStats: React.FC<FooterStatsProps> = ({
   streak, 
   daysActive, 
   totalPushups, 
-  totalMeditation,
+  totalMeditation, 
   averageDailyTasks 
 }) => (
   <Card className="rounded-2xl shadow-sm border-0 mt-2">
@@ -28,7 +28,8 @@ export const FooterStats: React.FC<FooterStatsProps> = ({
         <div className="flex justify-center">
           <Link to="/history">
             <Button variant="outline" className="rounded-full px-6 py-3 h-auto text-base font-semibold">
-              <BarChart className="w-5 h-5 mr-2" /> History
+              <BarChart className="w-5 h-5 mr-2" />
+              View History
             </Button>
           </Link>
         </div>
@@ -36,16 +37,22 @@ export const FooterStats: React.FC<FooterStatsProps> = ({
         <div className="border-t w-full pt-6">
           <div className="flex justify-center space-x-10 text-muted-foreground">
             <div className="text-center">
-              <p className="font-bold text-xl text-foreground">{streak}</p>
+              <p className="font-bold text-xl text-foreground flex items-center justify-center">
+                <Zap className="w-4 h-4 mr-1 text-yellow-500" />
+                {streak}
+              </p>
               <p className="text-xs">streak</p>
             </div>
             <div className="text-center">
               <p className="font-bold text-xl text-foreground">{averageDailyTasks}</p>
-              <p className="text-xs">avg</p>
+              <p className="text-xs">avg tasks/day</p>
             </div>
             <div className="text-center">
-              <p className="font-bold text-xl text-foreground">{daysActive}</p>
-              <p className="text-xs">days</p>
+              <p className="font-bold text-xl text-foreground flex items-center justify-center">
+                <Calendar className="w-4 h-4 mr-1 text-blue-500" />
+                {daysActive}
+              </p>
+              <p className="text-xs">days active</p>
             </div>
           </div>
         </div>

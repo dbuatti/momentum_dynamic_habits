@@ -1,6 +1,7 @@
 import { Clock, Target, BarChart, Zap } from 'lucide-react';
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
 interface PatternsCardProps {
   patterns: {
@@ -14,18 +15,28 @@ interface PatternsCardProps {
 const PatternItem = ({ 
   icon, 
   title, 
-  value 
+  value,
+  highlight = false
 }: { 
   icon: React.ReactNode, 
   title: string, 
-  value: string 
+  value: string,
+  highlight?: boolean
 }) => (
-  <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4">
+  <div className={cn(
+    "bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 transition-all hover:shadow-sm",
+    highlight && "ring-1 ring-primary/20 bg-primary/5"
+  )}>
     <div className="flex items-center space-x-2 text-muted-foreground">
       {icon}
       <span className="text-sm">{title}</span>
     </div>
-    <p className="font-bold text-xl mt-2">{value}</p>
+    <p className={cn(
+      "font-bold text-xl mt-2",
+      highlight && "text-primary"
+    )}>
+      {value}
+    </p>
   </div>
 );
 
@@ -40,6 +51,7 @@ export const PatternsCard: React.FC<PatternsCardProps> = ({ patterns }) => (
           icon={<Clock className="w-4 h-4" />} 
           title="Best time" 
           value={patterns.bestTime} 
+          highlight={patterns.bestTime !== '—'}
         />
         <PatternItem 
           icon={<Target className="w-4 h-4" />} 
@@ -50,6 +62,7 @@ export const PatternsCard: React.FC<PatternsCardProps> = ({ patterns }) => (
           icon={<Zap className="w-4 h-4" />} 
           title="Best streak" 
           value={`${patterns.streak} days`} 
+          highlight={patterns.streak > 0}
         />
         <PatternItem 
           icon={<BarChart className="w-4 h-4" />} 

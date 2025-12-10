@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { useHabitLog } from '@/hooks/useHabitLog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { Card, CardContent } from '@/components/ui/card';
 
 interface TimerState {
   timeRemaining: number;
@@ -82,7 +83,7 @@ const PianoLog = () => {
     };
   }, [selectedDuration, initialTimeInSeconds]);
 
-  const [timerState, setTimerState] = useState<TimerState>(getInitialState);
+  const [timerState, setTimerState] = useState<TimerState>(getInitialState());
   const { timeRemaining, isActive, isFinished, completedSongs } = timerState;
   const { mutate: logHabit, isPending } = useHabitLog();
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -169,7 +170,6 @@ const PianoLog = () => {
 
   const handleReset = () => {
     if (intervalRef.current) clearInterval(intervalRef.current);
-    
     setTimerState({
       timeRemaining: selectedDuration * 60,
       isActive: false,
@@ -178,20 +178,27 @@ const PianoLog = () => {
       selectedDuration: selectedDuration,
       completedSongs: [],
     });
-    
     localStorage.removeItem(LOCAL_STORAGE_KEY);
   };
 
   const handleLog = () => {
     if (selectedDuration > 0) {
-      logHabit({ habitKey: 'piano', value: selectedDuration, taskName: 'Piano Practice' });
+      logHabit({ 
+        habitKey: 'piano', 
+        value: selectedDuration, 
+        taskName: 'Piano Practice' 
+      });
       localStorage.removeItem(LOCAL_STORAGE_KEY);
     }
   };
 
   const handleMarkDone = () => {
     if (selectedDuration > 0) {
-      logHabit({ habitKey: 'piano', value: selectedDuration, taskName: 'Piano Practice' });
+      logHabit({ 
+        habitKey: 'piano', 
+        value: selectedDuration, 
+        taskName: 'Piano Practice' 
+      });
       localStorage.removeItem(LOCAL_STORAGE_KEY);
     }
   };
@@ -214,90 +221,126 @@ const PianoLog = () => {
   const durationOptions = [1, 5, 10, 15, 20, 30, 45, 60];
 
   return (
-    <div className="flex flex-col items-center">
-      <div className="text-center space-y-6 w-full max-w-md">
+    <div className="flex flex-col items-center w-full max-w-md mx-auto px-4 py-6">
+      <div className="w-full space-y-8">
         <PageHeader title="Piano Practice" backLink="/" />
         
-        <div className="space-y-2">
-          <Label htmlFor="piano-duration" className="text-lg font-medium text-muted-foreground">
-            Duration (minutes)
-          </Label>
-          <Select 
-            value={String(selectedDuration)} 
-            onValueChange={(value) => setSelectedDuration(Number(value))}
-            disabled={isActive || isPending}
-          >
-            <SelectTrigger id="piano-duration" className="w-full text-lg h-12">
-              <SelectValue placeholder="Select duration" />
-            </SelectTrigger>
-            <SelectContent>
-              {durationOptions.map(option => (
-                <SelectItem key={option} value={String(option)}>
-                  {option} minutes
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div className="p-6 bg-card rounded-xl shadow-lg border-4 border-habit-purple-border">
-          <p className="text-4xl font-extrabold">{formatTime(timeRemaining)}</p>
-          <div className="flex items-center justify-center space-x-4 mt-4">
-            <Button 
-              size="lg" 
-              className="w-32 h-16 rounded-full bg-habit-purple-foreground hover:bg-habit-purple-foreground/90" 
-              onClick={handleToggle} 
-              disabled={isFinished || isPending}
+        <div className="space-y-6">
+          <div className="space-y-3">
+            <Label htmlFor="piano-duration" className="text-lg font-medium text-muted-foreground">
+              Duration (minutes)
+            </Label>
+            <Select 
+              value={String(selectedDuration)} 
+              onValueChange={(value) => setSelectedDuration(Number(value))}
+              disabled={isActive || isPending}
             >
-              {isActive ? <Pause className="w-8 h-8" /> : <Play className="w-8 h-8" />}
-            </Button>
-            
-            {(isActive || isFinished) && (
-              <Button 
-                size="icon" 
-                variant="outline" 
-                onClick={handleReset} 
-                disabled={isPending}
-              >
-                <RotateCcw className="w-6 h-6" />
-              </Button>
-            )}
+              <SelectTrigger id="piano-duration" className="w-full text-lg h-14 rounded-2xl">
+                <SelectValue placeholder="Select duration" />
+              </SelectTrigger>
+              <SelectContent>
+                {durationOptions.map(option => (
+                  <SelectItem key={option} value={String(option)}>
+                    {option} minutes
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
+          
+          <Card className="rounded-2xl shadow-lg border-4 border-habit-purple overflow-hidden">
+            <CardContent className="p-8">
+              <div className="flex flex-col items-center">
+                <div className="bg-purple-50 rounded-full w-24 h-24 flex items-center justify-center mb-6">
+                  <Music className="w-12 h-12 text-purple-500" />
+                </div>
+                
+                <div className="p-10 bg-card rounded-full w-56 h-56 flex items-center justify-center mx-auto border-4 border-purple-100">
+                  <p className="text-6xl font-extrabold tracking-tighter text-habit-purple">
+                    {formatTime(timeRemaining)}
+                  </p>
+                </div>
+                
+                <div className="flex items-center justify-center space-x-6 mt-8">
+                  <Button 
+                    size="lg" 
+                    className="w-36 h-16 rounded-full bg-habit-purple hover:bg-habit-purple/90"
+                    onClick={handleToggle}
+                    disabled={isFinished || isPending}
+                  >
+                    {isActive ? (
+                      <Pause className="w-8 h-8" />
+                    ) : (
+                      <Play className="w-8 h-8" />
+                    )}
+                  </Button>
+                  
+                  {(isActive || isFinished) && (
+                    <Button 
+                      size="icon" 
+                      variant="outline" 
+                      className="w-14 h-14 rounded-full"
+                      onClick={handleReset}
+                      disabled={isPending}
+                    >
+                      <RotateCcw className="w-6 h-6" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
         
-        <div className="space-y-3 text-left">
-          <h2 className="text-xl font-semibold">Gig Tracker ({completedSongs.length} / {targetSongs.length} Songs)</h2>
-          {targetSongs.map((song, index) => (
-            <div key={index} className="flex items-center space-x-2 p-2 border rounded-md">
-              <Checkbox 
-                id={`song-${index}`} 
-                checked={completedSongs.includes(song)} 
-                onCheckedChange={(checked) => handleSongCheck(song, checked as boolean)} 
-                disabled={isPending}
-              />
-              <Label htmlFor={`song-${index}`} className="text-base font-medium">
-                {song}
-              </Label>
+        <div className="space-y-4">
+          <div className="bg-muted/30 rounded-xl p-4">
+            <h2 className="text-lg font-semibold mb-3 flex items-center">
+              <Music className="w-4 h-4 mr-2" />
+              Gig Tracker ({completedSongs.length} / {targetSongs.length} Songs)
+            </h2>
+            <div className="space-y-2">
+              {targetSongs.map((song, index) => (
+                <div key={index} className="flex items-center space-x-3 p-3 bg-background rounded-lg border">
+                  <Checkbox 
+                    id={`song-${index}`} 
+                    checked={completedSongs.includes(song)}
+                    onCheckedChange={(checked) => handleSongCheck(song, checked as boolean)}
+                    disabled={isPending}
+                  />
+                  <Label htmlFor={`song-${index}`} className="text-base font-medium flex-grow">
+                    {song}
+                  </Label>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-        
-        <div className="flex flex-col gap-3">
+          </div>
+          
           {isFinished ? (
             <Button 
-              className="w-full bg-green-500 hover:bg-green-600 text-lg py-6" 
-              onClick={handleLog} 
+              className="w-full bg-green-500 hover:bg-green-600 text-lg py-6 rounded-2xl"
+              onClick={handleLog}
               disabled={isPending}
             >
-              {isPending ? <Loader2 className="w-6 h-6 animate-spin" /> : `Log ${selectedDuration} minute session`}
+              {isPending ? (
+                <Loader2 className="w-6 h-6 animate-spin" />
+              ) : (
+                `Log ${selectedDuration} minute session`
+              )}
             </Button>
           ) : (
             <Button 
-              className="w-full bg-habit-green hover:bg-habit-green/90 text-habit-green-foreground text-lg py-6" 
-              onClick={handleMarkDone} 
+              className="w-full bg-habit-green hover:bg-habit-green/90 text-habit-green-foreground text-lg py-6 rounded-2xl"
+              onClick={handleMarkDone}
               disabled={isPending || selectedDuration <= 0}
             >
-              {isPending ? <Loader2 className="w-6 h-6 animate-spin" /> : <><Check className="w-6 h-6 mr-2" /> Mark Done</>}
+              {isPending ? (
+                <Loader2 className="w-6 h-6 animate-spin" />
+              ) : (
+                <>
+                  <Check className="w-6 h-6 mr-2" />
+                  Mark Done
+                </>
+              )}
             </Button>
           )}
         </div>

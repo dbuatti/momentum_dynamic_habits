@@ -14,7 +14,7 @@ interface HabitCheckButtonProps {
 export const HabitCheckButton: React.FC<HabitCheckButtonProps> = ({ 
   habitKey, 
   isComplete, 
-  dailyGoal,
+  dailyGoal, 
   onCheck 
 }) => {
   const { mutate: logHabit, isPending } = useHabitLog();
@@ -25,8 +25,8 @@ export const HabitCheckButton: React.FC<HabitCheckButtonProps> = ({
     if (!habitConfig) return;
     
     // Log the habit with the daily goal value
-    logHabit({
-      habitKey: habitKey,
+    logHabit({ 
+      habitKey: habitKey, 
       value: habitConfig.type === 'time' ? dailyGoal : dailyGoal,
       taskName: habitConfig.name,
     });
@@ -37,9 +37,9 @@ export const HabitCheckButton: React.FC<HabitCheckButtonProps> = ({
 
   if (isComplete) {
     return (
-      <div className="flex items-center text-green-600">
+      <div className="flex items-center text-green-600 bg-green-50 px-3 py-1.5 rounded-full">
         <Check className="w-4 h-4 mr-1" />
-        <span className="text-xs">Completed</span>
+        <span className="text-xs font-medium">Completed</span>
       </div>
     );
   }
@@ -48,7 +48,7 @@ export const HabitCheckButton: React.FC<HabitCheckButtonProps> = ({
     <Button 
       size="sm" 
       variant="outline" 
-      className="h-8 px-2 text-xs"
+      className="h-8 px-3 text-xs rounded-full"
       onClick={handleCheck}
       disabled={isPending}
     >

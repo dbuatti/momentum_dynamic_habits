@@ -96,8 +96,8 @@ const Index = () => {
     reviewQuestion, 
     tip, 
     xp, 
-    level,
-    averageDailyTasks
+    level, 
+    averageDailyTasks 
   } = data;
 
   const handleNextReviewQuestion = () => {
@@ -121,18 +121,17 @@ const Index = () => {
             {habits.map(habit => {
               const Icon = habitIconMap[habit.key];
               const variant = quickLogVariantMap[habit.key];
-              
               return (
-                <QuickLogButton
-                  key={habit.key}
-                  route={`/log/${habit.key}`}
-                  state={{ duration: habit.dailyGoal }}
-                  icon={Icon ? <Icon className="w-5 h-5" /> : null}
-                  title={habit.name}
-                  progress={`${Math.round(habit.dailyProgress)}/${habit.dailyGoal} ${habit.unit}`}
-                  variant={variant}
-                  isComplete={habit.isComplete}
-                  completedColorClass="bg-green-100 border-green-300 text-green-700"
+                <QuickLogButton 
+                  key={habit.key} 
+                  route={`/log/${habit.key}`} 
+                  state={{ duration: habit.dailyGoal }} 
+                  icon={Icon ? <Icon className="w-5 h-5" /> : null} 
+                  title={habit.name} 
+                  progress={`${Math.round(habit.dailyProgress)}/${habit.dailyGoal} ${habit.unit}`} 
+                  variant={variant} 
+                  isComplete={habit.isComplete} 
+                  completedColorClass="bg-green-100 border-green-300 text-green-700" 
                 />
               );
             })}
@@ -140,6 +139,7 @@ const Index = () => {
           
           <DisciplineBanner />
           <LevelProgressCard currentXp={xp} currentLevel={level} />
+          
           <TodaysProgressCard habits={habits} />
           <JourneyProgressCard 
             daysActive={daysActive} 
@@ -157,20 +157,20 @@ const Index = () => {
               const isComplete = isTemporarilyChecked || habit.isComplete;
               
               return (
-                <HabitDetailCard
-                  key={habit.key}
-                  icon={Icon ? <Icon className="w-5 h-5" /> : null}
-                  title={habit.name}
-                  momentum={habit.momentum}
-                  goal={`Goal: ${habit.dailyGoal} ${habit.unit} today`}
-                  progressText={`${Math.round(habit.dailyProgress)}/${habit.dailyGoal} ${habit.unit}`}
-                  progressValue={(habit.dailyProgress / habit.dailyGoal) * 100}
-                  color={color}
-                  isComplete={isComplete}
-                  daysCompletedLast7Days={habit.daysCompletedLast7Days}
+                <HabitDetailCard 
+                  key={habit.key} 
+                  icon={Icon ? <Icon className="w-5 h-5" /> : null} 
+                  title={habit.name} 
+                  momentum={habit.momentum} 
+                  goal={`Goal: ${habit.dailyGoal} ${habit.unit} today`} 
+                  progressText={`${Math.round(habit.dailyProgress)}/${habit.dailyGoal} ${habit.unit}`} 
+                  progressValue={(habit.dailyProgress / habit.dailyGoal) * 100} 
+                  color={color} 
+                  isComplete={isComplete} 
+                  daysCompletedLast7Days={habit.daysCompletedLast7Days} 
                   habitKey={habit.key}
                   dailyGoal={habit.dailyGoal}
-                  onCheck={() => handleHabitCheck(habit.key)}
+                  onCheck={() => handleHabitCheck(habit.key)} 
                 />
               );
             })}
@@ -195,7 +195,7 @@ const Index = () => {
             daysActive={daysActive} 
             totalPushups={habits.find(h => h.key === 'pushups')?.lifetimeProgress || 0} 
             totalMeditation={habits.find(h => h.key === 'meditation')?.lifetimeProgress || 0} 
-            averageDailyTasks={averageDailyTasks}
+            averageDailyTasks={averageDailyTasks} 
           />
         </main>
         

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Play, Pause, RotateCcw, Loader2, Check } from 'lucide-react';
+import { Play, Pause, RotateCcw, Loader2, Check, Wind } from 'lucide-react';
 import { useHabitLog } from '@/hooks/useHabitLog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
@@ -198,14 +198,22 @@ const MeditationLog = () => {
 
   const handleLog = () => {
     if (selectedDuration > 0) {
-      logHabit({ habitKey: 'meditation', value: selectedDuration, taskName: 'Meditation' });
+      logHabit({ 
+        habitKey: 'meditation', 
+        value: selectedDuration, 
+        taskName: 'Meditation' 
+      });
       localStorage.removeItem(LOCAL_STORAGE_KEY);
     }
   };
 
   const handleMarkDone = () => {
     if (selectedDuration > 0) {
-      logHabit({ habitKey: 'meditation', value: selectedDuration, taskName: 'Meditation' });
+      logHabit({ 
+        habitKey: 'meditation', 
+        value: selectedDuration, 
+        taskName: 'Meditation' 
+      });
       localStorage.removeItem(LOCAL_STORAGE_KEY);
     }
   };
@@ -246,39 +254,45 @@ const MeditationLog = () => {
             </Select>
           </div>
           
-          <Card className="rounded-2xl shadow-lg border-4 border-habit-blue">
+          <Card className="rounded-2xl shadow-lg border-4 border-habit-blue overflow-hidden">
             <CardContent className="p-8">
-              <div className="p-10 bg-card rounded-full w-56 h-56 flex items-center justify-center mx-auto">
-                <p className="text-6xl font-extrabold tracking-tighter text-habit-blue">
-                  {formatTime(timeRemaining)}
-                </p>
-              </div>
-              
-              <div className="flex items-center justify-center space-x-6 mt-8">
-                <Button 
-                  size="lg" 
-                  className="w-36 h-16 rounded-full bg-habit-blue hover:bg-blue-600"
-                  onClick={handleToggle}
-                  disabled={isFinished || isPending}
-                >
-                  {isActive ? (
-                    <Pause className="w-8 h-8" />
-                  ) : (
-                    <Play className="w-8 h-8" />
-                  )}
-                </Button>
+              <div className="flex flex-col items-center">
+                <div className="bg-blue-50 rounded-full w-24 h-24 flex items-center justify-center mb-6">
+                  <Wind className="w-12 h-12 text-blue-500" />
+                </div>
                 
-                {(isActive || isFinished) && (
+                <div className="p-10 bg-card rounded-full w-56 h-56 flex items-center justify-center mx-auto border-4 border-blue-100">
+                  <p className="text-6xl font-extrabold tracking-tighter text-habit-blue">
+                    {formatTime(timeRemaining)}
+                  </p>
+                </div>
+                
+                <div className="flex items-center justify-center space-x-6 mt-8">
                   <Button 
-                    size="icon" 
-                    variant="outline" 
-                    className="w-14 h-14 rounded-full"
-                    onClick={handleReset}
-                    disabled={isPending}
+                    size="lg" 
+                    className="w-36 h-16 rounded-full bg-habit-blue hover:bg-blue-600"
+                    onClick={handleToggle}
+                    disabled={isFinished || isPending}
                   >
-                    <RotateCcw className="w-6 h-6" />
+                    {isActive ? (
+                      <Pause className="w-8 h-8" />
+                    ) : (
+                      <Play className="w-8 h-8" />
+                    )}
                   </Button>
-                )}
+                  
+                  {(isActive || isFinished) && (
+                    <Button 
+                      size="icon" 
+                      variant="outline" 
+                      className="w-14 h-14 rounded-full"
+                      onClick={handleReset}
+                      disabled={isPending}
+                    >
+                      <RotateCcw className="w-6 h-6" />
+                    </Button>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -307,7 +321,8 @@ const MeditationLog = () => {
                 <Loader2 className="w-6 h-6 animate-spin" />
               ) : (
                 <>
-                  <Check className="w-6 h-6 mr-2" /> Mark Done
+                  <Check className="w-6 h-6 mr-2" />
+                  Mark Done
                 </>
               )}
             </Button>

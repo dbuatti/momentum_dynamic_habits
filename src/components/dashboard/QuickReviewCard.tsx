@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { BookOpen, RefreshCw } from 'lucide-react';
+import { BookOpen, RefreshCw, Eye, EyeOff } from 'lucide-react';
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 
@@ -9,11 +9,7 @@ interface QuickReviewCardProps {
   onNext: () => void;
 }
 
-export const QuickReviewCard: React.FC<QuickReviewCardProps> = ({ 
-  question, 
-  answer, 
-  onNext 
-}) => {
+export const QuickReviewCard: React.FC<QuickReviewCardProps> = ({ question, answer, onNext }) => {
   const [showAnswer, setShowAnswer] = useState(false);
 
   const handleNextClick = () => {
@@ -30,22 +26,33 @@ export const QuickReviewCard: React.FC<QuickReviewCardProps> = ({
         </div>
       </CardHeader>
       <CardContent className="p-5 pt-0">
-        <div className="bg-white dark:bg-card rounded-xl p-6 text-center min-h-[120px] flex items-center justify-center mb-5">
+        <div className="bg-white dark:bg-card rounded-xl p-6 text-center min-h-[140px] flex items-center justify-center mb-5 shadow-inner">
           <p className="text-lg font-medium">{showAnswer ? answer : question}</p>
         </div>
         <div className="flex justify-between items-center">
           <Button 
             variant="link" 
-            className="text-habit-green-foreground p-0 h-auto"
+            className="text-habit-green-foreground p-0 h-auto flex items-center"
             onClick={() => setShowAnswer(!showAnswer)}
           >
-            {showAnswer ? 'Hide answer' : 'Show answer'}
+            {showAnswer ? (
+              <>
+                <EyeOff className="w-4 h-4 mr-1" />
+                Hide answer
+              </>
+            ) : (
+              <>
+                <Eye className="w-4 h-4 mr-1" />
+                Show answer
+              </>
+            )}
           </Button>
           <Button 
             className="bg-habit-green-foreground hover:bg-habit-green-foreground/90 text-white rounded-full px-5"
             onClick={handleNextClick}
           >
-            <RefreshCw className="w-4 h-4 mr-2" /> Next
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Next
           </Button>
         </div>
       </CardContent>

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Star } from 'lucide-react';
+import { Star, Zap } from 'lucide-react';
 import { getXpForNextLevel, getXpForCurrentLevelStart } from '@/utils/leveling';
 
 interface LevelProgressCardProps {
@@ -9,10 +9,7 @@ interface LevelProgressCardProps {
   currentLevel: number;
 }
 
-export const LevelProgressCard: React.FC<LevelProgressCardProps> = ({ 
-  currentXp, 
-  currentLevel 
-}) => {
+export const LevelProgressCard: React.FC<LevelProgressCardProps> = ({ currentXp, currentLevel }) => {
   const xpForCurrentLevelStart = getXpForCurrentLevelStart(currentLevel);
   const xpForNextLevel = getXpForNextLevel(currentLevel);
   const xpProgressInCurrentLevel = currentXp - xpForCurrentLevelStart;
@@ -30,22 +27,22 @@ export const LevelProgressCard: React.FC<LevelProgressCardProps> = ({
               <Star className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="font-semibold text-lg">Level {currentLevel}</h3>
+              <h3 className="font-semibold text-lg flex items-center">
+                <Zap className="w-4 h-4 mr-1.5" />
+                Level {currentLevel}
+              </h3>
               <p className="text-sm text-yellow-600 dark:text-yellow-400">
                 {xpProgressInCurrentLevel}/{xpNeededForNextLevel} XP to next
               </p>
             </div>
           </div>
           <p className="text-2xl font-bold text-foreground">
-            {currentXp} XP
+            {currentXp} <span className="text-base font-normal">XP</span>
           </p>
         </div>
         
         <div className="mt-4">
-          <Progress 
-            value={progressPercentage} 
-            className="h-3 [&>div]:bg-yellow-500" 
-          />
+          <Progress value={progressPercentage} className="h-3 [&>div]:bg-yellow-500" />
           <p className="text-sm text-muted-foreground text-right mt-2">
             {xpNeededForNextLevel - xpProgressInCurrentLevel} XP to next level
           </p>

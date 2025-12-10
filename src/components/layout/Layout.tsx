@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { Sidebar } from './Sidebar.tsx'; // Added .tsx extension
+import { Sidebar } from './Sidebar';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -9,9 +9,11 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
-    <Sidebar>
-      {children}
-    </Sidebar>
+    <div className="min-h-screen bg-background">
+      <Sidebar>
+        {children}
+      </Sidebar>
+    </div>
   );
 };
 

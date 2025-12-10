@@ -1,7 +1,7 @@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
-import { Check, ChevronDown } from 'lucide-react';
+import { Check, ChevronDown, Zap } from 'lucide-react';
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { HabitCheckButton } from './HabitCheckButton';
@@ -21,15 +21,15 @@ interface HabitDetailCardProps {
   onCheck: () => void;
 }
 
-export const HabitDetailCard: React.FC<HabitDetailCardProps> = ({
-  icon,
-  title,
-  momentum,
-  goal,
-  progressText,
-  progressValue,
-  color,
-  isComplete,
+export const HabitDetailCard: React.FC<HabitDetailCardProps> = ({ 
+  icon, 
+  title, 
+  momentum, 
+  goal, 
+  progressText, 
+  progressValue, 
+  color, 
+  isComplete, 
   daysCompletedLast7Days,
   habitKey,
   dailyGoal,
@@ -44,7 +44,7 @@ export const HabitDetailCard: React.FC<HabitDetailCardProps> = ({
     red: 'bg-habit-red',
     indigo: 'bg-habit-indigo',
   }[color];
-
+  
   const iconTextColorClass = {
     orange: 'text-orange-500',
     blue: 'text-blue-500',
@@ -53,7 +53,7 @@ export const HabitDetailCard: React.FC<HabitDetailCardProps> = ({
     red: 'text-habit-red-foreground',
     indigo: 'text-habit-indigo-foreground',
   }[color];
-
+  
   const progressColorClass = {
     orange: '[&>div]:bg-habit-orange',
     blue: '[&>div]:bg-habit-blue',
@@ -62,7 +62,7 @@ export const HabitDetailCard: React.FC<HabitDetailCardProps> = ({
     red: '[&>div]:bg-habit-red-foreground',
     indigo: '[&>div]:bg-habit-indigo-foreground',
   }[color];
-
+  
   const dotColorClass = {
     orange: 'bg-habit-orange',
     blue: 'bg-habit-blue',
@@ -73,13 +73,13 @@ export const HabitDetailCard: React.FC<HabitDetailCardProps> = ({
   }[color];
 
   return (
-    <Card className="rounded-2xl shadow-sm border-0">
+    <Card className="rounded-2xl shadow-sm border-0 overflow-hidden">
       <CardContent className="p-5">
         <div className="flex justify-between items-start">
           <div className="flex items-center space-x-3">
             <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center", iconBgClass)}>
-              {React.cloneElement(icon as React.ReactElement, {
-                className: cn("w-6 h-6", iconTextColorClass)
+              {React.cloneElement(icon as React.ReactElement, { 
+                className: cn("w-6 h-6", iconTextColorClass) 
               })}
             </div>
             <div>
@@ -107,7 +107,7 @@ export const HabitDetailCard: React.FC<HabitDetailCardProps> = ({
             </div>
           )}
         </div>
-
+        
         <div className="mt-5">
           <Progress value={progressValue} className={cn("h-2.5", progressColorClass)} />
           <div className="flex justify-between items-center mt-3">
@@ -125,7 +125,7 @@ export const HabitDetailCard: React.FC<HabitDetailCardProps> = ({
             <p className="text-sm font-medium">{progressText}</p>
           </div>
         </div>
-
+        
         <Accordion type="single" collapsible className="w-full mt-4">
           <AccordionItem value="item-1" className="border-none">
             <AccordionTrigger className="hover:no-underline p-0 w-full text-sm text-muted-foreground">
@@ -137,6 +137,10 @@ export const HabitDetailCard: React.FC<HabitDetailCardProps> = ({
             <AccordionContent className="pt-2 pb-0 text-sm">
               <div className="space-y-2">
                 <p>Track your progress and build consistency with this habit.</p>
+                <div className="flex items-center text-xs text-muted-foreground mt-2">
+                  <Zap className="w-3 h-3 mr-1" />
+                  <span>Earn XP by completing this habit regularly</span>
+                </div>
               </div>
             </AccordionContent>
           </AccordionItem>

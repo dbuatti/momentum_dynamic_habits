@@ -1,21 +1,25 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Trophy, TrendingUp, Star, Flame, AlertCircle } from 'lucide-react';
+import { Trophy, TrendingUp, Star, Flame, AlertCircle, Target, Calendar, Zap } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useJourneyData } from '@/hooks/useJourneyData';
 import { format, differenceInDays, startOfDay } from 'date-fns';
 import { Progress } from '@/components/ui/progress';
-import { JourneySkeleton } from '@/components/dashboard/JourneySkeleton'; // Import new skeleton
+import { JourneySkeleton } from '@/components/dashboard/JourneySkeleton';
+import { PageHeader } from '@/components/layout/PageHeader';
 
 // Icon map for badges, similar to Settings page
-const iconMap: { [key: string]: React.ElementType } = { Star, Flame };
+const iconMap: { [key: string]: React.ElementType } = {
+  Star,
+  Flame,
+};
 
 const Journey = () => {
   const { data, isLoading, isError } = useJourneyData();
 
   if (isLoading) {
-    return <JourneySkeleton />; // Using the new JourneySkeleton for loading
+    return <JourneySkeleton />;
   }
 
   if (isError || !data) {
@@ -29,27 +33,36 @@ const Journey = () => {
     );
   }
 
-  const { profile, habits, allBadges, achievedBadges, bestTime, totalJourneyDays } = data; // Destructure totalJourneyDays
+  const { profile, habits, allBadges, achievedBadges, bestTime, totalJourneyDays } = data;
+  
   const achievedBadgeIds = new Set(achievedBadges.map(b => b.badge_id));
-
   const startDate = profile?.journey_start_date ? new Date(profile.journey_start_date) : new Date();
   const daysActive = differenceInDays(startOfDay(new Date()), startOfDay(startDate)) + 1;
   const dailyStreak = profile?.daily_streak || 0;
 
   // Logic to find the next badge, similar to useDashboardData
   const nextBadgeData = (allBadges || []).find(b => !achievedBadgeIds.has(b.id)) || null;
+  
   let nextBadgeProgress = { progressValue: 0, value: 0, unit: '' };
-
+  
   if (nextBadgeData) {
     const reqType = nextBadgeData.requirement_type;
     const reqValue = nextBadgeData.requirement_value;
-
+    
     if (reqType === 'days_active') {
       const progress = Math.min((daysActive / (reqValue || 1)) * 100, 100);
-      nextBadgeProgress = { progressValue: progress, value: Math.max(0, (reqValue || 0) - daysActive), unit: 'days left' };
+      nextBadgeProgress = {
+        progressValue: progress,
+        value: Math.max(0, (reqValue || 0) - daysActive),
+        unit: 'days left'
+      };
     } else if (reqType === 'streak') {
       const progress = Math.min((dailyStreak / (reqValue || 1)) * 100, 100);
-      nextBadgeProgress = { progressValue: progress, value: Math.max(0, (reqValue || 0) - dailyStreak), unit: 'days left' };
+      nextBadgeProgress = {
+        progressValue: progress,
+        value: Math.max(0, (reqValue || 0) - dailyStreak),
+        unit: 'days left'
+      };
     } else if (reqType === 'lifetime_progress') {
       const habit = habits.find(h => h.habit_key === nextBadgeData.habit_key);
       if (habit) {
@@ -57,7 +70,11 @@ const Journey = () => {
         const progress = Math.min((currentProgress / (reqValue || 1)) * 100, 100);
         const remaining = Math.max(0, (reqValue || 0) - currentProgress);
         const unit = habit.habit_key === 'meditation' ? 'min left' : `${habit.habit_key} left`;
-        nextBadgeProgress = { progressValue: progress, value: remaining, unit: unit };
+        nextBadgeProgress = {
+          progressValue: progress,
+          value: remaining,
+          unit: unit
+        };
       }
     }
   }
@@ -65,36 +82,70 @@ const Journey = () => {
   const NextBadgeIcon = nextBadgeData ? (iconMap[nextBadgeData.icon_name] || Star) : Star;
 
   return (
-    <div className="w-full max-w-lg mx-auto space-y-8">
-      <h1 className="text-4xl font-bold text-foreground text-center">Your Growth Journey</h1>
-      <p className="text-center text-muted-foreground">Started on {format(startDate, 'PPP')} • Day {daysActive}</p>
+    <div className="w-full max-w-lg mx-auto space-y-8 px-4 py-6">
+      <PageHeader title="Your Growth Journey" />
+      
+      <div className="text-center">
+        <p className="text-lg text-muted-foreground">
+          Started on {format(startDate, 'PPP')} • Day {daysActive}
+        </p>
+      </div>
+      
+      {/* Journey Overview */}
+      <Card className="rounded-2xl shadow-sm border-0">
+        <CardHeader className="p-5 pb-3">
+          <CardTitle className="font-semibold text-lg flex items-center">
+            <Target className="w-5 h-5 mr-2 text-primary" />
+            Journey Overview
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-5 pt-0">
+          <div className="grid grid-cols-3 gap-4 text-center">
+            <div className="bg-primary/5 rounded-xl p-4">
+              <p className="text-2xl font-bold text-primary">{daysActive}</p>
+              <p className="text-sm text-muted-foreground mt-1">Days Active</p>
+            </div>
+            <div className="bg-primary/5 rounded-xl p-4">
+              <p className="text-2xl font-bold text-primary">{dailyStreak}</p>
+              <p className="text-sm text-muted-foreground mt-1">Day Streak</p>
+            </div>
+            <div className="bg-primary/5 rounded-xl p-4">
+              <p className="text-2xl font-bold text-primary">{totalJourneyDays}</p>
+              <p className="text-sm text-muted-foreground mt-1">Total Days</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
       
       {/* Actionable Insights */}
-      <Card>
-        <CardHeader>
+      <Card className="rounded-2xl shadow-sm border-0">
+        <CardHeader className="p-5 pb-3">
           <CardTitle className="flex items-center space-x-2 text-lg">
-              <TrendingUp className="w-5 h-5 text-primary" />
-              <span>Actionable Insights</span>
+            <TrendingUp className="w-5 h-5 text-primary" />
+            <span>Actionable Insights</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-muted-foreground">
-              Based on your activity, your most productive time is:
+            Based on your activity, your most productive time is:
           </p>
-          <div className="p-3 bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 rounded-md">
-              <p className="font-semibold text-yellow-800 dark:text-yellow-300">
-                  {bestTime !== '—' ? `You're a ${bestTime} person! Try scheduling your most important tasks then.` : 'Log more tasks to discover your best time!'}
-              </p>
+          <div className="p-4 bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 rounded-md">
+            <p className="font-semibold text-yellow-800 dark:text-yellow-300 flex items-center">
+              <Zap className="w-4 h-4 mr-2" />
+              {bestTime !== '—' 
+                ? `You're a ${bestTime} person! Try scheduling your most important tasks then.` 
+                : 'Log more tasks to discover your best time!'}
+            </p>
           </div>
         </CardContent>
       </Card>
-
+      
       {/* Badges and Gamification */}
-      <Card>
-        <CardHeader>
+      <Card className="rounded-2xl shadow-sm border-0">
+        <CardHeader className="p-5 pb-3">
           <CardTitle className="flex items-center space-x-2 text-lg">
-              <Trophy className="w-5 h-5 text-primary" />
-              <span>Badges & Achievements</span>
+            <Trophy className="w-5 h-5 text-primary" />
+            <span>Badges & Achievements</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -110,7 +161,10 @@ const Journey = () => {
                 </div>
               </div>
               <div className="flex items-center space-x-2">
-                <Progress value={nextBadgeProgress.progressValue} className="h-2 flex-grow [&>div]:bg-yellow-500" />
+                <Progress 
+                  value={nextBadgeProgress.progressValue} 
+                  className="h-2 flex-grow [&>div]:bg-yellow-500" 
+                />
                 <p className="text-sm text-muted-foreground whitespace-nowrap">
                   <span className="font-semibold text-yellow-600">{nextBadgeProgress.value}</span> {nextBadgeProgress.unit}
                 </p>
@@ -120,9 +174,38 @@ const Journey = () => {
             <p className="text-sm text-muted-foreground">All badges unlocked! You are a true champion.</p>
           )}
           
-          <Button variant="outline" className="w-full">
-              Use Streak Freeze ({dailyStreak} days streak)
+          <Button variant="outline" className="w-full mt-4">
+            <Flame className="w-4 h-4 mr-2" />
+            Use Streak Freeze ({dailyStreak} days streak)
           </Button>
+        </CardContent>
+      </Card>
+      
+      {/* Habit Progress */}
+      <Card className="rounded-2xl shadow-sm border-0">
+        <CardHeader className="p-5 pb-3">
+          <CardTitle className="flex items-center space-x-2 text-lg">
+            <Calendar className="w-5 h-5 text-primary" />
+            <span>Habit Progress</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-5">
+            {habits.map((habit) => (
+              <div key={habit.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                <div>
+                  <p className="font-medium">{habit.habit_key.charAt(0).toUpperCase() + habit.habit_key.slice(1)}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {habit.lifetime_progress} / {habit.long_term_goal} {habit.habit_key === 'meditation' ? 'min' : 'completed'}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="font-semibold">{habit.momentum_level}</p>
+                  <p className="text-sm text-muted-foreground">Momentum</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </CardContent>
       </Card>
     </div>

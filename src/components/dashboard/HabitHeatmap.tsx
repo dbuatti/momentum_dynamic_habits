@@ -3,6 +3,7 @@ import { format, subMonths, startOfDay, isSameDay } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Calendar } from 'lucide-react';
 
 interface HabitCompletion {
   date: string;
@@ -30,7 +31,7 @@ const HabitHeatmap: React.FC<HabitHeatmapProps> = ({ completions, habitName }) =
   completions.forEach(completion => {
     completionMap.set(completion.date, completion.count);
   });
-  
+
   // Generate all days in the range
   const days: HeatmapDay[] = [];
   const currentDate = new Date(startDate);
@@ -43,7 +44,7 @@ const HabitHeatmap: React.FC<HabitHeatmapProps> = ({ completions, habitName }) =
     });
     currentDate.setDate(currentDate.getDate() + 1);
   }
-  
+
   // Group days by week
   const weeks: HeatmapDay[][] = [];
   let currentWeek: HeatmapDay[] = [];
@@ -60,7 +61,7 @@ const HabitHeatmap: React.FC<HabitHeatmapProps> = ({ completions, habitName }) =
   if (currentWeek.length > 0) {
     weeks.push(currentWeek);
   }
-  
+
   // Get max count for color scaling
   const maxCount = Math.max(...completions.map(c => c.count), 1);
   
@@ -71,34 +72,34 @@ const HabitHeatmap: React.FC<HabitHeatmapProps> = ({ completions, habitName }) =
     if (count >= maxCount * 0.25) return 'bg-green-300';
     return 'bg-green-200';
   };
-  
+
   return (
     <Card className="rounded-2xl shadow-sm">
-      <CardHeader>
-        <CardTitle className="text-lg">
+      <CardHeader className="p-4">
+        <CardTitle className="text-base flex items-center">
+          <Calendar className="w-4 h-4 mr-2 text-muted-foreground" />
           {habitName ? `${habitName} Consistency` : 'Habit Consistency'}
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-4">
         <div className="flex flex-col space-y-1">
           <div className="flex justify-end space-x-1 pb-1">
             <span className="text-xs text-muted-foreground w-6 text-center">M</span>
             <span className="text-xs text-muted-foreground w-6 text-center">W</span>
             <span className="text-xs text-muted-foreground w-6 text-center">F</span>
           </div>
-          
-          <div className="flex space-x-1">
+          <div className="flex space-x-1 overflow-x-auto pb-2">
             {weeks.map((week, weekIndex) => (
               <div key={weekIndex} className="flex flex-col space-y-1">
                 {week.map((day, dayIndex) => (
                   <TooltipProvider key={`${weekIndex}-${dayIndex}`}>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <div
+                        <div 
                           className={cn(
                             "w-6 h-6 rounded-sm border border-border",
                             getIntensityClass(day.count)
-                          )}
+                          )} 
                         />
                       </TooltipTrigger>
                       <TooltipContent>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Minus, Plus, Loader2, Check } from 'lucide-react';
+import { Minus, Plus, Loader2, Check, Dumbbell } from 'lucide-react';
 import { useHabitLog } from '@/hooks/useHabitLog';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
@@ -13,13 +13,21 @@ const PushupLog = () => {
 
   const handleLog = () => {
     if (count > 0) {
-      logHabit({ habitKey: 'pushups', value: count, taskName: 'Push-ups' });
+      logHabit({ 
+        habitKey: 'pushups', 
+        value: count, 
+        taskName: 'Push-ups' 
+      });
     }
   };
 
   const handleMarkDone = () => {
     if (count > 0) {
-      logHabit({ habitKey: 'pushups', value: count, taskName: 'Push-ups' });
+      logHabit({ 
+        habitKey: 'pushups', 
+        value: count, 
+        taskName: 'Push-ups' 
+      });
     }
   };
 
@@ -28,34 +36,40 @@ const PushupLog = () => {
       <div className="w-full space-y-8">
         <PageHeader title="Log Push-ups" backLink="/" />
         
-        <Card className="rounded-2xl shadow-lg border-4 border-orange-300">
+        <Card className="rounded-2xl shadow-lg border-4 border-orange-300 overflow-hidden">
           <CardContent className="p-8">
-            <div 
-              className="p-12 bg-card rounded-full w-48 h-48 flex items-center justify-center mx-auto cursor-pointer select-none transition-transform hover:scale-105 active:scale-95"
-              onClick={() => setCount(c => c + 1)}
-            >
-              <p className="text-7xl font-extrabold text-orange-500">{count}</p>
-            </div>
-            
-            <div className="flex space-x-6 justify-center mt-8">
-              <Button 
-                size="icon" 
-                variant="outline" 
-                className="w-14 h-14 rounded-full"
-                onClick={() => setCount(c => Math.max(0, c - 1))}
-                disabled={isPending}
-              >
-                <Minus className="w-6 h-6" />
-              </Button>
-              <Button 
-                size="icon" 
-                variant="outline" 
-                className="w-14 h-14 rounded-full"
+            <div className="flex flex-col items-center">
+              <div className="bg-orange-50 rounded-full w-24 h-24 flex items-center justify-center mb-6">
+                <Dumbbell className="w-12 h-12 text-orange-500" />
+              </div>
+              
+              <div 
+                className="p-12 bg-card rounded-full w-48 h-48 flex items-center justify-center mx-auto cursor-pointer select-none transition-transform hover:scale-105 active:scale-95 border-4 border-orange-100"
                 onClick={() => setCount(c => c + 1)}
-                disabled={isPending}
               >
-                <Plus className="w-6 h-6" />
-              </Button>
+                <p className="text-7xl font-extrabold text-orange-500">{count}</p>
+              </div>
+              
+              <div className="flex space-x-6 justify-center mt-8">
+                <Button 
+                  size="icon" 
+                  variant="outline" 
+                  className="w-14 h-14 rounded-full"
+                  onClick={() => setCount(c => Math.max(0, c - 1))}
+                  disabled={isPending}
+                >
+                  <Minus className="w-6 h-6" />
+                </Button>
+                <Button 
+                  size="icon" 
+                  variant="outline" 
+                  className="w-14 h-14 rounded-full"
+                  onClick={() => setCount(c => c + 1)}
+                  disabled={isPending}
+                >
+                  <Plus className="w-6 h-6" />
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -84,7 +98,8 @@ const PushupLog = () => {
               <Loader2 className="w-6 h-6 animate-spin" />
             ) : (
               <>
-                <Check className="w-6 h-6 mr-2" /> Mark Done
+                <Check className="w-6 h-6 mr-2" />
+                Mark Done
               </>
             )}
           </Button>

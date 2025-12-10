@@ -6,6 +6,7 @@ import { useHabitLog } from '@/hooks/useHabitLog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { Card, CardContent } from '@/components/ui/card';
 
 interface TimerState {
   timeRemaining: number;
@@ -22,7 +23,6 @@ const ProjectWorkLog = () => {
   const initialDurationFromState = location.state?.duration || 60; // Default 60 min
   const [selectedDuration, setSelectedDuration] = useState<number>(initialDurationFromState);
   const initialTimeInSeconds = selectedDuration * 60;
-
   const { mutate: logHabit, isPending } = useHabitLog();
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -78,7 +78,7 @@ const ProjectWorkLog = () => {
     };
   }, [selectedDuration, initialTimeInSeconds]);
 
-  const [timerState, setTimerState] = useState<TimerState>(getInitialState);
+  const [timerState, setTimerState] = useState<TimerState>(getInitialState());
   const { timeRemaining, isActive, isFinished } = timerState;
 
   // Save state to localStorage whenever it changes
@@ -161,7 +161,6 @@ const ProjectWorkLog = () => {
 
   const handleReset = () => {
     if (intervalRef.current) clearInterval(intervalRef.current);
-    
     setTimerState({
       timeRemaining: selectedDuration * 60,
       isActive: false,
@@ -169,20 +168,27 @@ const ProjectWorkLog = () => {
       startTime: null,
       selectedDuration: selectedDuration,
     });
-    
     localStorage.removeItem(LOCAL_STORAGE_KEY);
   };
 
   const handleLog = () => {
     if (selectedDuration > 0) {
-      logHabit({ habitKey: 'projectwork', value: selectedDuration, taskName: 'Project Work' });
+      logHabit({ 
+        habitKey: 'projectwork', 
+        value: selectedDuration, 
+        taskName: 'Project Work' 
+      });
       localStorage.removeItem(LOCAL_STORAGE_KEY);
     }
   };
 
   const handleMarkDone = () => {
     if (selectedDuration > 0) {
-      logHabit({ habitKey: 'projectwork', value: selectedDuration, taskName: 'Project Work' });
+      logHabit({ 
+        habitKey: 'projectwork', 
+        value: selectedDuration, 
+        taskName: 'Project Work' 
+      });
       localStorage.removeItem(LOCAL_STORAGE_KEY);
     }
   };
@@ -196,78 +202,109 @@ const ProjectWorkLog = () => {
   const durationOptions = [30, 60, 90, 120, 180];
 
   return (
-    <div className="flex flex-col items-center">
-      <div className="text-center space-y-8 w-full max-w-xs">
+    <div className="flex flex-col items-center w-full max-w-md mx-auto px-4 py-6">
+      <div className="w-full space-y-8">
         <PageHeader title="Project Work" backLink="/" />
         
-        <div className="space-y-2">
-          <Label htmlFor="projectwork-duration" className="text-lg font-medium text-muted-foreground">
-            Duration (minutes)
-          </Label>
-          <Select 
-            value={String(selectedDuration)} 
-            onValueChange={(value) => setSelectedDuration(Number(value))}
-            disabled={isActive || isPending}
-          >
-            <SelectTrigger id="projectwork-duration" className="w-full text-lg h-12">
-              <SelectValue placeholder="Select duration" />
-            </SelectTrigger>
-            <SelectContent>
-              {durationOptions.map(option => (
-                <SelectItem key={option} value={String(option)}>
-                  {option} minutes
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div className="p-10 bg-card rounded-xl shadow-lg border-4 border-habit-indigo-border">
-          <p className="text-6xl font-extrabold tracking-tighter">{formatTime(timeRemaining)}</p>
-          <div className="flex items-center justify-center space-x-4 mt-4">
-            <Button 
-              size="lg" 
-              className="w-32 h-16 rounded-full bg-habit-indigo-foreground hover:bg-habit-indigo-foreground/90" 
-              onClick={handleToggle} 
-              disabled={isFinished || isPending}
+        <div className="space-y-6">
+          <div className="space-y-3">
+            <Label htmlFor="projectwork-duration" className="text-lg font-medium text-muted-foreground">
+              Duration (minutes)
+            </Label>
+            <Select 
+              value={String(selectedDuration)} 
+              onValueChange={(value) => setSelectedDuration(Number(value))}
+              disabled={isActive || isPending}
             >
-              {isActive ? <Pause className="w-8 h-8" /> : <Play className="w-8 h-8" />}
-            </Button>
-            
-            {(isActive || isFinished) && (
-              <Button 
-                size="icon" 
-                variant="outline" 
-                onClick={handleReset} 
-                disabled={isPending}
-              >
-                <RotateCcw className="w-6 h-6" />
-              </Button>
-            )}
+              <SelectTrigger id="projectwork-duration" className="w-full text-lg h-14 rounded-2xl">
+                <SelectValue placeholder="Select duration" />
+              </SelectTrigger>
+              <SelectContent>
+                {durationOptions.map(option => (
+                  <SelectItem key={option} value={String(option)}>
+                    {option} minutes
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
+          
+          <Card className="rounded-2xl shadow-lg border-4 border-habit-indigo overflow-hidden">
+            <CardContent className="p-8">
+              <div className="flex flex-col items-center">
+                <div className="bg-indigo-50 rounded-full w-24 h-24 flex items-center justify-center mb-6">
+                  <Code className="w-12 h-12 text-indigo-500" />
+                </div>
+                
+                <div className="p-10 bg-card rounded-full w-56 h-56 flex items-center justify-center mx-auto border-4 border-indigo-100">
+                  <p className="text-6xl font-extrabold tracking-tighter text-habit-indigo">
+                    {formatTime(timeRemaining)}
+                  </p>
+                </div>
+                
+                <div className="flex items-center justify-center space-x-6 mt-8">
+                  <Button 
+                    size="lg" 
+                    className="w-36 h-16 rounded-full bg-habit-indigo hover:bg-habit-indigo/90"
+                    onClick={handleToggle}
+                    disabled={isFinished || isPending}
+                  >
+                    {isActive ? (
+                      <Pause className="w-8 h-8" />
+                    ) : (
+                      <Play className="w-8 h-8" />
+                    )}
+                  </Button>
+                  
+                  {(isActive || isFinished) && (
+                    <Button 
+                      size="icon" 
+                      variant="outline" 
+                      className="w-14 h-14 rounded-full"
+                      onClick={handleReset}
+                      disabled={isPending}
+                    >
+                      <RotateCcw className="w-6 h-6" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
         
-        <div className="flex flex-col gap-3">
+        <div className="space-y-4">
           {isFinished ? (
             <Button 
-              className="w-full bg-green-500 hover:bg-green-600 text-lg py-6" 
-              onClick={handleLog} 
+              className="w-full bg-green-500 hover:bg-green-600 text-lg py-6 rounded-2xl"
+              onClick={handleLog}
               disabled={isPending}
             >
-              {isPending ? <Loader2 className="w-6 h-6 animate-spin" /> : `Log ${selectedDuration} minute session`}
+              {isPending ? (
+                <Loader2 className="w-6 h-6 animate-spin" />
+              ) : (
+                `Log ${selectedDuration} minute session`
+              )}
             </Button>
           ) : (
             <Button 
-              className="w-full bg-habit-green hover:bg-habit-green/90 text-habit-green-foreground text-lg py-6" 
-              onClick={handleMarkDone} 
+              className="w-full bg-habit-green hover:bg-habit-green/90 text-habit-green-foreground text-lg py-6 rounded-2xl"
+              onClick={handleMarkDone}
               disabled={isPending || selectedDuration <= 0}
             >
-              {isPending ? <Loader2 className="w-6 h-6 animate-spin" /> : <><Check className="w-6 h-6 mr-2" /> Mark Done</>}
+              {isPending ? (
+                <Loader2 className="w-6 h-6 animate-spin" />
+              ) : (
+                <>
+                  <Check className="w-6 h-6 mr-2" />
+                  Mark Done
+                </>
+              )}
             </Button>
           )}
         </div>
         
-        <div className="p-3 bg-accent rounded-md border border-border">
+        <div className="p-4 bg-accent rounded-md border border-border">
           <p className="text-sm font-medium text-accent-foreground flex items-center justify-center">
             <Code className="w-4 h-4 mr-2" />
             Completion Prompt: Commit your changes and review your next step.
