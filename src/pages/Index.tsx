@@ -1,7 +1,7 @@
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import HomeHeader from "@/components/HomeHeader";
 import { QuickLogButton } from "@/components/dashboard/QuickLogButton";
-import { BookOpen, Dumbbell, Music, Wind, AlertCircle, Home, Code } from "lucide-react"; // Added Home and Code
+import { BookOpen, Dumbbell, Music, Wind, AlertCircle, Home, Code } from "lucide-react";
 import { DisciplineBanner } from "@/components/dashboard/DisciplineBanner";
 import { TodaysProgressCard } from "@/components/dashboard/TodaysProgressCard";
 import { JourneyProgressCard } from "@/components/dashboard/JourneyProgressCard";
@@ -24,8 +24,8 @@ const habitIconMap: { [key: string]: React.ElementType } = {
   meditation: Wind,
   kinesiology: BookOpen,
   piano: Music,
-  housework: Home, // New
-  projectwork: Code, // New
+  housework: Home,
+  projectwork: Code,
 };
 
 // Define unique colors for each habit using custom Tailwind classes
@@ -34,8 +34,8 @@ const quickLogVariantMap: { [key: string]: 'green' | 'purple' | 'orange' | 'blue
   meditation: 'blue',
   kinesiology: 'green',
   piano: 'purple',
-  housework: 'red', // New
-  projectwork: 'indigo', // New
+  housework: 'red',
+  projectwork: 'indigo',
 };
 
 const habitDetailColorMap: { [key: string]: 'orange' | 'blue' | 'green' | 'purple' | 'red' | 'indigo' } = {
@@ -43,8 +43,8 @@ const habitDetailColorMap: { [key: string]: 'orange' | 'blue' | 'green' | 'purpl
   meditation: 'blue',
   kinesiology: 'green',
   piano: 'purple',
-  housework: 'red', // New
-  projectwork: 'indigo', // New
+  housework: 'red',
+  projectwork: 'indigo',
 };
 
 const Index = () => {
@@ -73,47 +73,53 @@ const Index = () => {
 
   return (
     <div className="flex flex-col bg-background">
-      <div className="max-w-lg mx-auto w-full"> {/* New wrapper div for consistent width and centering */}
-        <HomeHeader dayCounter={daysActive} lastActiveText={lastActiveText} firstName={firstName} xp={xp} level={level} />
-        
-        <main className="space-y-6"> {/* Removed p-4, now relies on Layout's padding */}
-          
+      <div className="max-w-lg mx-auto w-full">
+        <HomeHeader 
+          dayCounter={daysActive} 
+          lastActiveText={lastActiveText} 
+          firstName={firstName}
+          xp={xp}
+          level={level}
+        />
+        <main className="space-y-6">
           <div className="grid grid-cols-2 gap-3">
             {habits.map(habit => {
               const Icon = habitIconMap[habit.key];
               const variant = quickLogVariantMap[habit.key];
               return (
-                <QuickLogButton 
+                <QuickLogButton
                   key={habit.key}
                   route={`/log/${habit.key}`}
-                  state={{ duration: habit.dailyGoal }} // habit.dailyGoal is now in minutes for time-based
+                  state={{ duration: habit.dailyGoal }}
                   icon={Icon ? <Icon className="w-5 h-5" /> : null}
                   title={habit.name}
-                  progress={`${Math.round(habit.dailyProgress)}/${habit.dailyGoal} ${habit.unit}`} // Will now show X/Y min
+                  progress={`${Math.round(habit.dailyProgress)}/${habit.dailyGoal} ${habit.unit}`}
                   variant={variant}
                   isComplete={habit.isComplete}
-                  completedColorClass="bg-green-100 border-green-300 text-green-700" // Pass completed color
+                  completedColorClass="bg-green-100 border-green-300 text-green-700"
                 />
               );
             })}
           </div>
-
           <DisciplineBanner />
-          <LevelProgressCard currentXp={xp} currentLevel={level} /> {/* New Level Progress Card */}
+          <LevelProgressCard currentXp={xp} currentLevel={level} />
           <TodaysProgressCard habits={habits} />
-          <JourneyProgressCard daysActive={daysActive} totalJourneyDays={totalJourneyDays} daysToNextMonth={daysToNextMonth} />
-
+          <JourneyProgressCard 
+            daysActive={daysActive} 
+            totalJourneyDays={totalJourneyDays} 
+            daysToNextMonth={daysToNextMonth} 
+          />
           {habits.map(habit => {
             const Icon = habitIconMap[habit.key];
             const color = habitDetailColorMap[habit.key];
             return (
-              <HabitDetailCard 
+              <HabitDetailCard
                 key={habit.key}
                 icon={Icon ? <Icon className="w-5 h-5" /> : null}
                 title={habit.name}
                 momentum={habit.momentum}
-                goal={`Goal: ${habit.dailyGoal} ${habit.unit} today`} // Will now show Goal: Y min today
-                progressText={`${Math.round(habit.dailyProgress)}/${habit.dailyGoal} ${habit.unit}`} // Will now show X/Y min
+                goal={`Goal: ${habit.dailyGoal} ${habit.unit} today`}
+                progressText={`${Math.round(habit.dailyProgress)}/${habit.dailyGoal} ${habit.unit}`}
                 progressValue={(habit.dailyProgress / habit.dailyGoal) * 100}
                 color={color}
                 isComplete={habit.isComplete}
@@ -121,7 +127,6 @@ const Index = () => {
               />
             );
           })}
-
           {reviewQuestion && (
             <QuickReviewCard 
               question={reviewQuestion.question} 
@@ -135,14 +140,13 @@ const Index = () => {
           <NextBadgeCard badge={nextBadge} />
           <FooterStats 
             streak={patterns.streak} 
-            daysActive={daysActive}
-            totalPushups={habits.find(h => h.key === 'pushups')?.lifetimeProgress || 0}
+            daysActive={daysActive} 
+            totalPushups={habits.find(h => h.key === 'pushups')?.lifetimeProgress || 0} 
             totalMeditation={habits.find(h => h.key === 'meditation')?.lifetimeProgress || 0}
-            averageDailyTasks={averageDailyTasks} // Pass average daily tasks
+            averageDailyTasks={averageDailyTasks}
           />
         </main>
-        
-        <MadeWithDyad /> {/* Moved inside the wrapper div */}
+        <MadeWithDyad />
       </div>
     </div>
   );
