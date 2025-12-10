@@ -29,7 +29,7 @@ const Journey = () => {
     );
   }
 
-  const { profile, habits, allBadges, achievedBadges, bestTime } = data;
+  const { profile, habits, allBadges, achievedBadges, bestTime, totalJourneyDays } = data; // Destructure totalJourneyDays
   const achievedBadgeIds = new Set(achievedBadges.map(b => b.badge_id));
 
   const startDate = profile?.journey_start_date ? new Date(profile.journey_start_date) : new Date();
@@ -65,8 +65,7 @@ const Journey = () => {
   const NextBadgeIcon = nextBadgeData ? (iconMap[nextBadgeData.icon_name] || Star) : Star;
 
   return (
-    <div className="w-full max-w-lg mx-auto space-y-8"> {/* Removed min-h-screen flex flex-col p-4 bg-background and mt-4 */}
-      {/* Removed custom header */}
+    <div className="w-full max-w-lg mx-auto space-y-8">
       <h1 className="text-4xl font-bold text-foreground text-center">Your Growth Journey</h1>
       <p className="text-center text-muted-foreground">Started on {format(startDate, 'PPP')} • Day {daysActive}</p>
       

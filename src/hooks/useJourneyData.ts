@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
+import { differenceInDays } from 'date-fns'; // Import differenceInDays
 
 const fetchJourneyData = async (userId: string) => {
     const profilePromise = supabase.from('profiles').select('journey_start_date, daily_streak, meditation_sound, timezone, default_auto_schedule_start_time, default_auto_schedule_end_time, first_name, last_name').eq('id', userId).single();
@@ -28,7 +29,14 @@ const fetchJourneyData = async (userId: string) => {
         throw new Error('Failed to fetch essential journey data');
     }
 
-    return { profile, habits, allBadges, achievedBadges, bestTime: bestTime || '—' }; // Return bestTime with fallback
+    // Calculate totalJourneyDays consistently
+    const startDate = profile?.journey_start_date ? new Date(profile.journey_start_date) : null;
+    const meditationHabit = habits?.find(h => h.habit_key === 'meditation');
+    const totalJourneyDays = (meditationHabit && startDate)
+      ? differenceInDays(new Date(meditationHabit.target_completion_date), startDate)
+      : 0; // Ensure it's always a number
+
+    return { profile, habits, allBadges, achievedBadges, bestTime: bestTime || '—', totalJourneyDays }; // Return totalJourneyDays
 };
 
 export const useJourneyData = () => {

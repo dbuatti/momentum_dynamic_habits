@@ -309,8 +309,6 @@ const Settings = () => {
         </CardContent>
       </Card>
 
-      {/* Removed Meditation Sound Card */}
-
       <Card>
         <CardHeader className="flex flex-row items-center space-x-2"><Calendar className="w-5 h-5 text-muted-foreground" /><CardTitle className="text-lg">Timezone</CardTitle></CardHeader>
         <CardContent>
