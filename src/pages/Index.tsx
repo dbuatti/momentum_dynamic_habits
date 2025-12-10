@@ -1,7 +1,7 @@
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import HomeHeader from "@/components/HomeHeader";
 import { QuickLogButton } from "@/components/dashboard/QuickLogButton";
-import { BookOpen, Dumbbell, Music, Wind, AlertCircle, Home, Code } from "lucide-react";
+import { BookOpen, Dumbbell, Music, Wind, AlertCircle, Home, Code, Sparkles, Pill } from "lucide-react";
 import { DisciplineBanner } from "@/components/dashboard/DisciplineBanner";
 import { TodaysProgressCard } from "@/components/dashboard/TodaysProgressCard";
 import { JourneyProgressCard } from "@/components/dashboard/JourneyProgressCard";
@@ -28,6 +28,8 @@ const habitIconMap: { [key: string]: React.ElementType } = {
   piano: Music,
   housework: Home,
   projectwork: Code,
+  teeth_brushing: Sparkles,
+  medication: Pill,
 };
 
 // Define unique colors for each habit using custom Tailwind classes
@@ -38,6 +40,8 @@ const quickLogVariantMap: { [key: string]: 'green' | 'purple' | 'orange' | 'blue
   piano: 'purple',
   housework: 'red',
   projectwork: 'indigo',
+  teeth_brushing: 'blue',
+  medication: 'purple',
 };
 
 const habitDetailColorMap: { [key: string]: 'orange' | 'blue' | 'green' | 'purple' | 'red' | 'indigo' } = {
@@ -47,6 +51,8 @@ const habitDetailColorMap: { [key: string]: 'orange' | 'blue' | 'green' | 'purpl
   piano: 'purple',
   housework: 'red',
   projectwork: 'indigo',
+  teeth_brushing: 'blue',
+  medication: 'purple',
 };
 
 const Index = () => {
@@ -82,23 +88,7 @@ const Index = () => {
     );
   }
 
-  const { 
-    daysActive, 
-    totalJourneyDays, 
-    daysToNextMonth, 
-    habits, 
-    weeklySummary, 
-    patterns, 
-    nextBadge, 
-    lastActiveText, 
-    firstName, 
-    lastName, 
-    reviewQuestion, 
-    tip, 
-    xp, 
-    level, 
-    averageDailyTasks 
-  } = data;
+  const { daysActive, totalJourneyDays, daysToNextMonth, habits, weeklySummary, patterns, nextBadge, lastActiveText, firstName, lastName, reviewQuestion, tip, xp, level, averageDailyTasks } = data;
 
   const handleNextReviewQuestion = () => {
     refetch(); // Refetch dashboard data to get a new random question
@@ -115,40 +105,35 @@ const Index = () => {
           xp={xp} 
           level={level} 
         />
-        
         <main className="space-y-6">
           <div className="grid grid-cols-2 gap-4">
             {habits.map(habit => {
               const Icon = habitIconMap[habit.key];
               const variant = quickLogVariantMap[habit.key];
               return (
-                <QuickLogButton 
-                  key={habit.key} 
-                  route={`/log/${habit.key}`} 
-                  state={{ duration: habit.dailyGoal }} 
-                  icon={Icon ? <Icon className="w-5 h-5" /> : null} 
-                  title={habit.name} 
-                  progress={`${Math.round(habit.dailyProgress)}/${habit.dailyGoal} ${habit.unit}`} 
-                  variant={variant} 
-                  isComplete={habit.isComplete} 
-                  completedColorClass="bg-green-100 border-green-300 text-green-700" 
+                <QuickLogButton
+                  key={habit.key}
+                  route={`/log/${habit.key === 'kinesiology' ? 'kinesiology' : habit.key.replace('_', '-')}`}
+                  state={{ duration: habit.dailyGoal }}
+                  icon={Icon ? <Icon className="w-5 h-5" /> : null}
+                  title={habit.name}
+                  progress={`${Math.round(habit.dailyProgress)}/${habit.dailyGoal} ${habit.unit}`}
+                  variant={variant}
+                  isComplete={habit.isComplete}
+                  completedColorClass="bg-green-100 border-green-300 text-green-700"
                 />
               );
             })}
           </div>
-          
           <DisciplineBanner />
           <LevelProgressCard currentXp={xp} currentLevel={level} />
-          
           <TodaysProgressCard habits={habits} />
           <JourneyProgressCard 
             daysActive={daysActive} 
             totalJourneyDays={totalJourneyDays} 
             daysToNextMonth={daysToNextMonth} 
           />
-          
           <Separator className="my-2" />
-          
           <div className="space-y-5">
             {habits.map(habit => {
               const Icon = habitIconMap[habit.key];
@@ -157,25 +142,24 @@ const Index = () => {
               const isComplete = isTemporarilyChecked || habit.isComplete;
               
               return (
-                <HabitDetailCard 
-                  key={habit.key} 
-                  icon={Icon ? <Icon className="w-5 h-5" /> : null} 
-                  title={habit.name} 
-                  momentum={habit.momentum} 
-                  goal={`Goal: ${habit.dailyGoal} ${habit.unit} today`} 
-                  progressText={`${Math.round(habit.dailyProgress)}/${habit.dailyGoal} ${habit.unit}`} 
-                  progressValue={(habit.dailyProgress / habit.dailyGoal) * 100} 
-                  color={color} 
-                  isComplete={isComplete} 
-                  daysCompletedLast7Days={habit.daysCompletedLast7Days} 
+                <HabitDetailCard
+                  key={habit.key}
+                  icon={Icon ? <Icon className="w-5 h-5" /> : null}
+                  title={habit.name}
+                  momentum={habit.momentum}
+                  goal={`Goal: ${habit.dailyGoal} ${habit.unit} today`}
+                  progressText={`${Math.round(habit.dailyProgress)}/${habit.dailyGoal} ${habit.unit}`}
+                  progressValue={(habit.dailyProgress / habit.dailyGoal) * 100}
+                  color={color}
+                  isComplete={isComplete}
+                  daysCompletedLast7Days={habit.daysCompletedLast7Days}
                   habitKey={habit.key}
                   dailyGoal={habit.dailyGoal}
-                  onCheck={() => handleHabitCheck(habit.key)} 
+                  onCheck={() => handleHabitCheck(habit.key)}
                 />
               );
             })}
           </div>
-          
           {reviewQuestion && (
             <QuickReviewCard 
               question={reviewQuestion.question} 
@@ -183,13 +167,10 @@ const Index = () => {
               onNext={handleNextReviewQuestion} 
             />
           )}
-          
           {tip && <TipCard tip={tip} />}
-          
           <WeeklySummaryCard summary={weeklySummary} />
           <PatternsCard patterns={patterns} />
           <NextBadgeCard badge={nextBadge} />
-          
           <FooterStats 
             streak={patterns.streak} 
             daysActive={daysActive} 
@@ -198,7 +179,6 @@ const Index = () => {
             averageDailyTasks={averageDailyTasks} 
           />
         </main>
-        
         <MadeWithDyad />
       </div>
     </div>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Dumbbell, Wind, BookOpen, Music, AlertCircle, Loader2, Zap, Home, Code, ClipboardList, Calendar, Filter } from 'lucide-react';
+import { ArrowLeft, Dumbbell, Wind, BookOpen, Music, AlertCircle, Loader2, Zap, Home, Code, ClipboardList, Calendar, Filter, Sparkles, Pill } from 'lucide-react';
 import { useCompletedTasks } from '@/hooks/useCompletedTasks';
 import { format, parseISO, isSameDay } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,13 +20,15 @@ const habitIconMap: { [key: string]: React.ElementType } = {
   piano: Music,
   housework: Home,
   projectwork: Code,
+  teeth_brushing: Sparkles,
+  medication: Pill,
 };
 
 const History = () => {
   const { data: completedTasks, isLoading, isError } = useCompletedTasks();
   const { data: heatmapData, isLoading: isHeatmapLoading } = useHabitHeatmapData();
   const [filter, setFilter] = useState<string>('all');
-  
+
   // Get unique habit types for filter
   const habitTypes = [...new Set(completedTasks?.map(task => task.original_source) || [])];
 
@@ -87,23 +89,22 @@ const History = () => {
               <SelectItem value="all">All Habits</SelectItem>
               {habitTypes.map(type => (
                 <SelectItem key={type} value={type}>
-                  {type.charAt(0).toUpperCase() + type.slice(1)}
+                  {type.charAt(0).toUpperCase() + type.slice(1).replace('_', ' ')}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
-        
         <div className="text-sm text-muted-foreground">
           {filteredTasks?.length || 0} activities
         </div>
       </div>
-      
+
       {/* Habit Consistency Heatmap */}
       <div className="mb-6">
         <HabitHeatmap completions={heatmapData || []} habitName="All Habits" />
       </div>
-      
+
       {filteredTasks && filteredTasks.length === 0 ? (
         <div className="bg-card rounded-2xl p-8 shadow-sm text-center space-y-4">
           <ClipboardList className="w-16 h-16 text-muted-foreground mx-auto" />

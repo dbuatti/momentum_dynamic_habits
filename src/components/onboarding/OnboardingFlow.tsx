@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useUpdateProfile } from '@/hooks/useUpdateProfile';
 import { showError, showSuccess } from '@/utils/toast';
-import { Dumbbell, Wind, BookOpen, Music, Home, Code, Target, Clock, User } from 'lucide-react';
+import { Dumbbell, Wind, BookOpen, Music, Home, Code, Target, Clock, User, Sparkles, Pill } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const commonTimezones = [
@@ -32,6 +32,8 @@ const habitOptions = [
   { id: 'piano', name: 'Piano Practice', icon: Music, color: 'bg-habit-purple' },
   { id: 'housework', name: 'House Work', icon: Home, color: 'bg-habit-red' },
   { id: 'projectwork', name: 'Project Work', icon: Code, color: 'bg-habit-indigo' },
+  { id: 'teeth_brushing', name: 'Brush Teeth', icon: Sparkles, color: 'bg-blue-100' },
+  { id: 'medication', name: 'Take Medication', icon: Pill, color: 'bg-purple-100' },
 ];
 
 export const OnboardingFlow = ({ onComplete }: { onComplete: () => void }) => {
@@ -106,7 +108,7 @@ export const OnboardingFlow = ({ onComplete }: { onComplete: () => void }) => {
                   value={firstName} 
                   onChange={(e) => setFirstName(e.target.value)} 
                   placeholder="Enter your first name" 
-                  className="h-12 rounded-xl"
+                  className="h-12 rounded-xl" 
                 />
               </div>
               <div>
@@ -116,7 +118,7 @@ export const OnboardingFlow = ({ onComplete }: { onComplete: () => void }) => {
                   value={lastName} 
                   onChange={(e) => setLastName(e.target.value)} 
                   placeholder="Enter your last name" 
-                  className="h-12 rounded-xl"
+                  className="h-12 rounded-xl" 
                 />
               </div>
             </div>
@@ -303,12 +305,7 @@ export const OnboardingFlow = ({ onComplete }: { onComplete: () => void }) => {
         <CardContent className="py-6">
           {renderStep()}
           <div className="flex justify-between mt-8">
-            <Button 
-              variant="outline" 
-              onClick={handleBack} 
-              disabled={step === 1}
-              className="rounded-xl"
-            >
+            <Button variant="outline" onClick={handleBack} disabled={step === 1} className="rounded-xl">
               Back
             </Button>
             <Button 
@@ -316,7 +313,7 @@ export const OnboardingFlow = ({ onComplete }: { onComplete: () => void }) => {
               disabled={
                 (step === 1 && (!firstName.trim() || !lastName.trim())) ||
                 (step === 3 && selectedHabits.length === 0)
-              }
+              } 
               className="rounded-xl"
             >
               {step === 4 ? 'Get Started' : 'Next'}

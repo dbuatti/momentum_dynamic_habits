@@ -18,6 +18,8 @@ import History from "./pages/History";
 import Onboarding from "./pages/Onboarding";
 import { SessionContextProvider, useSession } from "./contexts/SessionContext";
 import Layout from "@/components/layout/Layout";
+import TeethBrushingLog from "./pages/TeethBrushingLog";
+import MedicationLog from "./pages/MedicationLog";
 
 const queryClient = new QueryClient();
 
@@ -33,11 +35,11 @@ const AppRoutes = () => {
         </div>
       );
     }
-    
+
     if (!session) {
       return <Navigate to="/login" replace />;
     }
-    
+
     return <Layout>{children}</Layout>; // Wrap children with Layout
   };
 
@@ -53,6 +55,8 @@ const AppRoutes = () => {
       <Route path="/log/piano" element={<ProtectedRoute><PianoLog /></ProtectedRoute>} />
       <Route path="/log/housework" element={<ProtectedRoute><HouseworkLog /></ProtectedRoute>} />
       <Route path="/log/projectwork" element={<ProtectedRoute><ProjectWorkLog /></ProtectedRoute>} />
+      <Route path="/log/teeth-brushing" element={<ProtectedRoute><TeethBrushingLog /></ProtectedRoute>} />
+      <Route path="/log/medication" element={<ProtectedRoute><MedicationLog /></ProtectedRoute>} />
       <Route path="/journey" element={<ProtectedRoute><Journey /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
       <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />

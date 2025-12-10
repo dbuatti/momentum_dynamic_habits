@@ -75,6 +75,30 @@ export const initialHabits: (Habit | PianoHabit)[] = [
     xpPerUnit: 60, // 60 XP per minute
     energyCostPerUnit: 12, // 12 energy per minute
   },
+  {
+    id: "teeth_brushing",
+    name: "Brush Teeth",
+    type: "count",
+    targetGoal: 1,
+    unit: "session",
+    currentProgress: 0,
+    momentum: "Building",
+    route: "/log/teeth-brushing",
+    xpPerUnit: 5,
+    energyCostPerUnit: 0,
+  },
+  {
+    id: "medication",
+    name: "Take Medication",
+    type: "count",
+    targetGoal: 1,
+    unit: "dose",
+    currentProgress: 0,
+    momentum: "Building",
+    route: "/log/medication",
+    xpPerUnit: 10,
+    energyCostPerUnit: 0,
+  },
 ];
 
 export const getHabits = () => initialHabits;

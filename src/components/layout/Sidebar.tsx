@@ -1,28 +1,11 @@
 "use client";
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { 
-  Home, 
-  Dumbbell, 
-  Wind, 
-  BookOpen, 
-  Music, 
-  Trophy, 
-  Settings, 
-  Menu, 
-  LogOut, 
-  BarChart, 
-  Code, 
-  Moon, 
-  Sun,
-  Calendar,
-  Target
-} from 'lucide-react';
+import { Home, Dumbbell, Wind, BookOpen, Music, Trophy, Settings, Menu, LogOut, BarChart, Code, Moon, Sun, Calendar, Target, Sparkles, Pill } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useSession } from '@/contexts/SessionContext';
@@ -79,8 +62,8 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick }) => {
     { to: "/", icon: Home, label: "Dashboard" },
     { to: "/journey", icon: Trophy, label: "Journey" },
     { to: "/history", icon: BarChart, label: "History" },
-    { 
-      label: "Habits", 
+    {
+      label: "Habits",
       items: [
         { to: "/log/pushups", icon: Dumbbell, label: "Push-ups" },
         { to: "/log/meditation", icon: Wind, label: "Meditation" },
@@ -88,6 +71,8 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick }) => {
         { to: "/log/piano", icon: Music, label: "Piano" },
         { to: "/log/housework", icon: Home, label: "House Work" },
         { to: "/log/projectwork", icon: Code, label: "Project Work" },
+        { to: "/log/teeth-brushing", icon: Sparkles, label: "Brush Teeth" },
+        { to: "/log/medication", icon: Pill, label: "Take Medication" },
       ]
     },
     { to: "/settings", icon: Settings, label: "Settings" },
@@ -100,18 +85,13 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick }) => {
   return (
     <div className="flex h-full max-h-screen flex-col gap-2">
       <div className="flex h-16 items-center border-b px-4 lg:h-[60px] lg:px-6">
-        <Link 
-          to="/" 
-          className="flex items-center gap-2 font-semibold" 
-          onClick={onLinkClick}
-        >
+        <Link to="/" className="flex items-center gap-2 font-semibold" onClick={onLinkClick}>
           <div className="bg-primary w-8 h-8 rounded-lg flex items-center justify-center">
             <Target className="h-5 w-5 text-primary-foreground" />
           </div>
           <span className="text-lg">Adaptive Growth</span>
         </Link>
       </div>
-      
       <ScrollArea className="flex-1 overflow-auto py-2">
         <nav className="grid items-start px-4 text-sm font-medium lg:px-6 gap-1">
           {navItems.map((section, index) => (
@@ -146,7 +126,6 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick }) => {
           ))}
         </nav>
       </ScrollArea>
-      
       <div className="mt-auto p-4 border-t">
         {session?.user && (
           <div className="flex items-center gap-3 mb-4">
@@ -160,22 +139,12 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick }) => {
             </div>
           </div>
         )}
-        
         <div className="flex gap-2">
-          <Button 
-            variant="secondary" 
-            className="flex-1" 
-            onClick={handleSignOut}
-          >
+          <Button variant="secondary" className="flex-1" onClick={handleSignOut}>
             <LogOut className="h-4 w-4 mr-2" />
             Sign Out
           </Button>
-          <Button 
-            variant="outline" 
-            size="icon" 
-            onClick={toggleTheme}
-            aria-label="Toggle theme"
-          >
+          <Button variant="outline" size="icon" onClick={toggleTheme} aria-label="Toggle theme">
             {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
         </div>
