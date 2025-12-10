@@ -51,6 +51,30 @@ export const initialHabits: (Habit | PianoHabit)[] = [
     targetSongs: ["Song A", "Song B", "Song C", "Song D", "Song E"],
     songsCompletedToday: [],
   } as PianoHabit,
+  {
+    id: "housework",
+    name: "House Work",
+    type: "time",
+    targetGoal: 30,
+    unit: "min",
+    currentProgress: 0,
+    momentum: "Building",
+    route: "/log/housework",
+    xpPerUnit: 24, // 24 XP per minute
+    energyCostPerUnit: 4.8, // 4.8 energy per minute
+  },
+  {
+    id: "projectwork",
+    name: "Project Work",
+    type: "time",
+    targetGoal: 60,
+    unit: "min",
+    currentProgress: 0,
+    momentum: "Building",
+    route: "/log/projectwork",
+    xpPerUnit: 60, // 60 XP per minute
+    energyCostPerUnit: 12, // 12 energy per minute
+  },
 ];
 
 export const getHabits = () => initialHabits;

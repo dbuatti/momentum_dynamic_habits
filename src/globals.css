@@ -58,6 +58,14 @@
     --habit-purple-border: 250 70% 85%;
     --habit-orange: 25 95% 60%;
     --habit-blue: 220 80% 65%;
+    
+    --habit-red: 0 90% 95%;
+    --habit-red-foreground: 0 70% 40%;
+    --habit-red-border: 0 80% 85%;
+
+    --habit-indigo: 240 70% 95%;
+    --habit-indigo-foreground: 240 50% 40%;
+    --habit-indigo-border: 240 60% 85%;
   }
 
   .dark {

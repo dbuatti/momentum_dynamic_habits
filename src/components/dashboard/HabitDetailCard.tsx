@@ -11,7 +11,7 @@ interface HabitDetailCardProps {
   goal: string;
   progressText: string;
   progressValue: number;
-  color: 'orange' | 'blue' | 'green' | 'purple'; // Updated to include all habit colors
+  color: 'orange' | 'blue' | 'green' | 'purple' | 'red' | 'indigo'; // Updated to include all habit colors
   isComplete: boolean;
   daysCompletedLast7Days: number; // New prop
 }
@@ -23,6 +23,8 @@ export const HabitDetailCard: React.FC<HabitDetailCardProps> = ({ icon, title, m
     blue: 'bg-blue-100',
     green: 'bg-habit-green',
     purple: 'bg-habit-purple',
+    red: 'bg-habit-red', // New
+    indigo: 'bg-habit-indigo', // New
   }[color];
 
   const iconTextColorClass = {
@@ -30,6 +32,8 @@ export const HabitDetailCard: React.FC<HabitDetailCardProps> = ({ icon, title, m
     blue: 'text-blue-500',
     green: 'text-habit-green-foreground',
     purple: 'text-habit-purple-foreground',
+    red: 'text-habit-red-foreground', // New
+    indigo: 'text-habit-indigo-foreground', // New
   }[color];
 
   const progressColorClass = {
@@ -37,6 +41,8 @@ export const HabitDetailCard: React.FC<HabitDetailCardProps> = ({ icon, title, m
     blue: '[&>div]:bg-habit-blue',
     green: '[&>div]:bg-habit-green',
     purple: '[&>div]:bg-habit-purple',
+    red: '[&>div]:bg-habit-red-foreground', // Use foreground color for progress bar
+    indigo: '[&>div]:bg-habit-indigo-foreground', // Use foreground color for progress bar
   }[color];
 
   const dotColorClass = {
@@ -44,6 +50,8 @@ export const HabitDetailCard: React.FC<HabitDetailCardProps> = ({ icon, title, m
     blue: 'bg-habit-blue',
     green: 'bg-habit-green',
     purple: 'bg-habit-purple',
+    red: 'bg-habit-red-foreground', // Use foreground color for dots
+    indigo: 'bg-habit-indigo-foreground', // Use foreground color for dots
   }[color];
 
   return (

@@ -8,7 +8,7 @@ interface QuickLogButtonProps {
   title: string;
   progress: string;
   isComplete?: boolean;
-  variant: 'green' | 'purple' | 'orange' | 'blue'; // Updated to include all habit colors
+  variant: 'green' | 'purple' | 'orange' | 'blue' | 'red' | 'indigo'; // Updated to include all habit colors
   route: string;
   state?: object;
   completedColorClass?: string; // New prop for completed state styling
@@ -22,6 +22,8 @@ export const QuickLogButton: React.FC<QuickLogButtonProps> = ({ icon, title, pro
     purple: 'bg-habit-purple border border-habit-purple-border text-habit-purple-foreground',
     orange: 'bg-orange-50 border border-orange-200 text-orange-700', // Using direct Tailwind for orange
     blue: 'bg-blue-50 border border-blue-200 text-blue-700', // Using direct Tailwind for blue
+    red: 'bg-habit-red border border-habit-red-border text-habit-red-foreground', // New
+    indigo: 'bg-habit-indigo border border-habit-indigo-border text-habit-indigo-foreground', // New
   };
 
   const currentClasses = isComplete && completedColorClass 

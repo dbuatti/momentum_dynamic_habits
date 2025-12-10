@@ -9,10 +9,12 @@ import PushupLog from "./pages/PushupLog";
 import MeditationLog from "./pages/MeditationLog";
 import StudyLog from "./pages/StudyLog";
 import PianoLog from "./pages/PianoLog";
+import HouseworkLog from "./pages/HouseworkLog"; // Import new log page
+import ProjectWorkLog from "./pages/ProjectWorkLog"; // Import new log page
 import Journey from "./pages/Journey";
 import Login from "./pages/Login";
 import Settings from "./pages/Settings";
-import History from "./pages/History"; // Import the new History page
+import History from "./pages/History";
 import { SessionContextProvider, useSession } from "./contexts/SessionContext";
 import Layout from "@/components/layout/Layout";
 
@@ -55,6 +57,14 @@ const AppRoutes = () => {
       <Route
         path="/log/piano"
         element={<ProtectedRoute><PianoLog /></ProtectedRoute>}
+      />
+      <Route
+        path="/log/housework"
+        element={<ProtectedRoute><HouseworkLog /></ProtectedRoute>}
+      />
+      <Route
+        path="/log/projectwork"
+        element={<ProtectedRoute><ProjectWorkLog /></ProtectedRoute>}
       />
       <Route
         path="/journey"

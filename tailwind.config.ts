@@ -78,6 +78,16 @@ export default {
         'habit-blue': {
           DEFAULT: 'hsl(var(--habit-blue))',
         },
+        'habit-red': {
+          DEFAULT: 'hsl(var(--habit-red))',
+          foreground: 'hsl(var(--habit-red-foreground))',
+          border: 'hsl(var(--habit-red-border))',
+        },
+        'habit-indigo': {
+          DEFAULT: 'hsl(var(--habit-indigo))',
+          foreground: 'hsl(var(--habit-indigo-foreground))',
+          border: 'hsl(var(--habit-indigo-border))',
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

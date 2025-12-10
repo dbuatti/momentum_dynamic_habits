@@ -3,20 +3,22 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Dumbbell, Wind, BookOpen, Music, AlertCircle, Loader2, Zap } from 'lucide-react';
+import { ArrowLeft, Dumbbell, Wind, BookOpen, Music, AlertCircle, Loader2, Zap, Home, Code } from 'lucide-react'; // Added Home and Code
 import { useCompletedTasks } from '@/hooks/useCompletedTasks';
 import { format, parseISO } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { PageHeader } from '@/components/layout/PageHeader'; // Import PageHeader
+import { PageHeader } from '@/components/layout/PageHeader';
 
 const habitIconMap: { [key: string]: React.ElementType } = {
   pushups: Dumbbell,
   meditation: Wind,
   kinesiology: BookOpen,
   piano: Music,
+  housework: Home, // New
+  projectwork: Code, // New
 };
 
 const History = () => {
@@ -60,7 +62,7 @@ const History = () => {
 
   return (
     <div className="w-full max-w-lg mx-auto space-y-8">
-      <PageHeader title="Activity History" backLink="/" /> {/* Using the new PageHeader */}
+      <PageHeader title="Activity History" backLink="/" />
 
       {completedTasks && completedTasks.length === 0 ? (
         <div className="bg-card rounded-2xl p-6 shadow-sm text-center">
@@ -78,6 +80,9 @@ const History = () => {
             <CardContent className="space-y-4">
               {tasks.map((task, index) => {
                 const Icon = habitIconMap[task.original_source];
+                // Determine if the task is time-based (duration_used is not null)
+                const isTimeBased = task.duration_used !== null && task.original_source !== 'pushups';
+                
                 return (
                   <React.Fragment key={task.id}>
                     <div className="flex items-center justify-between">
@@ -91,10 +96,8 @@ const History = () => {
                         </div>
                       </div>
                       <div className="text-right">
-                        {task.duration_used !== null && task.original_source === 'meditation' ? (
-                          <p className="font-semibold">{task.duration_used / 60} min</p>
-                        ) : task.duration_used !== null && (task.original_source === 'kinesiology' || task.original_source === 'piano') ? (
-                          <p className="font-semibold">{task.duration_used / 60} min</p>
+                        {isTimeBased ? (
+                          <p className="font-semibold">{task.duration_used! / 60} min</p>
                         ) : (
                           <p className="font-semibold">{task.xp_earned} reps</p> // Assuming XP earned is equivalent to reps for pushups
                         )}

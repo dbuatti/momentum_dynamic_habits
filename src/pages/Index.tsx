@@ -1,7 +1,7 @@
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import HomeHeader from "@/components/HomeHeader";
 import { QuickLogButton } from "@/components/dashboard/QuickLogButton";
-import { BookOpen, Dumbbell, Music, Wind, AlertCircle } from "lucide-react";
+import { BookOpen, Dumbbell, Music, Wind, AlertCircle, Home, Code } from "lucide-react"; // Added Home and Code
 import { DisciplineBanner } from "@/components/dashboard/DisciplineBanner";
 import { TodaysProgressCard } from "@/components/dashboard/TodaysProgressCard";
 import { JourneyProgressCard } from "@/components/dashboard/JourneyProgressCard";
@@ -12,33 +12,39 @@ import { WeeklySummaryCard } from "@/components/dashboard/WeeklySummaryCard";
 import { PatternsCard } from "@/components/dashboard/PatternsCard";
 import { NextBadgeCard } from "@/components/dashboard/NextBadgeCard";
 import { FooterStats } from "@/components/dashboard/FooterStats";
-import { LevelProgressCard } from "@/components/dashboard/LevelProgressCard"; // Import new component
+import { LevelProgressCard } from "@/components/dashboard/LevelProgressCard";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { DashboardSkeleton } from "@/components/dashboard/DashboardSkeleton";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import React from "react"; // Import React for React.ElementType
+import React from "react";
 
 const habitIconMap: { [key: string]: React.ElementType } = {
   pushups: Dumbbell,
   meditation: Wind,
   kinesiology: BookOpen,
   piano: Music,
+  housework: Home, // New
+  projectwork: Code, // New
 };
 
 // Define unique colors for each habit using custom Tailwind classes
-const quickLogVariantMap: { [key: string]: 'green' | 'purple' | 'orange' | 'blue' } = {
+const quickLogVariantMap: { [key: string]: 'green' | 'purple' | 'orange' | 'blue' | 'red' | 'indigo' } = {
   pushups: 'orange',
   meditation: 'blue',
   kinesiology: 'green',
   piano: 'purple',
+  housework: 'red', // New
+  projectwork: 'indigo', // New
 };
 
-const habitDetailColorMap: { [key: string]: 'orange' | 'blue' | 'green' | 'purple' } = {
+const habitDetailColorMap: { [key: string]: 'orange' | 'blue' | 'green' | 'purple' | 'red' | 'indigo' } = {
   pushups: 'orange',
   meditation: 'blue',
   kinesiology: 'green',
   piano: 'purple',
+  housework: 'red', // New
+  projectwork: 'indigo', // New
 };
 
 const Index = () => {
