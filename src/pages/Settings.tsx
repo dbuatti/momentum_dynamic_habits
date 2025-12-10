@@ -5,8 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import {
-  Calendar, Target, TrendingUp, Star, Flame, Shield, Crown, Zap, Trophy, Sparkles, Mountain, Award, Sun, Moon, Heart, Volume2, Dumbbell, Timer, LogOut, AlertCircle, Loader2, Clock
-} from 'lucide-react'; // Removed unused icons: Smile, CloudRain, Trees, Waves, Wind, Bird, Droplets
+  Calendar, Target, TrendingUp, Star, Flame, Shield, Crown, Zap, Trophy, Sparkles, Mountain, Award, Sun, Moon, Heart, Dumbbell, Timer, LogOut, AlertCircle, Loader2, Clock
+} from 'lucide-react'; // Removed Volume2 and other unused icons
 import { cn } from '@/lib/utils';
 import { useSession } from '@/contexts/SessionContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';

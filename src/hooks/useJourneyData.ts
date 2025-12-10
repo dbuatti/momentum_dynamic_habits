@@ -4,7 +4,7 @@ import { useSession } from '@/contexts/SessionContext';
 import { differenceInDays } from 'date-fns'; // Import differenceInDays
 
 const fetchJourneyData = async (userId: string) => {
-    const profilePromise = supabase.from('profiles').select('journey_start_date, daily_streak, meditation_sound, timezone, default_auto_schedule_start_time, default_auto_schedule_end_time, first_name, last_name').eq('id', userId).single();
+    const profilePromise = supabase.from('profiles').select('journey_start_date, daily_streak, timezone, default_auto_schedule_start_time, default_auto_schedule_end_time, first_name, last_name').eq('id', userId).single(); // Removed meditation_sound
     const habitsPromise = supabase.from('user_habits').select('*').eq('user_id', userId);
     const allBadgesPromise = supabase.from('badges').select('id, name, icon_name, requirement_type, requirement_value, habit_key');
     const achievedBadgesPromise = supabase.from('user_badges').select('badge_id').eq('user_id', userId);

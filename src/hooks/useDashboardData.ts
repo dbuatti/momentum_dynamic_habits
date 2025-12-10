@@ -5,7 +5,7 @@ import { startOfDay, endOfDay, differenceInDays, startOfWeek, endOfWeek, subWeek
 import { initialHabits } from '@/lib/habit-data';
 
 const fetchDashboardData = async (userId: string) => {
-  const profilePromise = supabase.from('profiles').select('journey_start_date, daily_streak, last_active_at, first_name, last_name, timezone, xp, level, tasks_completed_today').eq('id', userId).single();
+  const profilePromise = supabase.from('profiles').select('journey_start_date, daily_streak, last_active_at, first_name, last_name, timezone, xp, level, tasks_completed_today').eq('id', userId).single(); // Removed meditation_sound
   const habitsPromise = supabase.from('user_habits').select('*').eq('user_id', userId);
   const allBadgesPromise = supabase.from('badges').select('id, name, icon_name, requirement_type, requirement_value, habit_key');
   const achievedBadgesPromise = supabase.from('user_badges').select('badge_id').eq('user_id', userId);
