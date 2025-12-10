@@ -210,7 +210,7 @@ const fetchDashboardData = async (userId: string) => {
     nextBadge: nextBadgeData ? { ...nextBadgeData, progress: nextBadgeProgress } : null,
     lastActiveText,
     firstName: profile?.first_name || null,
-    lastName: profile?.last_name || null, // Added lastName here
+    lastName: profile?.last_name || null,
     reviewQuestion: randomReviewQuestion || null,
     tip: randomTip || null,
     timezone: profile?.timezone || 'UTC',

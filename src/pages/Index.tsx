@@ -65,7 +65,7 @@ const Index = () => {
     );
   }
 
-  const { daysActive, totalJourneyDays, daysToNextMonth, habits, weeklySummary, patterns, nextBadge, lastActiveText, firstName, reviewQuestion, tip, xp, level, averageDailyTasks } = data;
+  const { daysActive, totalJourneyDays, daysToNextMonth, habits, weeklySummary, patterns, nextBadge, lastActiveText, firstName, lastName, reviewQuestion, tip, xp, level, averageDailyTasks } = data;
 
   const handleNextReviewQuestion = () => {
     refetch(); // Refetch dashboard data to get a new random question
@@ -78,6 +78,7 @@ const Index = () => {
           dayCounter={daysActive} 
           lastActiveText={lastActiveText} 
           firstName={firstName}
+          lastName={lastName} // Pass lastName here
           xp={xp}
           level={level}
         />

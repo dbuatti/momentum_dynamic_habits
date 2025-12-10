@@ -6,21 +6,23 @@ interface HomeHeaderProps {
   dayCounter: number;
   lastActiveText: string;
   firstName: string | null;
-  xp: number; // New prop for XP
-  level: number; // New prop for Level
+  lastName: string | null; // New prop for Last Name
+  xp: number;
+  level: number;
 }
 
-const getGreeting = (firstName: string | null) => {
+const getGreeting = (firstName: string | null, lastName: string | null) => {
   const hour = new Date().getHours();
   let greeting = "";
   if (hour < 12) greeting = "Good morning";
   else if (hour < 18) greeting = "Good afternoon";
   else greeting = "Good evening";
 
-  return firstName ? `${greeting}, ${firstName}` : greeting;
+  const fullName = [firstName, lastName].filter(Boolean).join(' ');
+  return fullName ? `${greeting}, ${fullName}` : greeting;
 };
 
-const HomeHeader: React.FC<HomeHeaderProps> = ({ dayCounter, lastActiveText, firstName, xp, level }) => {
+const HomeHeader: React.FC<HomeHeaderProps> = ({ dayCounter, lastActiveText, firstName, lastName, xp, level }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
@@ -35,7 +37,7 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({ dayCounter, lastActiveText, fir
   return (
     <header className="flex justify-between items-start bg-background">
       <div>
-        <h1 className="text-3xl font-bold text-foreground">{getGreeting(firstName)}</h1>
+        <h1 className="text-3xl font-bold text-foreground">{getGreeting(firstName, lastName)}</h1>
         <p className="text-md text-muted-foreground mt-1">
           Day {dayCounter} • {formattedTime}
         </p>
