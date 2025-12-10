@@ -4,7 +4,7 @@ import { useSession } from '@/contexts/SessionContext';
 import { useNavigate } from 'react-router-dom';
 import { showSuccess, showError } from '@/utils/toast';
 import { initialHabits } from '@/lib/habit-data';
-import { calculateLevel } from '@/utils/leveling'; // Import calculateLevel
+import { calculateLevel } from '@/utils/leveling';
 
 interface LogHabitParams {
   habitKey: string;
@@ -18,7 +18,12 @@ const logHabit = async ({ userId, habitKey, value, taskName }: LogHabitParams & 
     throw new Error(`Habit configuration not found for key: ${habitKey}`);
   }
 
-  const actualValue = habitConfig.type === 'time' && habitConfig.unit === 'min' ? value * 60 : value;
+  // For count-based habits, we use the value directly
+  // For time-based habits, we convert minutes to seconds if needed
+  const actualValue = habitConfig.type === 'time' && habitConfig.unit === 'min' 
+    ? value * 60 
+    : value;
+
   const xpEarned = Math.round(actualValue * habitConfig.xpPerUnit);
   const energyCost = Math.round(actualValue * habitConfig.energyCostPerUnit);
 
@@ -51,7 +56,7 @@ const logHabit = async ({ userId, habitKey, value, taskName }: LogHabitParams & 
 
   const { data: userHabitData, error: userHabitFetchError } = await supabase
     .from('user_habits')
-    .select('current_daily_goal, momentum_level, long_term_goal') // Added long_term_goal
+    .select('current_daily_goal, momentum_level, long_term_goal')
     .eq('user_id', userId)
     .eq('habit_key', habitKey)
     .single();
@@ -61,22 +66,26 @@ const logHabit = async ({ userId, habitKey, value, taskName }: LogHabitParams & 
   let newDailyGoal = userHabitData.current_daily_goal;
   let newMomentumLevel = userHabitData.momentum_level;
   let newXp = (profileData.xp || 0) + xpEarned;
-  let newLevel = calculateLevel(newXp); // Calculate new level based on new XP
+  let newLevel = calculateLevel(newXp);
 
   const goalMet = (habitConfig.type === 'time' && value >= userHabitData.current_daily_goal) || 
                   (habitConfig.type === 'count' && value >= userHabitData.current_daily_goal);
 
   if (goalMet) {
     // Increase goal slightly, improve momentum
-    newDailyGoal = Math.min(userHabitData.current_daily_goal + 1, userHabitData.long_term_goal); // Use user's long_term_goal
+    newDailyGoal = Math.min(userHabitData.current_daily_goal + 1, userHabitData.long_term_goal);
     if (newMomentumLevel === 'Struggling') newMomentumLevel = 'Building';
     else if (newMomentumLevel === 'Building') newMomentumLevel = 'Strong';
     else if (newMomentumLevel === 'Strong') newMomentumLevel = 'Crushing';
   } else {
-    newDailyGoal = Math.max(1, userHabitData.current_daily_goal - 1);
-    if (newMomentumLevel === 'Crushing') newMomentumLevel = 'Strong';
-    else if (newMomentumLevel === 'Strong') newMomentumLevel = 'Building';
-    else if (newMomentumLevel === 'Building') newMomentumLevel = 'Struggling';
+    // For manual check-off of non-goal-met habits, we don't decrease the goal
+    // Only decrease if it's a time-based habit that was significantly under goal
+    if (habitConfig.type === 'time' && value < userHabitData.current_daily_goal * 0.5) {
+      newDailyGoal = Math.max(1, userHabitData.current_daily_goal - 1);
+      if (newMomentumLevel === 'Crushing') newMomentumLevel = 'Strong';
+      else if (newMomentumLevel === 'Strong') newMomentumLevel = 'Building';
+      else if (newMomentumLevel === 'Building') newMomentumLevel = 'Struggling';
+    }
   }
 
   const { error: habitUpdateError } = await supabase
@@ -96,7 +105,7 @@ const logHabit = async ({ userId, habitKey, value, taskName }: LogHabitParams & 
       last_active_at: new Date().toISOString(),
       tasks_completed_today: (profileData.tasks_completed_today || 0) + 1,
       xp: newXp,
-      level: newLevel, // Update the level here
+      level: newLevel,
     })
     .eq('id', userId);
 

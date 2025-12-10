@@ -3,6 +3,7 @@ import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { Check, ChevronDown } from 'lucide-react';
 import React from 'react';
+import { HabitCheckButton } from './HabitCheckButton';
 
 interface HabitDetailCardProps {
   icon: React.ReactNode;
@@ -11,47 +12,63 @@ interface HabitDetailCardProps {
   goal: string;
   progressText: string;
   progressValue: number;
-  color: 'orange' | 'blue' | 'green' | 'purple' | 'red' | 'indigo'; // Updated to include all habit colors
+  color: 'orange' | 'blue' | 'green' | 'purple' | 'red' | 'indigo';
   isComplete: boolean;
-  daysCompletedLast7Days: number; // New prop
+  daysCompletedLast7Days: number;
+  habitKey: string;
+  dailyGoal: number;
+  onCheck: () => void;
 }
 
-export const HabitDetailCard: React.FC<HabitDetailCardProps> = ({ icon, title, momentum, goal, progressText, progressValue, color, isComplete, daysCompletedLast7Days }) => {
+export const HabitDetailCard: React.FC<HabitDetailCardProps> = ({ 
+  icon, 
+  title, 
+  momentum, 
+  goal, 
+  progressText, 
+  progressValue, 
+  color, 
+  isComplete, 
+  daysCompletedLast7Days,
+  habitKey,
+  dailyGoal,
+  onCheck
+}) => {
   // Map color prop to Tailwind classes
   const iconBgClass = {
     orange: 'bg-orange-100',
     blue: 'bg-blue-100',
     green: 'bg-habit-green',
     purple: 'bg-habit-purple',
-    red: 'bg-habit-red', // New
-    indigo: 'bg-habit-indigo', // New
+    red: 'bg-habit-red',
+    indigo: 'bg-habit-indigo',
   }[color];
-
+  
   const iconTextColorClass = {
     orange: 'text-orange-500',
     blue: 'text-blue-500',
     green: 'text-habit-green-foreground',
     purple: 'text-habit-purple-foreground',
-    red: 'text-habit-red-foreground', // New
-    indigo: 'text-habit-indigo-foreground', // New
+    red: 'text-habit-red-foreground',
+    indigo: 'text-habit-indigo-foreground',
   }[color];
-
+  
   const progressColorClass = {
     orange: '[&>div]:bg-habit-orange',
     blue: '[&>div]:bg-habit-blue',
     green: '[&>div]:bg-habit-green',
     purple: '[&>div]:bg-habit-purple',
-    red: '[&>div]:bg-habit-red-foreground', // Use foreground color for progress bar
-    indigo: '[&>div]:bg-habit-indigo-foreground', // Use foreground color for progress bar
+    red: '[&>div]:bg-habit-red-foreground',
+    indigo: '[&>div]:bg-habit-indigo-foreground',
   }[color];
-
+  
   const dotColorClass = {
     orange: 'bg-habit-orange',
     blue: 'bg-habit-blue',
     green: 'bg-habit-green',
     purple: 'bg-habit-purple',
-    red: 'bg-habit-red-foreground', // Use foreground color for dots
-    indigo: 'bg-habit-indigo-foreground', // Use foreground color for dots
+    red: 'bg-habit-red-foreground',
+    indigo: 'bg-habit-indigo-foreground',
   }[color];
 
   return (
@@ -62,10 +79,14 @@ export const HabitDetailCard: React.FC<HabitDetailCardProps> = ({ icon, title, m
             <div className="flex justify-between items-center w-full">
               <div className="flex items-center space-x-3">
                 <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", iconBgClass)}>
-                  {React.cloneElement(icon as React.ReactElement, { className: cn("w-5 h-5", iconTextColorClass) })}
+                  {React.cloneElement(icon as React.ReactElement, { 
+                    className: cn("w-5 h-5", iconTextColorClass) 
+                  })}
                 </div>
                 <div>
-                  <h4 className="font-semibold text-left">{title} <span className="text-xs font-normal text-muted-foreground">• {momentum}</span></h4>
+                  <h4 className="font-semibold text-left">{title} 
+                    <span className="text-xs font-normal text-muted-foreground">• {momentum}</span>
+                  </h4>
                   <p className="text-sm text-muted-foreground text-left">{goal}</p>
                 </div>
               </div>
@@ -77,7 +98,10 @@ export const HabitDetailCard: React.FC<HabitDetailCardProps> = ({ icon, title, m
             <div className="flex justify-between items-center mt-2">
               <div className="flex space-x-1.5">
                 {[...Array(7)].map((_, i) => (
-                  <div key={i} className={cn("w-2 h-2 rounded-full", i < daysCompletedLast7Days ? dotColorClass : "bg-gray-200")}></div>
+                  <div 
+                    key={i} 
+                    className={cn("w-2 h-2 rounded-full", i < daysCompletedLast7Days ? dotColorClass : "bg-gray-200")}
+                  ></div>
                 ))}
               </div>
               {isComplete ? (
@@ -86,7 +110,15 @@ export const HabitDetailCard: React.FC<HabitDetailCardProps> = ({ icon, title, m
                   <span>done today</span>
                 </div>
               ) : (
-                <p className="text-sm font-medium">{progressText}</p>
+                <div className="flex items-center space-x-2">
+                  <p className="text-sm font-medium">{progressText}</p>
+                  <HabitCheckButton 
+                    habitKey={habitKey}
+                    isComplete={isComplete}
+                    dailyGoal={dailyGoal}
+                    onCheck={onCheck}
+                  />
+                </div>
               )}
             </div>
           </AccordionContent>

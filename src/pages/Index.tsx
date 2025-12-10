@@ -17,7 +17,7 @@ import { useDashboardData } from "@/hooks/useDashboardData";
 import { DashboardSkeleton } from "@/components/dashboard/DashboardSkeleton";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import React from "react";
+import React, { useState } from "react";
 
 const habitIconMap: { [key: string]: React.ElementType } = {
   pushups: Dumbbell,
@@ -49,6 +49,20 @@ const habitDetailColorMap: { [key: string]: 'orange' | 'blue' | 'green' | 'purpl
 
 const Index = () => {
   const { data, isLoading, isError, refetch } = useDashboardData();
+  const [checkedHabits, setCheckedHabits] = useState<Set<string>>(new Set());
+
+  const handleHabitCheck = (habitKey: string) => {
+    setCheckedHabits(prev => new Set(prev).add(habitKey));
+    // Refetch data after a short delay to allow for backend processing
+    setTimeout(() => {
+      refetch();
+      setCheckedHabits(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(habitKey);
+        return newSet;
+      });
+    }, 1000);
+  };
 
   if (isLoading) {
     return <DashboardSkeleton />;
@@ -65,22 +79,38 @@ const Index = () => {
     );
   }
 
-  const { daysActive, totalJourneyDays, daysToNextMonth, habits, weeklySummary, patterns, nextBadge, lastActiveText, firstName, lastName, reviewQuestion, tip, xp, level, averageDailyTasks } = data;
+  const { 
+    daysActive, 
+    totalJourneyDays, 
+    daysToNextMonth, 
+    habits, 
+    weeklySummary, 
+    patterns, 
+    nextBadge, 
+    lastActiveText, 
+    firstName, 
+    lastName,
+    reviewQuestion, 
+    tip, 
+    xp, 
+    level,
+    averageDailyTasks
+  } = data;
 
   const handleNextReviewQuestion = () => {
     refetch(); // Refetch dashboard data to get a new random question
   };
 
   return (
-    <div className="flex flex-col"> {/* Removed bg-background */}
+    <div className="flex flex-col">
       <div className="max-w-lg mx-auto w-full">
         <HomeHeader 
           dayCounter={daysActive} 
           lastActiveText={lastActiveText} 
-          firstName={firstName}
-          lastName={lastName} // Pass lastName here
-          xp={xp}
-          level={level}
+          firstName={firstName} 
+          lastName={lastName}
+          xp={xp} 
+          level={level} 
         />
         <main className="space-y-6">
           <div className="grid grid-cols-2 gap-3">
@@ -113,6 +143,9 @@ const Index = () => {
           {habits.map(habit => {
             const Icon = habitIconMap[habit.key];
             const color = habitDetailColorMap[habit.key];
+            const isTemporarilyChecked = checkedHabits.has(habit.key);
+            const isComplete = isTemporarilyChecked || habit.isComplete;
+            
             return (
               <HabitDetailCard
                 key={habit.key}
@@ -123,8 +156,11 @@ const Index = () => {
                 progressText={`${Math.round(habit.dailyProgress)}/${habit.dailyGoal} ${habit.unit}`}
                 progressValue={(habit.dailyProgress / habit.dailyGoal) * 100}
                 color={color}
-                isComplete={habit.isComplete}
+                isComplete={isComplete}
                 daysCompletedLast7Days={habit.daysCompletedLast7Days}
+                habitKey={habit.key}
+                dailyGoal={habit.dailyGoal}
+                onCheck={() => handleHabitCheck(habit.key)}
               />
             );
           })}
