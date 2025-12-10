@@ -79,7 +79,7 @@ const AppRoutes = () => {
         element={<ProtectedRoute><History /></ProtectedRoute>}
       />
       {/* Wrap NotFound with Layout for consistent styling */}
-      <Route path="*" element={<Layout><NotFound /></Layout>} />
+      <Route path="*" element={<ProtectedRoute><NotFound /></ProtectedRoute>} />
     </Routes>
   );
 };
