@@ -3,7 +3,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Dumbbell, Wind, BookOpen, Music, AlertCircle, Loader2, Zap, Home, Code } from 'lucide-react'; // Added Home and Code
+import { ArrowLeft, Dumbbell, Wind, BookOpen, Music, AlertCircle, Loader2, Zap, Home, Code, ClipboardList } from 'lucide-react'; // Added ClipboardList
 import { useCompletedTasks } from '@/hooks/useCompletedTasks';
 import { format, parseISO } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -65,9 +65,13 @@ const History = () => {
       <PageHeader title="Activity History" backLink="/" />
 
       {completedTasks && completedTasks.length === 0 ? (
-        <div className="bg-card rounded-2xl p-6 shadow-sm text-center">
-          <p className="text-lg text-muted-foreground">
-            No completed tasks yet! Start logging your habits to see your progress here.
+        <div className="bg-card rounded-2xl p-8 shadow-sm text-center space-y-4">
+          <ClipboardList className="w-16 h-16 text-muted-foreground mx-auto" />
+          <p className="text-xl font-semibold text-foreground">
+            No completed tasks yet!
+          </p>
+          <p className="text-muted-foreground">
+            Start logging your habits on the dashboard to see your progress here.
           </p>
           <Link to="/"><Button className="mt-4">Go to Dashboard</Button></Link>
         </div>

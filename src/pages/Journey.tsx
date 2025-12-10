@@ -6,7 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useJourneyData } from '@/hooks/useJourneyData';
 import { format, differenceInDays, startOfDay } from 'date-fns';
 import { Progress } from '@/components/ui/progress';
-import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton'; // Reusing for similar loading state
+import { JourneySkeleton } from '@/components/dashboard/JourneySkeleton'; // Import new skeleton
 
 // Icon map for badges, similar to Settings page
 const iconMap: { [key: string]: React.ElementType } = { Star, Flame };
@@ -15,7 +15,7 @@ const Journey = () => {
   const { data, isLoading, isError } = useJourneyData();
 
   if (isLoading) {
-    return <DashboardSkeleton />; // Using a general skeleton for loading
+    return <JourneySkeleton />; // Using the new JourneySkeleton for loading
   }
 
   if (isError || !data) {
