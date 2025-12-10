@@ -18,6 +18,7 @@ import { DashboardSkeleton } from "@/components/dashboard/DashboardSkeleton";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import React, { useState } from "react";
+import { useOnboardingCheck } from "@/hooks/useOnboardingCheck";
 
 const habitIconMap: { [key: string]: React.ElementType } = {
   pushups: Dumbbell,
@@ -49,6 +50,7 @@ const habitDetailColorMap: { [key: string]: 'orange' | 'blue' | 'green' | 'purpl
 
 const Index = () => {
   const { data, isLoading, isError, refetch } = useDashboardData();
+  const { isLoading: isOnboardingLoading } = useOnboardingCheck();
   const [checkedHabits, setCheckedHabits] = useState<Set<string>>(new Set());
 
   const handleHabitCheck = (habitKey: string) => {
@@ -64,7 +66,7 @@ const Index = () => {
     }, 1000);
   };
 
-  if (isLoading) {
+  if (isLoading || isOnboardingLoading) {
     return <DashboardSkeleton />;
   }
 
@@ -89,12 +91,12 @@ const Index = () => {
     nextBadge, 
     lastActiveText, 
     firstName, 
-    lastName,
+    lastName, 
     reviewQuestion, 
     tip, 
     xp, 
-    level,
-    averageDailyTasks
+    level, 
+    averageDailyTasks 
   } = data;
 
   const handleNextReviewQuestion = () => {
@@ -108,7 +110,7 @@ const Index = () => {
           dayCounter={daysActive} 
           lastActiveText={lastActiveText} 
           firstName={firstName} 
-          lastName={lastName}
+          lastName={lastName} 
           xp={xp} 
           level={level} 
         />
@@ -117,6 +119,7 @@ const Index = () => {
             {habits.map(habit => {
               const Icon = habitIconMap[habit.key];
               const variant = quickLogVariantMap[habit.key];
+              
               return (
                 <QuickLogButton
                   key={habit.key}
@@ -132,6 +135,7 @@ const Index = () => {
               );
             })}
           </div>
+          
           <DisciplineBanner />
           <LevelProgressCard currentXp={xp} currentLevel={level} />
           <TodaysProgressCard habits={habits} />
@@ -140,6 +144,7 @@ const Index = () => {
             totalJourneyDays={totalJourneyDays} 
             daysToNextMonth={daysToNextMonth} 
           />
+          
           {habits.map(habit => {
             const Icon = habitIconMap[habit.key];
             const color = habitDetailColorMap[habit.key];
@@ -164,6 +169,7 @@ const Index = () => {
               />
             );
           })}
+          
           {reviewQuestion && (
             <QuickReviewCard 
               question={reviewQuestion.question} 
@@ -171,6 +177,7 @@ const Index = () => {
               onNext={handleNextReviewQuestion} 
             />
           )}
+          
           {tip && <TipCard tip={tip} />}
           <WeeklySummaryCard summary={weeklySummary} />
           <PatternsCard patterns={patterns} />
@@ -179,8 +186,8 @@ const Index = () => {
             streak={patterns.streak} 
             daysActive={daysActive} 
             totalPushups={habits.find(h => h.key === 'pushups')?.lifetimeProgress || 0} 
-            totalMeditation={habits.find(h => h.key === 'meditation')?.lifetimeProgress || 0}
-            averageDailyTasks={averageDailyTasks}
+            totalMeditation={habits.find(h => h.key === 'meditation')?.lifetimeProgress || 0} 
+            averageDailyTasks={averageDailyTasks} 
           />
         </main>
         <MadeWithDyad />

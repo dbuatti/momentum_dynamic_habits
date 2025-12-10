@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useSession } from '@/contexts/SessionContext';
 import { useEffect } from 'react';
-import { Loader2 } from 'lucide-react'; // Import Loader2
+import { Loader2 } from 'lucide-react';
 
 const Login = () => {
   const { session, loading } = useSession();
@@ -13,7 +13,9 @@ const Login = () => {
   useEffect(() => {
     if (!loading && session) {
       console.log('Login useEffect - Session found, navigating to /');
-      navigate('/');
+      // After login, check if onboarding is needed
+      navigate('/onboarding', { replace: true });
+      
       if (window.location.hash) {
         window.history.replaceState({}, document.title, window.location.pathname);
       }
@@ -34,7 +36,7 @@ const Login = () => {
     <div className="bg-background py-12 px-4 sm:px-6 lg:px-8 min-h-screen flex items-center justify-center">
       <div className="max-w-md w-full space-y-8">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-foreground"> {/* Changed text-gray-900 to text-foreground */}
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-foreground">
             Adaptive Growth Coach
           </h2>
         </div>

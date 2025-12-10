@@ -6,11 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Home, Dumbbell, Wind, BookOpen, Music, Trophy, Settings, Menu, LogOut, BarChart, Code } from 'lucide-react'; // Added Code
+import { Home, Dumbbell, Wind, BookOpen, Music, Trophy, Settings, Menu, LogOut, BarChart, Code, Moon, Sun } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useSession } from '@/contexts/SessionContext';
-import { useDashboardData } from '@/hooks/useDashboardData'; // To get first name
+import { useDashboardData } from '@/hooks/useDashboardData';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface NavLinkProps {
   to: string;
@@ -22,11 +23,18 @@ interface NavLinkProps {
 
 const NavLink: React.FC<NavLinkProps> = ({ to, icon: Icon, label, currentPath, onClick }) => {
   const isActive = currentPath === to;
+  
   return (
-    <Link to={to} onClick={onClick} className={cn(
-      "flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-      isActive ? "bg-sidebar-primary text-sidebar-primary-foreground" : "text-sidebar-foreground"
-    )}>
+    <Link
+      to={to}
+      onClick={onClick}
+      className={cn(
+        "flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+        isActive
+          ? "bg-sidebar-primary text-sidebar-primary-foreground"
+          : "text-sidebar-foreground"
+      )}
+    >
       <Icon className="h-5 w-5" />
       {label}
     </Link>
@@ -41,10 +49,15 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick }) => {
   const { session, signOut } = useSession();
   const { data: dashboardData } = useDashboardData();
   const location = useLocation();
+  const { theme, setTheme } = useTheme();
 
   const handleSignOut = async () => {
     await signOut();
     if (onLinkClick) onLinkClick();
+  };
+
+  const toggleTheme = () => {
+    setTheme(theme === "dark" ? "light" : "dark");
   };
 
   const navItems = [
@@ -55,13 +68,13 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick }) => {
     { to: "/log/meditation", icon: Wind, label: "Meditation" },
     { to: "/log/kinesiology", icon: BookOpen, label: "Study" },
     { to: "/log/piano", icon: Music, label: "Piano" },
-    { to: "/log/housework", icon: Home, label: "House Work" }, // New
-    { to: "/log/projectwork", icon: Code, label: "Project Work" }, // New
+    { to: "/log/housework", icon: Home, label: "House Work" },
+    { to: "/log/projectwork", icon: Code, label: "Project Work" },
     { to: "/settings", icon: Settings, label: "Settings" },
   ];
 
-  const displayName = dashboardData?.firstName && dashboardData?.lastName
-    ? `${dashboardData.firstName} ${dashboardData.lastName}`
+  const displayName = dashboardData?.firstName && dashboardData?.lastName 
+    ? `${dashboardData.firstName} ${dashboardData.lastName}` 
     : dashboardData?.firstName || session?.user?.email;
 
   return (
@@ -98,10 +111,15 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick }) => {
             </div>
           </div>
         )}
-        <Button variant="secondary" className="w-full" onClick={handleSignOut}>
-          <LogOut className="h-4 w-4 mr-2" />
-          Sign Out
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" className="flex-1" onClick={handleSignOut}>
+            <LogOut className="h-4 w-4 mr-2" />
+            Sign Out
+          </Button>
+          <Button variant="outline" size="icon" onClick={toggleTheme}>
+            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </Button>
+        </div>
       </div>
     </div>
   );
