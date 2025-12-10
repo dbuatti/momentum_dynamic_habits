@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -160,9 +160,14 @@ const Settings = () => {
   const selectedTimezone = profile?.timezone || 'UTC';
   const defaultAutoScheduleStartTime = profile?.default_auto_schedule_start_time || '09:00';
   const defaultAutoScheduleEndTime = profile?.default_auto_schedule_end_time || '17:00';
-  const firstName = profile?.first_name || '';
-  const lastName = profile?.last_name || '';
+  const [firstName, setFirstName] = useState(profile?.first_name || ''); // Use local state for input
+  const [lastName, setLastName] = useState(profile?.last_name || ''); // Use local state for input
 
+  // Update local state when profile data changes
+  React.useEffect(() => {
+    setFirstName(profile?.first_name || '');
+    setLastName(profile?.last_name || '');
+  }, [profile?.first_name, profile?.last_name]);
 
   const meditationSounds = [
     { label: "Silence", icon: Smile, key: "Silence" },
@@ -199,23 +204,21 @@ const Settings = () => {
     }
   };
 
-  const handleFirstNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newFirstName = e.target.value;
-    if (newFirstName !== firstName) {
-      updateProfile({ first_name: newFirstName });
+  const handleFirstNameBlur = () => {
+    if (firstName !== profile?.first_name) {
+      updateProfile({ first_name: firstName });
     }
   };
 
-  const handleLastNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newLastName = e.target.value;
-    if (newLastName !== lastName) {
-      updateProfile({ last_name: newLastName });
+  const handleLastNameBlur = () => {
+    if (lastName !== profile?.last_name) {
+      updateProfile({ last_name: lastName });
     }
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto space-y-6"> {/* Removed min-h-screen bg-gray-50 dark:bg-black and p-4 */}
-      <PageHeader title="Settings" backLink="/" /> {/* Using the new PageHeader */}
+    <div className="w-full max-w-2xl mx-auto space-y-6">
+      <PageHeader title="Settings" backLink="/" />
 
       {session?.user && (
         <Card>
@@ -241,8 +244,8 @@ const Settings = () => {
             <Input
               id="first-name"
               value={firstName}
-              onChange={(e) => profile && updateProfile({ first_name: e.target.value })}
-              onBlur={handleFirstNameChange}
+              onChange={(e) => setFirstName(e.target.value)}
+              onBlur={handleFirstNameBlur}
               disabled={isUpdatingProfile}
               className="mt-1"
             />
@@ -252,8 +255,8 @@ const Settings = () => {
             <Input
               id="last-name"
               value={lastName}
-              onChange={(e) => profile && updateProfile({ last_name: e.target.value })}
-              onBlur={handleLastNameChange}
+              onChange={(e) => setLastName(e.target.value)}
+              onBlur={handleLastNameBlur}
               disabled={isUpdatingProfile}
               className="mt-1"
             />

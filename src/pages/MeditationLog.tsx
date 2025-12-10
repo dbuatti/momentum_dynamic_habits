@@ -26,74 +26,25 @@ const MeditationLog = () => {
   const initialTimeInSeconds = selectedDuration * 60;
 
   const { data: journeyData } = useJourneyData();
-  const selectedMeditationSound = journeyData?.profile?.meditation_sound || 'Forest';
+  // The selectedMeditationSound is still fetched but no longer used for complex sound generation here.
+  // It's kept in useJourneyData and Settings for user preference storage.
 
-  const playSound = useCallback((soundKey: string) => {
-    if (soundKey === 'Silence') {
-      console.log('Meditation finished: Silence selected, no sound played.');
-      return;
-    }
-
-    const audioContext = new (window.AudioContext)();
+  const playSound = useCallback(() => {
+    const audioContext = new AudioContext(); // Fixed: Using standard AudioContext
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
+
     oscillator.connect(gainNode);
     gainNode.connect(audioContext.destination);
 
-    let frequency = 523.25; // Default C5
-    let duration = 0.5; // Default duration
-    let type: OscillatorType = 'sine';
+    oscillator.type = 'sine'; // A simple sine wave
+    oscillator.frequency.setValueAtTime(440, audioContext.currentTime); // A4 note
+    gainNode.gain.setValueAtTime(0.5, audioContext.currentTime); // Volume
 
-    switch (soundKey) {
-      case 'Rain':
-        frequency = 220; // A3
-        duration = 0.7;
-        type = 'sawtooth';
-        break;
-      case 'Forest':
-        frequency = 330; // E4
-        duration = 0.6;
-        type = 'sine';
-        break;
-      case 'Ocean':
-        frequency = 277; // C#4
-        duration = 0.8;
-        type = 'triangle';
-        break;
-      case 'Fire':
-        frequency = 554; // C#5
-        duration = 0.4;
-        type = 'square';
-        break;
-      case 'Wind':
-        frequency = 494; // B4
-        duration = 0.7;
-        type = 'sine';
-        break;
-      case 'Birds':
-        frequency = 880; // A5
-        duration = 0.3;
-        type = 'sine';
-        break;
-      case 'Stream':
-        frequency = 392; // G4
-        duration = 0.9;
-        type = 'triangle';
-        break;
-      default:
-        // Default to 'Forest' sound if not explicitly handled
-        frequency = 330; // E4
-        duration = 0.6;
-        type = 'sine';
-    }
-
-    oscillator.type = type;
-    oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
-    gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
     oscillator.start();
-    oscillator.stop(audioContext.currentTime + duration);
-    console.log(`Meditation finished: Playing ${soundKey} sound.`);
-  }, [selectedMeditationSound]);
+    oscillator.stop(audioContext.currentTime + 0.5); // Play for 0.5 seconds
+    console.log('Meditation finished: Playing simple tone.');
+  }, []);
 
   // Initialize state from localStorage or defaults
   const getInitialState = useCallback((): TimerState => {
@@ -118,7 +69,7 @@ const MeditationLog = () => {
           const elapsedTime = Math.floor((Date.now() - parsedState.startTime) / 1000);
           const newTimeRemaining = parsedState.timeRemaining - elapsedTime;
           if (newTimeRemaining <= 0) {
-            playSound(selectedMeditationSound); // Play sound if it finished in background
+            playSound(); // Play sound if it finished in background
             return { ...parsedState, timeRemaining: 0, isActive: false, isFinished: true, startTime: null };
           }
           return { ...parsedState, timeRemaining: newTimeRemaining, startTime: Date.now() }; // Update startTime to now for accurate resume
@@ -133,7 +84,7 @@ const MeditationLog = () => {
       startTime: null,
       selectedDuration: selectedDuration,
     };
-  }, [selectedDuration, initialTimeInSeconds, playSound, selectedMeditationSound]);
+  }, [selectedDuration, initialTimeInSeconds, playSound]);
 
   const [timerState, setTimerState] = useState<TimerState>(getInitialState);
   const { timeRemaining, isActive, isFinished } = timerState;
@@ -161,7 +112,7 @@ const MeditationLog = () => {
           const newTime = prevState.timeRemaining - 1;
           if (newTime <= 0) {
             if (intervalRef.current) clearInterval(intervalRef.current);
-            playSound(selectedMeditationSound);
+            playSound();
             return { ...prevState, timeRemaining: 0, isActive: false, isFinished: true, startTime: null };
           }
           return { ...prevState, timeRemaining: newTime };
@@ -170,12 +121,12 @@ const MeditationLog = () => {
     } else if (timeRemaining === 0 && isActive) {
       if (intervalRef.current) clearInterval(intervalRef.current);
       setTimerState(prevState => ({ ...prevState, isActive: false, isFinished: true, startTime: null }));
-      playSound(selectedMeditationSound);
+      playSound();
     }
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [isActive, timeRemaining, playSound, selectedMeditationSound]);
+  }, [isActive, timeRemaining, playSound]);
 
   // Handle visibility changes
   useEffect(() => {

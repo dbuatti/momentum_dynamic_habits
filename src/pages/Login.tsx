@@ -24,17 +24,17 @@ const Login = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background"> {/* Changed bg-gray-50 to bg-background */}
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="bg-background py-12 px-4 sm:px-6 lg:px-8 min-h-screen flex items-center justify-center"> {/* Changed bg-gray-50 to bg-background */}
+    <div className="bg-background py-12 px-4 sm:px-6 lg:px-8 min-h-screen flex items-center justify-center">
       <div className="max-w-md w-full space-y-8">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-foreground"> {/* Changed text-gray-900 to text-foreground */}
             Adaptive Growth Coach
           </h2>
         </div>
