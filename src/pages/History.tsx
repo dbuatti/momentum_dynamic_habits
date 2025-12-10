@@ -1,9 +1,8 @@
 "use client";
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Dumbbell, Wind, BookOpen, Music, AlertCircle, Loader2, Zap, Home, Code, ClipboardList } from 'lucide-react'; // Added ClipboardList
+import { ArrowLeft, Dumbbell, Wind, BookOpen, Music, AlertCircle, Loader2, Zap, Home, Code, ClipboardList } from 'lucide-react';
 import { useCompletedTasks } from '@/hooks/useCompletedTasks';
 import { format, parseISO } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,20 +10,23 @@ import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { PageHeader } from '@/components/layout/PageHeader';
+import HabitHeatmap from '@/components/dashboard/HabitHeatmap';
+import { useHabitHeatmapData } from '@/hooks/useHabitHeatmapData';
 
 const habitIconMap: { [key: string]: React.ElementType } = {
   pushups: Dumbbell,
   meditation: Wind,
   kinesiology: BookOpen,
   piano: Music,
-  housework: Home, // New
-  projectwork: Code, // New
+  housework: Home,
+  projectwork: Code,
 };
 
 const History = () => {
   const { data: completedTasks, isLoading, isError } = useCompletedTasks();
+  const { data: heatmapData, isLoading: isHeatmapLoading } = useHabitHeatmapData();
 
-  if (isLoading) {
+  if (isLoading || isHeatmapLoading) {
     return (
       <div className="w-full max-w-lg mx-auto space-y-8 animate-pulse">
         <div className="flex items-center justify-between">
@@ -61,9 +63,15 @@ const History = () => {
   }, {} as Record<string, typeof completedTasks>);
 
   return (
-    <div className="w-full max-w-lg mx-auto space-y-8"> {/* Removed p-4 */}
+    <div className="w-full max-w-lg mx-auto space-y-8">
       <PageHeader title="Activity History" backLink="/" />
-
+      
+      {/* Habit Consistency Heatmap */}
+      <HabitHeatmap 
+        completions={heatmapData || []} 
+        habitName="All Habits" 
+      />
+      
       {completedTasks && completedTasks.length === 0 ? (
         <div className="bg-card rounded-2xl p-8 shadow-sm text-center space-y-4">
           <ClipboardList className="w-16 h-16 text-muted-foreground mx-auto" />
