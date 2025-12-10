@@ -69,9 +69,23 @@ const fetchDashboardData = async (userId: string) => {
     randomTipPromise
   ]);
 
-  if (profileError || habitsError || allBadgesError || achievedBadgesError || completedTodayError || completedThisWeekError || completedLastWeekError || totalCompletedError || distinctDaysError || bestTimeError || randomReviewQuestionError || randomTipError) {
-    console.error('Error fetching dashboard data:', profileError || habitsError || allBadgesError || achievedBadgesError || completedTodayError || completedThisWeekError || completedLastWeekError || totalCompletedError || distinctDaysError || bestTimeError || randomReviewQuestionError || randomTipError);
-    throw new Error('Failed to fetch dashboard data');
+  if (profileError) console.error('Error fetching profile for dashboard:', profileError);
+  if (habitsError) console.error('Error fetching habits for dashboard:', habitsError);
+  if (allBadgesError) console.error('Error fetching all badges for dashboard:', allBadgesError);
+  if (achievedBadgesError) console.error('Error fetching achieved badges for dashboard:', achievedBadgesError);
+  if (completedTodayError) console.error('Error fetching completed tasks today for dashboard:', completedTodayError);
+  if (completedThisWeekError) console.error('Error fetching completed tasks this week for dashboard:', completedThisWeekError);
+  if (completedLastWeekError) console.error('Error fetching completed tasks last week for dashboard:', completedLastWeekError);
+  if (totalCompletedError) console.error('Error fetching total completed tasks for dashboard:', totalCompletedError);
+  if (distinctDaysError) console.error('Error fetching distinct completed days for dashboard:', distinctDaysError);
+  if (bestTimeError) console.error('Error fetching best time for dashboard:', bestTimeError);
+  if (randomReviewQuestionError) console.error('Error fetching random review question for dashboard:', randomReviewQuestionError);
+  if (randomTipError) console.error('Error fetching random tip for dashboard:', randomTipError);
+
+
+  // Throw a general error if essential data is missing, but allow bestTime, reviewQuestion, tip to be optional
+  if (profileError || habitsError || allBadgesError || achievedBadgesError || completedTodayError || completedThisWeekError || completedLastWeekError || totalCompletedError || distinctDaysError) {
+    throw new Error('Failed to fetch essential dashboard data');
   }
 
   const initialHabitsMap = new Map(initialHabits.map(h => [h.id, h]));
@@ -168,9 +182,6 @@ const fetchDashboardData = async (userId: string) => {
     }
   }
 
-  const totalJourneyDays = habits && habits.length > 0 ? differenceInDays(new Date(habits[0].target_completion_date), startDate) : 0;
-  const nextMonthDate = addMonths(startDate, 1);
-  const daysToNextMonth = differenceInDays(nextMonthDate, new Date());
   const totalDaysSinceStart = differenceInDays(startOfDay(new Date()), startOfDay(startDate)) + 1;
   const rawConsistency = totalDaysSinceStart > 0 && typeof distinctDays === 'number' ? distinctDays / totalDaysSinceStart : 0;
   const consistency = Math.round(Math.min(rawConsistency, 1) * 100);
@@ -180,15 +191,15 @@ const fetchDashboardData = async (userId: string) => {
 
   return {
     daysActive,
-    totalJourneyDays,
-    daysToNextMonth,
+    totalJourneyDays: habits && habits.length > 0 ? differenceInDays(new Date(habits[0].target_completion_date), startDate) : 0, // Recalculate totalJourneyDays here
+    daysToNextMonth: differenceInDays(addMonths(startDate, 1), new Date()),
     habits: processedHabits,
     weeklySummary,
     patterns: {
       streak: profile?.daily_streak || 0,
       totalSessions: totalSessions || 0,
       consistency: consistency,
-      bestTime: bestTime || '—',
+      bestTime: bestTime || '—', // Fallback for bestTime
     },
     nextBadge: nextBadgeData ? { ...nextBadgeData, progress: nextBadgeProgress } : null,
     lastActiveText,
@@ -199,7 +210,7 @@ const fetchDashboardData = async (userId: string) => {
     tasksCompletedToday: profile?.tasks_completed_today || 0,
     xp: profile?.xp || 0,
     level: profile?.level || 1,
-    averageDailyTasks, // Added this line
+    averageDailyTasks,
   };
 };
 

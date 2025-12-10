@@ -17,12 +17,18 @@ const fetchJourneyData = async (userId: string) => {
         { data: bestTime, error: bestTimeError }, // Destructure bestTime
     ] = await Promise.all([profilePromise, habitsPromise, allBadgesPromise, achievedBadgesPromise, bestTimePromise]);
 
-    if (profileError || habitsError || allBadgesError || achievedBadgesError || bestTimeError) {
-        console.error('Error fetching journey data:', profileError || habitsError || allBadgesError || achievedBadgesError || bestTimeError);
-        throw new Error('Failed to fetch journey data');
+    if (profileError) console.error('Error fetching profile for journey:', profileError);
+    if (habitsError) console.error('Error fetching habits for journey:', habitsError);
+    if (allBadgesError) console.error('Error fetching all badges for journey:', allBadgesError);
+    if (achievedBadgesError) console.error('Error fetching achieved badges for journey:', achievedBadgesError);
+    if (bestTimeError) console.error('Error fetching best time for journey:', bestTimeError);
+
+    // Throw a general error if essential data is missing, but allow bestTime to be optional
+    if (profileError || habitsError || allBadgesError || achievedBadgesError) {
+        throw new Error('Failed to fetch essential journey data');
     }
 
-    return { profile, habits, allBadges, achievedBadges, bestTime }; // Return bestTime
+    return { profile, habits, allBadges, achievedBadges, bestTime: bestTime || '—' }; // Return bestTime with fallback
 };
 
 export const useJourneyData = () => {

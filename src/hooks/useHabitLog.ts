@@ -4,7 +4,7 @@ import { useSession } from '@/contexts/SessionContext';
 import { useNavigate } from 'react-router-dom';
 import { showSuccess, showError } from '@/utils/toast';
 import { initialHabits } from '@/lib/habit-data';
-import { startOfDay } from 'date-fns';
+import { calculateLevel } from '@/utils/leveling'; // Import calculateLevel
 
 interface LogHabitParams {
   habitKey: string;
@@ -61,7 +61,7 @@ const logHabit = async ({ userId, habitKey, value, taskName }: LogHabitParams & 
   let newDailyGoal = userHabitData.current_daily_goal;
   let newMomentumLevel = userHabitData.momentum_level;
   let newXp = (profileData.xp || 0) + xpEarned;
-  let newLevel = profileData.level;
+  let newLevel = calculateLevel(newXp); // Calculate new level based on new XP
 
   const goalMet = (habitConfig.type === 'time' && value >= userHabitData.current_daily_goal) || 
                   (habitConfig.type === 'count' && value >= userHabitData.current_daily_goal);
@@ -96,7 +96,7 @@ const logHabit = async ({ userId, habitKey, value, taskName }: LogHabitParams & 
       last_active_at: new Date().toISOString(),
       tasks_completed_today: (profileData.tasks_completed_today || 0) + 1,
       xp: newXp,
-      level: newLevel,
+      level: newLevel, // Update the level here
     })
     .eq('id', userId);
 
