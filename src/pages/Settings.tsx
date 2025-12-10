@@ -53,8 +53,6 @@ const BadgeIcon = ({ iconName, label, achieved }: { iconName: string, label: str
   );
 };
 
-// Removed SoundOptionProps and SoundOption component as meditation sound selection is removed.
-
 const MomentumBadge = ({ level }: { level: string }) => {
   if (level === 'Strong' || level === 'Crushing') {
     return (
