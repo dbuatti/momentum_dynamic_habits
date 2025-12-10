@@ -1,27 +1,34 @@
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate
+import { useNavigate } from 'react-router-dom';
 import { useSession } from '@/contexts/SessionContext';
-import { useEffect } from 'react'; // Import useEffect
+import { useEffect } from 'react';
+import { Loader2 } from 'lucide-react'; // Import Loader2
 
 const Login = () => {
   const { session, loading } = useSession();
-  const navigate = useNavigate(); // Initialize useNavigate
+  const navigate = useNavigate();
 
   useEffect(() => {
-    // If not loading and a session exists, navigate to the home page
     if (!loading && session) {
       console.log('Login useEffect - Session found, navigating to /');
       navigate('/');
-      // Clean up the URL hash after successful login
       if (window.location.hash) {
         window.history.replaceState({}, document.title, window.location.pathname);
       }
     }
-  }, [session, loading, navigate]); // Depend on session, loading, and navigate
+  }, [session, loading, navigate]);
 
   const redirectToUrl = window.location.origin;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-black">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 min-h-screen flex items-center justify-center">

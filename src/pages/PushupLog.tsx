@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Minus, Plus, Loader2 } from 'lucide-react';
 import { useHabitLog } from '@/hooks/useHabitLog';
+import { PageHeader } from '@/components/layout/PageHeader';
 
 const PushupLog = () => {
   const [count, setCount] = useState(0);
@@ -19,9 +20,9 @@ const PushupLog = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center"> {/* Removed flex-grow */}
-      <div className="text-center space-y-8 w-full max-w-xs">
-        <h1 className="text-4xl font-bold text-habit-orange">Log Push-ups</h1>
+    <div className="flex flex-col items-center">
+      <div className="w-full max-w-xs space-y-8">
+        <PageHeader title="Log Push-ups" backLink="/" />
         
         <div 
           className="p-10 bg-card rounded-full w-48 h-48 flex items-center justify-center mx-auto shadow-xl border-4 border-orange-300 cursor-pointer select-none"

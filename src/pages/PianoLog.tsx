@@ -6,6 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { useHabitLog } from '@/hooks/useHabitLog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { PageHeader } from '@/components/layout/PageHeader';
 
 interface TimerState {
   timeRemaining: number;
@@ -178,8 +179,8 @@ const PianoLog = () => {
 
   return (
     <div className="flex flex-col items-center">
-      <div className="text-center space-y-6 mt-12 w-full max-w-md">
-        <h1 className="text-4xl font-bold text-habit-purple-foreground">Piano Practice</h1>
+      <div className="text-center space-y-6 w-full max-w-md">
+        <PageHeader title="Piano Practice" backLink="/" />
         
         <div className="space-y-2">
           <Label htmlFor="piano-duration" className="text-lg font-medium text-muted-foreground">Duration (minutes)</Label>

@@ -5,6 +5,7 @@ import { Play, Pause, RotateCcw, Loader2 } from 'lucide-react';
 import { useHabitLog } from '@/hooks/useHabitLog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { PageHeader } from '@/components/layout/PageHeader';
 
 interface TimerState {
   timeRemaining: number;
@@ -161,9 +162,9 @@ const StudyLog = () => {
   const durationOptions = [1, 5, 10, 15, 20, 30, 45, 60];
 
   return (
-    <div className="flex flex-col items-center justify-center">
+    <div className="flex flex-col items-center">
       <div className="text-center space-y-8 w-full max-w-xs">
-        <h1 className="text-4xl font-bold text-habit-green-foreground">Kinesiology Study</h1>
+        <PageHeader title="Kinesiology Study" backLink="/" />
         
         <div className="space-y-2">
           <Label htmlFor="study-duration" className="text-lg font-medium text-muted-foreground">Duration (minutes)</Label>
