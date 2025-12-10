@@ -1,5 +1,6 @@
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface Habit {
   key: string;
@@ -25,30 +26,34 @@ const habitColorMap: { [key: string]: string } = {
 
 export const TodaysProgressCard: React.FC<TodaysProgressCardProps> = ({ habits }) => {
   return (
-    <div className="bg-card rounded-2xl p-4 space-y-3 shadow-sm">
-      <h3 className="font-semibold text-base">Today's progress</h3>
-      {habits.map((habit) => {
-        const progressColorClass = habitColorMap[habit.key] || 'primary'; // Fallback to primary
-        const progressValue = (habit.dailyProgress / habit.dailyGoal) * 100;
-        
-        return (
-          <div key={habit.key} className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <div className="flex items-center space-x-2 text-muted-foreground">
-                <div className={cn("w-2 h-2 rounded-full", `bg-${progressColorClass}`)}></div>
-                <span>{habit.name}</span>
+    <Card className="rounded-2xl shadow-sm border-0">
+      <CardHeader className="p-5 pb-3">
+        <CardTitle className="font-semibold text-base">Today's progress</CardTitle>
+      </CardHeader>
+      <CardContent className="p-5 pt-0 space-y-4">
+        {habits.map((habit) => {
+          const progressColorClass = habitColorMap[habit.key] || 'primary';
+          const progressValue = (habit.dailyProgress / habit.dailyGoal) * 100;
+          
+          return (
+            <div key={habit.key} className="space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2.5">
+                  <div className={cn("w-2.5 h-2.5 rounded-full", `bg-${progressColorClass}`)}></div>
+                  <span className="font-medium">{habit.name}</span>
+                </div>
+                <span className="font-medium text-foreground">
+                  {Math.round(habit.dailyProgress)}/{habit.dailyGoal} {habit.unit}
+                </span>
               </div>
-              <span className="font-medium text-foreground">
-                {Math.round(habit.dailyProgress)}/{habit.dailyGoal} {habit.unit}
-              </span>
+              <Progress 
+                value={progressValue} 
+                className={cn("h-2.5", `[&>div]:bg-${progressColorClass}`)} 
+              />
             </div>
-            <Progress 
-              value={progressValue} 
-              className={cn("h-2", `[&>div]:bg-${progressColorClass}`)} 
-            />
-          </div>
-        );
-      })}
-    </div>
+          );
+        })}
+      </CardContent>
+    </Card>
   );
 };

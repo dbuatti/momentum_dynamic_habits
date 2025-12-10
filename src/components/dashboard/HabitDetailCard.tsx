@@ -3,6 +3,7 @@ import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { Check, ChevronDown } from 'lucide-react';
 import React from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import { HabitCheckButton } from './HabitCheckButton';
 
 interface HabitDetailCardProps {
@@ -72,63 +73,75 @@ export const HabitDetailCard: React.FC<HabitDetailCardProps> = ({
   }[color];
 
   return (
-    <div className="bg-card rounded-2xl p-4 shadow-sm">
-      <div className="flex justify-between items-start">
-        <div className="flex items-center space-x-3">
-          <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", iconBgClass)}>
-            {React.cloneElement(icon as React.ReactElement, { className: cn("w-5 h-5", iconTextColorClass) })}
+    <Card className="rounded-2xl shadow-sm border-0">
+      <CardContent className="p-5">
+        <div className="flex justify-between items-start">
+          <div className="flex items-center space-x-3">
+            <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center", iconBgClass)}>
+              {React.cloneElement(icon as React.ReactElement, {
+                className: cn("w-6 h-6", iconTextColorClass)
+              })}
+            </div>
+            <div>
+              <h4 className="font-semibold text-left">
+                {title}
+                <span className="text-xs font-normal text-muted-foreground ml-2">
+                  • {momentum}
+                </span>
+              </h4>
+              <p className="text-sm text-muted-foreground text-left">{goal}</p>
+            </div>
           </div>
-          <div>
-            <h4 className="font-semibold text-left">{title} 
-              <span className="text-xs font-normal text-muted-foreground"> • {momentum}</span>
-            </h4>
-            <p className="text-sm text-muted-foreground text-left">{goal}</p>
+          
+          {!isComplete ? (
+            <HabitCheckButton 
+              habitKey={habitKey} 
+              isComplete={isComplete} 
+              dailyGoal={dailyGoal} 
+              onCheck={onCheck} 
+            />
+          ) : (
+            <div className="flex items-center text-green-600 bg-green-50 px-3 py-1.5 rounded-full">
+              <Check className="w-4 h-4 mr-1" />
+              <span className="text-xs font-medium">Completed</span>
+            </div>
+          )}
+        </div>
+
+        <div className="mt-5">
+          <Progress value={progressValue} className={cn("h-2.5", progressColorClass)} />
+          <div className="flex justify-between items-center mt-3">
+            <div className="flex space-x-1.5">
+              {[...Array(7)].map((_, i) => (
+                <div 
+                  key={i} 
+                  className={cn(
+                    "w-2.5 h-2.5 rounded-full", 
+                    i < daysCompletedLast7Days ? dotColorClass : "bg-gray-200"
+                  )}
+                ></div>
+              ))}
+            </div>
+            <p className="text-sm font-medium">{progressText}</p>
           </div>
         </div>
-        {!isComplete ? (
-          <HabitCheckButton 
-            habitKey={habitKey} 
-            isComplete={isComplete} 
-            dailyGoal={dailyGoal} 
-            onCheck={onCheck} 
-          />
-        ) : (
-          <div className="flex items-center text-green-600">
-            <Check className="w-4 h-4 mr-1" />
-            <span className="text-xs">Completed</span>
-          </div>
-        )}
-      </div>
-      
-      <div className="mt-4">
-        <Progress value={progressValue} className={cn("h-2", progressColorClass)} />
-        <div className="flex justify-between items-center mt-2">
-          <div className="flex space-x-1.5">
-            {[...Array(7)].map((_, i) => (
-              <div 
-                key={i} 
-                className={cn("w-2 h-2 rounded-full", i < daysCompletedLast7Days ? dotColorClass : "bg-gray-200")}
-              ></div>
-            ))}
-          </div>
-          <p className="text-sm font-medium">{progressText}</p>
-        </div>
-      </div>
-      
-      <Accordion type="single" collapsible className="w-full mt-4">
-        <AccordionItem value="item-1" className="border-none">
-          <AccordionTrigger className="hover:no-underline p-0 w-full text-sm text-muted-foreground">
-            <div className="flex items-center">
-              <span>View details</span>
-            </div>
-          </AccordionTrigger>
-          <AccordionContent className="pt-2 pb-0 text-sm">
-            <div className="space-y-2">
-              <p>Track your progress and build consistency with this habit.</p>
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
-    </div>
+
+        <Accordion type="single" collapsible className="w-full mt-4">
+          <AccordionItem value="item-1" className="border-none">
+            <AccordionTrigger className="hover:no-underline p-0 w-full text-sm text-muted-foreground">
+              <div className="flex items-center">
+                <span>View details</span>
+                <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200 ml-1" />
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="pt-2 pb-0 text-sm">
+              <div className="space-y-2">
+                <p>Track your progress and build consistency with this habit.</p>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </CardContent>
+    </Card>
   );
 };

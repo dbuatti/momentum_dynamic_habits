@@ -1,4 +1,3 @@
-"use client";
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -28,7 +27,7 @@ const History = () => {
 
   if (isLoading || isHeatmapLoading) {
     return (
-      <div className="w-full max-w-lg mx-auto space-y-8 animate-pulse">
+      <div className="w-full max-w-lg mx-auto space-y-8 px-4 py-6 animate-pulse">
         <div className="flex items-center justify-between">
           <Skeleton className="w-10 h-10 rounded-full" />
           <Skeleton className="h-8 w-48" />
@@ -63,14 +62,13 @@ const History = () => {
   }, {} as Record<string, typeof completedTasks>);
 
   return (
-    <div className="w-full max-w-lg mx-auto space-y-8">
+    <div className="w-full max-w-lg mx-auto px-4 py-6">
       <PageHeader title="Activity History" backLink="/" />
       
       {/* Habit Consistency Heatmap */}
-      <HabitHeatmap 
-        completions={heatmapData || []} 
-        habitName="All Habits" 
-      />
+      <div className="mb-6">
+        <HabitHeatmap completions={heatmapData || []} habitName="All Habits" />
+      </div>
       
       {completedTasks && completedTasks.length === 0 ? (
         <div className="bg-card rounded-2xl p-8 shadow-sm text-center space-y-4">
@@ -84,48 +82,56 @@ const History = () => {
           <Link to="/"><Button className="mt-4">Go to Dashboard</Button></Link>
         </div>
       ) : (
-        Object.entries(groupedTasks || {}).map(([date, tasks]) => (
-          <Card key={date} className="rounded-2xl shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-xl font-semibold">{date}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {tasks.map((task, index) => {
-                const Icon = habitIconMap[task.original_source];
-                // Determine if the task is time-based (duration_used is not null)
-                const isTimeBased = task.duration_used !== null && task.original_source !== 'pushups';
-                
-                return (
-                  <React.Fragment key={task.id}>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        {Icon && <Icon className="w-5 h-5 text-muted-foreground" />}
-                        <div>
-                          <p className="font-medium">{task.task_name}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {format(parseISO(task.completed_at), 'hh:mm a')}
-                          </p>
+        <div className="space-y-6">
+          {Object.entries(groupedTasks || {}).map(([date, tasks]) => (
+            <Card key={date} className="rounded-2xl shadow-sm border-0">
+              <CardHeader className="p-5 pb-3">
+                <CardTitle className="text-xl font-semibold">{date}</CardTitle>
+              </CardHeader>
+              <CardContent className="p-5 pt-0">
+                <div className="space-y-4">
+                  {tasks.map((task, index) => {
+                    const Icon = habitIconMap[task.original_source];
+                    // Determine if the task is time-based (duration_used is not null)
+                    const isTimeBased = task.duration_used !== null && task.original_source !== 'pushups';
+                    
+                    return (
+                      <React.Fragment key={task.id}>
+                        <div className="flex items-center justify-between py-2">
+                          <div className="flex items-center space-x-3">
+                            {Icon && (
+                              <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                                <Icon className="w-5 h-5 text-muted-foreground" />
+                              </div>
+                            )}
+                            <div>
+                              <p className="font-medium">{task.task_name}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {format(parseISO(task.completed_at), 'hh:mm a')}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            {isTimeBased ? (
+                              <p className="font-semibold">{task.duration_used! / 60} min</p>
+                            ) : (
+                              <p className="font-semibold">{task.xp_earned} reps</p>
+                            )}
+                            <div className="flex items-center text-xs text-muted-foreground mt-1">
+                              <Zap className="w-3 h-3 mr-1 text-yellow-500" />
+                              <span>{task.xp_earned} XP</span>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                      <div className="text-right">
-                        {isTimeBased ? (
-                          <p className="font-semibold">{task.duration_used! / 60} min</p>
-                        ) : (
-                          <p className="font-semibold">{task.xp_earned} reps</p> // Assuming XP earned is equivalent to reps for pushups
-                        )}
-                        <div className="flex items-center text-xs text-muted-foreground mt-1">
-                          <Zap className="w-3 h-3 mr-1 text-yellow-500" />
-                          <span>{task.xp_earned} XP</span>
-                        </div>
-                      </div>
-                    </div>
-                    {index < tasks.length - 1 && <Separator className="my-4" />}
-                  </React.Fragment>
-                );
-              })}
-            </CardContent>
-          </Card>
-        ))
+                        {index < tasks.length - 1 && <Separator />}
+                      </React.Fragment>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       )}
     </div>
   );

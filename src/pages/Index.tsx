@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import React, { useState } from "react";
 import { useOnboardingCheck } from "@/hooks/useOnboardingCheck";
+import { Separator } from "@/components/ui/separator";
 
 const habitIconMap: { [key: string]: React.ElementType } = {
   pushups: Dumbbell,
@@ -95,8 +96,8 @@ const Index = () => {
     reviewQuestion, 
     tip, 
     xp, 
-    level, 
-    averageDailyTasks 
+    level,
+    averageDailyTasks
   } = data;
 
   const handleNextReviewQuestion = () => {
@@ -104,8 +105,8 @@ const Index = () => {
   };
 
   return (
-    <div className="flex flex-col">
-      <div className="max-w-lg mx-auto w-full">
+    <div className="flex flex-col min-h-screen">
+      <div className="max-w-lg mx-auto w-full px-4 py-6">
         <HomeHeader 
           dayCounter={daysActive} 
           lastActiveText={lastActiveText} 
@@ -114,8 +115,9 @@ const Index = () => {
           xp={xp} 
           level={level} 
         />
+        
         <main className="space-y-6">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-4">
             {habits.map(habit => {
               const Icon = habitIconMap[habit.key];
               const variant = quickLogVariantMap[habit.key];
@@ -145,30 +147,34 @@ const Index = () => {
             daysToNextMonth={daysToNextMonth} 
           />
           
-          {habits.map(habit => {
-            const Icon = habitIconMap[habit.key];
-            const color = habitDetailColorMap[habit.key];
-            const isTemporarilyChecked = checkedHabits.has(habit.key);
-            const isComplete = isTemporarilyChecked || habit.isComplete;
-            
-            return (
-              <HabitDetailCard
-                key={habit.key}
-                icon={Icon ? <Icon className="w-5 h-5" /> : null}
-                title={habit.name}
-                momentum={habit.momentum}
-                goal={`Goal: ${habit.dailyGoal} ${habit.unit} today`}
-                progressText={`${Math.round(habit.dailyProgress)}/${habit.dailyGoal} ${habit.unit}`}
-                progressValue={(habit.dailyProgress / habit.dailyGoal) * 100}
-                color={color}
-                isComplete={isComplete}
-                daysCompletedLast7Days={habit.daysCompletedLast7Days}
-                habitKey={habit.key}
-                dailyGoal={habit.dailyGoal}
-                onCheck={() => handleHabitCheck(habit.key)}
-              />
-            );
-          })}
+          <Separator className="my-2" />
+          
+          <div className="space-y-5">
+            {habits.map(habit => {
+              const Icon = habitIconMap[habit.key];
+              const color = habitDetailColorMap[habit.key];
+              const isTemporarilyChecked = checkedHabits.has(habit.key);
+              const isComplete = isTemporarilyChecked || habit.isComplete;
+              
+              return (
+                <HabitDetailCard
+                  key={habit.key}
+                  icon={Icon ? <Icon className="w-5 h-5" /> : null}
+                  title={habit.name}
+                  momentum={habit.momentum}
+                  goal={`Goal: ${habit.dailyGoal} ${habit.unit} today`}
+                  progressText={`${Math.round(habit.dailyProgress)}/${habit.dailyGoal} ${habit.unit}`}
+                  progressValue={(habit.dailyProgress / habit.dailyGoal) * 100}
+                  color={color}
+                  isComplete={isComplete}
+                  daysCompletedLast7Days={habit.daysCompletedLast7Days}
+                  habitKey={habit.key}
+                  dailyGoal={habit.dailyGoal}
+                  onCheck={() => handleHabitCheck(habit.key)}
+                />
+              );
+            })}
+          </div>
           
           {reviewQuestion && (
             <QuickReviewCard 
@@ -179,17 +185,20 @@ const Index = () => {
           )}
           
           {tip && <TipCard tip={tip} />}
+          
           <WeeklySummaryCard summary={weeklySummary} />
           <PatternsCard patterns={patterns} />
           <NextBadgeCard badge={nextBadge} />
+          
           <FooterStats 
             streak={patterns.streak} 
             daysActive={daysActive} 
             totalPushups={habits.find(h => h.key === 'pushups')?.lifetimeProgress || 0} 
             totalMeditation={habits.find(h => h.key === 'meditation')?.lifetimeProgress || 0} 
-            averageDailyTasks={averageDailyTasks} 
+            averageDailyTasks={averageDailyTasks}
           />
         </main>
+        
         <MadeWithDyad />
       </div>
     </div>

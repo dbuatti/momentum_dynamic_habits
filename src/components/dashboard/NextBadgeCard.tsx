@@ -1,8 +1,12 @@
 import { Progress } from '@/components/ui/progress';
 import { Flame, Star } from 'lucide-react';
 import React from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 
-const iconMap: { [key: string]: React.ElementType } = { Flame, Star };
+const iconMap: { [key: string]: React.ElementType } = {
+  Flame,
+  Star,
+};
 
 interface NextBadgeCardProps {
   badge: {
@@ -19,35 +23,46 @@ interface NextBadgeCardProps {
 export const NextBadgeCard: React.FC<NextBadgeCardProps> = ({ badge }) => {
   if (!badge) {
     return (
-      <div className="bg-green-50 border border-green-200 rounded-2xl p-4 shadow-sm flex items-center space-x-4">
-        <div className="bg-green-100 rounded-full p-2">
-          <Star className="w-6 h-6 text-green-500" />
-        </div>
-        <div className="flex-grow">
-          <p className="font-semibold">All badges unlocked!</p>
-          <p className="text-sm text-muted-foreground">You are a true champion.</p>
-        </div>
-      </div>
+      <Card className="bg-green-50 border border-green-200 rounded-2xl shadow-sm border-0">
+        <CardContent className="p-5">
+          <div className="flex items-center space-x-4">
+            <div className="bg-green-100 rounded-full p-3">
+              <Star className="w-6 h-6 text-green-500" />
+            </div>
+            <div className="flex-grow">
+              <p className="font-semibold">All badges unlocked!</p>
+              <p className="text-sm text-muted-foreground">You are a true champion.</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
   const Icon = iconMap[badge.icon_name] || Flame;
 
   return (
-    <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4 shadow-sm flex items-center space-x-4">
-      <div className="bg-orange-100 rounded-full p-2">
-        <Icon className="w-6 h-6 text-orange-500" />
-      </div>
-      <div className="flex-grow">
-        <p className="text-sm text-muted-foreground">Next badge</p>
-        <p className="font-semibold">{badge.name}</p>
-        <div className="flex items-center space-x-2 mt-1">
-          <Progress value={badge.progress.progressValue} className="h-1.5 [&>div]:bg-orange-400" />
-          <p className="text-sm text-muted-foreground whitespace-nowrap">
-            <span className="font-semibold text-orange-600">{badge.progress.value}</span> {badge.progress.unit}
-          </p>
+    <Card className="bg-orange-50 border border-orange-200 rounded-2xl shadow-sm border-0">
+      <CardContent className="p-5">
+        <div className="flex items-center space-x-4">
+          <div className="bg-orange-100 rounded-full p-3">
+            <Icon className="w-6 h-6 text-orange-500" />
+          </div>
+          <div className="flex-grow">
+            <p className="text-sm text-muted-foreground">Next badge</p>
+            <p className="font-semibold">{badge.name}</p>
+            <div className="flex items-center space-x-2 mt-2">
+              <Progress 
+                value={badge.progress.progressValue} 
+                className="h-2 flex-grow [&>div]:bg-orange-400" 
+              />
+              <p className="text-sm text-muted-foreground whitespace-nowrap">
+                <span className="font-semibold text-orange-600">{badge.progress.value}</span> {badge.progress.unit}
+              </p>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 };

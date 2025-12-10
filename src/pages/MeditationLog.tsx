@@ -6,6 +6,7 @@ import { useHabitLog } from '@/hooks/useHabitLog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { Card, CardContent } from '@/components/ui/card';
 
 interface TimerState {
   timeRemaining: number;
@@ -96,7 +97,7 @@ const MeditationLog = () => {
     };
   }, [selectedDuration, initialTimeInSeconds, playSound]);
 
-  const [timerState, setTimerState] = useState<TimerState>(getInitialState);
+  const [timerState, setTimerState] = useState<TimerState>(getInitialState());
   const { timeRemaining, isActive, isFinished } = timerState;
   const { mutate: logHabit, isPending } = useHabitLog();
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -185,7 +186,6 @@ const MeditationLog = () => {
 
   const handleReset = () => {
     if (intervalRef.current) clearInterval(intervalRef.current);
-    
     setTimerState({
       timeRemaining: selectedDuration * 60,
       isActive: false,
@@ -193,7 +193,6 @@ const MeditationLog = () => {
       startTime: null,
       selectedDuration: selectedDuration,
     });
-    
     localStorage.removeItem(LOCAL_STORAGE_KEY);
   };
 
@@ -220,74 +219,97 @@ const MeditationLog = () => {
   const durationOptions = [1, 5, 10, 15, 20, 30, 45, 60];
 
   return (
-    <div className="flex flex-col items-center">
-      <div className="text-center space-y-8 w-full max-w-xs">
+    <div className="flex flex-col items-center w-full max-w-md mx-auto px-4 py-6">
+      <div className="w-full space-y-8">
         <PageHeader title="Meditation Timer" backLink="/" />
         
-        <div className="space-y-2">
-          <Label htmlFor="meditation-duration" className="text-lg font-medium text-muted-foreground">
-            Duration (minutes)
-          </Label>
-          <Select 
-            value={String(selectedDuration)} 
-            onValueChange={(value) => setSelectedDuration(Number(value))}
-            disabled={isActive || isPending}
-          >
-            <SelectTrigger id="meditation-duration" className="w-full text-lg h-12">
-              <SelectValue placeholder="Select duration" />
-            </SelectTrigger>
-            <SelectContent>
-              {durationOptions.map(option => (
-                <SelectItem key={option} value={String(option)}>
-                  {option} minutes
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div className="p-10 bg-card rounded-full w-56 h-56 flex items-center justify-center mx-auto shadow-xl border-4 border-habit-blue">
-          <p className="text-6xl font-extrabold tracking-tighter">{formatTime(timeRemaining)}</p>
-        </div>
-        
-        <div className="flex items-center justify-center space-x-4">
-          <Button 
-            size="lg" 
-            className="w-32 h-16 rounded-full bg-habit-blue hover:bg-blue-600" 
-            onClick={handleToggle} 
-            disabled={isFinished || isPending}
-          >
-            {isActive ? <Pause className="w-8 h-8" /> : <Play className="w-8 h-8" />}
-          </Button>
-          
-          {(isActive || isFinished) && (
-            <Button 
-              size="icon" 
-              variant="outline" 
-              onClick={handleReset} 
-              disabled={isPending}
+        <div className="space-y-6">
+          <div className="space-y-3">
+            <Label htmlFor="meditation-duration" className="text-lg font-medium text-muted-foreground">
+              Duration (minutes)
+            </Label>
+            <Select 
+              value={String(selectedDuration)} 
+              onValueChange={(value) => setSelectedDuration(Number(value))}
+              disabled={isActive || isPending}
             >
-              <RotateCcw className="w-6 h-6" />
-            </Button>
-          )}
+              <SelectTrigger id="meditation-duration" className="w-full text-lg h-14 rounded-2xl">
+                <SelectValue placeholder="Select duration" />
+              </SelectTrigger>
+              <SelectContent>
+                {durationOptions.map(option => (
+                  <SelectItem key={option} value={String(option)}>
+                    {option} minutes
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <Card className="rounded-2xl shadow-lg border-4 border-habit-blue">
+            <CardContent className="p-8">
+              <div className="p-10 bg-card rounded-full w-56 h-56 flex items-center justify-center mx-auto">
+                <p className="text-6xl font-extrabold tracking-tighter text-habit-blue">
+                  {formatTime(timeRemaining)}
+                </p>
+              </div>
+              
+              <div className="flex items-center justify-center space-x-6 mt-8">
+                <Button 
+                  size="lg" 
+                  className="w-36 h-16 rounded-full bg-habit-blue hover:bg-blue-600"
+                  onClick={handleToggle}
+                  disabled={isFinished || isPending}
+                >
+                  {isActive ? (
+                    <Pause className="w-8 h-8" />
+                  ) : (
+                    <Play className="w-8 h-8" />
+                  )}
+                </Button>
+                
+                {(isActive || isFinished) && (
+                  <Button 
+                    size="icon" 
+                    variant="outline" 
+                    className="w-14 h-14 rounded-full"
+                    onClick={handleReset}
+                    disabled={isPending}
+                  >
+                    <RotateCcw className="w-6 h-6" />
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </div>
         
-        <div className="flex flex-col gap-3">
+        <div className="space-y-4">
           {isFinished ? (
             <Button 
-              className="w-full bg-green-500 hover:bg-green-600 text-lg py-6" 
-              onClick={handleLog} 
+              className="w-full bg-green-500 hover:bg-green-600 text-lg py-6 rounded-2xl"
+              onClick={handleLog}
               disabled={isPending}
             >
-              {isPending ? <Loader2 className="w-6 h-6 animate-spin" /> : `Log ${selectedDuration} minute session`}
+              {isPending ? (
+                <Loader2 className="w-6 h-6 animate-spin" />
+              ) : (
+                `Log ${selectedDuration} minute session`
+              )}
             </Button>
           ) : (
             <Button 
-              className="w-full bg-habit-green hover:bg-habit-green/90 text-habit-green-foreground text-lg py-6" 
-              onClick={handleMarkDone} 
+              className="w-full bg-habit-green hover:bg-habit-green/90 text-habit-green-foreground text-lg py-6 rounded-2xl"
+              onClick={handleMarkDone}
               disabled={isPending || selectedDuration <= 0}
             >
-              {isPending ? <Loader2 className="w-6 h-6 animate-spin" /> : <><Check className="w-6 h-6 mr-2" /> Mark Done</>}
+              {isPending ? (
+                <Loader2 className="w-6 h-6 animate-spin" />
+              ) : (
+                <>
+                  <Check className="w-6 h-6 mr-2" /> Mark Done
+                </>
+              )}
             </Button>
           )}
         </div>
