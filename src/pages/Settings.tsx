@@ -5,8 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import {
-  Calendar, Target, TrendingUp, Star, Flame, Shield, Crown, Zap, Trophy, Sparkles, Mountain, Award, Sun, Moon, Heart, Smile, CloudRain, Trees, Waves, Wind, Bird, Droplets, Volume2, Dumbbell, Timer, LogOut, AlertCircle, Loader2, Clock
-} from 'lucide-react';
+  Calendar, Target, TrendingUp, Star, Flame, Shield, Crown, Zap, Trophy, Sparkles, Mountain, Award, Sun, Moon, Heart, Volume2, Dumbbell, Timer, LogOut, AlertCircle, Loader2, Clock
+} from 'lucide-react'; // Removed unused icons: Smile, CloudRain, Trees, Waves, Wind, Bird, Droplets
 import { cn } from '@/lib/utils';
 import { useSession } from '@/contexts/SessionContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -53,30 +53,7 @@ const BadgeIcon = ({ iconName, label, achieved }: { iconName: string, label: str
   );
 };
 
-interface SoundOptionProps {
-  icon: React.ElementType;
-  label: string;
-  selected: boolean;
-  onClick: () => void;
-  disabled: boolean;
-}
-
-const SoundOption: React.FC<SoundOptionProps> = ({ icon: Icon, label, selected, onClick, disabled }) => (
-  <button
-    className={cn(
-      "p-3 rounded-lg flex flex-col items-center space-y-1 cursor-pointer transition-colors duration-200",
-      selected
-        ? 'bg-blue-100 dark:bg-blue-900/50 border-2 border-blue-400'
-        : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700',
-      disabled && 'opacity-50 cursor-not-allowed'
-    )}
-    onClick={onClick}
-    disabled={disabled}
-  >
-    <Icon className={cn("w-6 h-6", selected ? 'text-blue-600 dark:text-blue-300' : 'text-muted-foreground')} />
-    <p className="text-sm font-medium">{label}</p>
-  </button>
-);
+// Removed SoundOptionProps and SoundOption component as meditation sound selection is removed.
 
 const MomentumBadge = ({ level }: { level: string }) => {
   if (level === 'Strong' || level === 'Crushing') {
@@ -156,7 +133,7 @@ const Settings = () => {
   const startDate = profile?.journey_start_date ? new Date(profile.journey_start_date) : new Date();
   const daysActive = differenceInDays(startOfDay(new Date()), startOfDay(startDate)) + 1;
   const totalJourneyDays = meditationHabit ? differenceInDays(new Date(meditationHabit.target_completion_date), startDate) : 0;
-  const selectedMeditationSound = profile?.meditation_sound || 'Forest';
+  // Removed selectedMeditationSound as it's no longer used
   const selectedTimezone = profile?.timezone || 'UTC';
   const defaultAutoScheduleStartTime = profile?.default_auto_schedule_start_time || '09:00';
   const defaultAutoScheduleEndTime = profile?.default_auto_schedule_end_time || '17:00';
@@ -169,22 +146,9 @@ const Settings = () => {
     setLastName(profile?.last_name || '');
   }, [profile?.first_name, profile?.last_name]);
 
-  const meditationSounds = [
-    { label: "Silence", icon: Smile, key: "Silence" },
-    { label: "Rain", icon: CloudRain, key: "Rain" },
-    { label: "Forest", icon: Trees, key: "Forest" },
-    { label: "Ocean", icon: Waves, key: "Ocean" },
-    { label: "Fire", icon: Flame, key: "Fire" },
-    { label: "Wind", icon: Wind, key: "Wind" },
-    { label: "Birds", icon: Bird, key: "Birds" },
-    { label: "Stream", icon: Droplets, key: "Stream" },
-  ];
+  // Removed meditationSounds array as it's no longer used
 
-  const handleSoundSelect = (soundKey: string) => {
-    if (soundKey !== selectedMeditationSound) {
-      updateProfile({ meditation_sound: soundKey });
-    }
-  };
+  // Removed handleSoundSelect as it's no longer used
 
   const handleTimezoneSelect = (timezone: string) => {
     if (timezone !== selectedTimezone) {
@@ -345,21 +309,7 @@ const Settings = () => {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader className="flex flex-row items-center space-x-2"><Volume2 className="w-5 h-5 text-muted-foreground" /><CardTitle className="text-lg">Meditation Sound</CardTitle></CardHeader>
-        <CardContent className="grid grid-cols-4 gap-2">
-          {meditationSounds.map((sound) => (
-            <SoundOption
-              key={sound.key}
-              icon={sound.icon}
-              label={sound.label}
-              selected={selectedMeditationSound === sound.key}
-              onClick={() => handleSoundSelect(sound.key)}
-              disabled={isUpdatingProfile}
-            />
-          ))}
-        </CardContent>
-      </Card>
+      {/* Removed Meditation Sound Card */}
 
       <Card>
         <CardHeader className="flex flex-row items-center space-x-2"><Calendar className="w-5 h-5 text-muted-foreground" /><CardTitle className="text-lg">Timezone</CardTitle></CardHeader>

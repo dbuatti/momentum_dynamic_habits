@@ -189,9 +189,15 @@ const fetchDashboardData = async (userId: string) => {
   const lastActiveText = lastActiveAt ? formatDistanceToNowStrict(lastActiveAt, { addSuffix: true }) : 'Never';
   const averageDailyTasks = totalSessions && daysActive > 0 ? (totalSessions / daysActive).toFixed(1) : '0.0';
 
+  // Find the meditation habit to calculate totalJourneyDays consistently
+  const meditationHabit = habits?.find(h => h.habit_key === 'meditation');
+  const totalJourneyDays = meditationHabit && profile?.journey_start_date
+    ? differenceInDays(new Date(meditationHabit.target_completion_date), new Date(profile.journey_start_date))
+    : 0;
+
   return {
     daysActive,
-    totalJourneyDays: habits && habits.length > 0 ? differenceInDays(new Date(habits[0].target_completion_date), startDate) : 0, // Recalculate totalJourneyDays here
+    totalJourneyDays: totalJourneyDays, // Use the consistently calculated totalJourneyDays
     daysToNextMonth: differenceInDays(addMonths(startDate, 1), new Date()),
     habits: processedHabits,
     weeklySummary,
@@ -204,6 +210,7 @@ const fetchDashboardData = async (userId: string) => {
     nextBadge: nextBadgeData ? { ...nextBadgeData, progress: nextBadgeProgress } : null,
     lastActiveText,
     firstName: profile?.first_name || null,
+    lastName: profile?.last_name || null, // Added lastName here
     reviewQuestion: randomReviewQuestion || null,
     tip: randomTip || null,
     timezone: profile?.timezone || 'UTC',

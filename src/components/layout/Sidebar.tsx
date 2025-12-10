@@ -60,6 +60,10 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick }) => {
     { to: "/settings", icon: Settings, label: "Settings" },
   ];
 
+  const displayName = dashboardData?.firstName && dashboardData?.lastName
+    ? `${dashboardData.firstName} ${dashboardData.lastName}`
+    : dashboardData?.firstName || session?.user?.email;
+
   return (
     <div className="flex h-full max-h-screen flex-col gap-2">
       <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
@@ -86,10 +90,10 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick }) => {
           <div className="flex items-center gap-3 mb-4">
             <Avatar>
               <AvatarImage src={session.user.user_metadata?.avatar_url} />
-              <AvatarFallback>{dashboardData?.firstName?.charAt(0).toUpperCase() || session.user.email?.charAt(0).toUpperCase()}</AvatarFallback>
+              <AvatarFallback>{displayName?.charAt(0).toUpperCase() || '?'}</AvatarFallback>
             </Avatar>
             <div className="flex-grow">
-              <p className="font-semibold text-sm">{dashboardData?.firstName || session.user.email}</p>
+              <p className="font-semibold text-sm">{displayName}</p>
               <p className="text-xs text-muted-foreground">Logged in</p>
             </div>
           </div>
