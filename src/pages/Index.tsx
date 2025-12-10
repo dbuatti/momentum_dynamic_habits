@@ -55,6 +55,18 @@ const habitDetailColorMap: { [key: string]: 'orange' | 'blue' | 'green' | 'purpl
   medication: 'purple',
 };
 
+// Define the order of habits to ensure new trackers appear at the top
+const habitOrder = [
+  'teeth_brushing',
+  'medication',
+  'pushups',
+  'meditation',
+  'kinesiology',
+  'piano',
+  'housework',
+  'projectwork'
+];
+
 const Index = () => {
   const { data, isLoading, isError, refetch } = useDashboardData();
   const { isLoading: isOnboardingLoading } = useOnboardingCheck();
@@ -90,6 +102,26 @@ const Index = () => {
 
   const { daysActive, totalJourneyDays, daysToNextMonth, habits, weeklySummary, patterns, nextBadge, lastActiveText, firstName, lastName, reviewQuestion, tip, xp, level, averageDailyTasks } = data;
 
+  // Sort habits according to the defined order
+  const sortedHabits = [...habits].sort((a, b) => {
+    const indexA = habitOrder.indexOf(a.key);
+    const indexB = habitOrder.indexOf(b.key);
+    // If both habits are in our order list, sort by their defined order
+    if (indexA !== -1 && indexB !== -1) {
+      return indexA - indexB;
+    }
+    // If only A is in our order list, it comes first
+    if (indexA !== -1) {
+      return -1;
+    }
+    // If only B is in our order list, it comes first
+    if (indexB !== -1) {
+      return 1;
+    }
+    // If neither is in our order list, maintain original order
+    return 0;
+  });
+
   const handleNextReviewQuestion = () => {
     refetch(); // Refetch dashboard data to get a new random question
   };
@@ -107,7 +139,7 @@ const Index = () => {
         />
         <main className="space-y-6">
           <div className="grid grid-cols-2 gap-4">
-            {habits.map(habit => {
+            {sortedHabits.map(habit => {
               const Icon = habitIconMap[habit.key];
               const variant = quickLogVariantMap[habit.key];
               return (
@@ -127,7 +159,7 @@ const Index = () => {
           </div>
           <DisciplineBanner />
           <LevelProgressCard currentXp={xp} currentLevel={level} />
-          <TodaysProgressCard habits={habits} />
+          <TodaysProgressCard habits={sortedHabits} />
           <JourneyProgressCard 
             daysActive={daysActive} 
             totalJourneyDays={totalJourneyDays} 
@@ -135,7 +167,7 @@ const Index = () => {
           />
           <Separator className="my-2" />
           <div className="space-y-5">
-            {habits.map(habit => {
+            {sortedHabits.map(habit => {
               const Icon = habitIconMap[habit.key];
               const color = habitDetailColorMap[habit.key];
               const isTemporarilyChecked = checkedHabits.has(habit.key);
@@ -174,8 +206,8 @@ const Index = () => {
           <FooterStats 
             streak={patterns.streak} 
             daysActive={daysActive} 
-            totalPushups={habits.find(h => h.key === 'pushups')?.lifetimeProgress || 0} 
-            totalMeditation={habits.find(h => h.key === 'meditation')?.lifetimeProgress || 0} 
+            totalPushups={sortedHabits.find(h => h.key === 'pushups')?.lifetimeProgress || 0} 
+            totalMeditation={sortedHabits.find(h => h.key === 'meditation')?.lifetimeProgress || 0} 
             averageDailyTasks={averageDailyTasks} 
           />
         </main>
