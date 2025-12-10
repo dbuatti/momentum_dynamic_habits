@@ -32,6 +32,7 @@ const PianoLog = () => {
       const savedState = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (savedState) {
         const parsedState: TimerState = JSON.parse(savedState);
+        
         // If the saved state is for a different initial duration, reset it
         if (parsedState.selectedDuration !== selectedDuration) {
           localStorage.removeItem(LOCAL_STORAGE_KEY);
@@ -44,10 +45,12 @@ const PianoLog = () => {
             completedSongs: [],
           };
         }
+        
         // Recalculate time if timer was active when user left
         if (parsedState.isActive && parsedState.startTime) {
           const elapsedTime = Math.floor((Date.now() - parsedState.startTime) / 1000);
           const newTimeRemaining = parsedState.timeRemaining - elapsedTime;
+          
           if (newTimeRemaining <= 0) {
             return {
               ...parsedState,
@@ -57,15 +60,18 @@ const PianoLog = () => {
               startTime: null,
             };
           }
+          
           return {
             ...parsedState,
             timeRemaining: newTimeRemaining,
             startTime: Date.now(),
           };
         }
+        
         return parsedState;
       }
     }
+    
     return {
       timeRemaining: initialTimeInSeconds,
       isActive: false,
@@ -99,6 +105,7 @@ const PianoLog = () => {
       intervalRef.current = setInterval(() => {
         setTimerState(prevState => {
           const newTime = prevState.timeRemaining - 1;
+          
           if (newTime <= 0) {
             if (intervalRef.current) clearInterval(intervalRef.current);
             return {
@@ -109,6 +116,7 @@ const PianoLog = () => {
               startTime: null,
             };
           }
+          
           return {
             ...prevState,
             timeRemaining: newTime,
@@ -124,6 +132,7 @@ const PianoLog = () => {
         startTime: null,
       }));
     }
+    
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
@@ -140,7 +149,9 @@ const PianoLog = () => {
         if (intervalRef.current) clearInterval(intervalRef.current);
       }
     };
+    
     window.addEventListener('visibilitychange', handleVisibilityChange);
+    
     return () => {
       window.removeEventListener('visibilitychange', handleVisibilityChange);
     };
@@ -148,6 +159,7 @@ const PianoLog = () => {
 
   const handleToggle = () => {
     if (isFinished) return;
+    
     setTimerState(prevState => ({
       ...prevState,
       isActive: !prevState.isActive,
@@ -157,6 +169,7 @@ const PianoLog = () => {
 
   const handleReset = () => {
     if (intervalRef.current) clearInterval(intervalRef.current);
+    
     setTimerState({
       timeRemaining: selectedDuration * 60,
       isActive: false,
@@ -165,27 +178,20 @@ const PianoLog = () => {
       selectedDuration: selectedDuration,
       completedSongs: [],
     });
+    
     localStorage.removeItem(LOCAL_STORAGE_KEY);
   };
 
   const handleLog = () => {
     if (selectedDuration > 0) {
-      logHabit({
-        habitKey: 'piano',
-        value: selectedDuration,
-        taskName: 'Piano Practice',
-      });
+      logHabit({ habitKey: 'piano', value: selectedDuration, taskName: 'Piano Practice' });
       localStorage.removeItem(LOCAL_STORAGE_KEY);
     }
   };
 
   const handleMarkDone = () => {
     if (selectedDuration > 0) {
-      logHabit({
-        habitKey: 'piano',
-        value: selectedDuration,
-        taskName: 'Piano Practice',
-      });
+      logHabit({ habitKey: 'piano', value: selectedDuration, taskName: 'Piano Practice' });
       localStorage.removeItem(LOCAL_STORAGE_KEY);
     }
   };
@@ -193,8 +199,8 @@ const PianoLog = () => {
   const handleSongCheck = (song: string, checked: boolean) => {
     setTimerState(prevState => ({
       ...prevState,
-      completedSongs: checked
-        ? [...prevState.completedSongs, song]
+      completedSongs: checked 
+        ? [...prevState.completedSongs, song] 
         : prevState.completedSongs.filter((s) => s !== song)
     }));
   };
@@ -211,12 +217,13 @@ const PianoLog = () => {
     <div className="flex flex-col items-center">
       <div className="text-center space-y-6 w-full max-w-md">
         <PageHeader title="Piano Practice" backLink="/" />
+        
         <div className="space-y-2">
           <Label htmlFor="piano-duration" className="text-lg font-medium text-muted-foreground">
             Duration (minutes)
           </Label>
-          <Select
-            value={String(selectedDuration)}
+          <Select 
+            value={String(selectedDuration)} 
             onValueChange={(value) => setSelectedDuration(Number(value))}
             disabled={isActive || isPending}
           >
@@ -232,22 +239,24 @@ const PianoLog = () => {
             </SelectContent>
           </Select>
         </div>
+        
         <div className="p-6 bg-card rounded-xl shadow-lg border-4 border-habit-purple-border">
           <p className="text-4xl font-extrabold">{formatTime(timeRemaining)}</p>
           <div className="flex items-center justify-center space-x-4 mt-4">
-            <Button
-              size="lg"
-              className="w-32 h-16 rounded-full bg-habit-purple-foreground hover:bg-habit-purple-foreground/90"
-              onClick={handleToggle}
+            <Button 
+              size="lg" 
+              className="w-32 h-16 rounded-full bg-habit-purple-foreground hover:bg-habit-purple-foreground/90" 
+              onClick={handleToggle} 
               disabled={isFinished || isPending}
             >
               {isActive ? <Pause className="w-8 h-8" /> : <Play className="w-8 h-8" />}
             </Button>
+            
             {(isActive || isFinished) && (
-              <Button
-                size="icon"
-                variant="outline"
-                onClick={handleReset}
+              <Button 
+                size="icon" 
+                variant="outline" 
+                onClick={handleReset} 
                 disabled={isPending}
               >
                 <RotateCcw className="w-6 h-6" />
@@ -255,14 +264,15 @@ const PianoLog = () => {
             )}
           </div>
         </div>
+        
         <div className="space-y-3 text-left">
           <h2 className="text-xl font-semibold">Gig Tracker ({completedSongs.length} / {targetSongs.length} Songs)</h2>
           {targetSongs.map((song, index) => (
             <div key={index} className="flex items-center space-x-2 p-2 border rounded-md">
-              <Checkbox
-                id={`song-${index}`}
-                checked={completedSongs.includes(song)}
-                onCheckedChange={(checked) => handleSongCheck(song, checked as boolean)}
+              <Checkbox 
+                id={`song-${index}`} 
+                checked={completedSongs.includes(song)} 
+                onCheckedChange={(checked) => handleSongCheck(song, checked as boolean)} 
                 disabled={isPending}
               />
               <Label htmlFor={`song-${index}`} className="text-base font-medium">
@@ -271,19 +281,20 @@ const PianoLog = () => {
             </div>
           ))}
         </div>
+        
         <div className="flex flex-col gap-3">
           {isFinished ? (
-            <Button
-              className="w-full bg-green-500 hover:bg-green-600 text-lg py-6"
-              onClick={handleLog}
+            <Button 
+              className="w-full bg-green-500 hover:bg-green-600 text-lg py-6" 
+              onClick={handleLog} 
               disabled={isPending}
             >
               {isPending ? <Loader2 className="w-6 h-6 animate-spin" /> : `Log ${selectedDuration} minute session`}
             </Button>
           ) : (
-            <Button
-              className="w-full bg-habit-green hover:bg-habit-green/90 text-lg py-6"
-              onClick={handleMarkDone}
+            <Button 
+              className="w-full bg-habit-green hover:bg-habit-green/90 text-habit-green-foreground text-lg py-6" 
+              onClick={handleMarkDone} 
               disabled={isPending || selectedDuration <= 0}
             >
               {isPending ? <Loader2 className="w-6 h-6 animate-spin" /> : <><Check className="w-6 h-6 mr-2" /> Mark Done</>}

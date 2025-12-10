@@ -22,18 +22,22 @@ const MeditationLog = () => {
   const initialDurationFromState = location.state?.duration || 1; // Default from dashboard or 1 min
   const [selectedDuration, setSelectedDuration] = useState<number>(initialDurationFromState);
   const initialTimeInSeconds = selectedDuration * 60;
-  
+
   const playSound = useCallback(() => {
     const audioContext = new AudioContext();
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
+    
     oscillator.connect(gainNode);
     gainNode.connect(audioContext.destination);
+    
     oscillator.type = 'sine'; // A simple sine wave
     oscillator.frequency.setValueAtTime(440, audioContext.currentTime); // A4 note
     gainNode.gain.setValueAtTime(0.5, audioContext.currentTime); // Volume
+    
     oscillator.start();
     oscillator.stop(audioContext.currentTime + 0.5); // Play for 0.5 seconds
+    
     console.log('Meditation finished: Playing simple tone.');
   }, []);
 
@@ -43,6 +47,7 @@ const MeditationLog = () => {
       const savedState = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (savedState) {
         const parsedState: TimerState = JSON.parse(savedState);
+        
         // If the saved state is for a different initial duration, reset it
         if (parsedState.selectedDuration !== selectedDuration) {
           localStorage.removeItem(LOCAL_STORAGE_KEY);
@@ -54,10 +59,12 @@ const MeditationLog = () => {
             selectedDuration: selectedDuration,
           };
         }
+        
         // Recalculate time if timer was active when user left
         if (parsedState.isActive && parsedState.startTime) {
           const elapsedTime = Math.floor((Date.now() - parsedState.startTime) / 1000);
           const newTimeRemaining = parsedState.timeRemaining - elapsedTime;
+          
           if (newTimeRemaining <= 0) {
             playSound(); // Play sound if it finished in background
             return {
@@ -68,15 +75,18 @@ const MeditationLog = () => {
               startTime: null,
             };
           }
+          
           return {
             ...parsedState,
             timeRemaining: newTimeRemaining,
             startTime: Date.now(),
           };
         }
+        
         return parsedState;
       }
     }
+    
     return {
       timeRemaining: initialTimeInSeconds,
       isActive: false,
@@ -109,6 +119,7 @@ const MeditationLog = () => {
       intervalRef.current = setInterval(() => {
         setTimerState(prevState => {
           const newTime = prevState.timeRemaining - 1;
+          
           if (newTime <= 0) {
             if (intervalRef.current) clearInterval(intervalRef.current);
             playSound();
@@ -120,6 +131,7 @@ const MeditationLog = () => {
               startTime: null,
             };
           }
+          
           return {
             ...prevState,
             timeRemaining: newTime,
@@ -136,6 +148,7 @@ const MeditationLog = () => {
       }));
       playSound();
     }
+    
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
@@ -152,7 +165,9 @@ const MeditationLog = () => {
         if (intervalRef.current) clearInterval(intervalRef.current);
       }
     };
+    
     window.addEventListener('visibilitychange', handleVisibilityChange);
+    
     return () => {
       window.removeEventListener('visibilitychange', handleVisibilityChange);
     };
@@ -160,6 +175,7 @@ const MeditationLog = () => {
 
   const handleToggle = () => {
     if (isFinished) return;
+    
     setTimerState(prevState => ({
       ...prevState,
       isActive: !prevState.isActive,
@@ -169,6 +185,7 @@ const MeditationLog = () => {
 
   const handleReset = () => {
     if (intervalRef.current) clearInterval(intervalRef.current);
+    
     setTimerState({
       timeRemaining: selectedDuration * 60,
       isActive: false,
@@ -176,27 +193,20 @@ const MeditationLog = () => {
       startTime: null,
       selectedDuration: selectedDuration,
     });
+    
     localStorage.removeItem(LOCAL_STORAGE_KEY);
   };
 
   const handleLog = () => {
     if (selectedDuration > 0) {
-      logHabit({
-        habitKey: 'meditation',
-        value: selectedDuration,
-        taskName: 'Meditation',
-      });
+      logHabit({ habitKey: 'meditation', value: selectedDuration, taskName: 'Meditation' });
       localStorage.removeItem(LOCAL_STORAGE_KEY);
     }
   };
 
   const handleMarkDone = () => {
     if (selectedDuration > 0) {
-      logHabit({
-        habitKey: 'meditation',
-        value: selectedDuration,
-        taskName: 'Meditation',
-      });
+      logHabit({ habitKey: 'meditation', value: selectedDuration, taskName: 'Meditation' });
       localStorage.removeItem(LOCAL_STORAGE_KEY);
     }
   };
@@ -213,12 +223,13 @@ const MeditationLog = () => {
     <div className="flex flex-col items-center">
       <div className="text-center space-y-8 w-full max-w-xs">
         <PageHeader title="Meditation Timer" backLink="/" />
+        
         <div className="space-y-2">
           <Label htmlFor="meditation-duration" className="text-lg font-medium text-muted-foreground">
             Duration (minutes)
           </Label>
-          <Select
-            value={String(selectedDuration)}
+          <Select 
+            value={String(selectedDuration)} 
             onValueChange={(value) => setSelectedDuration(Number(value))}
             disabled={isActive || isPending}
           >
@@ -234,42 +245,46 @@ const MeditationLog = () => {
             </SelectContent>
           </Select>
         </div>
+        
         <div className="p-10 bg-card rounded-full w-56 h-56 flex items-center justify-center mx-auto shadow-xl border-4 border-habit-blue">
           <p className="text-6xl font-extrabold tracking-tighter">{formatTime(timeRemaining)}</p>
         </div>
+        
         <div className="flex items-center justify-center space-x-4">
-          <Button
-            size="lg"
-            className="w-32 h-16 rounded-full bg-habit-blue hover:bg-blue-600"
-            onClick={handleToggle}
+          <Button 
+            size="lg" 
+            className="w-32 h-16 rounded-full bg-habit-blue hover:bg-blue-600" 
+            onClick={handleToggle} 
             disabled={isFinished || isPending}
           >
             {isActive ? <Pause className="w-8 h-8" /> : <Play className="w-8 h-8" />}
           </Button>
+          
           {(isActive || isFinished) && (
-            <Button
-              size="icon"
-              variant="outline"
-              onClick={handleReset}
+            <Button 
+              size="icon" 
+              variant="outline" 
+              onClick={handleReset} 
               disabled={isPending}
             >
               <RotateCcw className="w-6 h-6" />
             </Button>
           )}
         </div>
+        
         <div className="flex flex-col gap-3">
           {isFinished ? (
-            <Button
-              className="w-full bg-green-500 hover:bg-green-600 text-lg py-6"
-              onClick={handleLog}
+            <Button 
+              className="w-full bg-green-500 hover:bg-green-600 text-lg py-6" 
+              onClick={handleLog} 
               disabled={isPending}
             >
               {isPending ? <Loader2 className="w-6 h-6 animate-spin" /> : `Log ${selectedDuration} minute session`}
             </Button>
           ) : (
-            <Button
-              className="w-full bg-habit-green hover:bg-habit-green/90 text-lg py-6"
-              onClick={handleMarkDone}
+            <Button 
+              className="w-full bg-habit-green hover:bg-habit-green/90 text-habit-green-foreground text-lg py-6" 
+              onClick={handleMarkDone} 
               disabled={isPending || selectedDuration <= 0}
             >
               {isPending ? <Loader2 className="w-6 h-6 animate-spin" /> : <><Check className="w-6 h-6 mr-2" /> Mark Done</>}
