@@ -3,7 +3,6 @@ import { useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Play, Pause, RotateCcw, Loader2 } from 'lucide-react';
 import { useHabitLog } from '@/hooks/useHabitLog';
-import { useJourneyData } from '@/hooks/useJourneyData';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -25,13 +24,8 @@ const MeditationLog = () => {
   const [selectedDuration, setSelectedDuration] = useState<number>(initialDurationFromState);
   const initialTimeInSeconds = selectedDuration * 60;
 
-  // The selectedMeditationSound is still fetched but no longer used for complex sound generation here.
-  // It's kept in useJourneyData and Settings for user preference storage.
-  // We no longer need to destructure it here as the playSound function is simplified.
-  // const { data: journeyData } = useJourneyData(); 
-
   const playSound = useCallback(() => {
-    const audioContext = new AudioContext(); // Fixed: Using standard AudioContext
+    const audioContext = new AudioContext();
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
 
@@ -45,7 +39,7 @@ const MeditationLog = () => {
     oscillator.start();
     oscillator.stop(audioContext.currentTime + 0.5); // Play for 0.5 seconds
     console.log('Meditation finished: Playing simple tone.');
-  }, []); // Removed selectedMeditationSound from dependencies
+  }, []);
 
   // Initialize state from localStorage or defaults
   const getInitialState = useCallback((): TimerState => {
@@ -85,7 +79,7 @@ const MeditationLog = () => {
       startTime: null,
       selectedDuration: selectedDuration,
     };
-  }, [selectedDuration, initialTimeInSeconds, playSound]); // Removed selectedMeditationSound from dependencies
+  }, [selectedDuration, initialTimeInSeconds, playSound]);
 
   const [timerState, setTimerState] = useState<TimerState>(getInitialState);
   const { timeRemaining, isActive, isFinished } = timerState;
@@ -127,7 +121,7 @@ const MeditationLog = () => {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [isActive, timeRemaining, playSound]); // Removed selectedMeditationSound from dependencies
+  }, [isActive, timeRemaining, playSound]);
 
   // Handle visibility changes
   useEffect(() => {
