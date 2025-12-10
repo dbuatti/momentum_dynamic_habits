@@ -25,9 +25,10 @@ const MeditationLog = () => {
   const [selectedDuration, setSelectedDuration] = useState<number>(initialDurationFromState);
   const initialTimeInSeconds = selectedDuration * 60;
 
-  const { data: journeyData } = useJourneyData();
   // The selectedMeditationSound is still fetched but no longer used for complex sound generation here.
   // It's kept in useJourneyData and Settings for user preference storage.
+  // We no longer need to destructure it here as the playSound function is simplified.
+  // const { data: journeyData } = useJourneyData(); 
 
   const playSound = useCallback(() => {
     const audioContext = new AudioContext(); // Fixed: Using standard AudioContext
@@ -44,7 +45,7 @@ const MeditationLog = () => {
     oscillator.start();
     oscillator.stop(audioContext.currentTime + 0.5); // Play for 0.5 seconds
     console.log('Meditation finished: Playing simple tone.');
-  }, []);
+  }, []); // Removed selectedMeditationSound from dependencies
 
   // Initialize state from localStorage or defaults
   const getInitialState = useCallback((): TimerState => {
@@ -84,7 +85,7 @@ const MeditationLog = () => {
       startTime: null,
       selectedDuration: selectedDuration,
     };
-  }, [selectedDuration, initialTimeInSeconds, playSound]);
+  }, [selectedDuration, initialTimeInSeconds, playSound]); // Removed selectedMeditationSound from dependencies
 
   const [timerState, setTimerState] = useState<TimerState>(getInitialState);
   const { timeRemaining, isActive, isFinished } = timerState;
@@ -126,7 +127,7 @@ const MeditationLog = () => {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [isActive, timeRemaining, playSound]);
+  }, [isActive, timeRemaining, playSound]); // Removed selectedMeditationSound from dependencies
 
   // Handle visibility changes
   useEffect(() => {
