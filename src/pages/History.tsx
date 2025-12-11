@@ -33,9 +33,7 @@ const History = () => {
   const habitTypes = [...new Set(completedTasks?.map(task => task.original_source) || [])];
 
   // Filter tasks based on selected filter
-  const filteredTasks = filter === 'all' 
-    ? completedTasks 
-    : completedTasks?.filter(task => task.original_source === filter);
+  const filteredTasks = filter === 'all' ? completedTasks : completedTasks?.filter(task => task.original_source === filter);
 
   // Group tasks by date
   const groupedTasks = filteredTasks?.reduce((acc, task) => {
@@ -108,12 +106,8 @@ const History = () => {
       {filteredTasks && filteredTasks.length === 0 ? (
         <div className="bg-card rounded-2xl p-8 shadow-sm text-center space-y-4">
           <ClipboardList className="w-16 h-16 text-muted-foreground mx-auto" />
-          <p className="text-xl font-semibold text-foreground">
-            No completed tasks yet!
-          </p>
-          <p className="text-muted-foreground">
-            Start logging your habits on the dashboard to see your progress here.
-          </p>
+          <p className="text-xl font-semibold text-foreground">No completed tasks yet!</p>
+          <p className="text-muted-foreground">Start logging your habits on the dashboard to see your progress here.</p>
           <Link to="/"><Button className="mt-4">Go to Dashboard</Button></Link>
         </div>
       ) : (

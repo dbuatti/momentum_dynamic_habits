@@ -145,18 +145,22 @@ const Index = () => {
   const sortedHabits = [...allHabits].sort((a, b) => {
     const indexA = habitOrder.indexOf(a.key);
     const indexB = habitOrder.indexOf(b.key);
+    
     // If both habits are in our order list, sort by their defined order
     if (indexA !== -1 && indexB !== -1) {
       return indexA - indexB;
     }
+    
     // If only A is in our order list, it comes first
     if (indexA !== -1) {
       return -1;
     }
+    
     // If only B is in our order list, it comes first
     if (indexB !== -1) {
       return 1;
     }
+    
     // If neither is in our order list, maintain original order
     return 0;
   });
@@ -211,7 +215,6 @@ const Index = () => {
               const color = habitDetailColorMap[habit.key];
               const isTemporarilyChecked = checkedHabits.has(habit.key);
               const isComplete = isTemporarilyChecked || habit.isComplete;
-              
               return (
                 <HabitDetailCard
                   key={habit.key}
