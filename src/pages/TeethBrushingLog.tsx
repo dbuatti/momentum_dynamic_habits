@@ -1,39 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Check, Loader2, Sparkles } from 'lucide-react';
 import { useHabitLog } from '@/hooks/useHabitLog';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
-import { showError } from '@/utils/toast';
+import { useDailyHabitCompletion } from '@/hooks/useDailyHabitCompletion';
+
+const HABIT_KEY = 'teeth_brushing';
 
 const TeethBrushingLog = () => {
-  const [isCompleted, setIsCompleted] = useState(false);
-  const { mutate: logHabit, isPending } = useHabitLog();
-
-  // Check if already completed today
-  useEffect(() => {
-    const checkCompletion = () => {
-      const today = new Date().toDateString();
-      const lastCompleted = localStorage.getItem('teethBrushingLastCompleted');
-      if (lastCompleted === today) {
-        setIsCompleted(true);
-      }
-    };
-    checkCompletion();
-  }, []);
+  const { data: isCompleted, isLoading: isCompletionLoading } = useDailyHabitCompletion(HABIT_KEY);
+  const { mutate: logHabit, isPending: isLogPending } = useHabitLog();
 
   const handleMarkDone = () => {
     logHabit({
-      habitKey: 'teeth_brushing',
+      habitKey: HABIT_KEY,
       value: 1,
       taskName: 'Brush Teeth'
     });
-    
-    // Mark as completed for today
-    const today = new Date().toDateString();
-    localStorage.setItem('teethBrushingLastCompleted', today);
-    setIsCompleted(true);
   };
+
+  const isPending = isLogPending || isCompletionLoading;
 
   return (
     <div className="flex flex-col items-center w-full max-w-md mx-auto px-4 py-6">
