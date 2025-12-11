@@ -55,7 +55,7 @@ export const initialHabits: (Habit | PianoHabit)[] = [
     id: "housework",
     name: "House Work",
     type: "time",
-    targetGoal: 30,
+    targetGoal: 30, // Fixed goal - will not adapt
     unit: "min",
     currentProgress: 0,
     momentum: "Building",
@@ -67,7 +67,7 @@ export const initialHabits: (Habit | PianoHabit)[] = [
     id: "projectwork",
     name: "Project Work",
     type: "time",
-    targetGoal: 60,
+    targetGoal: 60, // Fixed goal - will not adapt
     unit: "min",
     currentProgress: 0,
     momentum: "Building",
@@ -79,7 +79,7 @@ export const initialHabits: (Habit | PianoHabit)[] = [
     id: "teeth_brushing",
     name: "Brush Teeth",
     type: "count",
-    targetGoal: 1,
+    targetGoal: 1, // Fixed goal - will not adapt
     unit: "session",
     currentProgress: 0,
     momentum: "Building",
@@ -91,7 +91,7 @@ export const initialHabits: (Habit | PianoHabit)[] = [
     id: "medication",
     name: "Take Medication",
     type: "count",
-    targetGoal: 1,
+    targetGoal: 1, // Fixed goal - will not adapt
     unit: "dose",
     currentProgress: 0,
     momentum: "Building",

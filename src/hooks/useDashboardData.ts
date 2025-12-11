@@ -119,13 +119,20 @@ const fetchDashboardData = async (userId: string) => {
     dailyProgressMap.set(key, (dailyProgressMap.get(key) || 0) + progress);
   });
 
+  // Define habits that should maintain fixed goals
+  const fixedGoalHabits = ['teeth_brushing', 'medication', 'housework', 'projectwork'];
+
   const processedHabits = (habits || []).map(h => {
     const initialHabit = initialHabitsMap.get(h.habit_key);
     const unit = initialHabit?.unit || '';
     const xpPerUnit = initialHabit?.xpPerUnit || 0;
     const energyCostPerUnit = initialHabit?.energyCostPerUnit || 0;
     const dailyProgress = dailyProgressMap.get(h.habit_key) || 0;
-    const dailyGoal = h.current_daily_goal;
+    
+    // For fixed goal habits, always use the initial target goal as the daily goal
+    const dailyGoal = fixedGoalHabits.includes(h.habit_key) 
+      ? (initialHabit?.targetGoal || h.current_daily_goal)
+      : h.current_daily_goal;
 
     return {
       key: h.habit_key,
@@ -148,7 +155,6 @@ const fetchDashboardData = async (userId: string) => {
   // Add default values for new habits that might not exist in the database yet
   const habitKeysInDb = new Set(processedHabits.map(h => h.key));
   const newHabits = initialHabits.filter(h => !habitKeysInDb.has(h.id) && (h.id === 'teeth_brushing' || h.id === 'medication'));
-  
   newHabits.forEach(habit => {
     processedHabits.push({
       key: habit.id,
@@ -184,26 +190,18 @@ const fetchDashboardData = async (userId: string) => {
 
   const achievedBadgeIds = new Set((achievedBadges || []).map(b => b.badge_id));
   const nextBadgeData = (allBadges || []).find(b => !achievedBadgeIds.has(b.id)) || null;
-
   let nextBadgeProgress = { progressValue: 0, value: 0, unit: '' };
+
   if (nextBadgeData) {
     const reqType = nextBadgeData.requirement_type;
     const reqValue = nextBadgeData.requirement_value;
     if (reqType === 'days_active') {
       const progress = Math.min((daysActive / reqValue) * 100, 100);
-      nextBadgeProgress = {
-        progressValue: progress,
-        value: Math.max(0, reqValue - daysActive),
-        unit: 'days left'
-      };
+      nextBadgeProgress = { progressValue: progress, value: Math.max(0, reqValue - daysActive), unit: 'days left' };
     } else if (reqType === 'streak') {
       const currentStreak = profile?.daily_streak || 0;
       const progress = Math.min((currentStreak / reqValue) * 100, 100);
-      nextBadgeProgress = {
-        progressValue: progress,
-        value: Math.max(0, reqValue - currentStreak),
-        unit: 'days left'
-      };
+      nextBadgeProgress = { progressValue: progress, value: Math.max(0, reqValue - currentStreak), unit: 'days left' };
     } else if (reqType === 'lifetime_progress') {
       const habit = processedHabits.find(h => h.key === nextBadgeData.habit_key);
       if (habit) {
@@ -211,11 +209,7 @@ const fetchDashboardData = async (userId: string) => {
         const progress = Math.min((currentProgress / reqValue) * 100, 100);
         const remaining = Math.max(0, reqValue - currentProgress);
         const unit = habit.unit === 'min' ? 'min left' : `${habit.key} left`;
-        nextBadgeProgress = {
-          progressValue: progress,
-          value: remaining,
-          unit: unit
-        };
+        nextBadgeProgress = { progressValue: progress, value: remaining, unit: unit };
       }
     }
   }
@@ -270,6 +264,7 @@ const fetchDashboardData = async (userId: string) => {
 export const useDashboardData = () => {
   const { session } = useSession();
   const userId = session?.user?.id;
+
   return useQuery({
     queryKey: ['dashboardData', userId],
     queryFn: () => fetchDashboardData(userId!),

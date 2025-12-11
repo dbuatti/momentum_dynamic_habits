@@ -20,10 +20,7 @@ const logHabit = async ({ userId, habitKey, value, taskName }: LogHabitParams & 
 
   // For count-based habits, we use the value directly
   // For time-based habits, we convert minutes to seconds if needed
-  const actualValue = habitConfig.type === 'time' && habitConfig.unit === 'min' 
-    ? value * 60 
-    : value;
-
+  const actualValue = habitConfig.type === 'time' && habitConfig.unit === 'min' ? value * 60 : value;
   const xpEarned = Math.round(actualValue * habitConfig.xpPerUnit);
   const energyCost = Math.round(actualValue * habitConfig.energyCostPerUnit);
 
@@ -63,41 +60,51 @@ const logHabit = async ({ userId, habitKey, value, taskName }: LogHabitParams & 
 
   if (userHabitFetchError) throw userHabitFetchError;
 
+  // Define habits that should maintain fixed goals
+  const fixedGoalHabits = ['teeth_brushing', 'medication', 'housework', 'projectwork'];
+  const isFixedGoalHabit = fixedGoalHabits.includes(habitKey);
+
   let newDailyGoal = userHabitData.current_daily_goal;
   let newMomentumLevel = userHabitData.momentum_level;
   let newXp = (profileData.xp || 0) + xpEarned;
   let newLevel = calculateLevel(newXp);
 
-  const goalMet = (habitConfig.type === 'time' && value >= userHabitData.current_daily_goal) || 
-                  (habitConfig.type === 'count' && value >= userHabitData.current_daily_goal);
+  // Only adjust goals for non-fixed habits
+  if (!isFixedGoalHabit) {
+    const goalMet = (habitConfig.type === 'time' && value >= userHabitData.current_daily_goal) ||
+      (habitConfig.type === 'count' && value >= userHabitData.current_daily_goal);
 
-  if (goalMet) {
-    // Increase goal slightly, improve momentum
-    newDailyGoal = Math.min(userHabitData.current_daily_goal + 1, userHabitData.long_term_goal);
-    if (newMomentumLevel === 'Struggling') newMomentumLevel = 'Building';
-    else if (newMomentumLevel === 'Building') newMomentumLevel = 'Strong';
-    else if (newMomentumLevel === 'Strong') newMomentumLevel = 'Crushing';
-  } else {
-    // For manual check-off of non-goal-met habits, we don't decrease the goal
-    // Only decrease if it's a time-based habit that was significantly under goal
-    if (habitConfig.type === 'time' && value < userHabitData.current_daily_goal * 0.5) {
-      newDailyGoal = Math.max(1, userHabitData.current_daily_goal - 1);
-      if (newMomentumLevel === 'Crushing') newMomentumLevel = 'Strong';
-      else if (newMomentumLevel === 'Strong') newMomentumLevel = 'Building';
-      else if (newMomentumLevel === 'Building') newMomentumLevel = 'Struggling';
+    if (goalMet) {
+      // Increase goal slightly, improve momentum
+      newDailyGoal = Math.min(userHabitData.current_daily_goal + 1, userHabitData.long_term_goal);
+      if (newMomentumLevel === 'Struggling') newMomentumLevel = 'Building';
+      else if (newMomentumLevel === 'Building') newMomentumLevel = 'Strong';
+      else if (newMomentumLevel === 'Strong') newMomentumLevel = 'Crushing';
+    } else {
+      // For manual check-off of non-goal-met habits, we don't decrease the goal
+      // Only decrease if it's a time-based habit that was significantly under goal
+      if (habitConfig.type === 'time' && value < userHabitData.current_daily_goal * 0.5) {
+        newDailyGoal = Math.max(1, userHabitData.current_daily_goal - 1);
+        if (newMomentumLevel === 'Crushing') newMomentumLevel = 'Strong';
+        else if (newMomentumLevel === 'Strong') newMomentumLevel = 'Building';
+        else if (newMomentumLevel === 'Building') newMomentumLevel = 'Struggling';
+      }
     }
   }
 
-  const { error: habitUpdateError } = await supabase
-    .from('user_habits')
-    .update({
-      current_daily_goal: newDailyGoal,
-      momentum_level: newMomentumLevel,
-    })
-    .eq('user_id', userId)
-    .eq('habit_key', habitKey);
+  // Update habit data only if it's not a fixed goal habit
+  if (!isFixedGoalHabit) {
+    const { error: habitUpdateError } = await supabase
+      .from('user_habits')
+      .update({
+        current_daily_goal: newDailyGoal,
+        momentum_level: newMomentumLevel,
+      })
+      .eq('user_id', userId)
+      .eq('habit_key', habitKey);
 
-  if (habitUpdateError) throw habitUpdateError;
+    if (habitUpdateError) throw habitUpdateError;
+  }
 
   const { error: profileUpdateError } = await supabase
     .from('profiles')
