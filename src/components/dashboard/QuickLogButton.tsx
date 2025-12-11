@@ -36,9 +36,15 @@ export const QuickLogButton: React.FC<QuickLogButtonProps> = ({
     indigo: 'bg-habit-indigo border border-habit-indigo-border text-habit-indigo-foreground hover:bg-habit-indigo/90',
   };
 
-  const currentClasses = isComplete && completedColorClass 
-    ? completedColorClass 
-    : variantClasses[variant];
+  let currentClasses = variantClasses[variant];
+
+  if (isComplete) {
+    // If complete, use the green completed style (which includes its own border)
+    currentClasses = completedColorClass || currentClasses;
+  } else {
+    // If incomplete, override the border to be red and slightly thicker/more prominent
+    currentClasses = cn(currentClasses, "border-2 border-destructive/50 dark:border-destructive/70");
+  }
 
   return (
     <Link to={route} state={state} className="h-full block">
