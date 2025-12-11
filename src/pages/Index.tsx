@@ -67,6 +67,34 @@ const habitOrder = [
   'projectwork'
 ];
 
+// Default habit configurations for new habits that might not be in the database yet
+const defaultHabitConfigs = {
+  teeth_brushing: {
+    key: 'teeth_brushing',
+    name: 'Brush Teeth',
+    dailyGoal: 1,
+    dailyProgress: 0,
+    unit: 'session',
+    momentum: 'Building',
+    long_term_goal: 365,
+    lifetimeProgress: 0,
+    daysCompletedLast7Days: 0,
+    isComplete: false
+  },
+  medication: {
+    key: 'medication',
+    name: 'Take Medication',
+    dailyGoal: 1,
+    dailyProgress: 0,
+    unit: 'dose',
+    momentum: 'Building',
+    long_term_goal: 365,
+    lifetimeProgress: 0,
+    daysCompletedLast7Days: 0,
+    isComplete: false
+  }
+};
+
 const Index = () => {
   const { data, isLoading, isError, refetch } = useDashboardData();
   const { isLoading: isOnboardingLoading } = useOnboardingCheck();
@@ -102,8 +130,19 @@ const Index = () => {
 
   const { daysActive, totalJourneyDays, daysToNextMonth, habits, weeklySummary, patterns, nextBadge, lastActiveText, firstName, lastName, reviewQuestion, tip, xp, level, averageDailyTasks } = data;
 
+  // Ensure new habits are always included, even if not in database
+  const allHabits = [...habits];
+  
+  // Add default habits if they don't exist in the database
+  Object.keys(defaultHabitConfigs).forEach(habitKey => {
+    const exists = habits.some(h => h.key === habitKey);
+    if (!exists) {
+      allHabits.push(defaultHabitConfigs[habitKey]);
+    }
+  });
+
   // Sort habits according to the defined order
-  const sortedHabits = [...habits].sort((a, b) => {
+  const sortedHabits = [...allHabits].sort((a, b) => {
     const indexA = habitOrder.indexOf(a.key);
     const indexB = habitOrder.indexOf(b.key);
     // If both habits are in our order list, sort by their defined order

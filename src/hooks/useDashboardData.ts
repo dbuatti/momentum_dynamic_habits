@@ -82,7 +82,6 @@ const fetchDashboardData = async (userId: string) => {
   if (randomReviewQuestionError) console.error('Error fetching random review question for dashboard:', randomReviewQuestionError);
   if (randomTipError) console.error('Error fetching random tip for dashboard:', randomTipError);
 
-
   // Throw a general error if essential data is missing, but allow bestTime, reviewQuestion, tip to be optional
   if (profileError || habitsError || allBadgesError || achievedBadgesError || completedTodayError || completedThisWeekError || completedLastWeekError || totalCompletedError || distinctDaysError) {
     throw new Error('Failed to fetch essential dashboard data');
@@ -110,10 +109,13 @@ const fetchDashboardData = async (userId: string) => {
 
   const startDate = profile?.journey_start_date ? new Date(profile.journey_start_date) : new Date();
   const daysActive = differenceInDays(startOfDay(new Date()), startOfDay(startDate)) + 1;
+
   const dailyProgressMap = new Map<string, number>();
   (completedToday || []).forEach(task => {
     const key = task.original_source;
-    const progress = initialHabitsMap.get(key)?.type === 'time' && initialHabitsMap.get(key)?.unit === 'min' ? (task.duration_used || 0) / 60 : 1;
+    const progress = initialHabitsMap.get(key)?.type === 'time' && initialHabitsMap.get(key)?.unit === 'min' 
+      ? (task.duration_used || 0) / 60 
+      : 1;
     dailyProgressMap.set(key, (dailyProgressMap.get(key) || 0) + progress);
   });
 
@@ -124,6 +126,7 @@ const fetchDashboardData = async (userId: string) => {
     const energyCostPerUnit = initialHabit?.energyCostPerUnit || 0;
     const dailyProgress = dailyProgressMap.get(h.habit_key) || 0;
     const dailyGoal = h.current_daily_goal;
+
     return {
       key: h.habit_key,
       name: initialHabit?.name || h.habit_key.charAt(0).toUpperCase() + h.habit_key.slice(1),
@@ -132,12 +135,35 @@ const fetchDashboardData = async (userId: string) => {
       isComplete: dailyProgress >= dailyGoal,
       momentum: h.momentum_level,
       longTermGoal: h.long_term_goal,
-      lifetimeProgress: initialHabit?.type === 'time' && initialHabit?.unit === 'min' ? Math.round((h.lifetime_progress || 0) / 60) : (h.lifetime_progress || 0),
+      lifetimeProgress: initialHabit?.type === 'time' && initialHabit?.unit === 'min' 
+        ? Math.round((h.lifetime_progress || 0) / 60) 
+        : (h.lifetime_progress || 0),
       unit: unit,
       xpPerUnit: xpPerUnit,
       energyCostPerUnit: energyCostPerUnit,
       daysCompletedLast7Days: habitCompletionMap.get(h.habit_key) || 0,
     };
+  });
+
+  // Add default values for new habits that might not exist in the database yet
+  const habitKeysInDb = new Set(processedHabits.map(h => h.key));
+  const newHabits = initialHabits.filter(h => !habitKeysInDb.has(h.id) && (h.id === 'teeth_brushing' || h.id === 'medication'));
+  
+  newHabits.forEach(habit => {
+    processedHabits.push({
+      key: habit.id,
+      name: habit.name,
+      dailyGoal: habit.targetGoal,
+      dailyProgress: 0,
+      isComplete: false,
+      momentum: 'Building',
+      longTermGoal: habit.id === 'teeth_brushing' ? 365 : 365, // Annual goal
+      lifetimeProgress: 0,
+      unit: habit.unit,
+      xpPerUnit: habit.xpPerUnit,
+      energyCostPerUnit: habit.energyCostPerUnit,
+      daysCompletedLast7Days: 0,
+    });
   });
 
   const weeklySummary = {
@@ -158,18 +184,26 @@ const fetchDashboardData = async (userId: string) => {
 
   const achievedBadgeIds = new Set((achievedBadges || []).map(b => b.badge_id));
   const nextBadgeData = (allBadges || []).find(b => !achievedBadgeIds.has(b.id)) || null;
-  let nextBadgeProgress = { progressValue: 0, value: 0, unit: '' };
 
+  let nextBadgeProgress = { progressValue: 0, value: 0, unit: '' };
   if (nextBadgeData) {
     const reqType = nextBadgeData.requirement_type;
     const reqValue = nextBadgeData.requirement_value;
     if (reqType === 'days_active') {
       const progress = Math.min((daysActive / reqValue) * 100, 100);
-      nextBadgeProgress = { progressValue: progress, value: Math.max(0, reqValue - daysActive), unit: 'days left' };
+      nextBadgeProgress = {
+        progressValue: progress,
+        value: Math.max(0, reqValue - daysActive),
+        unit: 'days left'
+      };
     } else if (reqType === 'streak') {
       const currentStreak = profile?.daily_streak || 0;
       const progress = Math.min((currentStreak / reqValue) * 100, 100);
-      nextBadgeProgress = { progressValue: progress, value: Math.max(0, reqValue - currentStreak), unit: 'days left' };
+      nextBadgeProgress = {
+        progressValue: progress,
+        value: Math.max(0, reqValue - currentStreak),
+        unit: 'days left'
+      };
     } else if (reqType === 'lifetime_progress') {
       const habit = processedHabits.find(h => h.key === nextBadgeData.habit_key);
       if (habit) {
@@ -177,22 +211,34 @@ const fetchDashboardData = async (userId: string) => {
         const progress = Math.min((currentProgress / reqValue) * 100, 100);
         const remaining = Math.max(0, reqValue - currentProgress);
         const unit = habit.unit === 'min' ? 'min left' : `${habit.key} left`;
-        nextBadgeProgress = { progressValue: progress, value: remaining, unit: unit };
+        nextBadgeProgress = {
+          progressValue: progress,
+          value: remaining,
+          unit: unit
+        };
       }
     }
   }
 
   const totalDaysSinceStart = differenceInDays(startOfDay(new Date()), startOfDay(startDate)) + 1;
-  const rawConsistency = totalDaysSinceStart > 0 && typeof distinctDays === 'number' ? distinctDays / totalDaysSinceStart : 0;
+  const rawConsistency = totalDaysSinceStart > 0 && typeof distinctDays === 'number' 
+    ? distinctDays / totalDaysSinceStart 
+    : 0;
   const consistency = Math.round(Math.min(rawConsistency, 1) * 100);
+
   const lastActiveAt = profile?.last_active_at ? new Date(profile.last_active_at) : null;
-  const lastActiveText = lastActiveAt ? formatDistanceToNowStrict(lastActiveAt, { addSuffix: true }) : 'Never';
-  const averageDailyTasks = totalSessions && daysActive > 0 ? (totalSessions / daysActive).toFixed(1) : '0.0';
+  const lastActiveText = lastActiveAt 
+    ? formatDistanceToNowStrict(lastActiveAt, { addSuffix: true }) 
+    : 'Never';
+
+  const averageDailyTasks = totalSessions && daysActive > 0 
+    ? (totalSessions / daysActive).toFixed(1) 
+    : '0.0';
 
   // Find the meditation habit to calculate totalJourneyDays consistently
   const meditationHabit = habits?.find(h => h.habit_key === 'meditation');
-  const totalJourneyDays = meditationHabit && profile?.journey_start_date
-    ? differenceInDays(new Date(meditationHabit.target_completion_date), new Date(profile.journey_start_date))
+  const totalJourneyDays = meditationHabit && profile?.journey_start_date 
+    ? differenceInDays(new Date(meditationHabit.target_completion_date), new Date(profile.journey_start_date)) 
     : 0;
 
   return {
