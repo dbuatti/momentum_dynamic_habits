@@ -43,7 +43,7 @@ export const QuickLogButton: React.FC<QuickLogButtonProps> = ({
     currentClasses = completedColorClass || currentClasses;
   } else {
     // If incomplete, override the border to be red and slightly thicker/more prominent
-    currentClasses = cn(currentClasses, "border-2 border-destructive/50 dark:border-destructive/70");
+    currentClasses = cn(currentClasses, "border-4 border-destructive/50 dark:border-destructive/70");
   }
 
   return (
