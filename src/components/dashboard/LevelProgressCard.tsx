@@ -12,11 +12,16 @@ interface LevelProgressCardProps {
 export const LevelProgressCard: React.FC<LevelProgressCardProps> = ({ currentXp, currentLevel }) => {
   const xpForCurrentLevelStart = getXpForCurrentLevelStart(currentLevel);
   const xpForNextLevel = getXpForNextLevel(currentLevel);
-  const xpProgressInCurrentLevel = currentXp - xpForCurrentLevelStart;
+  
+  // Ensure XP progress is non-negative
+  const xpProgressInCurrentLevel = Math.max(0, currentXp - xpForCurrentLevelStart);
   const xpNeededForNextLevel = xpForNextLevel - xpForCurrentLevelStart;
+  
   const progressPercentage = xpNeededForNextLevel > 0 
     ? (xpProgressInCurrentLevel / xpNeededForNextLevel) * 100 
     : 0;
+    
+  const xpRemaining = Math.max(0, xpNeededForNextLevel - xpProgressInCurrentLevel);
 
   return (
     <Card className="rounded-2xl shadow-sm border-0 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-950 dark:to-orange-950 border-yellow-200 dark:border-yellow-800">
@@ -44,7 +49,7 @@ export const LevelProgressCard: React.FC<LevelProgressCardProps> = ({ currentXp,
         <div className="mt-4">
           <Progress value={progressPercentage} className="h-3 [&>div]:bg-yellow-500" />
           <p className="text-sm text-muted-foreground text-right mt-2">
-            {xpNeededForNextLevel - xpProgressInCurrentLevel} XP to next level
+            {xpRemaining} XP to next level
           </p>
         </div>
       </CardContent>

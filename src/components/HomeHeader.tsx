@@ -49,8 +49,11 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
   // Calculate XP for level progression
   const xpForCurrentLevel = 50 * level * (level - 1);
   const xpForNextLevel = 50 * (level + 1) * level;
-  const xpProgressInCurrentLevel = xp - xpForCurrentLevel;
+  
+  // Ensure XP progress is non-negative
+  const xpProgressInCurrentLevel = Math.max(0, xp - xpForCurrentLevel);
   const xpNeededForNextLevel = xpForNextLevel - xpForCurrentLevel;
+  
   const levelProgress = xpNeededForNextLevel > 0 
     ? (xpProgressInCurrentLevel / xpNeededForNextLevel) * 100 
     : 0;
