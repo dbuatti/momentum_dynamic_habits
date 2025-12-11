@@ -21,51 +21,52 @@ const initializeMissingHabits = async (userId: string) => {
 
   const existingHabitKeys = new Set(existingHabits?.map(h => h.habit_key) || []);
   
-  // Define the missing habits that should be initialized
-  const missingHabits: MissingHabit[] = [];
+  // Define the habits that should be ensured to exist
+  const habitsToEnsure: MissingHabit[] = [];
   const today = new Date();
   const oneYearFromNow = new Date(today.setFullYear(today.getFullYear() + 1));
   const oneYearDateString = oneYearFromNow.toISOString().split('T')[0];
 
   // Check for teeth_brushing
-  if (!existingHabitKeys.has('teeth_brushing')) {
-    missingHabits.push({
-      habit_key: 'teeth_brushing',
-      long_term_goal: 365,
-      target_completion_date: oneYearDateString,
-      current_daily_goal: 1
-    });
-  }
+  habitsToEnsure.push({
+    habit_key: 'teeth_brushing',
+    long_term_goal: 365,
+    target_completion_date: oneYearDateString,
+    current_daily_goal: 1
+  });
 
   // Check for medication
-  if (!existingHabitKeys.has('medication')) {
-    missingHabits.push({
-      habit_key: 'medication',
-      long_term_goal: 365,
-      target_completion_date: oneYearDateString,
-      current_daily_goal: 1
-    });
-  }
+  habitsToEnsure.push({
+    habit_key: 'medication',
+    long_term_goal: 365,
+    target_completion_date: oneYearDateString,
+    current_daily_goal: 1
+  });
 
-  // If there are missing habits, insert them
-  if (missingHabits.length > 0) {
-    const { error: insertError } = await supabase
+  // Filter to only include habits that are actually missing, or just upsert all defaults
+  // Since the `handle_new_user` trigger might have already inserted them, we use upsert
+  // to safely insert or update the default values if they are missing or need resetting.
+  
+  const habitsToUpsert = habitsToEnsure.map(habit => ({
+    user_id: userId,
+    habit_key: habit.habit_key,
+    long_term_goal: habit.long_term_goal,
+    target_completion_date: habit.target_completion_date,
+    current_daily_goal: habit.current_daily_goal,
+    momentum_level: 'Building'
+  }));
+
+  if (habitsToUpsert.length > 0) {
+    // Use upsert to insert if not present, or update if present (though we only update the default fields here)
+    const { error: upsertError } = await supabase
       .from('user_habits')
-      .insert(
-        missingHabits.map(habit => ({
-          user_id: userId,
-          habit_key: habit.habit_key,
-          long_term_goal: habit.long_term_goal,
-          target_completion_date: habit.target_completion_date,
-          current_daily_goal: habit.current_daily_goal,
-          momentum_level: 'Building'
-        }))
-      );
+      .upsert(habitsToUpsert, { onConflict: 'user_id, habit_key', ignoreDuplicates: true });
 
-    if (insertError) throw insertError;
+    if (upsertError) throw upsertError;
   }
 
-  return { initialized: missingHabits.length > 0, habits: missingHabits };
+  // We return the list of habits that were checked, not necessarily inserted
+  return { initialized: habitsToUpsert.length > 0, habits: habitsToUpsert };
 };
 
 export const useInitializeMissingHabits = () => {
@@ -79,15 +80,17 @@ export const useInitializeMissingHabits = () => {
     },
     onSuccess: (data) => {
       if (data.initialized) {
-        console.log('Initialized missing habits:', data.habits);
+        console.log('Ensured default habits exist.');
         // Invalidate dashboard data to refresh with new habits
         queryClient.invalidateQueries({ queryKey: ['dashboardData', session?.user?.id] });
         queryClient.invalidateQueries({ queryKey: ['journeyData', session?.user?.id] });
       }
     },
     onError: (error) => {
-      showError(`Failed to initialize habits: ${error.message}`);
-      console.error('Error initializing missing habits:', error);
+      // We only show an error if it's not the expected 409 conflict (which upsert should prevent)
+      // However, since we are using `ignoreDuplicates: true` in upsert, we should not see 409 errors anymore.
+      showError(`Failed to ensure habits exist: ${error.message}`);
+      console.error('Error ensuring default habits exist:', error);
     },
   });
 };
