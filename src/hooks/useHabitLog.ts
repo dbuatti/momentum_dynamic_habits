@@ -137,13 +137,13 @@ export const useHabitLog = () => {
       return logHabit({ ...params, userId: session.user.id });
     },
     onSuccess: () => {
-      // Introduce a small delay to ensure database write propagation before invalidating cache and navigating.
+      // Introduce a small delay (500ms) to ensure database write propagation before invalidating cache and navigating.
       setTimeout(() => {
         showSuccess('Habit logged successfully!');
         queryClient.invalidateQueries({ queryKey: ['dashboardData', session?.user?.id] });
         queryClient.invalidateQueries({ queryKey: ['journeyData', session?.user?.id] });
         navigate('/');
-      }, 100); // 100ms delay
+      }, 500); // Increased delay to 500ms
     },
     onError: (error) => {
       showError(`Failed to log habit: ${error.message}`);
