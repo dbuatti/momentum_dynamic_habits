@@ -18,28 +18,68 @@ const FIXED_DURATION_MINUTES = 2;
 const INITIAL_TIME_IN_SECONDS = FIXED_DURATION_MINUTES * 60;
 const LOCAL_STORAGE_KEY = 'teethBrushingTimerState';
 
-const TeethBrushingLog = () => {
+// Helper function to play a tone using AudioContext
+const playTone = (context: AudioContext) => {
+  const oscillator = context.createOscillator();
+  const gainNode = context.createGain();
   
+  oscillator.connect(gainNode);
+  gainNode.connect(context.destination);
+  
+  oscillator.type = 'sine';
+  oscillator.frequency.setValueAtTime(440, context.currentTime);
+  gainNode.gain.setValueAtTime(0.5, context.currentTime);
+  
+  oscillator.start();
+  oscillator.stop(context.currentTime + 0.5);
+};
+
+const TeethBrushingLog = () => {
+  // Refs for AudioContext management
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const isAudioUnlockedRef = useRef(false);
+
+  const initializeAudioContext = useCallback(() => {
+    if (!audioContextRef.current) {
+      // Use window.AudioContext or webkitAudioContext for cross-browser compatibility
+      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+    return audioContextRef.current;
+  }, []);
+
+  const unlockAudio = useCallback((context: AudioContext) => {
+    if (isAudioUnlockedRef.current) return;
+
+    // Attempt to resume/unlock the context on user interaction (iOS requirement)
+    if (context.state === 'suspended') {
+        context.resume().then(() => {
+            isAudioUnlockedRef.current = true;
+            console.log('AudioContext resumed/unlocked.');
+        }).catch(e => console.error('Failed to resume AudioContext:', e));
+    } else {
+        isAudioUnlockedRef.current = true;
+    }
+  }, []);
+
   const playSound = useCallback(() => {
     if (typeof window === 'undefined') return;
+    
     try {
-      const audioContext = new AudioContext();
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
+      const context = initializeAudioContext();
       
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
+      if (context.state === 'suspended') {
+          context.resume().then(() => {
+              playTone(context);
+          }).catch(e => console.error('Failed to resume AudioContext for sound:', e));
+          return;
+      }
       
-      oscillator.type = 'sine';
-      oscillator.frequency.setValueAtTime(440, audioContext.currentTime);
-      gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
+      playTone(context);
       
-      oscillator.start();
-      oscillator.stop(audioContext.currentTime + 0.5);
     } catch (e) {
       console.warn("Could not play sound:", e);
     }
-  }, []);
+  }, [initializeAudioContext]);
 
   // Initialize state from localStorage or defaults
   const getInitialState = useCallback((): TimerState => {
@@ -54,7 +94,7 @@ const TeethBrushingLog = () => {
           const newTimeRemaining = parsedState.timeRemaining - elapsedTime;
           
           if (newTimeRemaining <= 0) {
-            playSound();
+            // Sound is handled by useEffect when state updates to isFinished: true
             return {
               ...parsedState,
               timeRemaining: 0,
@@ -87,7 +127,7 @@ const TeethBrushingLog = () => {
       isFinished: false,
       startTime: null,
     };
-  }, [playSound]);
+  }, [initializeAudioContext]);
 
   const [timerState, setTimerState] = useState<TimerState>(getInitialState());
   const { timeRemaining, isActive, isFinished } = timerState;
@@ -162,6 +202,10 @@ const TeethBrushingLog = () => {
   const handleToggle = () => {
     if (isFinished) return;
     
+    // Crucial step: Initialize and attempt to unlock/resume AudioContext on user interaction
+    const context = initializeAudioContext();
+    unlockAudio(context);
+
     setTimerState(prevState => ({
       ...prevState,
       isActive: !prevState.isActive,

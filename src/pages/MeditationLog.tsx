@@ -18,29 +18,74 @@ interface TimerState {
 
 const LOCAL_STORAGE_KEY = 'meditationTimerState';
 
+// Helper function to play a tone using AudioContext
+const playTone = (context: AudioContext) => {
+  const oscillator = context.createOscillator();
+  const gainNode = context.createGain();
+  
+  oscillator.connect(gainNode);
+  gainNode.connect(context.destination);
+  
+  oscillator.type = 'sine';
+  oscillator.frequency.setValueAtTime(440, context.currentTime);
+  gainNode.gain.setValueAtTime(0.5, context.currentTime);
+  
+  oscillator.start();
+  oscillator.stop(context.currentTime + 0.5);
+};
+
 const MeditationLog = () => {
   const location = useLocation();
   const initialDurationFromState = location.state?.duration || 1; // Default from dashboard or 1 min
   const [selectedDuration, setSelectedDuration] = useState<number>(initialDurationFromState);
   const initialTimeInSeconds = selectedDuration * 60;
 
-  const playSound = useCallback(() => {
-    const audioContext = new AudioContext();
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-    
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-    
-    oscillator.type = 'sine'; // A simple sine wave
-    oscillator.frequency.setValueAtTime(440, audioContext.currentTime); // A4 note
-    gainNode.gain.setValueAtTime(0.5, audioContext.currentTime); // Volume
-    
-    oscillator.start();
-    oscillator.stop(audioContext.currentTime + 0.5); // Play for 0.5 seconds
-    
-    console.log('Meditation finished: Playing simple tone.');
+  // Refs for AudioContext management
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const isAudioUnlockedRef = useRef(false);
+
+  const initializeAudioContext = useCallback(() => {
+    if (!audioContextRef.current) {
+      // Use window.AudioContext or webkitAudioContext for cross-browser compatibility
+      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+    return audioContextRef.current;
   }, []);
+
+  const unlockAudio = useCallback((context: AudioContext) => {
+    if (isAudioUnlockedRef.current) return;
+
+    // Attempt to resume/unlock the context on user interaction (iOS requirement)
+    if (context.state === 'suspended') {
+        context.resume().then(() => {
+            isAudioUnlockedRef.current = true;
+            console.log('AudioContext resumed/unlocked.');
+        }).catch(e => console.error('Failed to resume AudioContext:', e));
+    } else {
+        isAudioUnlockedRef.current = true;
+    }
+  }, []);
+
+  const playSound = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    
+    try {
+      const context = initializeAudioContext();
+      
+      if (context.state === 'suspended') {
+          // If suspended, try to resume before playing (this might fail if not user-initiated)
+          context.resume().then(() => {
+              playTone(context);
+          }).catch(e => console.error('Failed to resume AudioContext for sound:', e));
+          return;
+      }
+      
+      playTone(context);
+      
+    } catch (e) {
+      console.warn("Could not play sound:", e);
+    }
+  }, [initializeAudioContext]);
 
   // Initialize state from localStorage or defaults
   const getInitialState = useCallback((): TimerState => {
@@ -67,7 +112,7 @@ const MeditationLog = () => {
           const newTimeRemaining = parsedState.timeRemaining - elapsedTime;
           
           if (newTimeRemaining <= 0) {
-            playSound(); // Play sound if it finished in background
+            // Sound is handled by useEffect when state updates to isFinished: true
             return {
               ...parsedState,
               timeRemaining: 0,
@@ -95,7 +140,7 @@ const MeditationLog = () => {
       startTime: null,
       selectedDuration: selectedDuration,
     };
-  }, [selectedDuration, initialTimeInSeconds, playSound]);
+  }, [selectedDuration, initialTimeInSeconds]);
 
   const [timerState, setTimerState] = useState<TimerState>(getInitialState());
   const { timeRemaining, isActive, isFinished } = timerState;
@@ -177,6 +222,10 @@ const MeditationLog = () => {
   const handleToggle = () => {
     if (isFinished) return;
     
+    // Crucial step: Initialize and attempt to unlock/resume AudioContext on user interaction
+    const context = initializeAudioContext();
+    unlockAudio(context);
+
     setTimerState(prevState => ({
       ...prevState,
       isActive: !prevState.isActive,
