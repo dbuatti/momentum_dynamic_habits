@@ -67,6 +67,15 @@ const habitOrder = [
   'projectwork'
 ];
 
+// Define the habits that use duration selection and should pass remaining time
+const durationSelectHabits = new Set([
+  'meditation', 
+  'kinesiology', 
+  'piano', 
+  'housework', 
+  'projectwork'
+]);
+
 // Default habit configurations for new habits that might not be in the database yet
 const defaultHabitConfigs = {
   teeth_brushing: {
@@ -185,11 +194,19 @@ const Index = () => {
             {sortedHabits.map(habit => {
               const Icon = habitIconMap[habit.key];
               const variant = quickLogVariantMap[habit.key];
+              
+              // Calculate duration to pass: remaining time for time-based habits with selection, otherwise the full goal.
+              let durationToPass = habit.dailyGoal;
+              if (habit.unit === 'min' && durationSelectHabits.has(habit.key)) {
+                // Calculate remaining minutes, ensuring a minimum of 1 minute is passed if progress is less than goal
+                durationToPass = Math.max(1, habit.dailyGoal - Math.round(habit.dailyProgress));
+              }
+              
               return (
                 <QuickLogButton
                   key={habit.key}
                   route={`/log/${habit.key === 'kinesiology' ? 'kinesiology' : habit.key.replace('_', '-')}`}
-                  state={{ duration: habit.dailyGoal }}
+                  state={{ duration: durationToPass }}
                   icon={Icon ? <Icon className="w-5 h-5" /> : null}
                   title={habit.name}
                   progress={`${Math.round(habit.dailyProgress)}/${habit.dailyGoal} ${habit.unit}`}
