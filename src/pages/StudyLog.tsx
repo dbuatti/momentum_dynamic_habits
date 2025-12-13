@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
+import { showError } from '@/utils/toast';
 
 interface TimerState {
   timeRemaining: number;
@@ -175,25 +176,19 @@ const StudyLog = () => {
     localStorage.removeItem(LOCAL_STORAGE_KEY);
   };
 
-  const handleLog = () => {
-    if (selectedDuration > 0) {
-      logHabit({ 
-        habitKey: 'kinesiology', 
-        value: selectedDuration, 
-        taskName: 'Kinesiology Study' 
-      });
-      localStorage.removeItem(LOCAL_STORAGE_KEY);
-    }
-  };
+  const durationSpentSeconds = initialTimeInSeconds - timeRemaining;
+  const durationToLogMinutes = Math.floor(durationSpentSeconds / 60);
 
-  const handleMarkDone = () => {
-    if (selectedDuration > 0) {
+  const handleLogSession = () => {
+    if (durationToLogMinutes > 0) {
       logHabit({ 
         habitKey: 'kinesiology', 
-        value: selectedDuration, 
+        value: durationToLogMinutes, 
         taskName: 'Kinesiology Study' 
       });
       localStorage.removeItem(LOCAL_STORAGE_KEY);
+    } else {
+      showError('Please start the timer first.');
     }
   };
 
@@ -204,6 +199,15 @@ const StudyLog = () => {
   };
 
   const durationOptions = [1, 5, 10, 15, 20, 30, 45, 60];
+  
+  let logButtonText;
+  if (isFinished) {
+    logButtonText = `Log ${selectedDuration} minute session`;
+  } else if (durationToLogMinutes > 0) {
+    logButtonText = `Log ${durationToLogMinutes} min session`;
+  } else {
+    logButtonText = `Mark Done`;
+  }
 
   return (
     <div className="flex flex-col items-center w-full max-w-md mx-auto px-4 py-6">
@@ -278,34 +282,20 @@ const StudyLog = () => {
         </div>
         
         <div className="space-y-4">
-          {isFinished ? (
-            <Button 
-              className="w-full bg-green-500 hover:bg-green-600 text-lg py-6 rounded-2xl"
-              onClick={handleLog}
-              disabled={isPending}
-            >
-              {isPending ? (
-                <Loader2 className="w-6 h-6 animate-spin" />
-              ) : (
-                `Log ${selectedDuration} minute session`
-              )}
-            </Button>
-          ) : (
-            <Button 
-              className="w-full bg-habit-green hover:bg-habit-green/90 text-habit-green-foreground text-lg py-6 rounded-2xl"
-              onClick={handleMarkDone}
-              disabled={isPending || selectedDuration <= 0}
-            >
-              {isPending ? (
-                <Loader2 className="w-6 h-6 animate-spin" />
-              ) : (
-                <>
-                  <Check className="w-6 h-6 mr-2" />
-                  Mark Done
-                </>
-              )}
-            </Button>
-          )}
+          <Button 
+            className="w-full bg-habit-green hover:bg-habit-green/90 text-habit-green-foreground text-lg py-6 rounded-2xl"
+            onClick={handleLogSession}
+            disabled={isPending || durationToLogMinutes === 0}
+          >
+            {isPending ? (
+              <Loader2 className="w-6 h-6 animate-spin" />
+            ) : (
+              <>
+                <Check className="w-6 h-6 mr-2" />
+                {logButtonText}
+              </>
+            )}
+          </Button>
         </div>
         
         <div className="p-4 bg-accent rounded-md border border-border">

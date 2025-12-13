@@ -224,11 +224,10 @@ const TeethBrushingLog = () => {
     localStorage.removeItem(LOCAL_STORAGE_KEY);
   };
 
-  const handleLog = () => {
-    // Calculate duration logged in minutes (rounded down)
-    const durationSpentSeconds = INITIAL_TIME_IN_SECONDS - timeRemaining;
-    const durationToLogMinutes = Math.floor(durationSpentSeconds / 60);
-        
+  const durationSpentSeconds = INITIAL_TIME_IN_SECONDS - timeRemaining;
+  const durationToLogMinutes = Math.floor(durationSpentSeconds / 60);
+
+  const handleLogSession = () => {
     if (durationToLogMinutes > 0) {
       logHabit({ 
         habitKey: HABIT_KEY, 
@@ -247,14 +246,11 @@ const TeethBrushingLog = () => {
     return `${mins}:${secs}`;
   };
   
-  const isComplete = timeRemaining === 0 && isFinished;
-  const durationLogged = Math.floor((INITIAL_TIME_IN_SECONDS - timeRemaining) / 60);
-  
   let logButtonText;
-  if (isComplete) {
+  if (isFinished) {
     logButtonText = `Log ${FIXED_DURATION_MINUTES} minute session`;
-  } else if (durationLogged > 0) {
-    logButtonText = `Mark Done (${durationLogged} min logged)`;
+  } else if (durationToLogMinutes > 0) {
+    logButtonText = `Log ${durationToLogMinutes} min session`;
   } else {
     logButtonText = `Mark Done`;
   }
@@ -312,8 +308,8 @@ const TeethBrushingLog = () => {
         <div className="space-y-4">
           <Button 
             className="w-full bg-habit-green hover:bg-habit-green/90 text-habit-green-foreground text-lg py-6 rounded-2xl"
-            onClick={handleLog}
-            disabled={isPending || (timeRemaining === INITIAL_TIME_IN_SECONDS && !isFinished)}
+            onClick={handleLogSession}
+            disabled={isPending || durationToLogMinutes === 0}
           >
             {isPending ? (
               <Loader2 className="w-6 h-6 animate-spin" />
