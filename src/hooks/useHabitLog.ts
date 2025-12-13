@@ -18,12 +18,23 @@ const logHabit = async ({ userId, habitKey, value, taskName }: LogHabitParams & 
     throw new Error(`Habit configuration not found for key: ${habitKey}`);
   }
 
+  // 1. Fetch current habit data before logging
+  const { data: userHabitData, error: userHabitFetchError } = await supabase
+    .from('user_habits')
+    .select('current_daily_goal, momentum_level, long_term_goal')
+    .eq('user_id', userId)
+    .eq('habit_key', habitKey)
+    .single();
+
+  if (userHabitFetchError) throw userHabitFetchError;
+
   // For count-based habits, we use the value directly
   // For time-based habits, we convert minutes to seconds if needed
   const actualValue = habitConfig.type === 'time' && habitConfig.unit === 'min' ? value * 60 : value;
   const xpEarned = Math.round(actualValue * habitConfig.xpPerUnit);
   const energyCost = Math.round(actualValue * habitConfig.energyCostPerUnit);
 
+  // 2. Insert completed task
   const { error: insertError } = await supabase.from('completedtasks').insert({
     user_id: userId,
     original_source: habitKey,
@@ -35,6 +46,7 @@ const logHabit = async ({ userId, habitKey, value, taskName }: LogHabitParams & 
 
   if (insertError) throw insertError;
 
+  // 3. Increment lifetime progress
   const { error: rpcError } = await supabase.rpc('increment_lifetime_progress', {
     p_user_id: userId,
     p_habit_key: habitKey,
@@ -43,31 +55,12 @@ const logHabit = async ({ userId, habitKey, value, taskName }: LogHabitParams & 
 
   if (rpcError) throw rpcError;
 
-  const { data: profileData, error: profileFetchError } = await supabase
-    .from('profiles')
-    .select('tasks_completed_today, xp, level')
-    .eq('id', userId)
-    .single();
-
-  if (profileFetchError) throw profileFetchError;
-
-  const { data: userHabitData, error: userHabitFetchError } = await supabase
-    .from('user_habits')
-    .select('current_daily_goal, momentum_level, long_term_goal')
-    .eq('user_id', userId)
-    .eq('habit_key', habitKey)
-    .single();
-
-  if (userHabitFetchError) throw userHabitFetchError;
-
-  // Define habits that should maintain fixed goals
+  // 4. Calculate new adaptive goal and momentum
   const fixedGoalHabits = ['teeth_brushing', 'medication', 'housework', 'projectwork'];
   const isFixedGoalHabit = fixedGoalHabits.includes(habitKey);
 
   let newDailyGoal = userHabitData.current_daily_goal;
   let newMomentumLevel = userHabitData.momentum_level;
-  let newXp = (profileData.xp || 0) + xpEarned;
-  let newLevel = calculateLevel(newXp);
 
   // Only adjust goals for non-fixed habits
   if (!isFixedGoalHabit) {
@@ -92,7 +85,7 @@ const logHabit = async ({ userId, habitKey, value, taskName }: LogHabitParams & 
     }
   }
 
-  // Update habit data only if it's not a fixed goal habit
+  // 5. Update habit data (goal and momentum)
   if (!isFixedGoalHabit) {
     const { error: habitUpdateError } = await supabase
       .from('user_habits')
@@ -105,6 +98,18 @@ const logHabit = async ({ userId, habitKey, value, taskName }: LogHabitParams & 
 
     if (habitUpdateError) throw habitUpdateError;
   }
+
+  // 6. Update profile data (XP, level, tasks completed today)
+  const { data: profileData, error: profileFetchError } = await supabase
+    .from('profiles')
+    .select('tasks_completed_today, xp, level')
+    .eq('id', userId)
+    .single();
+
+  if (profileFetchError) throw profileFetchError;
+
+  let newXp = (profileData.xp || 0) + xpEarned;
+  let newLevel = calculateLevel(newXp);
 
   const { error: profileUpdateError } = await supabase
     .from('profiles')
@@ -132,10 +137,13 @@ export const useHabitLog = () => {
       return logHabit({ ...params, userId: session.user.id });
     },
     onSuccess: () => {
-      showSuccess('Habit logged successfully!');
-      queryClient.invalidateQueries({ queryKey: ['dashboardData', session?.user?.id] });
-      queryClient.invalidateQueries({ queryKey: ['journeyData', session?.user?.id] });
-      navigate('/');
+      // Introduce a small delay to ensure database write propagation before invalidating cache and navigating.
+      setTimeout(() => {
+        showSuccess('Habit logged successfully!');
+        queryClient.invalidateQueries({ queryKey: ['dashboardData', session?.user?.id] });
+        queryClient.invalidateQueries({ queryKey: ['journeyData', session?.user?.id] });
+        navigate('/');
+      }, 100); // 100ms delay
     },
     onError: (error) => {
       showError(`Failed to log habit: ${error.message}`);
