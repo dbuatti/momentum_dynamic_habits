@@ -252,7 +252,7 @@ const TeethBrushingLog = () => {
   } else if (durationToLogMinutes > 0) {
     logButtonText = `Log ${durationToLogMinutes} min session`;
   } else {
-    logButtonText = `Mark Done`;
+    logButtonText = `Log Session`;
   }
 
   return (

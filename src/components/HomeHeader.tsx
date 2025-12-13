@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { Clock, User, Trophy, Zap } from 'lucide-react';
+import { Clock, User, Trophy, Zap, Settings } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
+import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 
 interface HomeHeaderProps {
   dayCounter: number;
@@ -62,8 +64,14 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
     <Card className="w-full mb-6 border-0 shadow-sm rounded-2xl overflow-hidden">
       <CardContent className="p-0">
         {/* Header with gradient background */}
-        <div className="bg-gradient-to-r from-primary/10 to-primary/5 p-5">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="bg-gradient-to-r from-primary/10 to-primary/5 p-5 relative">
+          <Link to="/settings" className="absolute top-4 right-4 z-10">
+            <Button variant="ghost" size="icon" className="rounded-full w-8 h-8 text-foreground/70 hover:text-foreground">
+              <Settings className="w-4 h-4" />
+            </Button>
+          </Link>
+          
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pr-10">
             <div className="flex items-center gap-3">
               <Avatar className="w-14 h-14 border-2 border-primary/20">
                 <AvatarImage src="" />

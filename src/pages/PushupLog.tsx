@@ -21,16 +21,6 @@ const PushupLog = () => {
     }
   };
 
-  const handleMarkDone = () => {
-    if (count > 0) {
-      logHabit({ 
-        habitKey: 'pushups', 
-        value: count, 
-        taskName: 'Push-ups' 
-      });
-    }
-  };
-
   return (
     <div className="flex flex-col items-center w-full max-w-md mx-auto px-4 py-6">
       <div className="w-full space-y-8">
@@ -84,23 +74,6 @@ const PushupLog = () => {
               <Loader2 className="w-6 h-6 animate-spin" />
             ) : (
               `Log ${count} Push-ups`
-            )}
-          </Button>
-          
-          <Separator className="my-2" />
-          
-          <Button 
-            className="w-full bg-habit-green hover:bg-habit-green/90 text-habit-green-foreground text-lg py-6 rounded-2xl"
-            onClick={handleMarkDone}
-            disabled={count === 0 || isPending}
-          >
-            {isPending ? (
-              <Loader2 className="w-6 h-6 animate-spin" />
-            ) : (
-              <>
-                <Check className="w-6 h-6 mr-2" />
-                Mark Done
-              </>
             )}
           </Button>
         </div>
