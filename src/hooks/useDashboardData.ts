@@ -13,7 +13,7 @@ const fetchDashboardData = async (userId: string) => {
   const achievedBadgesPromise = supabase.from('user_badges').select('badge_id').eq('user_id', userId);
   const today = new Date();
   const completedTodayPromise = supabase.from('completedtasks')
-    .select('original_source, duration_used')
+    .select('original_source, duration_used, xp_earned')
     .eq('user_id', userId)
     .gte('completed_at', startOfDay(today).toISOString())
     .lte('completed_at', endOfDay(today).toISOString());
@@ -111,11 +111,28 @@ const fetchDashboardData = async (userId: string) => {
 
   const startDate = profile?.journey_start_date ? new Date(profile.journey_start_date) : new Date();
   const daysActive = differenceInDays(startOfDay(new Date()), startOfDay(startDate)) + 1;
+  
+  // Corrected logic for daily progress calculation
   const dailyProgressMap = new Map<string, number>();
   (completedToday || []).forEach(task => {
     const key = task.original_source;
-    const progress = initialHabitsMap.get(key)?.type === 'time' && initialHabitsMap.get(key)?.unit === 'min' ? 
-      (task.duration_used || 0) / 60 : 1;
+    const habitConfig = initialHabitsMap.get(key);
+    
+    let progress = 0;
+    
+    if (habitConfig?.type === 'time' && habitConfig?.unit === 'min') {
+      // Time-based habit: duration_used is in seconds, convert to minutes
+      progress = (task.duration_used || 0) / 60;
+    } else if (habitConfig?.type === 'count') {
+      // Count-based habit: Calculate count from xp_earned and xpPerUnit
+      // Since xp_earned = value * xpPerUnit, value = xp_earned / xpPerUnit
+      const xpPerUnit = habitConfig.xpPerUnit || 1;
+      progress = (task.xp_earned || 0) / xpPerUnit;
+    } else {
+      // Fallback for unknown types
+      progress = 1;
+    }
+    
     dailyProgressMap.set(key, (dailyProgressMap.get(key) || 0) + progress);
   });
 
