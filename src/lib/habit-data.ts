@@ -78,13 +78,13 @@ export const initialHabits: (Habit | PianoHabit)[] = [
   {
     id: "teeth_brushing",
     name: "Brush Teeth",
-    type: "count",
-    targetGoal: 1, // Fixed goal - will not adapt
-    unit: "session",
+    type: "time",
+    targetGoal: 2, // 2 minutes fixed duration
+    unit: "min",
     currentProgress: 0,
     momentum: "Building",
     route: "/log/teeth-brushing",
-    xpPerUnit: 5,
+    xpPerUnit: 5, // 5 XP per minute
     energyCostPerUnit: 0,
   },
   {
