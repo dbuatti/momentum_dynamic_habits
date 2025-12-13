@@ -111,6 +111,10 @@ const Settings = () => {
   const { mutate: updateProfile, isPending: isUpdatingProfile } = useUpdateProfile();
   const { theme, setTheme } = useTheme();
   
+  // Initialize state variables at the top
+  const [firstName, setFirstName] = useState(data?.profile?.first_name || '');
+  const [lastName, setLastName] = useState(data?.profile?.last_name || '');
+
   const { mutate: resetProgress, isPending: isResetting } = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.functions.invoke('reset-user-progress');
@@ -129,6 +133,14 @@ const Settings = () => {
   const handleSignOut = async () => {
     await signOut();
   };
+
+  // Update local state when profile data changes (after loading)
+  React.useEffect(() => {
+    if (data?.profile) {
+      setFirstName(data.profile.first_name || '');
+      setLastName(data.profile.last_name || '');
+    }
+  }, [data?.profile]);
 
   if (isLoading) {
     return <SettingsSkeleton />;
@@ -158,15 +170,6 @@ const Settings = () => {
   const defaultAutoScheduleStartTime = profile?.default_auto_schedule_start_time || '09:00';
   const defaultAutoScheduleEndTime = profile?.default_auto_schedule_end_time || '17:00';
   
-  const [firstName, setFirstName] = useState(profile?.first_name || '');
-  const [lastName, setLastName] = useState(profile?.last_name || '');
-  
-  // Update local state when profile data changes
-  React.useEffect(() => {
-    setFirstName(profile?.first_name || '');
-    setLastName(profile?.last_name || '');
-  }, [profile?.first_name, profile?.last_name]);
-
   const handleTimezoneSelect = (timezone: string) => {
     if (timezone !== selectedTimezone) {
       updateProfile({ timezone: timezone });
