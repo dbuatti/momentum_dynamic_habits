@@ -1,11 +1,17 @@
 import { Progress } from '@/components/ui/progress';
-import { Flame, Star, Trophy } from 'lucide-react';
+import { Flame, Star, Trophy, Dumbbell, Wind, Shield, Crown, Mountain } from 'lucide-react';
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 
 const iconMap: { [key: string]: React.ElementType } = {
   Flame,
   Star,
+  Trophy,
+  Dumbbell,
+  Wind,
+  Shield,
+  Crown,
+  Mountain,
 };
 
 interface NextBadgeCardProps {

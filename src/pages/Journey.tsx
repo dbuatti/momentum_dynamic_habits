@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Trophy, TrendingUp, Star, Flame, AlertCircle, Target, Calendar, Zap } from 'lucide-react';
+import { Trophy, TrendingUp, Star, Flame, AlertCircle, Target, Calendar, Zap, Dumbbell, Wind, Shield, Crown, Mountain } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useJourneyData } from '@/hooks/useJourneyData';
 import { format, differenceInDays, startOfDay } from 'date-fns';
@@ -9,10 +9,16 @@ import { Progress } from '@/components/ui/progress';
 import { JourneySkeleton } from '@/components/dashboard/JourneySkeleton';
 import { PageHeader } from '@/components/layout/PageHeader';
 
-// Icon map for badges, similar to Settings page
+// Icon map for badges, matching NextBadgeCard and Settings
 const iconMap: { [key: string]: React.ElementType } = {
   Star,
   Flame,
+  Trophy,
+  Dumbbell,
+  Wind,
+  Shield,
+  Crown,
+  Mountain,
 };
 
 const Journey = () => {
@@ -40,39 +46,53 @@ const Journey = () => {
   const daysActive = differenceInDays(startOfDay(new Date()), startOfDay(startDate)) + 1;
   const dailyStreak = profile?.daily_streak || 0;
 
-  // Logic to find the next badge, similar to useDashboardData
+  // Logic to find the next badge
   const nextBadgeData = (allBadges || []).find(b => !achievedBadgeIds.has(b.id)) || null;
   
   let nextBadgeProgress = { progressValue: 0, value: 0, unit: '' };
   
   if (nextBadgeData) {
     const reqType = nextBadgeData.requirement_type;
-    const reqValue = nextBadgeData.requirement_value;
+    const reqValue = nextBadgeData.requirement_value || 1;
     
     if (reqType === 'days_active') {
-      const progress = Math.min((daysActive / (reqValue || 1)) * 100, 100);
+      const progress = Math.min((daysActive / reqValue) * 100, 100);
       nextBadgeProgress = {
         progressValue: progress,
-        value: Math.max(0, (reqValue || 0) - daysActive),
+        value: Math.max(0, reqValue - daysActive),
         unit: 'days left'
       };
     } else if (reqType === 'streak') {
-      const progress = Math.min((dailyStreak / (reqValue || 1)) * 100, 100);
+      const progress = Math.min((dailyStreak / reqValue) * 100, 100);
       nextBadgeProgress = {
         progressValue: progress,
-        value: Math.max(0, (reqValue || 0) - dailyStreak),
+        value: Math.max(0, reqValue - dailyStreak),
         unit: 'days left'
       };
     } else if (reqType === 'lifetime_progress') {
       const habit = habits.find(h => h.habit_key === nextBadgeData.habit_key);
       if (habit) {
-        const currentProgress = habit.lifetime_progress;
-        const progress = Math.min((currentProgress / (reqValue || 1)) * 100, 100);
-        const remaining = Math.max(0, (reqValue || 0) - currentProgress);
-        const unit = habit.habit_key === 'meditation' ? 'min left' : `${habit.habit_key} left`;
+        // Use raw progress (seconds/reps) against DB requirement value (seconds/reps)
+        const currentProgressRaw = habit.raw_lifetime_progress; 
+        const progress = Math.min((currentProgressRaw / reqValue) * 100, 100);
+        
+        // Calculate remaining value in UI units (minutes/reps)
+        const remainingRaw = Math.max(0, reqValue - currentProgressRaw);
+        
+        let remainingUIValue = remainingRaw;
+        let unit = `${habit.unit} left`;
+        
+        // If it's a time habit, convert remaining seconds back to minutes for display
+        if (habit.unit === 'min') {
+            remainingUIValue = Math.ceil(remainingRaw / 60);
+            unit = 'min left';
+        } else {
+            unit = `${habit.unit} left`;
+        }
+        
         nextBadgeProgress = {
           progressValue: progress,
-          value: remaining,
+          value: remainingUIValue,
           unit: unit
         };
       }
@@ -196,7 +216,7 @@ const Journey = () => {
                 <div>
                   <p className="font-medium">{habit.habit_key.charAt(0).toUpperCase() + habit.habit_key.slice(1)}</p>
                   <p className="text-sm text-muted-foreground">
-                    {habit.lifetime_progress} / {habit.long_term_goal} {habit.habit_key === 'meditation' ? 'min' : 'completed'}
+                    {habit.lifetime_progress} / {habit.long_term_goal} {habit.unit}
                   </p>
                 </div>
                 <div className="text-right">

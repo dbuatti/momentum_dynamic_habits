@@ -147,6 +147,14 @@ const fetchDashboardData = async (userId: string) => {
     // For fixed goal habits, always use the initial target goal as the daily goal
     const dailyGoal = fixedGoalHabits.includes(h.habit_key) ? 
       (initialHabit?.targetGoal || h.current_daily_goal) : h.current_daily_goal;
+      
+    // Raw progress is always in the DB unit (seconds for time, reps for count)
+    const rawLifetimeProgress = h.lifetime_progress || 0;
+    
+    // UI-friendly progress (minutes for time, reps for count)
+    const uiLifetimeProgress = initialHabit?.type === 'time' && initialHabit?.unit === 'min' ? 
+      Math.round(rawLifetimeProgress / 60) : rawLifetimeProgress;
+      
     return {
       key: h.habit_key,
       name: initialHabit?.name || h.habit_key.charAt(0).toUpperCase() + h.habit_key.slice(1),
@@ -155,8 +163,8 @@ const fetchDashboardData = async (userId: string) => {
       isComplete: dailyProgress >= dailyGoal,
       momentum: h.momentum_level,
       longTermGoal: h.long_term_goal,
-      lifetimeProgress: initialHabit?.type === 'time' && initialHabit?.unit === 'min' ? 
-        Math.round((h.lifetime_progress || 0) / 60) : (h.lifetime_progress || 0),
+      lifetimeProgress: uiLifetimeProgress, // UI friendly
+      rawLifetimeProgress: rawLifetimeProgress, // DB friendly for badge checks
       unit: unit,
       xpPerUnit: xpPerUnit,
       energyCostPerUnit: energyCostPerUnit,
@@ -177,6 +185,7 @@ const fetchDashboardData = async (userId: string) => {
       momentum: 'Building',
       longTermGoal: habit.id === 'teeth_brushing' ? 365 : 365, // Annual goal
       lifetimeProgress: 0,
+      rawLifetimeProgress: 0, // Default raw progress
       unit: habit.unit,
       xpPerUnit: habit.xpPerUnit,
       energyCostPerUnit: habit.energyCostPerUnit,
@@ -224,13 +233,27 @@ const fetchDashboardData = async (userId: string) => {
     } else if (reqType === 'lifetime_progress') {
       const habit = processedHabits.find(h => h.key === nextBadgeData.habit_key);
       if (habit) {
-        const currentProgress = habit.lifetimeProgress;
-        const progress = Math.min((currentProgress / reqValue) * 100, 100);
-        const remaining = Math.max(0, reqValue - currentProgress);
-        const unit = habit.unit === 'min' ? 'min left' : `${habit.key} left`;
+        // Use raw progress (seconds/reps) against DB requirement value (seconds/reps)
+        const currentProgressRaw = habit.rawLifetimeProgress; 
+        const progress = Math.min((currentProgressRaw / reqValue) * 100, 100);
+        
+        // Calculate remaining value in UI units (minutes/reps)
+        const remainingRaw = Math.max(0, reqValue - currentProgressRaw);
+        
+        let remainingUIValue = remainingRaw;
+        let unit = `${habit.unit} left`;
+        
+        // If it's a time habit, convert remaining seconds back to minutes for display
+        if (habit.unit === 'min') {
+            remainingUIValue = Math.ceil(remainingRaw / 60); // Use ceil to show remaining minutes
+            unit = 'min left';
+        } else {
+            unit = `${habit.unit} left`;
+        }
+
         nextBadgeProgress = {
           progressValue: progress,
-          value: remaining,
+          value: remainingUIValue,
           unit: unit
         };
       }

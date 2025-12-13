@@ -4,10 +4,10 @@ import { useSession } from '@/contexts/SessionContext';
 import { differenceInDays } from 'date-fns';
 import { useInitializeMissingHabits } from './useInitializeMissingHabits';
 import { useEffect, useRef } from 'react';
+import { initialHabits } from '@/lib/habit-data';
 
 const fetchJourneyData = async (userId: string) => {
   const profilePromise = supabase.from('profiles').select('journey_start_date, daily_streak, timezone, default_auto_schedule_start_time, default_auto_schedule_end_time, first_name, last_name').eq('id', userId).single();
-  // Removed meditation_sound
   const habitsPromise = supabase.from('user_habits').select('*').eq('user_id', userId);
   const allBadgesPromise = supabase.from('badges').select('id, name, icon_name, requirement_type, requirement_value, habit_key');
   const achievedBadgesPromise = supabase.from('user_badges').select('badge_id').eq('user_id', userId);
@@ -32,18 +32,39 @@ const fetchJourneyData = async (userId: string) => {
     throw new Error('Failed to fetch essential journey data');
   }
 
+  // Process habits for UI display (converting seconds to minutes for time habits)
+  const initialHabitsMap = new Map(initialHabits.map(h => [h.id, h]));
+  
+  const processedHabits = (habits || []).map(h => {
+    const initialHabit = initialHabitsMap.get(h.habit_key);
+    
+    // Raw progress is always in the DB unit (seconds for time, reps for count)
+    const rawLifetimeProgress = h.lifetime_progress || 0;
+    
+    // UI-friendly progress (minutes for time, reps for count)
+    const uiLifetimeProgress = initialHabit?.type === 'time' && initialHabit?.unit === 'min' ? 
+      Math.round(rawLifetimeProgress / 60) : rawLifetimeProgress;
+      
+    return {
+      ...h,
+      lifetime_progress: uiLifetimeProgress, // Overwrite for UI display (minutes/reps)
+      raw_lifetime_progress: rawLifetimeProgress, // Keep raw value for badge calculation (seconds/reps)
+      unit: initialHabit?.unit || '',
+    };
+  });
+
   // Calculate totalJourneyDays consistently
   const startDate = profile?.journey_start_date ? new Date(profile.journey_start_date) : null;
-  const meditationHabit = habits?.find(h => h.habit_key === 'meditation');
+  const meditationHabit = processedHabits?.find(h => h.habit_key === 'meditation');
   const totalJourneyDays = (meditationHabit && startDate) ? 
     differenceInDays(new Date(meditationHabit.target_completion_date), startDate) : 0; // Ensure it's always a number
 
   return {
     profile,
-    habits,
+    habits: processedHabits,
     allBadges,
     achievedBadges,
-    bestTime: bestTime || '—', // Return totalJourneyDays
+    bestTime: bestTime || '—',
     totalJourneyDays
   };
 };

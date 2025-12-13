@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Target, TrendingUp, Star, Flame, Shield, Crown, Zap, Trophy, Sparkles, Mountain, Award, Sun, Moon, Heart, Dumbbell, Timer, LogOut, AlertCircle, Loader2, Clock, User, Palette } from 'lucide-react';
+import { Calendar, Target, TrendingUp, Star, Flame, Shield, Crown, Zap, Trophy, Sparkles, Mountain, Award, Sun, Moon, Heart, Dumbbell, Timer, LogOut, AlertCircle, Loader2, Clock, User, Palette, Wind } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSession } from '@/contexts/SessionContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -36,7 +36,9 @@ const iconMap: { [key: string]: React.ElementType } = {
   Award,
   Sun,
   Moon,
-  Heart
+  Heart,
+  Dumbbell, // Added Dumbbell
+  Wind,     // Added Wind
 };
 
 const BadgeIcon = ({ 
@@ -328,7 +330,7 @@ const Settings = () => {
             </div>
             {meditationHabit && (
               <div>
-                <p className="text-xl font-semibold">{format(new Date(meditationHabit.target_completion_date), 'MMM d, yyyy')}</p>
+                <p className="text-xl font-semibold">{format(new Date(meditationHabit.target_completion_date), 'MMM yyyy')}</p>
                 <p className="text-sm text-muted-foreground">target completion</p>
               </div>
             )}
