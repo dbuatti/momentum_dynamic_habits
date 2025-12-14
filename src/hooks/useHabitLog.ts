@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { useNavigate } from 'react-router-dom';
 import { showSuccess, showError } from '@/utils/toast';
-import { initialHabits } from '@/lib/habit-data';
+import { initialHabits, FIXED_GOAL_HABITS } from '@/lib/habit-data'; // Import FIXED_GOAL_HABITS
 import { calculateLevel } from '@/utils/leveling';
 
 interface LogHabitParams {
@@ -56,8 +56,7 @@ const logHabit = async ({ userId, habitKey, value, taskName }: LogHabitParams & 
   if (rpcError) throw rpcError;
 
   // 4. Calculate new adaptive goal and momentum
-  const fixedGoalHabits = ['teeth_brushing', 'medication', 'housework', 'projectwork'];
-  const isFixedGoalHabit = fixedGoalHabits.includes(habitKey);
+  const isFixedGoalHabit = FIXED_GOAL_HABITS.includes(habitKey); // Use the imported constant
 
   let newDailyGoal = userHabitData.current_daily_goal;
   let newMomentumLevel = userHabitData.momentum_level;
@@ -86,7 +85,7 @@ const logHabit = async ({ userId, habitKey, value, taskName }: LogHabitParams & 
   }
 
   // 5. Update habit data (goal and momentum)
-  if (!isFixedGoalHabit) {
+  if (!isFixedGoalHabit) { // Only update for non-fixed habits
     const { error: habitUpdateError } = await supabase
       .from('user_habits')
       .update({

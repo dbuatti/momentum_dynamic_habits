@@ -1,5 +1,7 @@
 import { Habit, PianoHabit } from "../types/habit";
 
+export const FIXED_GOAL_HABITS = ['housework', 'projectwork', 'teeth_brushing', 'medication'];
+
 export const initialHabits: (Habit | PianoHabit)[] = [
   {
     id: "pushups",
@@ -33,7 +35,7 @@ export const initialHabits: (Habit | PianoHabit)[] = [
     unit: "min", // Unit changed to minutes
     currentProgress: 0,
     momentum: "Struggling",
-    route: "/log/study",
+    route: "/log/kinesiology",
     xpPerUnit: 42, // 42 XP per minute (0.7 XP/sec * 60 sec/min)
     energyCostPerUnit: 9, // 9 energy per minute (0.15 energy/sec * 60 sec/min)
   },

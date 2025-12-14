@@ -20,6 +20,7 @@ import { Link } from "react-router-dom";
 import React, { useState } from "react";
 import { useOnboardingCheck } from "@/hooks/useOnboardingCheck";
 import { Separator } from "@/components/ui/separator";
+import { FIXED_GOAL_HABITS } from '@/lib/habit-data'; // Import FIXED_GOAL_HABITS
 
 const habitIconMap: { [key: string]: React.ElementType } = {
   pushups: Dumbbell,
@@ -205,7 +206,7 @@ const Index = () => {
               return (
                 <QuickLogButton
                   key={habit.key}
-                  route={`/log/${habit.key === 'kinesiology' ? 'kinesiology' : habit.key.replace('_', '-')}`}
+                  route={`/log/${habit.key.replace('_', '-')}`} // Use replace for consistent routing
                   state={{ duration: durationToPass }}
                   icon={Icon ? <Icon className="w-5 h-5" /> : null}
                   title={habit.name}
