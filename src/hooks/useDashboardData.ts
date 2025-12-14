@@ -7,16 +7,33 @@ import { useInitializeMissingHabits } from './useInitializeMissingHabits';
 import { useEffect, useRef } from 'react';
 
 const fetchDashboardData = async (userId: string) => {
-  const profilePromise = supabase.from('profiles').select('journey_start_date, daily_streak, last_active_at, first_name, last_name, timezone, xp, level, tasks_completed_today').eq('id', userId).single();
+  // 1. Fetch Profile first to get Timezone
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('journey_start_date, daily_streak, last_active_at, first_name, last_name, timezone, xp, level, tasks_completed_today')
+    .eq('id', userId)
+    .single();
+
+  if (profileError) {
+    console.error('Error fetching profile for dashboard:', profileError);
+    throw new Error('Failed to fetch essential dashboard data (Profile missing)');
+  }
+  
+  const timezone = profile?.timezone || 'UTC';
+  const today = new Date();
+
+  // 2. Define remaining promises
+  // Use RPC for completedToday to ensure timezone-accurate daily reset
+  const completedTodayPromise = supabase.rpc('get_completed_tasks_today', { 
+    p_user_id: userId, 
+    p_timezone: timezone 
+  });
+  
   const habitsPromise = supabase.from('user_habits').select('*').eq('user_id', userId);
   const allBadgesPromise = supabase.from('badges').select('id, name, icon_name, requirement_type, requirement_value, habit_key');
   const achievedBadgesPromise = supabase.from('user_badges').select('badge_id').eq('user_id', userId);
-  const today = new Date();
-  const completedTodayPromise = supabase.from('completedtasks')
-    .select('original_source, duration_used, xp_earned')
-    .eq('user_id', userId)
-    .gte('completed_at', startOfDay(today).toISOString())
-    .lte('completed_at', endOfDay(today).toISOString());
+  
+  // Keep weekly/monthly calculations client-side for simplicity
   const completedThisWeekPromise = supabase.from('completedtasks')
     .select('original_source, duration_used, completed_at')
     .eq('user_id', userId)
@@ -43,8 +60,8 @@ const fetchDashboardData = async (userId: string) => {
     .limit(1)
     .single();
 
+  // 3. Execute remaining promises
   const [
-    { data: profile, error: profileError },
     { data: habits, error: habitsError },
     { data: allBadges, error: allBadgesError },
     { data: achievedBadges, error: achievedBadgesError },
@@ -57,7 +74,6 @@ const fetchDashboardData = async (userId: string) => {
     { data: randomReviewQuestion, error: randomReviewQuestionError },
     { data: randomTip, error: randomTipError },
   ] = await Promise.all([
-    profilePromise,
     habitsPromise,
     allBadgesPromise,
     achievedBadgesPromise,
@@ -71,7 +87,6 @@ const fetchDashboardData = async (userId: string) => {
     randomTipPromise
   ]);
 
-  if (profileError) console.error('Error fetching profile for dashboard:', profileError);
   if (habitsError) console.error('Error fetching habits for dashboard:', habitsError);
   if (allBadgesError) console.error('Error fetching all badges for dashboard:', allBadgesError);
   if (achievedBadgesError) console.error('Error fetching achieved badges for dashboard:', achievedBadgesError);
@@ -84,8 +99,8 @@ const fetchDashboardData = async (userId: string) => {
   if (randomReviewQuestionError) console.error('Error fetching random review question for dashboard:', randomReviewQuestionError);
   if (randomTipError) console.error('Error fetching random tip for dashboard:', randomTipError);
 
-  // Throw a general error if essential data is missing, but allow bestTime, reviewQuestion, tip to be optional
-  if (profileError || habitsError || allBadgesError || achievedBadgesError || completedTodayError || completedThisWeekError || completedLastWeekError || totalCompletedError || distinctDaysError) {
+  // Throw a general error if essential data is missing
+  if (habitsError || allBadgesError || achievedBadgesError || completedTodayError || completedThisWeekError || completedLastWeekError || totalCompletedError || distinctDaysError) {
     throw new Error('Failed to fetch essential dashboard data');
   }
 
@@ -114,7 +129,8 @@ const fetchDashboardData = async (userId: string) => {
   
   // Corrected logic for daily progress calculation
   const dailyProgressMap = new Map<string, number>();
-  (completedToday || []).forEach(task => {
+  // completedToday is now the result of the RPC
+  (completedToday || []).forEach((task: any) => { // Cast to any since RPC return type is generic
     const key = task.original_source;
     const habitConfig = initialHabitsMap.get(key);
     

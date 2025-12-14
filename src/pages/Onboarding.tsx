@@ -3,7 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { OnboardingFlow } from '@/components/onboarding/OnboardingFlow';
 import { useSession } from '@/contexts/SessionContext';
 
-const Onboarding = () => {
+interface OnboardingProps {
+  onComplete: () => void;
+}
+
+const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
   const navigate = useNavigate();
   const { session } = useSession();
 
@@ -14,13 +18,13 @@ const Onboarding = () => {
     }
   }, [session, navigate]);
 
-  const handleComplete = () => {
-    navigate('/');
+  const handleFlowComplete = () => {
+    onComplete();
   };
 
   return (
     <div className="w-full">
-      <OnboardingFlow onComplete={handleComplete} />
+      <OnboardingFlow onComplete={handleFlowComplete} />
     </div>
   );
 };
