@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { startOfDay, endOfDay, differenceInDays, startOfWeek, endOfWeek, subWeeks, addMonths, subDays, formatDistanceToNowStrict } from 'date-fns';
-import { initialHabits, FIXED_GOAL_HABITS } from '@/lib/habit-data'; // Import FIXED_GOAL_HABITS
+import { initialHabits } from '@/lib/habit-data';
 import { useInitializeMissingHabits } from './useInitializeMissingHabits';
 import { useEffect, useRef } from 'react';
 
@@ -136,15 +136,17 @@ const fetchDashboardData = async (userId: string) => {
     dailyProgressMap.set(key, (dailyProgressMap.get(key) || 0) + progress);
   });
 
+  // Define habits that should maintain fixed goals
+  const fixedGoalHabits = ['teeth_brushing', 'medication', 'housework', 'projectwork'];
   const processedHabits = (habits || []).map(h => {
     const initialHabit = initialHabitsMap.get(h.habit_key);
     const unit = initialHabit?.unit || '';
     const xpPerUnit = initialHabit?.xpPerUnit || 0;
     const energyCostPerUnit = initialHabit?.energyCostPerUnit || 0;
     const dailyProgress = dailyProgressMap.get(h.habit_key) || 0;
-    
-    // The daily goal should always come from the database's current_daily_goal
-    const dailyGoal = h.current_daily_goal;
+    // For fixed goal habits, always use the initial target goal as the daily goal
+    const dailyGoal = fixedGoalHabits.includes(h.habit_key) ? 
+      (initialHabit?.targetGoal || h.current_daily_goal) : h.current_daily_goal;
       
     // Raw progress is always in the DB unit (seconds for time, reps for count)
     const rawLifetimeProgress = h.lifetime_progress || 0;
@@ -172,7 +174,7 @@ const fetchDashboardData = async (userId: string) => {
 
   // Add default values for new habits that might not exist in the database yet
   const habitKeysInDb = new Set(processedHabits.map(h => h.key));
-  const newHabits = initialHabits.filter(h => !habitKeysInDb.has(h.id) && FIXED_GOAL_HABITS.includes(h.id)); // Only add fixed goal habits if missing
+  const newHabits = initialHabits.filter(h => !habitKeysInDb.has(h.id) && (h.id === 'teeth_brushing' || h.id === 'medication'));
   newHabits.forEach(habit => {
     processedHabits.push({
       key: habit.id,
@@ -181,7 +183,7 @@ const fetchDashboardData = async (userId: string) => {
       dailyProgress: 0,
       isComplete: false,
       momentum: 'Building',
-      longTermGoal: habit.targetGoal, // Use targetGoal for fixed habits
+      longTermGoal: habit.id === 'teeth_brushing' ? 365 : 365, // Annual goal
       lifetimeProgress: 0,
       rawLifetimeProgress: 0, // Default raw progress
       unit: habit.unit,

@@ -2,7 +2,6 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { showError } from '@/utils/toast';
-import { FIXED_GOAL_HABITS } from '@/lib/habit-data'; // Import FIXED_GOAL_HABITS
 
 interface MissingHabit {
   habit_key: string;
@@ -29,24 +28,20 @@ const initializeMissingHabits = async (userId: string) => {
   const oneYearDateString = oneYearFromNow.toISOString().split('T')[0];
 
   // Check for teeth_brushing
-  if (!existingHabitKeys.has('teeth_brushing')) {
-    habitsToEnsure.push({
-      habit_key: 'teeth_brushing',
-      long_term_goal: 365,
-      target_completion_date: oneYearDateString,
-      current_daily_goal: 1
-    });
-  }
+  habitsToEnsure.push({
+    habit_key: 'teeth_brushing',
+    long_term_goal: 365,
+    target_completion_date: oneYearDateString,
+    current_daily_goal: 1
+  });
 
   // Check for medication
-  if (!existingHabitKeys.has('medication')) {
-    habitsToEnsure.push({
-      habit_key: 'medication',
-      long_term_goal: 365,
-      target_completion_date: oneYearDateString,
-      current_daily_goal: 1
-    });
-  }
+  habitsToEnsure.push({
+    habit_key: 'medication',
+    long_term_goal: 365,
+    target_completion_date: oneYearDateString,
+    current_daily_goal: 1
+  });
 
   // Filter to only include habits that are actually missing, or just upsert all defaults
   // Since the `handle_new_user` trigger might have already inserted them, we use upsert

@@ -22,7 +22,6 @@ import { Label } from '@/components/ui/label';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Separator } from '@/components/ui/separator';
-import { FIXED_GOAL_HABITS } from '@/lib/habit-data'; // Import FIXED_GOAL_HABITS
 
 const iconMap: { [key: string]: React.ElementType } = {
   Star,

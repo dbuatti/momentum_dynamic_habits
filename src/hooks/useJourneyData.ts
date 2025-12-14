@@ -4,7 +4,7 @@ import { useSession } from '@/contexts/SessionContext';
 import { differenceInDays } from 'date-fns';
 import { useInitializeMissingHabits } from './useInitializeMissingHabits';
 import { useEffect, useRef } from 'react';
-import { initialHabits, FIXED_GOAL_HABITS } from '@/lib/habit-data'; // Import FIXED_GOAL_HABITS
+import { initialHabits } from '@/lib/habit-data';
 
 const fetchJourneyData = async (userId: string) => {
   const profilePromise = supabase.from('profiles').select('journey_start_date, daily_streak, timezone, default_auto_schedule_start_time, default_auto_schedule_end_time, first_name, last_name').eq('id', userId).single();
