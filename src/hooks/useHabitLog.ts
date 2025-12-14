@@ -141,12 +141,14 @@ export const useHabitLog = () => {
       if (!session?.user?.id) throw new Error('User not authenticated');
       return logHabit({ ...params, userId: session.user.id });
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       // Introduce a small delay (500ms) to ensure database write propagation before invalidating cache and navigating.
       setTimeout(() => {
         showSuccess('Habit logged successfully!');
         queryClient.invalidateQueries({ queryKey: ['dashboardData', session?.user?.id] });
         queryClient.invalidateQueries({ queryKey: ['journeyData', session?.user?.id] });
+        // Invalidate the specific daily completion check for this habit
+        queryClient.invalidateQueries({ queryKey: ['dailyHabitCompletion', session?.user?.id, variables.habitKey] });
         navigate('/');
       }, 500); // Increased delay to 500ms
     },
