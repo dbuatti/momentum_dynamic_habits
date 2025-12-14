@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
+import { startOfDay, endOfDay } from 'date-fns';
 
 interface CompletedTask {
   id: string;
@@ -15,6 +16,21 @@ interface CompletedTask {
 }
 
 const fetchCompletedTasks = async (userId: string): Promise<CompletedTask[]> => {
+  // Fetch profile to get timezone
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('timezone')
+    .eq('id', userId)
+    .single();
+
+  if (profileError) {
+    console.error('Error fetching profile for completed tasks:', profileError);
+    // Proceed with UTC if profile fetch fails, but log error
+  }
+  
+  // Note: We don't use the timezone for filtering here, only for consistency if needed later.
+  // We fetch ALL completed tasks for the history page.
+  
   const { data, error } = await supabase
     .from('completedtasks')
     .select('id, task_name, original_source, duration_used, xp_earned, energy_cost, completed_at')
