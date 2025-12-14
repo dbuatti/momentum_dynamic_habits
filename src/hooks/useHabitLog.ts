@@ -26,7 +26,11 @@ const logHabit = async ({ userId, habitKey, value, taskName }: LogHabitParams & 
     .eq('habit_key', habitKey)
     .single();
 
-  if (userHabitFetchError) throw userHabitFetchError;
+  if (userHabitData === null || userHabitFetchError) {
+    // If habit data is missing, we can't proceed with goal calculation, but we should still log the task if possible.
+    // For now, we throw an error if essential habit data is missing.
+    throw userHabitFetchError || new Error(`Habit data not found for key: ${habitKey}`);
+  }
 
   // For count-based habits, we use the value directly
   // For time-based habits, we convert minutes to seconds if needed
@@ -34,7 +38,7 @@ const logHabit = async ({ userId, habitKey, value, taskName }: LogHabitParams & 
   const xpEarned = Math.round(actualValue * habitConfig.xpPerUnit);
   const energyCost = Math.round(actualValue * habitConfig.energyCostPerUnit);
 
-  // 2. Insert completed task
+  // 2. Insert completed task, explicitly setting completed_at to NOW
   const { error: insertError } = await supabase.from('completedtasks').insert({
     user_id: userId,
     original_source: habitKey,
@@ -42,6 +46,7 @@ const logHabit = async ({ userId, habitKey, value, taskName }: LogHabitParams & 
     duration_used: habitConfig.type === 'time' ? actualValue : null,
     xp_earned: xpEarned,
     energy_cost: energyCost,
+    completed_at: new Date().toISOString(), // Explicitly set to current time
   });
 
   if (insertError) throw insertError;
