@@ -95,6 +95,8 @@ const logHabit = async ({ userId, habitKey, value, taskName }: LogHabitParams & 
   let newDailyGoal = userHabitData.current_daily_goal;
   let newMomentumLevel = userHabitData.momentum_level;
   const oldDailyGoal = userHabitData.current_daily_goal;
+  const oldMomentumLevel = userHabitData.momentum_level;
+  let goalIncreased = false;
 
   // Only adjust goals for non-fixed habits
   if (!isFixedGoalHabit) {
@@ -103,7 +105,12 @@ const logHabit = async ({ userId, habitKey, value, taskName }: LogHabitParams & 
 
     if (goalMet) {
       // Increase goal slightly, improve momentum
-      newDailyGoal = Math.min(oldDailyGoal + 1, userHabitData.long_term_goal);
+      const potentialNewGoal = Math.min(oldDailyGoal + 1, userHabitData.long_term_goal);
+      if (potentialNewGoal > oldDailyGoal) {
+        newDailyGoal = potentialNewGoal;
+        goalIncreased = true;
+      }
+      
       if (newMomentumLevel === 'Struggling') newMomentumLevel = 'Building';
       else if (newMomentumLevel === 'Building') newMomentumLevel = 'Strong';
       else if (newMomentumLevel === 'Strong') newMomentumLevel = 'Crushing';
@@ -111,9 +118,11 @@ const logHabit = async ({ userId, habitKey, value, taskName }: LogHabitParams & 
       // If goal is not met, we don't change the goal or momentum here.
     }
   }
+  
+  console.log(`Habit Log: ${habitKey}. Progress: ${totalDailyProgress}. Old Goal: ${oldDailyGoal}. New Goal: ${newDailyGoal}. Goal Increased: ${goalIncreased}`);
 
   // 8. Update habit data (goal and momentum)
-  if (!isFixedGoalHabit) {
+  if (!isFixedGoalHabit && (goalIncreased || newMomentumLevel !== oldMomentumLevel)) {
     const { error: habitUpdateError } = await supabase
       .from('user_habits')
       .update({
@@ -142,7 +151,7 @@ const logHabit = async ({ userId, habitKey, value, taskName }: LogHabitParams & 
 
   if (profileUpdateError) throw profileUpdateError;
 
-  return { success: true };
+  return { success: true, goalIncreased };
 };
 
 export const useHabitLog = () => {
@@ -156,15 +165,15 @@ export const useHabitLog = () => {
       return logHabit({ ...params, userId: session.user.id });
     },
     onSuccess: (data, variables) => {
-      // Introduce a small delay (500ms) to ensure database write propagation before invalidating cache and navigating.
+      // Increase delay to 750ms to ensure database write propagation before invalidating cache and navigating.
       setTimeout(() => {
-        showSuccess('Habit logged successfully!');
+        showSuccess(`Habit logged successfully!${data.goalIncreased ? ' Daily goal increased!' : ''}`);
         queryClient.invalidateQueries({ queryKey: ['dashboardData', session?.user?.id] });
         queryClient.invalidateQueries({ queryKey: ['journeyData', session?.user?.id] });
         // Invalidate the specific daily completion check for this habit
         queryClient.invalidateQueries({ queryKey: ['dailyHabitCompletion', session?.user?.id, variables.habitKey] });
         navigate('/');
-      }, 500); // Increased delay to 500ms
+      }, 750); 
     },
     onError: (error) => {
       showError(`Failed to log habit: ${error.message}`);
