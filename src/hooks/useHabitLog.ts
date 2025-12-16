@@ -88,7 +88,7 @@ const logHabit = async ({ userId, habitKey, value, taskName }: LogHabitParams & 
     totalDailyProgress += progress;
   });
 
-  // 7. Calculate new adaptive goal and momentum based on TOTAL daily progress
+  // 7. Adaptive Goal Logic
   const fixedGoalHabits = ['teeth_brushing', 'medication', 'housework', 'projectwork'];
   const isFixedGoalHabit = fixedGoalHabits.includes(habitKey);
 
@@ -97,6 +97,7 @@ const logHabit = async ({ userId, habitKey, value, taskName }: LogHabitParams & 
   const oldDailyGoal = userHabitData.current_daily_goal;
   const oldMomentumLevel = userHabitData.momentum_level;
   let goalIncreased = false;
+  let goalDecreased = false;
   
   const todayDateString = new Date().toISOString().split('T')[0];
   const lastIncreaseDateString = userHabitData.last_goal_increase_date;
@@ -104,29 +105,41 @@ const logHabit = async ({ userId, habitKey, value, taskName }: LogHabitParams & 
 
   // Only adjust goals for non-fixed habits
   if (!isFixedGoalHabit) {
-    // Check if the TOTAL daily progress now meets or exceeds the OLD daily goal
     const goalMet = totalDailyProgress >= oldDailyGoal;
 
-    if (goalMet && !alreadyIncreasedToday) {
-      // Increase goal slightly, improve momentum
-      const potentialNewGoal = Math.min(oldDailyGoal + 1, userHabitData.long_term_goal);
-      if (potentialNewGoal > oldDailyGoal) {
-        newDailyGoal = potentialNewGoal;
-        goalIncreased = true;
+    if (goalMet) {
+      // A. Goal Met: Increase goal (max once per day) and improve momentum
+      if (!alreadyIncreasedToday) {
+        const potentialNewGoal = Math.min(oldDailyGoal + 1, userHabitData.long_term_goal);
+        if (potentialNewGoal > oldDailyGoal) {
+          newDailyGoal = potentialNewGoal;
+          goalIncreased = true;
+        }
+        
+        if (newMomentumLevel === 'Struggling') newMomentumLevel = 'Building';
+        else if (newMomentumLevel === 'Building') newMomentumLevel = 'Strong';
+        else if (newMomentumLevel === 'Strong') newMomentumLevel = 'Crushing';
       }
-      
-      if (newMomentumLevel === 'Struggling') newMomentumLevel = 'Building';
-      else if (newMomentumLevel === 'Building') newMomentumLevel = 'Strong';
-      else if (newMomentumLevel === 'Strong') newMomentumLevel = 'Crushing';
     } else {
-      // If goal is met but already increased today, or goal is not met, do nothing to goal/momentum
+      // B. Goal Not Met: Degrade momentum and potentially decrease goal
+      
+      // Momentum Degradation
+      if (newMomentumLevel === 'Crushing') newMomentumLevel = 'Strong';
+      else if (newMomentumLevel === 'Strong') newMomentumLevel = 'Building';
+      else if (newMomentumLevel === 'Building') newMomentumLevel = 'Struggling';
+      
+      // Goal Decrease (Only if struggling and goal is > 1)
+      if (newMomentumLevel === 'Struggling' && oldDailyGoal > 1) {
+        newDailyGoal = oldDailyGoal - 1;
+        goalDecreased = true;
+      }
     }
   }
   
-  console.log(`Habit Log: ${habitKey}. Progress: ${totalDailyProgress}. Old Goal: ${oldDailyGoal}. New Goal: ${newDailyGoal}. Goal Increased: ${goalIncreased}. Already Increased Today: ${alreadyIncreasedToday}`);
+  console.log(`Habit Log: ${habitKey}. Progress: ${totalDailyProgress}. Old Goal: ${oldDailyGoal}. New Goal: ${newDailyGoal}. Goal Increased: ${goalIncreased}. Goal Decreased: ${goalDecreased}. New Momentum: ${newMomentumLevel}`);
 
   // 8. Update habit data (goal, momentum, and last_goal_increase_date if increased)
-  if (!isFixedGoalHabit && (goalIncreased || newMomentumLevel !== oldMomentumLevel)) {
+  if (!isFixedGoalHabit && (goalIncreased || goalDecreased || newMomentumLevel !== oldMomentumLevel)) {
     const updates: Record<string, any> = {
       current_daily_goal: newDailyGoal,
       momentum_level: newMomentumLevel,
@@ -161,7 +174,7 @@ const logHabit = async ({ userId, habitKey, value, taskName }: LogHabitParams & 
 
   if (profileUpdateError) throw profileUpdateError;
 
-  return { success: true, goalIncreased };
+  return { success: true, goalIncreased, goalDecreased };
 };
 
 export const useHabitLog = () => {
@@ -177,7 +190,14 @@ export const useHabitLog = () => {
     onSuccess: (data, variables) => {
       // Increase delay to 750ms to ensure database write propagation before invalidating cache and navigating.
       setTimeout(() => {
-        showSuccess(`Habit logged successfully!${data.goalIncreased ? ' Daily goal increased!' : ''}`);
+        let message = 'Habit logged successfully!';
+        if (data.goalIncreased) {
+          message = 'Habit logged successfully! Daily goal increased!';
+        } else if (data.goalDecreased) {
+          message = 'Habit logged successfully! Daily goal decreased to keep things manageable.';
+        }
+        
+        showSuccess(message);
         queryClient.invalidateQueries({ queryKey: ['dashboardData', session?.user?.id] });
         queryClient.invalidateQueries({ queryKey: ['journeyData', session?.user?.id] });
         // Invalidate the specific daily completion check for this habit
