@@ -18,7 +18,17 @@ const logHabit = async ({ userId, habitKey, value, taskName }: LogHabitParams & 
     throw new Error(`Habit configuration not found for key: ${habitKey}`);
   }
 
-  // 1. Fetch current habit data before logging
+  // 1. Fetch Profile to get Timezone and current XP/Level
+  const { data: profileData, error: profileFetchError } = await supabase
+    .from('profiles')
+    .select('tasks_completed_today, xp, level, timezone')
+    .eq('id', userId)
+    .single();
+
+  if (profileFetchError) throw profileFetchError;
+  const timezone = profileData.timezone || 'UTC';
+  
+  // 2. Fetch current habit data before logging
   const { data: userHabitData, error: userHabitFetchError } = await supabase
     .from('user_habits')
     .select('current_daily_goal, momentum_level, long_term_goal')
@@ -27,18 +37,16 @@ const logHabit = async ({ userId, habitKey, value, taskName }: LogHabitParams & 
     .single();
 
   if (userHabitData === null || userHabitFetchError) {
-    // If habit data is missing, we can't proceed with goal calculation, but we should still log the task if possible.
-    // For now, we throw an error if essential habit data is missing.
     throw userHabitFetchError || new Error(`Habit data not found for key: ${habitKey}`);
   }
 
-  // For count-based habits, we use the value directly
-  // For time-based habits, we convert minutes to seconds if needed
+  // 3. Calculate values for logging
+  // For time-based habits, convert minutes (value) to seconds (actualValue)
   const actualValue = habitConfig.type === 'time' && habitConfig.unit === 'min' ? value * 60 : value;
   const xpEarned = Math.round(actualValue * habitConfig.xpPerUnit);
   const energyCost = Math.round(actualValue * habitConfig.energyCostPerUnit);
 
-  // 2. Insert completed task, explicitly setting completed_at to NOW
+  // 4. Insert completed task, explicitly setting completed_at to NOW
   const { error: insertError } = await supabase.from('completedtasks').insert({
     user_id: userId,
     original_source: habitKey,
@@ -51,7 +59,7 @@ const logHabit = async ({ userId, habitKey, value, taskName }: LogHabitParams & 
 
   if (insertError) throw insertError;
 
-  // 3. Increment lifetime progress
+  // 5. Increment lifetime progress
   const { error: rpcError } = await supabase.rpc('increment_lifetime_progress', {
     p_user_id: userId,
     p_habit_key: habitKey,
@@ -60,37 +68,51 @@ const logHabit = async ({ userId, habitKey, value, taskName }: LogHabitParams & 
 
   if (rpcError) throw rpcError;
 
-  // 4. Calculate new adaptive goal and momentum
+  // 6. Recalculate total daily progress *after* the new task is logged
+  const { data: completedToday, error: completedTodayError } = await supabase.rpc('get_completed_tasks_today', { 
+    p_user_id: userId, 
+    p_timezone: timezone 
+  });
+  
+  if (completedTodayError) throw completedTodayError;
+
+  let totalDailyProgress = 0;
+  (completedToday || []).filter((task: any) => task.original_source === habitKey).forEach((task: any) => {
+    let progress = 0;
+    if (habitConfig.type === 'time' && habitConfig.unit === 'min') {
+      progress = (task.duration_used || 0) / 60; // Convert seconds to minutes
+    } else if (habitConfig.type === 'count') {
+      const xpPerUnit = habitConfig.xpPerUnit || 1;
+      progress = (task.xp_earned || 0) / xpPerUnit;
+    }
+    totalDailyProgress += progress;
+  });
+
+  // 7. Calculate new adaptive goal and momentum based on TOTAL daily progress
   const fixedGoalHabits = ['teeth_brushing', 'medication', 'housework', 'projectwork'];
   const isFixedGoalHabit = fixedGoalHabits.includes(habitKey);
 
   let newDailyGoal = userHabitData.current_daily_goal;
   let newMomentumLevel = userHabitData.momentum_level;
+  const oldDailyGoal = userHabitData.current_daily_goal;
 
   // Only adjust goals for non-fixed habits
   if (!isFixedGoalHabit) {
-    const goalMet = (habitConfig.type === 'time' && value >= userHabitData.current_daily_goal) ||
-      (habitConfig.type === 'count' && value >= userHabitData.current_daily_goal);
+    // Check if the TOTAL daily progress now meets or exceeds the OLD daily goal
+    const goalMet = totalDailyProgress >= oldDailyGoal;
 
     if (goalMet) {
       // Increase goal slightly, improve momentum
-      newDailyGoal = Math.min(userHabitData.current_daily_goal + 1, userHabitData.long_term_goal);
+      newDailyGoal = Math.min(oldDailyGoal + 1, userHabitData.long_term_goal);
       if (newMomentumLevel === 'Struggling') newMomentumLevel = 'Building';
       else if (newMomentumLevel === 'Building') newMomentumLevel = 'Strong';
       else if (newMomentumLevel === 'Strong') newMomentumLevel = 'Crushing';
     } else {
-      // For manual check-off of non-goal-met habits, we don't decrease the goal
-      // Only decrease if it's a time-based habit that was significantly under goal
-      if (habitConfig.type === 'time' && value < userHabitData.current_daily_goal * 0.5) {
-        newDailyGoal = Math.max(1, userHabitData.current_daily_goal - 1);
-        if (newMomentumLevel === 'Crushing') newMomentumLevel = 'Strong';
-        else if (newMomentumLevel === 'Strong') newMomentumLevel = 'Building';
-        else if (newMomentumLevel === 'Building') newMomentumLevel = 'Struggling';
-      }
+      // If goal is not met, we don't change the goal or momentum here.
     }
   }
 
-  // 5. Update habit data (goal and momentum)
+  // 8. Update habit data (goal and momentum)
   if (!isFixedGoalHabit) {
     const { error: habitUpdateError } = await supabase
       .from('user_habits')
@@ -104,15 +126,7 @@ const logHabit = async ({ userId, habitKey, value, taskName }: LogHabitParams & 
     if (habitUpdateError) throw habitUpdateError;
   }
 
-  // 6. Update profile data (XP, level, tasks completed today)
-  const { data: profileData, error: profileFetchError } = await supabase
-    .from('profiles')
-    .select('tasks_completed_today, xp, level')
-    .eq('id', userId)
-    .single();
-
-  if (profileFetchError) throw profileFetchError;
-
+  // 9. Update profile data (XP, level, tasks completed today)
   let newXp = (profileData.xp || 0) + xpEarned;
   let newLevel = calculateLevel(newXp);
 
