@@ -18,7 +18,7 @@ const logHabit = async ({ userId, habitKey, value, taskName }: LogHabitParams & 
     throw new Error(`Habit configuration not found for key: ${habitKey}`);
   }
 
-  // 1. Fetch Profile to get Timezone and current XP/Level
+  // 1. Fetch Profile first to get Timezone and current XP/Level
   const { data: profileData, error: profileFetchError } = await supabase
     .from('profiles')
     .select('tasks_completed_today, xp, level, timezone')
@@ -31,7 +31,7 @@ const logHabit = async ({ userId, habitKey, value, taskName }: LogHabitParams & 
   // 2. Fetch current habit data before logging
   const { data: userHabitData, error: userHabitFetchError } = await supabase
     .from('user_habits')
-    .select('current_daily_goal, momentum_level, long_term_goal')
+    .select('current_daily_goal, momentum_level, long_term_goal, last_goal_increase_date')
     .eq('user_id', userId)
     .eq('habit_key', habitKey)
     .single();
@@ -97,13 +97,17 @@ const logHabit = async ({ userId, habitKey, value, taskName }: LogHabitParams & 
   const oldDailyGoal = userHabitData.current_daily_goal;
   const oldMomentumLevel = userHabitData.momentum_level;
   let goalIncreased = false;
+  
+  const todayDateString = new Date().toISOString().split('T')[0];
+  const lastIncreaseDateString = userHabitData.last_goal_increase_date;
+  const alreadyIncreasedToday = lastIncreaseDateString === todayDateString;
 
   // Only adjust goals for non-fixed habits
   if (!isFixedGoalHabit) {
     // Check if the TOTAL daily progress now meets or exceeds the OLD daily goal
     const goalMet = totalDailyProgress >= oldDailyGoal;
 
-    if (goalMet) {
+    if (goalMet && !alreadyIncreasedToday) {
       // Increase goal slightly, improve momentum
       const potentialNewGoal = Math.min(oldDailyGoal + 1, userHabitData.long_term_goal);
       if (potentialNewGoal > oldDailyGoal) {
@@ -115,20 +119,26 @@ const logHabit = async ({ userId, habitKey, value, taskName }: LogHabitParams & 
       else if (newMomentumLevel === 'Building') newMomentumLevel = 'Strong';
       else if (newMomentumLevel === 'Strong') newMomentumLevel = 'Crushing';
     } else {
-      // If goal is not met, we don't change the goal or momentum here.
+      // If goal is met but already increased today, or goal is not met, do nothing to goal/momentum
     }
   }
   
-  console.log(`Habit Log: ${habitKey}. Progress: ${totalDailyProgress}. Old Goal: ${oldDailyGoal}. New Goal: ${newDailyGoal}. Goal Increased: ${goalIncreased}`);
+  console.log(`Habit Log: ${habitKey}. Progress: ${totalDailyProgress}. Old Goal: ${oldDailyGoal}. New Goal: ${newDailyGoal}. Goal Increased: ${goalIncreased}. Already Increased Today: ${alreadyIncreasedToday}`);
 
-  // 8. Update habit data (goal and momentum)
+  // 8. Update habit data (goal, momentum, and last_goal_increase_date if increased)
   if (!isFixedGoalHabit && (goalIncreased || newMomentumLevel !== oldMomentumLevel)) {
+    const updates: Record<string, any> = {
+      current_daily_goal: newDailyGoal,
+      momentum_level: newMomentumLevel,
+    };
+    
+    if (goalIncreased) {
+      updates.last_goal_increase_date = todayDateString;
+    }
+    
     const { error: habitUpdateError } = await supabase
       .from('user_habits')
-      .update({
-        current_daily_goal: newDailyGoal,
-        momentum_level: newMomentumLevel,
-      })
+      .update(updates)
       .eq('user_id', userId)
       .eq('habit_key', habitKey);
 
