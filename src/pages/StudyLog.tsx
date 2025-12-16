@@ -180,15 +180,33 @@ const StudyLog = () => {
   const durationToLogMinutes = Math.floor(durationSpentSeconds / 60);
 
   const handleLogSession = () => {
-    if (durationToLogMinutes > 0) {
+    if (isActive) {
+      showError('Please pause the timer before logging a partial session.');
+      return;
+    }
+    
+    let minutesToLog = 0;
+    
+    if (isFinished) {
+      minutesToLog = selectedDuration;
+    } else if (durationToLogMinutes > 0) {
+      minutesToLog = durationToLogMinutes;
+    } else if (selectedDuration > 0) {
+      // Timer is not active, not finished, and no time spent yet.
+      // Log the full selected duration, assuming manual completion.
+      minutesToLog = selectedDuration;
+    } else {
+      showError('Please select a duration to log.');
+      return;
+    }
+    
+    if (minutesToLog > 0) {
       logHabit({ 
         habitKey: 'kinesiology', 
-        value: durationToLogMinutes, 
+        value: minutesToLog, 
         taskName: 'Kinesiology Study' 
       });
       localStorage.removeItem(LOCAL_STORAGE_KEY);
-    } else {
-      showError('Please start the timer first.');
     }
   };
 
@@ -206,7 +224,7 @@ const StudyLog = () => {
   } else if (durationToLogMinutes > 0) {
     logButtonText = `Log ${durationToLogMinutes} min session`;
   } else {
-    logButtonText = `Log Session`;
+    logButtonText = `Log ${selectedDuration} min session`;
   }
 
   return (
@@ -285,7 +303,7 @@ const StudyLog = () => {
           <Button 
             className="w-full bg-habit-green hover:bg-habit-green/90 text-habit-green-foreground text-lg py-6 rounded-2xl"
             onClick={handleLogSession}
-            disabled={isPending || durationToLogMinutes === 0}
+            disabled={isPending || selectedDuration === 0}
           >
             {isPending ? (
               <Loader2 className="w-6 h-6 animate-spin" />

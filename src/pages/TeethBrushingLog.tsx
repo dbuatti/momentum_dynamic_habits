@@ -228,15 +228,30 @@ const TeethBrushingLog = () => {
   const durationToLogMinutes = Math.floor(durationSpentSeconds / 60);
 
   const handleLogSession = () => {
-    if (durationToLogMinutes > 0) {
+    if (isActive) {
+      showError('Please pause the timer before logging a partial session.');
+      return;
+    }
+    
+    let minutesToLog = 0;
+    
+    if (isFinished) {
+      minutesToLog = FIXED_DURATION_MINUTES;
+    } else if (durationToLogMinutes > 0) {
+      minutesToLog = durationToLogMinutes;
+    } else {
+      // Timer is not active, not finished, and no time spent yet.
+      // Log the full fixed duration, assuming manual completion.
+      minutesToLog = FIXED_DURATION_MINUTES;
+    }
+    
+    if (minutesToLog > 0) {
       logHabit({ 
         habitKey: HABIT_KEY, 
-        value: durationToLogMinutes, 
+        value: minutesToLog, 
         taskName: 'Brush Teeth' 
       });
       localStorage.removeItem(LOCAL_STORAGE_KEY);
-    } else {
-      showError('Please start the timer first.');
     }
   };
 
@@ -252,7 +267,7 @@ const TeethBrushingLog = () => {
   } else if (durationToLogMinutes > 0) {
     logButtonText = `Log ${durationToLogMinutes} min session`;
   } else {
-    logButtonText = `Log Session`;
+    logButtonText = `Log ${FIXED_DURATION_MINUTES} min session`;
   }
 
   return (
@@ -307,9 +322,9 @@ const TeethBrushingLog = () => {
         
         <div className="space-y-4">
           <Button 
-            className="w-full bg-habit-green hover:bg-habit-green/90 text-habit-green-foreground text-lg py-6 rounded-2xl"
+            className="w-full bg-blue-500 hover:bg-blue-600 text-white text-lg py-6 rounded-2xl"
             onClick={handleLogSession}
-            disabled={isPending || durationToLogMinutes === 0}
+            disabled={isPending}
           >
             {isPending ? (
               <Loader2 className="w-6 h-6 animate-spin" />
