@@ -81,6 +81,18 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     }, 1000);
   }, [label, initialValue, habitKey, habitName, value]);
 
+  // Monitor for goal hit
+  useEffect(() => {
+    if (isTiming && isTimeBased && !goalReachedAlerted) {
+      const totalMinutes = (initialValue * 60 + elapsedSeconds) / 60;
+      if (totalMinutes >= value) {
+        playGoalSound();
+        if (window.navigator?.vibrate) window.navigator.vibrate([100, 50, 100]);
+        setGoalReachedAlerted(true);
+      }
+    }
+  }, [elapsedSeconds, isTiming, isTimeBased, value, initialValue, goalReachedAlerted]);
+
   useEffect(() => {
     const saved = localStorage.getItem(storageKey);
     if (saved && !isCompleted) {
@@ -145,6 +157,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   const handlePauseTimer = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isPaused) {
+      playStartSound(); // Sound on resume
       setIsPaused(false);
       startTimeRef.current = Date.now() - (elapsedSeconds * 1000);
       startInterval();
