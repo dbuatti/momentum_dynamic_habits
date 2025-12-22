@@ -61,19 +61,6 @@ export const useCapsules = () => {
     }) => {
       if (!userId) throw new Error('User not authenticated');
 
-      const { data: existing, error: fetchError } = await supabase
-        .from('habit_capsules')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('habit_key', habitKey)
-        .eq('capsule_index', index)
-        .eq('created_at', today)
-        .maybeSingle();
-
-      if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 = no rows
-        throw fetchError;
-      }
-
       const upsertData: Partial<Capsule> = {
         user_id: userId,
         habit_key: habitKey,
@@ -82,7 +69,7 @@ export const useCapsules = () => {
         is_completed: true,
         mood: mood || null,
         created_at: today,
-        label: `Part ${index + 1}`, // Can be overridden by frontend
+        label: `Part ${index + 1}`,
       };
 
       const { error } = await supabase
@@ -92,16 +79,34 @@ export const useCapsules = () => {
         });
 
       if (error) throw error;
-
-      return { created: !existing };
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['habitCapsules', userId, today],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['dashboardData', userId],
-      });
+      queryClient.invalidateQueries({ queryKey: ['habitCapsules', userId, today] });
+    },
+  });
+
+  const uncompleteCapsule = useMutation({
+    mutationFn: async ({
+      habitKey,
+      index,
+    }: {
+      habitKey: string;
+      index: number;
+    }) => {
+      if (!userId) throw new Error('User not authenticated');
+
+      const { error } = await supabase
+        .from('habit_capsules')
+        .update({ is_completed: false, mood: null })
+        .eq('user_id', userId)
+        .eq('habit_key', habitKey)
+        .eq('capsule_index', index)
+        .eq('created_at', today);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['habitCapsules', userId, today] });
     },
   });
 
@@ -126,7 +131,7 @@ export const useCapsules = () => {
             capsule_index: index,
             scheduled_time: time,
             created_at: today,
-            value: 0, // Placeholder — will be updated on completion
+            value: 0,
           },
           {
             onConflict: 'user_id,habit_key,capsule_index,created_at',
@@ -136,9 +141,7 @@ export const useCapsules = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['habitCapsules', userId, today],
-      });
+      queryClient.invalidateQueries({ queryKey: ['habitCapsules', userId, today] });
     },
   });
 
@@ -155,12 +158,7 @@ export const useCapsules = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['habitCapsules', userId, today],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['dashboardData', userId],
-      });
+      queryClient.invalidateQueries({ queryKey: ['habitCapsules', userId, today] });
     },
   });
 
@@ -168,6 +166,7 @@ export const useCapsules = () => {
     dbCapsules,
     isLoading,
     completeCapsule,
+    uncompleteCapsule,
     scheduleCapsule,
     resetCapsulesForToday,
   };

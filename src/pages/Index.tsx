@@ -3,7 +3,6 @@
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import HomeHeader from "@/components/HomeHeader";
 import { BookOpen, Dumbbell, Music, Wind, Home, Code, Sparkles, Pill, LayoutGrid, ListTodo, Zap, Lock, CheckCircle2, Timer } from "lucide-react";
-import { DisciplineBanner } from "@/components/dashboard/DisciplineBanner";
 import { TodaysProgressCard } from "@/components/dashboard/TodaysProgressCard";
 import { JourneyProgressCard } from "@/components/dashboard/JourneyProgressCard";
 import { HabitDetailCard } from "@/components/dashboard/HabitDetailCard";
@@ -21,7 +20,6 @@ import React, { useState, useMemo } from "react";
 import { useOnboardingCheck } from "@/hooks/useOnboardingCheck";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
 import { TipCard } from "@/components/dashboard/TipCard";
@@ -52,16 +50,15 @@ const habitColorMap: Record<string, HabitColor> = {
 
 const Index = () => {
   const { data, isLoading, isError, refetch } = useDashboardData();
-  const { dbCapsules, isLoading: isCapsulesLoading, completeCapsule } = useCapsules();
+  const { dbCapsules, isLoading: isCapsulesLoading, completeCapsule, uncompleteCapsule } = useCapsules();
   const { isLoading: isOnboardingLoading } = useOnboardingCheck();
-  const { mutate: logHabit } = useHabitLog();
+  const { mutate: logHabit, unlog } = useHabitLog();
 
   const [viewMode, setViewMode] = useState<'capsules' | 'overview'>('capsules');
 
   const habitGroups = useMemo(() => {
     if (!data?.habits) return [];
 
-    // First map the raw habits into our display structure
     const groups = data.habits.map(habit => {
       const goal = habit.dailyGoal;
       const progress = habit.dailyProgress;
@@ -122,11 +119,10 @@ const Index = () => {
       };
     });
 
-    // Strictly sort: All incomplete tasks must come before all complete tasks
     return [...groups].sort((a, b) => {
-      if (a.allCompleted && !b.allCompleted) return 1; // a is done, b is not -> b comes first
-      if (!a.allCompleted && b.allCompleted) return -1; // a is not done, b is -> a comes first
-      return 0; // Both have same completion status, maintain relative order
+      if (a.allCompleted && !b.allCompleted) return 1;
+      if (!a.allCompleted && b.allCompleted) return -1;
+      return 0;
     });
   }, [data?.habits, dbCapsules]);
 
@@ -141,6 +137,18 @@ const Index = () => {
     logHabit({
       habitKey: habit.key,
       value: capsule.value,
+      taskName: `${habit.name} (${capsule.label}: ${capsule.value} ${capsule.unit})`,
+    });
+  };
+
+  const handleCapsuleUncomplete = (habit: any, capsule: any) => {
+    uncompleteCapsule.mutate({
+      habitKey: habit.key,
+      index: capsule.index,
+    });
+
+    unlog({
+      habitKey: habit.key,
       taskName: `${habit.name} (${capsule.label}: ${capsule.value} ${capsule.unit})`,
     });
   };
@@ -247,6 +255,7 @@ const Index = () => {
                               {...capsule}
                               color={color}
                               onComplete={(mood) => handleCapsuleComplete(habit, capsule, mood)}
+                              onUncomplete={() => handleCapsuleUncomplete(habit, capsule)}
                               showMood={data.neurodivergentMode}
                             />
                           ))}
@@ -290,32 +299,8 @@ const Index = () => {
             </div>
           )}
 
-          <Separator className="my-10" />
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <JourneyProgressCard
-              daysActive={data.daysActive}
-              totalJourneyDays={data.totalJourneyDays}
-              daysToNextMonth={data.daysToNextMonth}
-            />
-            <WeeklySummaryCard summary={data.weeklySummary} />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <PatternsCard patterns={data.patterns} />
-            <NextBadgeCard badge={data.nextBadge} />
-          </div>
-
-          <FooterStats
-            streak={data.patterns.streak}
-            daysActive={data.daysActive}
-            totalPushups={data.habits.find(h => h.key === 'pushups')?.lifetimeProgress || 0}
-            totalMeditation={data.habits.find(h => h.key === 'meditation')?.lifetimeProgress || 0}
-            averageDailyTasks={data.averageDailyTasks}
-          />
+          <MadeWithDyad className="mt-12" />
         </main>
-
-        <MadeWithDyad className="mt-12" />
       </div>
     </div>
   );

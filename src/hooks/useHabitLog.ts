@@ -63,12 +63,9 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating }:
     else if (habitConfig.type === 'count') totalDailyProgress += (task.xp_earned || 0) / (habitConfig.xpPerUnit || 1);
   });
 
-  // Algorithm Logic
+  // Adaptive logic
   const isFixedGoalHabit = userHabitData.is_fixed || ['teeth_brushing', 'medication'].includes(habitKey);
   let newDailyGoal = userHabitData.current_daily_goal;
-  let newMomentumLevel = userHabitData.momentum_level;
-  let goalIncreased = false;
-  let goalDecreased = false;
   
   const todayDate = new Date();
   const todayDateString = todayDate.toISOString().split('T')[0];
@@ -76,44 +73,30 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating }:
   const isHabitCompletedToday = totalDailyProgress >= userHabitData.current_daily_goal;
   const newCompletionsInPlateau = userHabitData.completions_in_plateau + (isHabitCompletedToday ? 1 : 0);
 
-  // PROGRESSION LOGIC (Only if NOT fixed and NOT frozen)
   if (!isFixedGoalHabit && !userHabitData.is_frozen) {
-    const plateauRequired = profileData.neurodivergent_mode ? 7 : 5; // ND Mode requires longer stability
-
+    const plateauRequired = profileData.neurodivergent_mode ? 7 : 5;
     if (daysInPlateau >= plateauRequired) {
       const completionRate = newCompletionsInPlateau / (daysInPlateau + 1);
       if (completionRate >= 0.8) {
         if (habitConfig.type === 'time') newDailyGoal = parseFloat((userHabitData.current_daily_goal + 0.25).toFixed(2));
         else newDailyGoal = userHabitData.current_daily_goal + 1;
         
-        if (userHabitData.max_goal_cap && newDailyGoal > userHabitData.max_goal_cap) {
-          newDailyGoal = userHabitData.max_goal_cap;
-        } else {
-          goalIncreased = true;
+        if (!userHabitData.max_goal_cap || newDailyGoal <= userHabitData.max_goal_cap) {
           await supabase.from('user_habits').update({
             last_plateau_start_date: todayDateString,
             completions_in_plateau: 0,
             last_goal_increase_date: todayDateString
           }).eq('id', userHabitData.id);
+        } else {
+          newDailyGoal = userHabitData.max_goal_cap;
         }
       }
-    }
-    
-    // Recovery Logic
-    if (!isHabitCompletedToday && userHabitData.current_daily_goal > 1) {
-       if (newMomentumLevel === 'Struggling') {
-         newDailyGoal = Math.max(1, userHabitData.current_daily_goal - (habitConfig.type === 'time' ? 0.25 : 1));
-         goalDecreased = true;
-       }
     }
   }
 
   await supabase.from('user_habits').update({
     current_daily_goal: newDailyGoal,
     completions_in_plateau: isHabitCompletedToday ? newCompletionsInPlateau : userHabitData.completions_in_plateau,
-    momentum_level: isHabitCompletedToday ? 
-      (newMomentumLevel === 'Struggling' ? 'Building' : newMomentumLevel) : 
-      (newMomentumLevel === 'Building' ? 'Struggling' : newMomentumLevel)
   }).eq('id', userHabitData.id);
 
   const newXp = (profileData.xp || 0) + xpEarned;
@@ -124,7 +107,47 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating }:
     level: calculateLevel(newXp),
   }).eq('id', userId);
 
-  return { success: true, goalIncreased, goalDecreased };
+  return { success: true };
+};
+
+const unlogHabit = async ({ userId, habitKey, taskName }: { userId: string, habitKey: string, taskName: string }) => {
+  // 1. Find the most recent task with this name and habit key completed today
+  const { data: task, error: findError } = await supabase
+    .from('completedtasks')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('original_source', habitKey)
+    .eq('task_name', taskName)
+    .order('completed_at', { ascending: false })
+    .limit(1)
+    .single();
+
+  if (findError || !task) throw findError || new Error('Task not found');
+
+  // 2. Decrement lifetime progress
+  const habitConfig = initialHabits.find(h => h.id === habitKey);
+  const valueToRevert = habitConfig?.type === 'time' ? (task.duration_used || 0) : task.xp_earned;
+  
+  await supabase.rpc('increment_lifetime_progress', {
+    p_user_id: userId, p_habit_key: habitKey, p_increment_value: -valueToRevert,
+  });
+
+  // 3. Update profile XP and task count
+  const { data: profile } = await supabase.from('profiles').select('xp, tasks_completed_today').eq('id', userId).single();
+  if (profile) {
+    const newXp = Math.max(0, (profile.xp || 0) - (task.xp_earned || 0));
+    await supabase.from('profiles').update({
+      xp: newXp,
+      level: calculateLevel(newXp),
+      tasks_completed_today: Math.max(0, (profile.tasks_completed_today || 0) - 1)
+    }).eq('id', userId);
+  }
+
+  // 4. Delete the task record
+  const { error: deleteError } = await supabase.from('completedtasks').delete().eq('id', task.id);
+  if (deleteError) throw deleteError;
+
+  return { success: true };
 };
 
 export const useHabitLog = () => {
@@ -132,23 +155,35 @@ export const useHabitLog = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
-  return useMutation({
+  const logMutation = useMutation({
     mutationFn: (params: LogHabitParams) => {
       if (!session?.user?.id) throw new Error('User not authenticated');
       return logHabit({ ...params, userId: session.user.id });
     },
-    onSuccess: (data, variables) => {
-      setTimeout(() => {
-        let message = 'Habit logged!';
-        if (data.goalIncreased) message += ' Goal increased safely.';
-        if (data.goalDecreased) message += ' Goal reduced for recovery.';
-        showSuccess(message);
-        queryClient.invalidateQueries({ queryKey: ['dashboardData', session?.user?.id] });
-        queryClient.invalidateQueries({ queryKey: ['journeyData', session?.user?.id] });
-        queryClient.invalidateQueries({ queryKey: ['dailyHabitCompletion', session?.user?.id, variables.habitKey] });
-        navigate('/');
-      }, 750); 
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dashboardData', session?.user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['journeyData', session?.user?.id] });
     },
     onError: (error) => showError(`Failed: ${error.message}`),
   });
+
+  const unlogMutation = useMutation({
+    mutationFn: (params: { habitKey: string, taskName: string }) => {
+      if (!session?.user?.id) throw new Error('User not authenticated');
+      return unlogHabit({ ...params, userId: session.user.id });
+    },
+    onSuccess: () => {
+      showSuccess('Task uncompleted.');
+      queryClient.invalidateQueries({ queryKey: ['dashboardData', session?.user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['journeyData', session?.user?.id] });
+    },
+    onError: (error) => showError(`Failed to uncomplete: ${error.message}`),
+  });
+
+  return {
+    mutate: logMutation.mutate,
+    isPending: logMutation.isPending,
+    unlog: unlogMutation.mutate,
+    isUnlogging: unlogMutation.isPending,
+  };
 };
