@@ -63,23 +63,20 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
         const now = Date.now();
         const totalElapsed = Math.floor((now - startTimeRef.current) / 1000);
         setElapsedSeconds(totalElapsed);
+        
+        // Broadcast for Global UI / Browser Tab
+        window.dispatchEvent(new CustomEvent('habit-timer-update', { 
+          detail: { 
+            label, 
+            elapsed: initialValue * 60 + totalElapsed, 
+            isPaused: false,
+            habitKey 
+          } 
+        }));
       }
     }, 1000);
-  }, []);
+  }, [label, initialValue, habitKey]);
 
-  // Monitor for goal hit
-  useEffect(() => {
-    if (isTiming && isTimeBased && !goalReachedAlerted) {
-      const totalMinutes = (initialValue * 60 + elapsedSeconds) / 60;
-      if (totalMinutes >= value) {
-        playGoalSound();
-        if (window.navigator?.vibrate) window.navigator.vibrate([100, 50, 100]);
-        setGoalReachedAlerted(true);
-      }
-    }
-  }, [elapsedSeconds, isTiming, isTimeBased, value, initialValue, goalReachedAlerted]);
-
-  // Load state on mount
   useEffect(() => {
     const saved = localStorage.getItem(storageKey);
     if (saved && !isCompleted) {
@@ -93,13 +90,20 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
         startInterval();
       } else {
         setElapsedSeconds(elapsed);
+        if (timing && paused) {
+          // Broadcast current paused state
+          window.dispatchEvent(new CustomEvent('habit-timer-update', { 
+            detail: { label, elapsed: initialValue * 60 + elapsed, isPaused: true, habitKey } 
+          }));
+        }
       }
     }
 
-    return () => stopInterval();
-  }, [storageKey, isCompleted, startInterval]);
+    return () => {
+      stopInterval();
+    };
+  }, [storageKey, isCompleted, startInterval, label, initialValue, habitKey]);
 
-  // Save state
   useEffect(() => {
     if (!isCompleted && (isTiming || elapsedSeconds > 0)) {
       localStorage.setItem(storageKey, JSON.stringify({
@@ -113,7 +117,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     }
   }, [isTiming, elapsedSeconds, isPaused, isCompleted, storageKey]);
 
-  // Visibility catch-up
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && isTiming && !isPaused && startTimeRef.current) {
@@ -144,6 +147,10 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     } else {
       setIsPaused(true);
       stopInterval();
+      // Broadcast paused state
+      window.dispatchEvent(new CustomEvent('habit-timer-update', { 
+        detail: { label, elapsed: initialValue * 60 + elapsedSeconds, isPaused: true, habitKey } 
+      }));
     }
   };
 
@@ -155,7 +162,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
 
   const handleFinishTiming = (mood?: string) => {
     stopInterval();
-    // Use Math.ceil to be generous for partial logs
     const sessionMinutes = Math.max(1, Math.ceil(elapsedSeconds / 60));
     
     if (showMood && mood === undefined) {
@@ -165,7 +171,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
 
     playEndSound();
     
-    // Only show confetti if goal was actually reached
     if ((initialValue * 60 + elapsedSeconds) / 60 >= value) {
       confetti({
         particleCount: 100,
@@ -176,6 +181,9 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     }
 
     localStorage.removeItem(storageKey);
+    // Clear global timer
+    window.dispatchEvent(new CustomEvent('habit-timer-update', { detail: null }));
+    
     onComplete(sessionMinutes, mood);
     setIsTiming(false);
     setElapsedSeconds(0);
@@ -196,45 +204,22 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     playEndSound();
     confetti({ particleCount: 80, spread: 60, origin: { y: 0.7 } });
     localStorage.removeItem(storageKey);
+    window.dispatchEvent(new CustomEvent('habit-timer-update', { detail: null }));
+    
     const remaining = Math.max(1, value - initialValue);
     onComplete(remaining);
   };
 
-  // Calculate percentage fill
   const currentTotalMinutes = isTiming ? initialValue + (elapsedSeconds / 60) : initialValue;
   const progressPercent = Math.min(100, (currentTotalMinutes / value) * 100);
 
   const colorMap = {
-    orange: { 
-      light: 'from-orange-300/70', dark: 'to-orange-500/90', wave: '#fb923c', 
-      bg: 'bg-orange-50/40', border: 'border-orange-100/50', text: 'text-orange-600', 
-      iconBg: 'bg-orange-100/60' 
-    },
-    blue: { 
-      light: 'from-blue-300/70', dark: 'to-blue-500/90', wave: '#60a5fa', 
-      bg: 'bg-blue-50/40', border: 'border-blue-100/50', text: 'text-blue-600', 
-      iconBg: 'bg-blue-100/60' 
-    },
-    green: { 
-      light: 'from-green-300/70', dark: 'to-green-500/90', wave: '#4ade80', 
-      bg: 'bg-green-50/40', border: 'border-green-100/50', text: 'text-green-600', 
-      iconBg: 'bg-green-100/60' 
-    },
-    purple: { 
-      light: 'from-purple-300/70', dark: 'to-purple-500/90', wave: '#a78bfa', 
-      bg: 'bg-purple-50/40', border: 'border-purple-100/50', text: 'text-purple-600', 
-      iconBg: 'bg-purple-100/60' 
-    },
-    red: { 
-      light: 'from-red-300/70', dark: 'to-red-500/90', wave: '#f87171', 
-      bg: 'bg-red-50/40', border: 'border-red-100/50', text: 'text-red-600', 
-      iconBg: 'bg-red-100/60' 
-    },
-    indigo: { 
-      light: 'from-indigo-300/70', dark: 'to-indigo-500/90', wave: '#6366f1', 
-      bg: 'bg-indigo-50/40', border: 'border-indigo-100/50', text: 'text-indigo-600', 
-      iconBg: 'bg-indigo-100/60' 
-    },
+    orange: { light: 'from-orange-300/70', dark: 'to-orange-500/90', wave: '#fb923c', bg: 'bg-orange-50/40', border: 'border-orange-100/50', text: 'text-orange-600', iconBg: 'bg-orange-100/60' },
+    blue: { light: 'from-blue-300/70', dark: 'to-blue-500/90', wave: '#60a5fa', bg: 'bg-blue-50/40', border: 'border-blue-100/50', text: 'text-blue-600', iconBg: 'bg-blue-100/60' },
+    green: { light: 'from-green-300/70', dark: 'to-green-500/90', wave: '#4ade80', bg: 'bg-green-50/40', border: 'border-green-100/50', text: 'text-green-600', iconBg: 'bg-green-100/60' },
+    purple: { light: 'from-purple-300/70', dark: 'to-purple-500/90', wave: '#a78bfa', bg: 'bg-purple-50/40', border: 'border-purple-100/50', text: 'text-purple-600', iconBg: 'bg-purple-100/60' },
+    red: { light: 'from-red-300/70', dark: 'to-red-500/90', wave: '#f87171', bg: 'bg-red-50/40', border: 'border-red-100/50', text: 'text-red-600', iconBg: 'bg-red-100/60' },
+    indigo: { light: 'from-indigo-300/70', dark: 'to-indigo-500/90', wave: '#6366f1', bg: 'bg-indigo-50/40', border: 'border-indigo-100/50', text: 'text-indigo-600', iconBg: 'bg-indigo-100/60' },
   };
 
   const colors = colorMap[color];
@@ -251,7 +236,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
         )}
         onClick={(!isCompleted && !isTiming && !showMoodPicker) ? (isTimeBased ? handleStartTimer : handleQuickComplete) : undefined}
       >
-        {/* Progress Water layer (always shows surplus, rises during timing) */}
         <AnimatePresence>
           {(!isCompleted && (isTiming || initialValue > 0)) && (
             <motion.div 

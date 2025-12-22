@@ -4,6 +4,7 @@ import React from 'react';
 import { Sidebar } from './Sidebar';
 import { NavigationProgressToast } from './NavigationProgressToast';
 import { useTabProgress } from '@/hooks/useTabProgress';
+import { FloatingTimer } from './FloatingTimer';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -19,6 +20,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         {children}
       </Sidebar>
       <NavigationProgressToast />
+      <FloatingTimer />
     </div>
   );
 };
