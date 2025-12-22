@@ -61,6 +61,7 @@ const Index = () => {
   const habitGroups = useMemo(() => {
     if (!data?.habits) return [];
 
+    // First map the raw habits into our display structure
     const groups = data.habits.map(habit => {
       const goal = habit.dailyGoal;
       const progress = habit.dailyProgress;
@@ -71,12 +72,10 @@ const Index = () => {
       let capsuleValue = goal;
 
       if (habit.key === 'pushups' && isReps) {
-        // Smart set splitting: aim for 5–7 reps per set
         const idealSetSize = Math.min(7, Math.max(5, Math.ceil(goal / 4)));
         numCapsules = Math.ceil(goal / idealSetSize);
         capsuleValue = idealSetSize;
       } else if (isMinutes) {
-        // Time-based: prefer 15/20/25/30 min chunks
         if (goal >= 60) {
           numCapsules = 4;
           capsuleValue = 15;
@@ -118,15 +117,16 @@ const Index = () => {
         ...habit,
         capsules,
         allCompleted,
-        completedCapsules: capsules.filter(c => c.isCompleted).length,
-        totalCapsules: numCapsules,
+        completedCapsulesCount: capsules.filter(c => c.isCompleted).length,
+        totalCapsulesCount: numCapsules,
       };
     });
 
-    // Sort: Incomplete tasks first
-    return groups.sort((a, b) => {
-      if (a.allCompleted === b.allCompleted) return 0;
-      return a.allCompleted ? 1 : -1;
+    // Strictly sort: All incomplete tasks must come before all complete tasks
+    return [...groups].sort((a, b) => {
+      if (a.allCompleted && !b.allCompleted) return 1; // a is done, b is not -> b comes first
+      if (!a.allCompleted && b.allCompleted) return -1; // a is not done, b is -> a comes first
+      return 0; // Both have same completion status, maintain relative order
     });
   }, [data?.habits, dbCapsules]);
 
@@ -200,7 +200,7 @@ const Index = () => {
 
           {viewMode === 'capsules' ? (
             <div className="space-y-5">
-              <Accordion type="multiple" defaultValue={habitGroups.map(h => h.key)} className="space-y-4">
+              <Accordion type="multiple" defaultValue={habitGroups.filter(h => !h.allCompleted).map(h => h.key)} className="space-y-4">
                 {habitGroups.map(habit => {
                   const Icon = habitIconMap[habit.key] || Timer;
                   const color = habitColorMap[habit.key] || 'blue';
@@ -209,7 +209,10 @@ const Index = () => {
                     <AccordionItem
                       key={habit.key}
                       value={habit.key}
-                      className="border-none bg-card rounded-2xl shadow-md overflow-hidden ring-1 ring-border/50"
+                      className={cn(
+                        "border-none bg-card rounded-2xl shadow-md overflow-hidden ring-1 ring-border/50 transition-all",
+                        habit.allCompleted && "opacity-80"
+                      )}
                     >
                       <AccordionTrigger className="px-6 py-5 hover:no-underline">
                         <div className="flex items-center justify-between w-full pr-4">
@@ -228,7 +231,7 @@ const Index = () => {
                                 {habit.allCompleted && <CheckCircle2 className="w-5 h-5 text-green-500" />}
                               </h3>
                               <p className="text-sm text-muted-foreground font-medium">
-                                {habit.completedCapsules}/{habit.totalCapsules} parts done
+                                {habit.completedCapsulesCount}/{habit.totalCapsulesCount} parts done
                                 {habit.is_fixed && " • Fixed goal"}
                               </p>
                             </div>
