@@ -61,7 +61,7 @@ const Index = () => {
   const habitGroups = useMemo(() => {
     if (!data?.habits) return [];
 
-    return data.habits.map(habit => {
+    const groups = data.habits.map(habit => {
       const goal = habit.dailyGoal;
       const progress = habit.dailyProgress;
       const isReps = habit.unit === 'reps';
@@ -121,6 +121,12 @@ const Index = () => {
         completedCapsules: capsules.filter(c => c.isCompleted).length,
         totalCapsules: numCapsules,
       };
+    });
+
+    // Sort: Incomplete tasks first
+    return groups.sort((a, b) => {
+      if (a.allCompleted === b.allCompleted) return 0;
+      return a.allCompleted ? 1 : -1;
     });
   }, [data?.habits, dbCapsules]);
 
