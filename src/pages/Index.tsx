@@ -326,6 +326,7 @@ const Index = () => {
                             <HabitCapsule
                               key={capsule.id}
                               {...capsule}
+                              habitName={habit.name} // Passing habitName here
                               color={color}
                               onComplete={(actual, mood) => handleCapsuleComplete(habit, capsule, actual, mood)}
                               onUncomplete={() => handleCapsuleUncomplete(habit, capsule)}

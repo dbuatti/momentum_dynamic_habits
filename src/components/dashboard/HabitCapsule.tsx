@@ -12,6 +12,7 @@ import { playStartSound, playEndSound, playGoalSound } from '@/utils/audio';
 interface HabitCapsuleProps {
   id: string;
   habitKey: string;
+  habitName: string; // New prop for rich context
   label: string;
   value: number; // Planned goal for this chunk (in minutes or reps)
   unit: string;
@@ -26,6 +27,7 @@ interface HabitCapsuleProps {
 
 export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   habitKey,
+  habitName,
   label,
   value,
   unit,
@@ -68,6 +70,8 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
         window.dispatchEvent(new CustomEvent('habit-timer-update', { 
           detail: { 
             label, 
+            habitName,
+            goalValue: value,
             elapsed: initialValue * 60 + totalElapsed, 
             isPaused: false,
             habitKey 
@@ -75,7 +79,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
         }));
       }
     }, 1000);
-  }, [label, initialValue, habitKey]);
+  }, [label, initialValue, habitKey, habitName, value]);
 
   useEffect(() => {
     const saved = localStorage.getItem(storageKey);
@@ -93,7 +97,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
         if (timing && paused) {
           // Broadcast current paused state
           window.dispatchEvent(new CustomEvent('habit-timer-update', { 
-            detail: { label, elapsed: initialValue * 60 + elapsed, isPaused: true, habitKey } 
+            detail: { label, habitName, goalValue: value, elapsed: initialValue * 60 + elapsed, isPaused: true, habitKey } 
           }));
         }
       }
@@ -102,7 +106,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     return () => {
       stopInterval();
     };
-  }, [storageKey, isCompleted, startInterval, label, initialValue, habitKey]);
+  }, [storageKey, isCompleted, startInterval, label, initialValue, habitKey, habitName, value]);
 
   useEffect(() => {
     if (!isCompleted && (isTiming || elapsedSeconds > 0)) {
@@ -149,7 +153,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
       stopInterval();
       // Broadcast paused state
       window.dispatchEvent(new CustomEvent('habit-timer-update', { 
-        detail: { label, elapsed: initialValue * 60 + elapsedSeconds, isPaused: true, habitKey } 
+        detail: { label, habitName, goalValue: value, elapsed: initialValue * 60 + elapsedSeconds, isPaused: true, habitKey } 
       }));
     }
   };
@@ -329,9 +333,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
               <div className="flex justify-between items-start">
                 <div className="pl-1">
                   <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Active {label}</p>
-                  <p className="text-4xl font-black tabular-nums mt-1">
-                    {formatTime(initialValue * 60 + elapsedSeconds)}
-                  </p>
+                  <p className="text-4xl font-black tabular-nums mt-1">{formatTime(initialValue * 60 + elapsedSeconds)}</p>
                   <p className="text-[10px] opacity-60 mt-1 font-bold">
                     Goal: {value} min {initialValue > 0 && `(incl. ${initialValue}m surplus)`}
                   </p>
