@@ -43,7 +43,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   const startTimeRef = useRef<number | null>(null);
   const isTimeBased = unit === 'min';
   
-  // Unique key for this specific capsule's timer state
   const storageKey = `timer_${habitKey}_${label}_${new Date().toISOString().split('T')[0]}`;
 
   const stopInterval = () => {
@@ -63,7 +62,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     }, 1000);
   }, []);
 
-  // Load state on mount
   useEffect(() => {
     const saved = localStorage.getItem(storageKey);
     if (saved && !isCompleted) {
@@ -83,7 +81,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     return () => stopInterval();
   }, [storageKey, isCompleted, startInterval]);
 
-  // Save state whenever it changes
   useEffect(() => {
     if (!isCompleted && (isTiming || elapsedSeconds > 0)) {
       localStorage.setItem(storageKey, JSON.stringify({
@@ -97,7 +94,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     }
   }, [isTiming, elapsedSeconds, isPaused, isCompleted, storageKey]);
 
-  // Handle tab visibility changes (catch up)
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && isTiming && !isPaused && startTimeRef.current) {
@@ -105,7 +101,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
         setElapsedSeconds(Math.floor((now - startTimeRef.current) / 1000));
       }
     };
-
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [isTiming, isPaused]);
@@ -180,12 +175,36 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     : 0;
 
   const colorMap = {
-    orange: { light: 'from-orange-300/70', dark: 'to-orange-500/90', wave: '#fb923c', bg: 'bg-orange-50/50', border: 'border-orange-200/50', text: 'text-orange-700' },
-    blue: { light: 'from-blue-300/70', dark: 'to-blue-500/90', wave: '#60a5fa', bg: 'bg-blue-50/50', border: 'border-blue-200/50', text: 'text-blue-700' },
-    green: { light: 'from-green-300/70', dark: 'to-green-500/90', wave: '#4ade80', bg: 'bg-green-50/50', border: 'border-green-200/50', text: 'text-green-700' },
-    purple: { light: 'from-purple-300/70', dark: 'to-purple-500/90', wave: '#a78bfa', bg: 'bg-purple-50/50', border: 'border-purple-200/50', text: 'text-purple-700' },
-    red: { light: 'from-red-300/70', dark: 'to-red-500/90', wave: '#f87171', bg: 'bg-red-50/50', border: 'border-red-200/50', text: 'text-red-700' },
-    indigo: { light: 'from-indigo-300/70', dark: 'to-indigo-500/90', wave: '#6366f1', bg: 'bg-indigo-50/50', border: 'border-indigo-200/50', text: 'text-indigo-700' },
+    orange: { 
+      light: 'from-orange-300/70', dark: 'to-orange-500/90', wave: '#fb923c', 
+      bg: 'bg-orange-50/40', border: 'border-orange-100/50', text: 'text-orange-600', 
+      iconBg: 'bg-orange-100/60' 
+    },
+    blue: { 
+      light: 'from-blue-300/70', dark: 'to-blue-500/90', wave: '#60a5fa', 
+      bg: 'bg-blue-50/40', border: 'border-blue-100/50', text: 'text-blue-600', 
+      iconBg: 'bg-blue-100/60' 
+    },
+    green: { 
+      light: 'from-green-300/70', dark: 'to-green-500/90', wave: '#4ade80', 
+      bg: 'bg-green-50/40', border: 'border-green-100/50', text: 'text-green-600', 
+      iconBg: 'bg-green-100/60' 
+    },
+    purple: { 
+      light: 'from-purple-300/70', dark: 'to-purple-500/90', wave: '#a78bfa', 
+      bg: 'bg-purple-50/40', border: 'border-purple-100/50', text: 'text-purple-600', 
+      iconBg: 'bg-purple-100/60' 
+    },
+    red: { 
+      light: 'from-red-300/70', dark: 'to-red-500/90', wave: '#f87171', 
+      bg: 'bg-red-50/40', border: 'border-red-100/50', text: 'text-red-600', 
+      iconBg: 'bg-red-100/60' 
+    },
+    indigo: { 
+      light: 'from-indigo-300/70', dark: 'to-indigo-500/90', wave: '#6366f1', 
+      bg: 'bg-indigo-50/40', border: 'border-indigo-100/50', text: 'text-indigo-600', 
+      iconBg: 'bg-indigo-100/60' 
+    },
   };
 
   const colors = colorMap[color];
@@ -194,15 +213,14 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     <motion.div layout className="relative">
       <Card 
         className={cn(
-          "relative overflow-hidden transition-all duration-500 border-2",
+          "relative overflow-hidden transition-all duration-500 border-2 rounded-[24px]",
           isCompleted 
-            ? "bg-muted/40 border-muted opacity-75" 
+            ? "bg-muted/30 border-muted opacity-70" 
             : cn(colors.bg, colors.border, "backdrop-blur-sm shadow-sm hover:shadow-md"),
-          isTiming && "ring-4 ring-primary/30 shadow-xl scale-[1.02]"
+          isTiming && "ring-4 ring-primary/20 shadow-xl scale-[1.01]"
         )}
         onClick={(!isCompleted && !isTiming && !showMoodPicker) ? (isTimeBased ? handleStartTimer : handleQuickComplete) : undefined}
       >
-        {/* Rising Water Fill Effect */}
         <AnimatePresence>
           {isTiming && (
             <motion.div 
@@ -213,10 +231,10 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
             >
               <div className={cn("absolute inset-0 bg-gradient-to-t", colors.light, colors.dark)} />
               <div 
-                className="absolute inset-x-0 top-0 h-4 opacity-60" 
+                className="absolute inset-x-0 top-0 h-4 opacity-40" 
                 style={{ 
-                  background: `linear-gradient(90deg, transparent 0%, ${colors.wave}66 50%, transparent 100%)`,
-                  animation: 'wave 4s linear infinite'
+                  background: `linear-gradient(90deg, transparent 0%, ${colors.wave} 50%, transparent 100%)`,
+                  animation: 'wave 6s linear infinite'
                 }} 
               />
             </motion.div>
@@ -228,20 +246,26 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-4 min-w-0">
                 <div className={cn(
-                  "w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 shadow-sm transition-colors",
-                  isCompleted ? "bg-green-500 text-white" : "bg-white border-2 border-dashed border-current/30"
+                  "w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 shadow-sm transition-all duration-300",
+                  isCompleted ? colors.iconBg : colors.iconBg
                 )}>
-                  {isCompleted ? <Check className="w-6 h-6" /> : (
-                    isTimeBased ? <Play className={cn("w-5 h-5 ml-0.5 fill-current", colors.text)} /> : <span className={cn("text-sm font-black", colors.text)}>{value}</span>
+                  {isCompleted ? (
+                    <Check className={cn("w-6 h-6", colors.text)} />
+                  ) : (
+                    isTimeBased ? (
+                      <Play className={cn("w-5 h-5 ml-0.5 fill-current", colors.text)} />
+                    ) : (
+                      <span className={cn("text-base font-black", colors.text)}>{value}</span>
+                    )
                   )}
                 </div>
                 
                 <div className="min-w-0">
-                  <p className={cn("font-bold text-base leading-tight truncate", !isCompleted && colors.text)}>{label}</p>
+                  <p className={cn("font-bold text-base leading-tight truncate", isCompleted ? "text-muted-foreground" : colors.text)}>{label}</p>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs font-semibold opacity-70">{value} {unit}</span>
+                    <span className="text-xs font-semibold opacity-60">{value} {unit}</span>
                     {scheduledTime && (
-                      <span className="flex items-center gap-1 text-xs opacity-60 bg-white/50 px-2 py-0.5 rounded-full">
+                      <span className="flex items-center gap-1 text-[10px] opacity-60 bg-white/40 px-2 py-0.5 rounded-full">
                         <Clock className="w-3 h-3" />
                         {scheduledTime}
                       </span>
@@ -254,12 +278,14 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                 <Button
                   size="sm"
                   variant="ghost"
+                  className="h-9 px-3 rounded-xl text-xs font-bold text-muted-foreground hover:bg-white/40"
                   onClick={(e) => {
                     e.stopPropagation();
                     onUncomplete();
                   }}
                 >
-                  <Undo2 className="w-4 h-4" />
+                  <Undo2 className="w-4 h-4 mr-1" />
+                  Undo
                 </Button>
               ) : (
                 <div className="flex items-center gap-2">
@@ -267,43 +293,38 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                     <Button 
                       size="icon" 
                       variant="ghost" 
-                      className="h-9 w-9" 
+                      className="h-10 w-10 rounded-full hover:bg-white/40" 
                       onClick={handleQuickComplete}
-                      title="Mark done manually"
                     >
                       <Edit2 className="w-4 h-4 opacity-40" />
                     </Button>
                   )}
-                  <div className="w-9 h-9 rounded-full bg-white/30 flex items-center justify-center opacity-50">
-                    <Check className="w-5 h-5" />
-                  </div>
                 </div>
               )}
             </div>
           ) : (
-            <div className="space-y-5 py-3">
+            <div className="space-y-5 py-2">
               <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-xs font-black uppercase tracking-wider opacity-60">Timing {label}</p>
-                  <p className="text-4xl font-black tabular-nums mt-2">{formatTime(elapsedSeconds)}</p>
-                  <p className="text-xs opacity-60 mt-2">Goal: {value} min</p>
+                <div className="pl-1">
+                  <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Active {label}</p>
+                  <p className="text-4xl font-black tabular-nums mt-1">{formatTime(elapsedSeconds)}</p>
+                  <p className="text-[10px] opacity-60 mt-1 font-bold">Goal: {value} min</p>
                 </div>
                 
-                <div className="flex gap-3">
+                <div className="flex gap-2">
                   <Button 
                     size="icon" 
-                    className="h-12 w-12 rounded-full shadow-lg"
-                    variant={isPaused ? "default" : "secondary"}
+                    className="h-12 w-12 rounded-full bg-white/90 text-black hover:bg-white shadow-md border-0"
                     onClick={handlePauseTimer}
                   >
-                    {isPaused ? <Play className="w-6 h-6 ml-0.5" /> : <Pause className="w-6 h-6" />}
+                    {isPaused ? <Play className="w-6 h-6 ml-0.5 fill-current" /> : <Pause className="w-6 h-6 fill-current" />}
                   </Button>
                   <Button 
                     size="lg" 
-                    className="h-12 px-6 rounded-full font-bold shadow-lg"
+                    className="h-12 px-6 rounded-full font-black shadow-lg bg-white/95 text-primary hover:bg-white"
                     onClick={() => handleFinishTiming()}
                   >
-                    <Square className="w-5 h-5 mr-2" />
+                    <Square className="w-4 h-4 mr-2 fill-current" />
                     Done
                   </Button>
                 </div>
@@ -321,19 +342,19 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
               className="bg-white/95 backdrop-blur border-t"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="py-3 px-4 flex items-center justify-center gap-6">
-                <span className="text-xs font-bold uppercase opacity-70">How was it?</span>
-                <div className="flex gap-3">
-                  <Button size="icon" variant="ghost" onClick={() => handleFinishTiming('sad')}>
-                    <Frown className="w-5 h-5 text-red-500" />
+              <div className="py-4 px-4 flex items-center justify-center gap-6">
+                <span className="text-xs font-black uppercase tracking-wider opacity-60">Feeling?</span>
+                <div className="flex gap-4">
+                  <Button size="icon" variant="ghost" className="h-10 w-10 rounded-full hover:bg-red-50" onClick={() => handleFinishTiming('sad')}>
+                    <Frown className="w-6 h-6 text-red-500" />
                   </Button>
-                  <Button size="icon" variant="ghost" onClick={() => handleFinishTiming('neutral')}>
-                    <Meh className="w-5 h-5 text-yellow-500" />
+                  <Button size="icon" variant="ghost" className="h-10 w-10 rounded-full hover:bg-yellow-50" onClick={() => handleFinishTiming('neutral')}>
+                    <Meh className="w-6 h-6 text-yellow-500" />
                   </Button>
-                  <Button size="icon" variant="ghost" onClick={() => handleFinishTiming('happy')}>
-                    <Smile className="w-5 h-5 text-green-500" />
+                  <Button size="icon" variant="ghost" className="h-10 w-10 rounded-full hover:bg-green-50" onClick={() => handleFinishTiming('happy')}>
+                    <Smile className="w-6 h-6 text-green-500" />
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={() => handleFinishTiming()}>Skip</Button>
+                  <Button variant="ghost" size="sm" className="font-bold text-muted-foreground" onClick={() => handleFinishTiming()}>Skip</Button>
                 </div>
               </div>
             </motion.div>
