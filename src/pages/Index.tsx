@@ -1,6 +1,8 @@
+"use client";
+
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import HomeHeader from "@/components/HomeHeader";
-import { BookOpen, Dumbbell, Music, Wind, Home, Code, Sparkles, Pill, LayoutGrid, ListTodo, Plus, ChevronRight, Zap, Info } from "lucide-react";
+import { BookOpen, Dumbbell, Music, Wind, Home, Code, Sparkles, Pill, LayoutGrid, ListTodo, Plus, ChevronRight, Zap, Info, Lock } from "lucide-react";
 import { DisciplineBanner } from "@/components/dashboard/DisciplineBanner";
 import { TodaysProgressCard } from "@/components/dashboard/TodaysProgressCard";
 import { JourneyProgressCard } from "@/components/dashboard/JourneyProgressCard";
