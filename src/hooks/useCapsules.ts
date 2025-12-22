@@ -1,16 +1,18 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
-import { initialHabits } from '@/lib/habit-data';
 
 export interface Capsule {
-  id: string;
-  habitKey: string;
-  capsuleIndex: number;
-  label: string;
+  id?: string;
+  user_id?: string;
+  habit_key: string;
+  capsule_index: number;
   value: number;
-  isCompleted: boolean;
-  scheduledTime?: string;
+  label?: string;
+  is_completed: boolean;
+  mood?: string | null;
+  scheduled_time?: string | null;
+  created_at: string;
 }
 
 export const useCapsules = () => {
@@ -18,73 +20,155 @@ export const useCapsules = () => {
   const queryClient = useQueryClient();
   const userId = session?.user?.id;
 
-  const fetchCapsules = async () => {
+  const today = new Date().toISOString().split('T')[0];
+
+  const fetchCapsules = async (): Promise<Capsule[]> => {
     if (!userId) return [];
 
-    const today = new Date().toISOString().split('T')[0];
-    
-    // Fetch existing capsules for today
-    const { data: existing, error } = await supabase
+    const { data, error } = await supabase
       .from('habit_capsules')
       .select('*')
       .eq('user_id', userId)
-      .eq('created_at', today);
+      .eq('created_at', today)
+      .order('capsule_index', { ascending: true });
 
-    if (error) throw error;
-    return existing;
+    if (error) {
+      console.error('Error fetching capsules:', error);
+      throw error;
+    }
+
+    return data || [];
   };
 
-  const { data: dbCapsules, isLoading } = useQuery({
-    queryKey: ['habitCapsules', userId],
+  const { data: dbCapsules = [], isLoading } = useQuery({
+    queryKey: ['habitCapsules', userId, today],
     queryFn: fetchCapsules,
     enabled: !!userId,
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
   const completeCapsule = useMutation({
-    mutationFn: async ({ habitKey, index, mood }: { habitKey: string, index: number, mood?: string }) => {
-      const today = new Date().toISOString().split('T')[0];
+    mutationFn: async ({
+      habitKey,
+      index,
+      value,
+      mood,
+    }: {
+      habitKey: string;
+      index: number;
+      value: number;
+      mood?: string;
+    }) => {
+      if (!userId) throw new Error('User not authenticated');
+
+      const { data: existing, error: fetchError } = await supabase
+        .from('habit_capsules')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('habit_key', habitKey)
+        .eq('capsule_index', index)
+        .eq('created_at', today)
+        .maybeSingle();
+
+      if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 = no rows
+        throw fetchError;
+      }
+
+      const upsertData: Partial<Capsule> = {
+        user_id: userId,
+        habit_key: habitKey,
+        capsule_index: index,
+        value,
+        is_completed: true,
+        mood: mood || null,
+        created_at: today,
+        label: `Part ${index + 1}`, // Can be overridden by frontend
+      };
+
       const { error } = await supabase
         .from('habit_capsules')
-        .upsert({
-          user_id: userId!,
-          habit_key: habitKey,
-          capsule_index: index,
-          is_completed: true,
-          mood: mood,
-          created_at: today,
-          label: `Capsule ${index + 1}`, // Default label if not existing
-          value: 0 // Will be derived
-        }, { onConflict: 'user_id, habit_key, capsule_index, created_at' });
+        .upsert(upsertData, {
+          onConflict: 'user_id,habit_key,capsule_index,created_at',
+        });
 
       if (error) throw error;
+
+      return { created: !existing };
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['habitCapsules', userId] });
-      queryClient.invalidateQueries({ queryKey: ['dashboardData', userId] });
-    }
+      queryClient.invalidateQueries({
+        queryKey: ['habitCapsules', userId, today],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['dashboardData', userId],
+      });
+    },
   });
 
   const scheduleCapsule = useMutation({
-    mutationFn: async ({ habitKey, index, time }: { habitKey: string, index: number, time: string }) => {
-      const today = new Date().toISOString().split('T')[0];
+    mutationFn: async ({
+      habitKey,
+      index,
+      time,
+    }: {
+      habitKey: string;
+      index: number;
+      time: string;
+    }) => {
+      if (!userId) throw new Error('User not authenticated');
+
       const { error } = await supabase
         .from('habit_capsules')
-        .upsert({
-          user_id: userId!,
-          habit_key: habitKey,
-          capsule_index: index,
-          scheduled_time: time,
-          created_at: today,
-          label: `Capsule ${index + 1}`,
-          value: 0
-        }, { onConflict: 'user_id, habit_key, capsule_index, created_at' });
+        .upsert(
+          {
+            user_id: userId,
+            habit_key: habitKey,
+            capsule_index: index,
+            scheduled_time: time,
+            created_at: today,
+            value: 0, // Placeholder — will be updated on completion
+          },
+          {
+            onConflict: 'user_id,habit_key,capsule_index,created_at',
+          }
+        );
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['habitCapsules', userId] });
-    }
+      queryClient.invalidateQueries({
+        queryKey: ['habitCapsules', userId, today],
+      });
+    },
   });
 
-  return { dbCapsules, isLoading, completeCapsule, scheduleCapsule };
+  const resetCapsulesForToday = useMutation({
+    mutationFn: async () => {
+      if (!userId) return;
+
+      const { error } = await supabase
+        .from('habit_capsules')
+        .delete()
+        .eq('user_id', userId)
+        .eq('created_at', today);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['habitCapsules', userId, today],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['dashboardData', userId],
+      });
+    },
+  });
+
+  return {
+    dbCapsules,
+    isLoading,
+    completeCapsule,
+    scheduleCapsule,
+    resetCapsulesForToday,
+  };
 };
