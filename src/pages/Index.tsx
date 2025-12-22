@@ -16,7 +16,7 @@ import { DashboardSkeleton } from "@/components/dashboard/DashboardSkeleton";
 import { HabitCapsule } from "@/components/dashboard/HabitCapsule";
 import { useCapsules } from "@/hooks/useCapsules";
 import { useHabitLog } from "@/hooks/useHabitLog";
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useOnboardingCheck } from "@/hooks/useOnboardingCheck";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
@@ -55,6 +55,8 @@ const Index = () => {
   const { mutate: logHabit, unlog } = useHabitLog();
 
   const [viewMode, setViewMode] = useState<'capsules' | 'overview'>('capsules');
+  const [expandedItems, setExpandedItems] = useState<string[]>([]);
+  const prevCompletions = useRef<Record<string, boolean>>({});
 
   const habitGroups = useMemo(() => {
     if (!data?.habits) return [];
@@ -70,7 +72,7 @@ const Index = () => {
 
       if (habit.key === 'pushups' && isReps) {
         const idealSetSize = Math.min(7, Math.max(5, Math.ceil(goal / 4)));
-        numCapsules = Math.ceil(goal / idealSetSize);
+        numCapsules = Math.max(1, Math.ceil(goal / idealSetSize));
         capsuleValue = idealSetSize;
       } else if (isMinutes) {
         if (goal >= 60) {
@@ -92,9 +94,13 @@ const Index = () => {
         const dbCapsule = dbCapsules?.find(c => c.habit_key === habit.key && c.capsule_index === i);
         const cumulativeNeeded = (i + 1) * capsuleValue;
         const lastCapsuleAdjustment = i === numCapsules - 1 ? goal - capsuleValue * (numCapsules - 1) : capsuleValue;
-        const value = lastCapsuleAdjustment > 0 ? lastCapsuleAdjustment : capsuleValue;
+        const value = Math.max(0, lastCapsuleAdjustment);
 
-        const isCompleted = dbCapsule?.is_completed || progress >= cumulativeNeeded || (i === numCapsules - 1 && progress >= goal);
+        // A capsule is complete if manually marked OR progress has reached its threshold
+        // Special case: if goal is > 0, progress must be > 0 to auto-complete based on value
+        const isCompleted = dbCapsule?.is_completed || 
+          (goal > 0 && progress >= cumulativeNeeded) || 
+          (goal > 0 && i === numCapsules - 1 && progress >= goal);
 
         return {
           id: `${habit.key}-${i}`,
@@ -108,7 +114,8 @@ const Index = () => {
         };
       });
 
-      const allCompleted = capsules.every(c => c.isCompleted) || progress >= goal;
+      // Habit is fully completed only if ALL parts are done or progress exceeds goal
+      const allCompleted = (goal > 0 && progress >= goal) || (capsules.length > 0 && capsules.every(c => c.isCompleted));
 
       return {
         ...habit,
@@ -119,12 +126,37 @@ const Index = () => {
       };
     });
 
+    // Strictly sort: Incomplete tasks first (priority)
     return [...groups].sort((a, b) => {
-      if (a.allCompleted && !b.allCompleted) return 1;
-      if (!a.allCompleted && b.allCompleted) return -1;
-      return 0;
+      if (a.allCompleted === b.allCompleted) return 0;
+      return a.allCompleted ? 1 : -1;
     });
   }, [data?.habits, dbCapsules]);
+
+  // Handle automatic expansion and collapse
+  useEffect(() => {
+    if (habitGroups.length === 0) return;
+
+    // Initial load: Expand incomplete ones if state is empty
+    if (expandedItems.length === 0) {
+      const incompleteKeys = habitGroups.filter(h => !h.allCompleted).map(h => h.key);
+      setExpandedItems(incompleteKeys);
+    }
+
+    // Monitor for transitions from incomplete to complete
+    const habitsToCollapse: string[] = [];
+    habitGroups.forEach(h => {
+      const previouslyComplete = !!prevCompletions.current[h.key];
+      if (h.allCompleted && !previouslyComplete) {
+        habitsToCollapse.push(h.key);
+      }
+      prevCompletions.current[h.key] = h.allCompleted;
+    });
+
+    if (habitsToCollapse.length > 0) {
+      setExpandedItems(prev => prev.filter(key => !habitsToCollapse.includes(key)));
+    }
+  }, [habitGroups]);
 
   const handleCapsuleComplete = (habit: any, capsule: any, mood?: string) => {
     completeCapsule.mutate({
@@ -208,7 +240,12 @@ const Index = () => {
 
           {viewMode === 'capsules' ? (
             <div className="space-y-5">
-              <Accordion type="multiple" defaultValue={habitGroups.filter(h => !h.allCompleted).map(h => h.key)} className="space-y-4">
+              <Accordion 
+                type="multiple" 
+                value={expandedItems} 
+                onValueChange={setExpandedItems}
+                className="space-y-4"
+              >
                 {habitGroups.map(habit => {
                   const Icon = habitIconMap[habit.key] || Timer;
                   const color = habitColorMap[habit.key] || 'blue';
