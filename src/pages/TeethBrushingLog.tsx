@@ -5,6 +5,7 @@ import { useHabitLog } from '@/hooks/useHabitLog';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { showError } from '@/utils/toast';
+import { playStartSound, playEndSound } from '@/utils/audio';
 
 interface TimerState {
   timeRemaining: number;
@@ -18,69 +19,7 @@ const FIXED_DURATION_MINUTES = 2;
 const INITIAL_TIME_IN_SECONDS = FIXED_DURATION_MINUTES * 60;
 const LOCAL_STORAGE_KEY = 'teethBrushingTimerState';
 
-// Helper function to play a tone using AudioContext
-const playTone = (context: AudioContext) => {
-  const oscillator = context.createOscillator();
-  const gainNode = context.createGain();
-  
-  oscillator.connect(gainNode);
-  gainNode.connect(context.destination);
-  
-  oscillator.type = 'sine';
-  oscillator.frequency.setValueAtTime(440, context.currentTime);
-  gainNode.gain.setValueAtTime(0.5, context.currentTime);
-  
-  oscillator.start();
-  oscillator.stop(context.currentTime + 0.5);
-};
-
 const TeethBrushingLog = () => {
-  // Refs for AudioContext management
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const isAudioUnlockedRef = useRef(false);
-
-  const initializeAudioContext = useCallback(() => {
-    if (!audioContextRef.current) {
-      // Use window.AudioContext or webkitAudioContext for cross-browser compatibility
-      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-    }
-    return audioContextRef.current;
-  }, []);
-
-  const unlockAudio = useCallback((context: AudioContext) => {
-    if (isAudioUnlockedRef.current) return;
-
-    // Attempt to resume/unlock the context on user interaction (iOS requirement)
-    if (context.state === 'suspended') {
-        context.resume().then(() => {
-            isAudioUnlockedRef.current = true;
-            console.log('AudioContext resumed/unlocked.');
-        }).catch(e => console.error('Failed to resume AudioContext:', e));
-    } else {
-        isAudioUnlockedRef.current = true;
-    }
-  }, []);
-
-  const playSound = useCallback(() => {
-    if (typeof window === 'undefined') return;
-    
-    try {
-      const context = initializeAudioContext();
-      
-      if (context.state === 'suspended') {
-          context.resume().then(() => {
-              playTone(context);
-          }).catch(e => console.error('Failed to resume AudioContext for sound:', e));
-          return;
-      }
-      
-      playTone(context);
-      
-    } catch (e) {
-      console.warn("Could not play sound:", e);
-    }
-  }, [initializeAudioContext]);
-
   // Initialize state from localStorage or defaults
   const getInitialState = useCallback((): TimerState => {
     if (typeof window !== 'undefined') {
@@ -94,7 +33,6 @@ const TeethBrushingLog = () => {
           const newTimeRemaining = parsedState.timeRemaining - elapsedTime;
           
           if (newTimeRemaining <= 0) {
-            // Sound is handled by useEffect when state updates to isFinished: true
             return {
               ...parsedState,
               timeRemaining: 0,
@@ -127,7 +65,7 @@ const TeethBrushingLog = () => {
       isFinished: false,
       startTime: null,
     };
-  }, [initializeAudioContext]);
+  }, []);
 
   const [timerState, setTimerState] = useState<TimerState>(getInitialState());
   const { timeRemaining, isActive, isFinished } = timerState;
@@ -150,7 +88,7 @@ const TeethBrushingLog = () => {
           
           if (newTime <= 0) {
             if (intervalRef.current) clearInterval(intervalRef.current);
-            playSound();
+            playEndSound();
             return {
               ...prevState,
               timeRemaining: 0,
@@ -174,13 +112,13 @@ const TeethBrushingLog = () => {
         isFinished: true,
         startTime: null,
       }));
-      playSound();
+      playEndSound();
     }
     
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [isActive, timeRemaining, playSound]);
+  }, [isActive, timeRemaining]);
 
   // Handle visibility changes
   useEffect(() => {
@@ -202,9 +140,9 @@ const TeethBrushingLog = () => {
   const handleToggle = () => {
     if (isFinished) return;
     
-    // Crucial step: Initialize and attempt to unlock/resume AudioContext on user interaction
-    const context = initializeAudioContext();
-    unlockAudio(context);
+    if (!isActive) {
+      playStartSound();
+    }
 
     setTimerState(prevState => ({
       ...prevState,
@@ -246,6 +184,7 @@ const TeethBrushingLog = () => {
     }
     
     if (minutesToLog > 0) {
+      playEndSound();
       logHabit({ 
         habitKey: HABIT_KEY, 
         value: minutesToLog, 

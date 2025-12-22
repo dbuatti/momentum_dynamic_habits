@@ -7,6 +7,7 @@ import { Check, Clock, Smile, Meh, Frown, Undo2, Play, Pause, Square, Edit2 } fr
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
+import { playStartSound, playEndSound } from '@/utils/audio';
 
 interface HabitCapsuleProps {
   id: string;
@@ -107,6 +108,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
 
   const handleStartTimer = (e: React.MouseEvent) => {
     e.stopPropagation();
+    playStartSound();
     setIsTiming(true);
     setIsPaused(false);
     const now = Date.now();
@@ -141,6 +143,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
       return;
     }
 
+    playEndSound();
     confetti({
       particleCount: 100,
       spread: 70,
@@ -165,6 +168,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
       return;
     }
 
+    playEndSound();
     confetti({ particleCount: 80, spread: 60, origin: { y: 0.7 } });
     localStorage.removeItem(storageKey);
     onComplete(value);
