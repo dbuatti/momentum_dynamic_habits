@@ -304,7 +304,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
       </Card>
 
       {/* CSS for wave animation */}
-      <style jsx>{`
+      <style>{`
         @keyframes wave {
           0% { background-position: 0% 50%; }
           100% { background-position: 200% 50%; }
