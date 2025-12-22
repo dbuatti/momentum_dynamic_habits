@@ -183,6 +183,33 @@ const Index = () => {
 
   const workingOnHabit = data.habits.find(h => h.dailyProgress > 0 && !h.isComplete);
 
+  const accordionBgMap: Record<HabitColor, string> = {
+    orange: 'bg-orange-50/30 border-orange-100/50',
+    blue: 'bg-blue-50/30 border-blue-100/50',
+    green: 'bg-green-50/30 border-green-100/50',
+    purple: 'bg-purple-50/30 border-purple-100/50',
+    red: 'bg-red-50/30 border-red-100/50',
+    indigo: 'bg-indigo-50/30 border-indigo-100/50',
+  };
+
+  const iconBgMap: Record<HabitColor, string> = {
+    orange: 'bg-orange-100/80',
+    blue: 'bg-blue-100/80',
+    green: 'bg-green-100/80',
+    purple: 'bg-purple-100/80',
+    red: 'bg-red-100/80',
+    indigo: 'bg-indigo-100/80',
+  };
+
+  const textTintMap: Record<HabitColor, string> = {
+    orange: 'text-orange-700',
+    blue: 'text-blue-700',
+    green: 'text-green-700',
+    purple: 'text-purple-700',
+    red: 'text-red-700',
+    indigo: 'text-indigo-700',
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <div className="max-w-lg mx-auto w-full px-4 py-6 pb-20">
@@ -248,15 +275,15 @@ const Index = () => {
                       key={habit.key}
                       value={habit.key}
                       className={cn(
-                        "border-none bg-card rounded-2xl shadow-md overflow-hidden ring-1 ring-border/50 transition-all",
-                        habit.allCompleted && "opacity-80"
+                        "border-2 bg-card rounded-2xl shadow-sm overflow-hidden transition-all",
+                        habit.allCompleted ? "opacity-80 grayscale-[0.3] border-transparent" : cn(accordionBgMap[color], "border-inherit")
                       )}
                     >
                       <AccordionTrigger className="px-6 py-5 hover:no-underline">
                         <div className="flex items-center justify-between w-full pr-4">
                           <div className="flex items-center gap-4 text-left">
-                            <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center relative", `bg-${color}-100/80`)}>
-                              <Icon className={cn("w-6 h-6", `text-${color}-600`)} />
+                            <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center relative shadow-sm", habit.allCompleted ? "bg-muted" : iconBgMap[color])}>
+                              <Icon className={cn("w-6 h-6", habit.allCompleted ? "text-muted-foreground" : textTintMap[color])} />
                               {habit.is_fixed && (
                                 <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full p-1 shadow-lg">
                                   <Lock className="w-3 h-3" />
@@ -264,7 +291,7 @@ const Index = () => {
                               )}
                             </div>
                             <div>
-                              <h3 className="font-bold text-lg flex items-center gap-2">
+                              <h3 className={cn("font-bold text-lg flex items-center gap-2", !habit.allCompleted && textTintMap[color])}>
                                 {habit.name}
                                 {habit.allCompleted && <CheckCircle2 className="w-5 h-5 text-green-500" />}
                               </h3>

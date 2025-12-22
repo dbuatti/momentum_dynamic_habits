@@ -180,12 +180,12 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     : 0;
 
   const colorMap = {
-    orange: { light: 'from-orange-300/70', dark: 'to-orange-500/90', wave: '#fb923c' },
-    blue: { light: 'from-blue-300/70', dark: 'to-blue-500/90', wave: '#60a5fa' },
-    green: { light: 'from-green-300/70', dark: 'to-green-500/90', wave: '#4ade80' },
-    purple: { light: 'from-purple-300/70', dark: 'to-purple-500/90', wave: '#a78bfa' },
-    red: { light: 'from-red-300/70', dark: 'to-red-500/90', wave: '#f87171' },
-    indigo: { light: 'from-indigo-300/70', dark: 'to-indigo-500/90', wave: '#6366f1' },
+    orange: { light: 'from-orange-300/70', dark: 'to-orange-500/90', wave: '#fb923c', bg: 'bg-orange-50/50', border: 'border-orange-200/50', text: 'text-orange-700' },
+    blue: { light: 'from-blue-300/70', dark: 'to-blue-500/90', wave: '#60a5fa', bg: 'bg-blue-50/50', border: 'border-blue-200/50', text: 'text-blue-700' },
+    green: { light: 'from-green-300/70', dark: 'to-green-500/90', wave: '#4ade80', bg: 'bg-green-50/50', border: 'border-green-200/50', text: 'text-green-700' },
+    purple: { light: 'from-purple-300/70', dark: 'to-purple-500/90', wave: '#a78bfa', bg: 'bg-purple-50/50', border: 'border-purple-200/50', text: 'text-purple-700' },
+    red: { light: 'from-red-300/70', dark: 'to-red-500/90', wave: '#f87171', bg: 'bg-red-50/50', border: 'border-red-200/50', text: 'text-red-700' },
+    indigo: { light: 'from-indigo-300/70', dark: 'to-indigo-500/90', wave: '#6366f1', bg: 'bg-indigo-50/50', border: 'border-indigo-200/50', text: 'text-indigo-700' },
   };
 
   const colors = colorMap[color];
@@ -197,7 +197,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
           "relative overflow-hidden transition-all duration-500 border-2",
           isCompleted 
             ? "bg-muted/40 border-muted opacity-75" 
-            : "bg-white/80 backdrop-blur-sm border-transparent",
+            : cn(colors.bg, colors.border, "backdrop-blur-sm shadow-sm hover:shadow-md"),
           isTiming && "ring-4 ring-primary/30 shadow-xl scale-[1.02]"
         )}
         onClick={(!isCompleted && !isTiming && !showMoodPicker) ? (isTimeBased ? handleStartTimer : handleQuickComplete) : undefined}
@@ -228,16 +228,16 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-4 min-w-0">
                 <div className={cn(
-                  "w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 shadow-sm",
+                  "w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 shadow-sm transition-colors",
                   isCompleted ? "bg-green-500 text-white" : "bg-white border-2 border-dashed border-current/30"
                 )}>
                   {isCompleted ? <Check className="w-6 h-6" /> : (
-                    isTimeBased ? <Play className="w-5 h-5 ml-0.5" /> : <span className="text-sm font-black">{value}</span>
+                    isTimeBased ? <Play className={cn("w-5 h-5 ml-0.5 fill-current", colors.text)} /> : <span className={cn("text-sm font-black", colors.text)}>{value}</span>
                   )}
                 </div>
                 
                 <div className="min-w-0">
-                  <p className="font-bold text-base leading-tight truncate">{label}</p>
+                  <p className={cn("font-bold text-base leading-tight truncate", !isCompleted && colors.text)}>{label}</p>
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-xs font-semibold opacity-70">{value} {unit}</span>
                     {scheduledTime && (
@@ -271,7 +271,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                       onClick={handleQuickComplete}
                       title="Mark done manually"
                     >
-                      <Edit2 className="w-4 h-4" />
+                      <Edit2 className="w-4 h-4 opacity-40" />
                     </Button>
                   )}
                   <div className="w-9 h-9 rounded-full bg-white/30 flex items-center justify-center opacity-50">
