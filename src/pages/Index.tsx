@@ -1,6 +1,6 @@
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import HomeHeader from "@/components/HomeHeader";
-import { BookOpen, Dumbbell, Music, Wind, Home, Code, Sparkles, Pill, LayoutGrid, ListTodo, Plus, ChevronRight, Zap } from "lucide-react";
+import { BookOpen, Dumbbell, Music, Wind, Home, Code, Sparkles, Pill, LayoutGrid, ListTodo, Plus, ChevronRight, Zap, Info } from "lucide-react";
 import { DisciplineBanner } from "@/components/dashboard/DisciplineBanner";
 import { TodaysProgressCard } from "@/components/dashboard/TodaysProgressCard";
 import { JourneyProgressCard } from "@/components/dashboard/JourneyProgressCard";
@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
+import { TipCard } from "@/components/dashboard/TipCard";
 
 const habitIconMap: { [key: string]: React.ElementType } = {
   pushups: Dumbbell, meditation: Wind, kinesiology: BookOpen, piano: Music, housework: Home, projectwork: Code, teeth_brushing: Sparkles, medication: Pill,
@@ -39,7 +40,6 @@ const Index = () => {
   
   const [viewMode, setViewMode] = useState<'capsules' | 'overview'>('capsules');
 
-  // Derive capsules from habit data
   const habitGroups = useMemo(() => {
     if (!data?.habits) return [];
     
@@ -47,7 +47,6 @@ const Index = () => {
       const goal = habit.dailyGoal;
       const progress = habit.dailyProgress;
       
-      // Calculate number of capsules (max 4, min 1)
       let numCapsules = 1;
       let capsuleValue = goal;
       
@@ -62,8 +61,6 @@ const Index = () => {
 
       const capsules = Array.from({ length: numCapsules }).map((_, i) => {
         const dbCapsule = dbCapsules?.find(c => c.habit_key === habit.key && c.capsule_index === i);
-        
-        // A capsule is completed if it's marked in DB OR if total progress already covers its value
         const isCompleted = dbCapsule?.is_completed || progress >= (i + 1) * capsuleValue;
         
         return {
@@ -77,19 +74,12 @@ const Index = () => {
         };
       });
 
-      return {
-        ...habit,
-        capsules,
-        allCompleted: capsules.every(c => c.isCompleted)
-      };
+      return { ...habit, capsules, allCompleted: capsules.every(c => c.isCompleted) };
     });
   }, [data?.habits, dbCapsules]);
 
   const handleCapsuleComplete = (habit: any, capsule: any, mood?: string) => {
-    // 1. Mark in DB
     completeCapsule.mutate({ habitKey: habit.key, index: capsule.index, mood });
-    
-    // 2. Log partial progress to main habit system
     logHabit({
       habitKey: habit.key,
       value: capsule.value,
@@ -106,6 +96,8 @@ const Index = () => {
         <HomeHeader dayCounter={data.daysActive} lastActiveText={data.lastActiveText} firstName={data.firstName} lastName={data.lastName} xp={data.xp} level={data.level} />
         
         <main className="space-y-6">
+          <TipCard tip={data.tip} bestTime={data.patterns.bestTime} isNeurodivergent={data.neurodivergentMode} />
+
           <div className="flex items-center justify-between px-1">
             <h2 className="text-lg font-bold flex items-center gap-2">
               <ListTodo className="w-5 h-5 text-primary" />
@@ -142,11 +134,19 @@ const Index = () => {
                     <AccordionItem key={habit.key} value={habit.key} className="border-none bg-card rounded-2xl shadow-sm overflow-hidden">
                       <AccordionTrigger className="px-5 py-4 hover:no-underline">
                         <div className="flex items-center gap-3 text-left">
-                          <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", `bg-${color}-100`)}>
+                          <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center relative", `bg-${color}-100`)}>
                             {Icon && <Icon className={cn("w-5 h-5", `text-${color}-500`)} />}
+                            {habit.is_fixed && (
+                              <div className="absolute -top-1 -right-1 bg-primary rounded-full p-0.5 border-2 border-white">
+                                <Lock className="w-2 h-2 text-white" />
+                              </div>
+                            )}
                           </div>
                           <div>
-                            <h3 className="font-bold text-base leading-none">{habit.name}</h3>
+                            <h3 className="font-bold text-base leading-none flex items-center gap-2">
+                              {habit.name}
+                              {habit.is_fixed && <Lock className="w-3 h-3 text-muted-foreground" />}
+                            </h3>
                             <p className="text-[10px] text-muted-foreground mt-1 uppercase tracking-widest font-bold">
                               {habit.capsules.filter(c => c.isCompleted).length}/{habit.capsules.length} chunks done
                             </p>
@@ -164,9 +164,6 @@ const Index = () => {
                               onComplete={(mood) => handleCapsuleComplete(habit, capsule, mood)}
                             />
                           ))}
-                          <Button variant="outline" className="w-full border-dashed rounded-xl h-10 text-[10px] font-bold uppercase text-muted-foreground">
-                            <Plus className="w-3 h-3 mr-1" /> Add Custom Stack
-                          </Button>
                         </div>
                       </AccordionContent>
                     </AccordionItem>
@@ -187,7 +184,7 @@ const Index = () => {
                       icon={Icon ? <Icon className="w-5 h-5" /> : null}
                       title={habit.name}
                       momentum={habit.momentum}
-                      goal={`Goal: ${habit.dailyGoal} ${habit.unit}`}
+                      goal={`${habit.dailyGoal} ${habit.unit}`}
                       progressText={`${Math.round(habit.dailyProgress)}/${habit.dailyGoal}`}
                       progressValue={(habit.dailyProgress / habit.dailyGoal) * 100}
                       color={habitColorMap[habit.key]}
@@ -197,6 +194,8 @@ const Index = () => {
                       dailyGoal={habit.dailyGoal}
                       onCheck={() => refetch()}
                       isFrozen={habit.is_frozen}
+                      isFixed={habit.is_fixed}
+                      neurodivergentMode={data.neurodivergentMode}
                     />
                   );
                 })}

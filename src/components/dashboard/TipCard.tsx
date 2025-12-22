@@ -1,12 +1,15 @@
-import { Lightbulb, Music, Dumbbell, Wind, BookOpen, Code, Home } from 'lucide-react';
+import { Lightbulb, Music, Dumbbell, Wind, BookOpen, Code, Home, Heart, Sparkles, Zap } from 'lucide-react';
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
 interface TipCardProps {
   tip: {
     content: string;
     related_habit_key: string | null;
   } | null;
+  bestTime?: string;
+  isNeurodivergent?: boolean;
 }
 
 const habitIconMap: { [key: string]: React.ElementType } = {
@@ -18,34 +21,39 @@ const habitIconMap: { [key: string]: React.ElementType } = {
   projectwork: Code,
 };
 
-export const TipCard: React.FC<TipCardProps> = ({ tip }) => {
-  if (!tip) {
+export const TipCard: React.FC<TipCardProps> = ({ tip, bestTime, isNeurodivergent }) => {
+  if (!tip && !bestTime) {
     return null;
   }
 
-  const RelatedIcon = tip.related_habit_key ? habitIconMap[tip.related_habit_key] : null;
-  const relatedHabitName = tip.related_habit_key 
-    ? tip.related_habit_key.charAt(0).toUpperCase() + tip.related_habit_key.slice(1) 
+  const RelatedIcon = tip?.related_habit_key ? habitIconMap[tip.related_habit_key] : null;
+  
+  // Pattern-based tip if bestTime exists
+  const patternTip = bestTime && bestTime !== '—' 
+    ? `Your energy peaks during the ${bestTime.toLowerCase()}. Try tackling your hardest chunks then!` 
     : null;
 
+  const displayTip = tip?.content || patternTip;
+  const displayIcon = RelatedIcon || (bestTime ? Zap : Sparkles);
+
   return (
-    <Card className="bg-habit-purple border border-habit-purple-border rounded-2xl shadow-sm border-0">
-      <CardContent className="p-5">
-        <div className="flex items-start space-x-3">
-          <div className="bg-white rounded-full p-2 mt-0.5 flex-shrink-0">
-            <Lightbulb className="w-5 h-5 text-habit-purple-foreground" />
+    <Card className="bg-habit-purple/30 border-2 border-habit-purple-border/50 rounded-2xl shadow-sm overflow-hidden">
+      <CardContent className="p-5 relative">
+        <div className="flex items-start gap-4">
+          <div className="bg-habit-purple-border/30 rounded-xl p-3 shrink-0">
+            {isNeurodivergent ? <Heart className="w-5 h-5 text-habit-purple-foreground" /> : <Lightbulb className="w-5 h-5 text-habit-purple-foreground" />}
           </div>
-          <div>
-            <h4 className="font-semibold text-habit-purple-foreground flex items-center">
-              <Lightbulb className="w-4 h-4 mr-1.5" />
-              Today's tip
+          <div className="space-y-1">
+            <h4 className="font-bold text-xs uppercase tracking-widest text-habit-purple-foreground flex items-center gap-1.5">
+              {isNeurodivergent ? "Compassion Boost" : "Daily Insight"}
             </h4>
-            <p className="text-foreground mt-2">{tip.content}</p>
-            {RelatedIcon && relatedHabitName && (
-              <div className="flex items-center space-x-1.5 text-sm text-muted-foreground mt-3 pt-2 border-t border-habit-purple-border/30">
-                <RelatedIcon className="w-3.5 h-3.5" />
-                <span>Working on: {relatedHabitName}</span>
-              </div>
+            <p className="text-sm font-medium leading-relaxed">
+              {displayTip}
+            </p>
+            {isNeurodivergent && (
+              <p className="text-[10px] italic text-muted-foreground mt-2">
+                "Progress over perfection."
+              </p>
             )}
           </div>
         </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -13,7 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
 import { SettingsSkeleton } from '@/components/dashboard/SettingsSkeleton';
 import { Switch } from '@/components/ui/switch';
-import { Brain, Zap, Lock, LogOut, Heart } from 'lucide-react';
+import { Brain, Zap, Lock, LogOut, Heart, AlertCircle } from 'lucide-react';
 
 const Settings = () => {
   const { session, signOut } = useSession();
@@ -144,15 +144,22 @@ const Settings = () => {
                 <Heart className="w-6 h-6 text-destructive" />
                 <div>
                   <p className="font-bold text-destructive">Recovery Reset</p>
-                  <p className="text-xs text-muted-foreground">Reduce all goals by 20% to help you recover.</p>
+                  <p className="text-xs text-muted-foreground max-w-[200px]">Feeling overwhelmed? Reduce all goals by 20%.</p>
                 </div>
               </div>
-              <Button variant="outline" className="border-destructive text-destructive hover:bg-destructive hover:text-white rounded-xl">
-                Apply
+              <Button variant="outline" className="rounded-xl border-destructive text-destructive hover:bg-destructive hover:text-white transition-all font-bold text-xs uppercase">
+                Apply Recovery
               </Button>
            </div>
         </CardContent>
       </Card>
+
+      <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10 flex gap-3 items-start">
+        <AlertCircle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          <span className="font-bold text-primary">Pro Tip:</span> Start with just one habit at a time to build cognitive momentum without burnout.
+        </p>
+      </div>
     </div>
   );
 };
