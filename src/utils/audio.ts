@@ -1,29 +1,31 @@
 /**
  * Audio utility for playing royalty-free chimes.
- * Using verified short audio snippets.
  */
 
-// Short uplifting ping
-const START_SOUND_URL = 'https://cdn.pixabay.com/audio/2022/03/15/audio_c8c8a73467.mp3'; 
-// Magical celebratory shimmer (short)
-const END_SOUND_URL = 'https://cdn.pixabay.com/audio/2021/08/04/audio_062564fa7e.mp3';   
-// Soft notification ping (Alert for hitting goal)
-const GOAL_SOUND_URL = 'https://cdn.pixabay.com/audio/2021/08/04/audio_331326c507.mp3'; 
+// Confirmed snappy chime
+const START_SOUND_URL = 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3'; 
+// Confirmed magical shimmer
+const END_SOUND_URL = 'https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3';   
+// Confirmed alert ping
+const GOAL_SOUND_URL = 'https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3'; 
 
 export const playStartSound = () => {
+  console.log('🔊 Playing start chime');
   const audio = new Audio(START_SOUND_URL);
-  audio.volume = 0.5; // Increased from 0.3
-  audio.play().catch(err => console.log('Audio start blocked:', err));
+  audio.volume = 0.7;
+  audio.play().catch(err => console.error('Audio start failed:', err));
 };
 
 export const playEndSound = () => {
+  console.log('🔊 Playing completion shimmer');
   const audio = new Audio(END_SOUND_URL);
-  audio.volume = 0.6; // Increased from 0.4
-  audio.play().catch(err => console.log('Audio end blocked:', err));
+  audio.volume = 0.8;
+  audio.play().catch(err => console.error('Audio end failed:', err));
 };
 
 export const playGoalSound = () => {
+  console.log('🔔 Playing target hit alert');
   const audio = new Audio(GOAL_SOUND_URL);
-  audio.volume = 0.7; // Increased from 0.2 for better visibility as an alert
-  audio.play().catch(err => console.log('Audio goal blocked:', err));
+  audio.volume = 0.9;
+  audio.play().catch(err => console.error('Audio goal failed:', err));
 };
