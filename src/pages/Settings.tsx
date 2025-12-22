@@ -13,7 +13,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
 import { SettingsSkeleton } from '@/components/dashboard/SettingsSkeleton';
 import { Switch } from '@/components/ui/switch';
-import { Brain, Zap, Lock, LogOut, Heart, AlertCircle } from 'lucide-react';
+import { Brain, Zap, Lock, LogOut, Heart, AlertCircle, Volume2, Play, Bell, Trophy } from 'lucide-react';
+import { playStartSound, playEndSound, playGoalSound } from '@/utils/audio';
 
 const Settings = () => {
   const { session, signOut } = useSession();
@@ -62,6 +63,47 @@ const Settings = () => {
           <Button variant="ghost" size="icon" onClick={() => signOut()} className="rounded-full">
             <LogOut className="w-5 h-5" />
           </Button>
+        </CardContent>
+      </Card>
+
+      {/* Audio Debug Section */}
+      <Card className="rounded-3xl shadow-sm border-0 bg-blue-50/50 dark:bg-blue-950/20">
+        <CardHeader className="p-6 pb-2">
+          <CardTitle className="text-lg flex items-center gap-2 uppercase tracking-widest font-black text-blue-700 dark:text-blue-300">
+            <Volume2 className="w-5 h-5" />
+            Audio Experience
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-6 pt-0 space-y-4">
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Test the sound system to ensure chimes are audible on your device.
+          </p>
+          <div className="grid grid-cols-3 gap-3">
+            <Button 
+              variant="outline" 
+              className="flex flex-col h-20 rounded-2xl gap-2 bg-background border-blue-100 hover:bg-blue-50 transition-all"
+              onClick={() => playStartSound()}
+            >
+              <Play className="w-4 h-4 text-blue-600" />
+              <span className="text-[10px] font-bold uppercase">Start</span>
+            </Button>
+            <Button 
+              variant="outline" 
+              className="flex flex-col h-20 rounded-2xl gap-2 bg-background border-yellow-100 hover:bg-yellow-50 transition-all"
+              onClick={() => playGoalSound()}
+            >
+              <Bell className="w-4 h-4 text-yellow-600" />
+              <span className="text-[10px] font-bold uppercase">Goal</span>
+            </Button>
+            <Button 
+              variant="outline" 
+              className="flex flex-col h-20 rounded-2xl gap-2 bg-background border-purple-100 hover:bg-purple-50 transition-all"
+              onClick={() => playEndSound()}
+            >
+              <Trophy className="w-4 h-4 text-purple-600" />
+              <span className="text-[10px] font-bold uppercase">Finish</span>
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
