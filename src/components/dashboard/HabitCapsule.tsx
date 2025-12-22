@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Check, Clock, Smile, Meh, Frown, Undo2, Play, Pause, Square, Edit2 } from 'lucide-react';
@@ -23,6 +23,7 @@ interface HabitCapsuleProps {
 }
 
 export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
+  habitKey,
   label,
   value,
   unit,
@@ -41,43 +42,92 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number | null>(null);
   const isTimeBased = unit === 'min';
+  
+  // Unique key for this specific capsule's timer state
+  const storageKey = `timer_${habitKey}_${label}_${new Date().toISOString().split('T')[0]}`;
 
-  // Cleanup
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
+  const stopInterval = () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  };
+
+  const startInterval = useCallback(() => {
+    stopInterval();
+    timerRef.current = setInterval(() => {
+      if (startTimeRef.current) {
+        const now = Date.now();
+        setElapsedSeconds(Math.floor((now - startTimeRef.current) / 1000));
+      }
+    }, 1000);
   }, []);
+
+  // Load state on mount
+  useEffect(() => {
+    const saved = localStorage.getItem(storageKey);
+    if (saved && !isCompleted) {
+      const { start, elapsed, paused, timing } = JSON.parse(saved);
+      setIsPaused(paused);
+      setIsTiming(timing);
+      
+      if (timing && !paused) {
+        startTimeRef.current = start;
+        setElapsedSeconds(Math.floor((Date.now() - start) / 1000));
+        startInterval();
+      } else {
+        setElapsedSeconds(elapsed);
+      }
+    }
+
+    return () => stopInterval();
+  }, [storageKey, isCompleted, startInterval]);
+
+  // Save state whenever it changes
+  useEffect(() => {
+    if (!isCompleted && (isTiming || elapsedSeconds > 0)) {
+      localStorage.setItem(storageKey, JSON.stringify({
+        start: startTimeRef.current,
+        elapsed: elapsedSeconds,
+        paused: isPaused,
+        timing: isTiming
+      }));
+    } else if (isCompleted) {
+      localStorage.removeItem(storageKey);
+    }
+  }, [isTiming, elapsedSeconds, isPaused, isCompleted, storageKey]);
+
+  // Handle tab visibility changes (catch up)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && isTiming && !isPaused && startTimeRef.current) {
+        const now = Date.now();
+        setElapsedSeconds(Math.floor((now - startTimeRef.current) / 1000));
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [isTiming, isPaused]);
 
   const handleStartTimer = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsTiming(true);
     setIsPaused(false);
-    setElapsedSeconds(0);
-    startTimeRef.current = Date.now();
-    
-    timerRef.current = setInterval(() => {
-      if (startTimeRef.current) {
-        setElapsedSeconds(Math.floor((Date.now() - startTimeRef.current) / 1000));
-      }
-    }, 100); // Faster interval for smoother wave/progress feedback
+    const now = Date.now();
+    startTimeRef.current = now - (elapsedSeconds * 1000);
+    startInterval();
   };
 
   const handlePauseTimer = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isPaused) {
-      // Resume
       setIsPaused(false);
       startTimeRef.current = Date.now() - (elapsedSeconds * 1000);
-      timerRef.current = setInterval(() => {
-        if (startTimeRef.current) {
-          setElapsedSeconds(Math.floor((Date.now() - startTimeRef.current) / 1000));
-        }
-      }, 100);
+      startInterval();
     } else {
-      // Pause
       setIsPaused(true);
-      if (timerRef.current) clearInterval(timerRef.current);
+      stopInterval();
     }
   };
 
@@ -88,8 +138,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   };
 
   const handleFinishTiming = (mood?: string) => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    
+    stopInterval();
     const actualMinutes = Math.max(1, Math.round(elapsedSeconds / 60));
     
     if (showMood && mood === undefined) {
@@ -104,10 +153,12 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
       colors: ['#fb923c', '#60a5fa', '#4ade80', '#a78bfa', '#f87171', '#a78bfa']
     });
 
+    localStorage.removeItem(storageKey);
     onComplete(actualMinutes, mood);
     setIsTiming(false);
     setElapsedSeconds(0);
     setShowMoodPicker(false);
+    startTimeRef.current = null;
   };
 
   const handleQuickComplete = (e: React.MouseEvent) => {
@@ -120,10 +171,10 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     }
 
     confetti({ particleCount: 80, spread: 60, origin: { y: 0.7 } });
+    localStorage.removeItem(storageKey);
     onComplete(value);
   };
 
-  // Calculate fill percentage (0–100%) during timing
   const progressPercent = isTiming 
     ? Math.min(100, (elapsedSeconds / (value * 60)) * 100) 
     : 0;
@@ -161,7 +212,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
               transition={{ type: "tween", ease: "easeOut", duration: 0.6 }}
             >
               <div className={cn("absolute inset-0 bg-gradient-to-t", colors.light, colors.dark)} />
-              {/* Subtle wave on top */}
               <div 
                 className="absolute inset-x-0 top-0 h-4 opacity-60" 
                 style={{ 
@@ -291,7 +341,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
         </AnimatePresence>
       </Card>
 
-      {/* CSS for wave animation */}
       <style>{`
         @keyframes wave {
           0% { background-position: 0% 50%; }
