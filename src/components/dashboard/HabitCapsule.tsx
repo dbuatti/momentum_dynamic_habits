@@ -155,6 +155,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
 
   const handleFinishTiming = (mood?: string) => {
     stopInterval();
+    // Use Math.ceil to be generous for partial logs
     const sessionMinutes = Math.max(1, Math.ceil(elapsedSeconds / 60));
     
     if (showMood && mood === undefined) {
@@ -163,12 +164,16 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     }
 
     playEndSound();
-    confetti({
-      particleCount: 100,
-      spread: 70,
-      origin: { y: 0.6 },
-      colors: ['#fb923c', '#60a5fa', '#4ade80', '#a78bfa', '#f87171', '#a78bfa']
-    });
+    
+    // Only show confetti if goal was actually reached
+    if ((initialValue * 60 + elapsedSeconds) / 60 >= value) {
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#fb923c', '#60a5fa', '#4ade80', '#a78bfa', '#f87171', '#a78bfa']
+      });
+    }
 
     localStorage.removeItem(storageKey);
     onComplete(sessionMinutes, mood);
@@ -191,7 +196,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     playEndSound();
     confetti({ particleCount: 80, spread: 60, origin: { y: 0.7 } });
     localStorage.removeItem(storageKey);
-    // When marking done manually, we log the remaining distance to the goal
     const remaining = Math.max(1, value - initialValue);
     onComplete(remaining);
   };
@@ -340,7 +344,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
             <div className="space-y-5 py-2">
               <div className="flex justify-between items-start">
                 <div className="pl-1">
-                  <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Session {label}</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Active {label}</p>
                   <p className="text-4xl font-black tabular-nums mt-1">
                     {formatTime(initialValue * 60 + elapsedSeconds)}
                   </p>
@@ -359,7 +363,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                   </Button>
                   <Button 
                     size="lg" 
-                    className="h-12 px-6 rounded-full font-black shadow-lg bg-white/95 text-primary hover:bg-white"
+                    className="h-12 px-6 rounded-full font-black shadow-lg bg-gray-900 text-white hover:bg-black border border-white/20"
                     onClick={() => handleFinishTiming()}
                   >
                     <Square className="w-4 h-4 mr-2 fill-current" />

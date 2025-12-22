@@ -157,15 +157,19 @@ const Index = () => {
   }, [habitGroups]);
 
   const handleCapsuleComplete = (habit: any, capsule: any, actualValue: number, mood?: string) => {
-    // If the actual logged time exceeds the capsule's capacity, calculate the spillover
-    const spillover = Math.max(0, (capsule.initialValue + actualValue) - capsule.value);
+    const totalEffectiveProgress = capsule.initialValue + actualValue;
+    const isActuallyComplete = totalEffectiveProgress >= capsule.value;
+    const spillover = Math.max(0, totalEffectiveProgress - capsule.value);
 
-    completeCapsule.mutate({
-      habitKey: habit.key,
-      index: capsule.index,
-      value: capsule.value,
-      mood,
-    });
+    // Only mark the capsule as finished in the DB if the goal was actually met
+    if (isActuallyComplete) {
+      completeCapsule.mutate({
+        habitKey: habit.key,
+        index: capsule.index,
+        value: capsule.value,
+        mood,
+      });
+    }
 
     logHabit({
       habitKey: habit.key,
