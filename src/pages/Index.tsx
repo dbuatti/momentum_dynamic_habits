@@ -20,6 +20,8 @@ import { useOnboardingCheck } from "@/hooks/useOnboardingCheck";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import { Separator } from "@/components/ui/separator";
 
 const habitIconMap: { [key: string]: React.ElementType } = {
   pushups: Dumbbell, meditation: Wind, kinesiology: BookOpen, piano: Music, housework: Home, projectwork: Code, teeth_brushing: Sparkles, medication: Pill,
