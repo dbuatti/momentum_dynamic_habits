@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
 import { TipCard } from "@/components/dashboard/TipCard";
+import { toast } from "sonner";
 
 const habitIconMap: { [key: string]: React.ElementType } = {
   pushups: Dumbbell,
@@ -92,20 +93,24 @@ const Index = () => {
 
       const capsules = Array.from({ length: numCapsules }).map((_, i) => {
         const dbCapsule = dbCapsules?.find(c => c.habit_key === habit.key && c.capsule_index === i);
-        const cumulativeNeeded = (i + 1) * capsuleValue;
-        const lastCapsuleAdjustment = i === numCapsules - 1 ? goal - capsuleValue * (numCapsules - 1) : capsuleValue;
-        const value = Math.max(0, lastCapsuleAdjustment);
-
-        const isCompleted = dbCapsule?.is_completed || 
-          (goal > 0 && progress >= cumulativeNeeded) || 
-          (goal > 0 && i === numCapsules - 1 && progress >= goal);
+        
+        // Spillover Logic:
+        // Calculate how much of the total habit progress applies to THIS capsule
+        const startOfThisCapsule = i * capsuleValue;
+        const endOfThisCapsule = (i + 1) * capsuleValue;
+        
+        // Current value for this capsule (capped at its capacity)
+        const initialValue = Math.max(0, Math.min(capsuleValue, progress - startOfThisCapsule));
+        
+        const isCompleted = dbCapsule?.is_completed || initialValue >= capsuleValue || (i === numCapsules - 1 && progress >= goal);
 
         return {
           id: `${habit.key}-${i}`,
           habitKey: habit.key,
           index: i,
           label: habit.key === 'pushups' ? `Set ${i + 1}` : `Part ${i + 1}`,
-          value,
+          value: i === numCapsules - 1 ? goal - capsuleValue * (numCapsules - 1) : capsuleValue,
+          initialValue, // The surplus/existing progress for this part
           unit: habit.unit,
           isCompleted,
           scheduledTime: dbCapsule?.scheduled_time,
@@ -152,18 +157,25 @@ const Index = () => {
   }, [habitGroups]);
 
   const handleCapsuleComplete = (habit: any, capsule: any, actualValue: number, mood?: string) => {
+    // If the actual logged time exceeds the capsule's capacity, calculate the spillover
+    const spillover = Math.max(0, (capsule.initialValue + actualValue) - capsule.value);
+
     completeCapsule.mutate({
       habitKey: habit.key,
       index: capsule.index,
-      value: capsule.value, // Planned value for the capsule status
+      value: capsule.value,
       mood,
     });
 
     logHabit({
       habitKey: habit.key,
-      value: actualValue, // Actual elapsed time for the habit log
+      value: actualValue,
       taskName: `${habit.name} (${capsule.label}: ${actualValue} ${capsule.unit})`,
     });
+
+    if (spillover > 0 && capsule.unit === 'min') {
+      toast.success(`Bonus! +${Math.round(spillover)}m surplus applied to next part. 🎉`);
+    }
   };
 
   const handleCapsuleUncomplete = (habit: any, capsule: any) => {

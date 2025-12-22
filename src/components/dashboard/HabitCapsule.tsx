@@ -3,11 +3,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Check, Clock, Smile, Meh, Frown, Undo2, Play, Pause, Square, Edit2 } from 'lucide-react';
+import { Check, Clock, Smile, Meh, Frown, Undo2, Play, Pause, Square, Edit2, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
-import { playStartSound, playEndSound } from '@/utils/audio';
+import { playStartSound, playEndSound, playGoalSound } from '@/utils/audio';
 
 interface HabitCapsuleProps {
   id: string;
@@ -16,6 +16,7 @@ interface HabitCapsuleProps {
   value: number; // Planned goal for this chunk (in minutes or reps)
   unit: string;
   isCompleted: boolean;
+  initialValue?: number; // Surplus value from previous sessions (minutes)
   scheduledTime?: string;
   onComplete: (actualValue: number, mood?: string) => void;
   onUncomplete: () => void;
@@ -29,6 +30,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   value,
   unit,
   isCompleted,
+  initialValue = 0,
   scheduledTime,
   onComplete,
   onUncomplete,
@@ -39,6 +41,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   const [isTiming, setIsTiming] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [goalReachedAlerted, setGoalReachedAlerted] = useState(false);
   
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number | null>(null);
@@ -58,11 +61,25 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     timerRef.current = setInterval(() => {
       if (startTimeRef.current) {
         const now = Date.now();
-        setElapsedSeconds(Math.floor((now - startTimeRef.current) / 1000));
+        const totalElapsed = Math.floor((now - startTimeRef.current) / 1000);
+        setElapsedSeconds(totalElapsed);
       }
     }, 1000);
   }, []);
 
+  // Monitor for goal hit
+  useEffect(() => {
+    if (isTiming && isTimeBased && !goalReachedAlerted) {
+      const totalMinutes = (initialValue * 60 + elapsedSeconds) / 60;
+      if (totalMinutes >= value) {
+        playGoalSound();
+        if (window.navigator?.vibrate) window.navigator.vibrate([100, 50, 100]);
+        setGoalReachedAlerted(true);
+      }
+    }
+  }, [elapsedSeconds, isTiming, isTimeBased, value, initialValue, goalReachedAlerted]);
+
+  // Load state on mount
   useEffect(() => {
     const saved = localStorage.getItem(storageKey);
     if (saved && !isCompleted) {
@@ -82,6 +99,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     return () => stopInterval();
   }, [storageKey, isCompleted, startInterval]);
 
+  // Save state
   useEffect(() => {
     if (!isCompleted && (isTiming || elapsedSeconds > 0)) {
       localStorage.setItem(storageKey, JSON.stringify({
@@ -95,6 +113,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     }
   }, [isTiming, elapsedSeconds, isPaused, isCompleted, storageKey]);
 
+  // Visibility catch-up
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && isTiming && !isPaused && startTimeRef.current) {
@@ -136,7 +155,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
 
   const handleFinishTiming = (mood?: string) => {
     stopInterval();
-    const actualMinutes = Math.max(1, Math.round(elapsedSeconds / 60));
+    const sessionMinutes = Math.max(1, Math.ceil(elapsedSeconds / 60));
     
     if (showMood && mood === undefined) {
       setShowMoodPicker(true);
@@ -152,10 +171,11 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     });
 
     localStorage.removeItem(storageKey);
-    onComplete(actualMinutes, mood);
+    onComplete(sessionMinutes, mood);
     setIsTiming(false);
     setElapsedSeconds(0);
     setShowMoodPicker(false);
+    setGoalReachedAlerted(false);
     startTimeRef.current = null;
   };
 
@@ -171,12 +191,14 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     playEndSound();
     confetti({ particleCount: 80, spread: 60, origin: { y: 0.7 } });
     localStorage.removeItem(storageKey);
-    onComplete(value);
+    // When marking done manually, we log the remaining distance to the goal
+    const remaining = Math.max(1, value - initialValue);
+    onComplete(remaining);
   };
 
-  const progressPercent = isTiming 
-    ? Math.min(100, (elapsedSeconds / (value * 60)) * 100) 
-    : 0;
+  // Calculate percentage fill
+  const currentTotalMinutes = isTiming ? initialValue + (elapsedSeconds / 60) : initialValue;
+  const progressPercent = Math.min(100, (currentTotalMinutes / value) * 100);
 
   const colorMap = {
     orange: { 
@@ -225,22 +247,25 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
         )}
         onClick={(!isCompleted && !isTiming && !showMoodPicker) ? (isTimeBased ? handleStartTimer : handleQuickComplete) : undefined}
       >
+        {/* Progress Water layer (always shows surplus, rises during timing) */}
         <AnimatePresence>
-          {isTiming && (
+          {(!isCompleted && (isTiming || initialValue > 0)) && (
             <motion.div 
               className="absolute inset-x-0 bottom-0 z-0"
               initial={{ height: "0%" }}
               animate={{ height: `${progressPercent}%` }}
-              transition={{ type: "tween", ease: "easeOut", duration: 0.6 }}
+              transition={{ type: "tween", ease: isTiming ? "linear" : "easeOut", duration: isTiming ? 1 : 0.6 }}
             >
               <div className={cn("absolute inset-0 bg-gradient-to-t", colors.light, colors.dark)} />
-              <div 
-                className="absolute inset-x-0 top-0 h-4 opacity-40" 
-                style={{ 
-                  background: `linear-gradient(90deg, transparent 0%, ${colors.wave} 50%, transparent 100%)`,
-                  animation: 'wave 6s linear infinite'
-                }} 
-              />
+              {isTiming && (
+                <div 
+                  className="absolute inset-x-0 top-0 h-4 opacity-40" 
+                  style={{ 
+                    background: `linear-gradient(90deg, transparent 0%, ${colors.wave} 50%, transparent 100%)`,
+                    animation: 'wave 6s linear infinite'
+                  }} 
+                />
+              )}
             </motion.div>
           )}
         </AnimatePresence>
@@ -265,7 +290,12 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                 </div>
                 
                 <div className="min-w-0">
-                  <p className={cn("font-bold text-base leading-tight truncate", isCompleted ? "text-muted-foreground" : colors.text)}>{label}</p>
+                  <p className={cn("font-bold text-base leading-tight truncate", isCompleted ? "text-muted-foreground" : colors.text)}>
+                    {label}
+                    {initialValue > 0 && !isCompleted && (
+                      <span className="ml-2 text-[10px] bg-white/40 px-1.5 py-0.5 rounded-md align-middle">+ {initialValue}m</span>
+                    )}
+                  </p>
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-xs font-semibold opacity-60">{value} {unit}</span>
                     {scheduledTime && (
@@ -310,9 +340,13 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
             <div className="space-y-5 py-2">
               <div className="flex justify-between items-start">
                 <div className="pl-1">
-                  <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Active {label}</p>
-                  <p className="text-4xl font-black tabular-nums mt-1">{formatTime(elapsedSeconds)}</p>
-                  <p className="text-[10px] opacity-60 mt-1 font-bold">Goal: {value} min</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Session {label}</p>
+                  <p className="text-4xl font-black tabular-nums mt-1">
+                    {formatTime(initialValue * 60 + elapsedSeconds)}
+                  </p>
+                  <p className="text-[10px] opacity-60 mt-1 font-bold">
+                    Goal: {value} min {initialValue > 0 && `(incl. ${initialValue}m surplus)`}
+                  </p>
                 </div>
                 
                 <div className="flex gap-2">
