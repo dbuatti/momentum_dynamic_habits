@@ -6,8 +6,8 @@
 const START_SOUND_URL = 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3'; 
 // Confirmed magical shimmer
 const END_SOUND_URL = 'https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3';   
-// Confirmed alert ping
-const GOAL_SOUND_URL = 'https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3'; 
+// REPLACED with high-reliability CDN link for alert ping
+const GOAL_SOUND_URL = 'https://cdn.pixabay.com/audio/2021/08/04/audio_331326c507.mp3'; 
 
 export const playStartSound = () => {
   console.log('🔊 Playing start chime');
@@ -26,6 +26,6 @@ export const playEndSound = () => {
 export const playGoalSound = () => {
   console.log('🔔 Playing target hit alert');
   const audio = new Audio(GOAL_SOUND_URL);
-  audio.volume = 0.9;
+  audio.volume = 1.0; // Max volume for the alert
   audio.play().catch(err => console.error('Audio goal failed:', err));
 };
