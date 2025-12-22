@@ -7,7 +7,7 @@ import { useEffect, useRef } from 'react';
 import { initialHabits } from '@/lib/habit-data';
 
 const fetchJourneyData = async (userId: string) => {
-  const profilePromise = supabase.from('profiles').select('journey_start_date, daily_streak, timezone, default_auto_schedule_start_time, default_auto_schedule_end_time, first_name, last_name').eq('id', userId).single();
+  const profilePromise = supabase.from('profiles').select('journey_start_date, daily_streak, timezone, default_auto_schedule_start_time, default_auto_schedule_end_time, first_name, last_name, neurodivergent_mode').eq('id', userId).single();
   const habitsPromise = supabase.from('user_habits').select('*').eq('user_id', userId);
   const allBadgesPromise = supabase.from('badges').select('id, name, icon_name, requirement_type, requirement_value, habit_key');
   const achievedBadgesPromise = supabase.from('user_badges').select('badge_id').eq('user_id', userId);
@@ -19,7 +19,7 @@ const fetchJourneyData = async (userId: string) => {
     { data: allBadges, error: allBadgesError },
     { data: achievedBadges, error: achievedBadgesError },
     { data: bestTime, error: bestTimeError }, // Destructure bestTime
-  ] = await Promise.all([profilePromise, habitsPromise, allBadgesPromise, achievedBadgesPromise, bestTimePromise]);
+  ] = await Promise.all([ profilePromise, habitsPromise, allBadgesPromise, achievedBadgesPromise, bestTimePromise]);
 
   if (profileError) console.error('Error fetching profile for journey:', profileError);
   if (habitsError) console.error('Error fetching habits for journey:', habitsError);
