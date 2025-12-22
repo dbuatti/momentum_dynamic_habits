@@ -128,6 +128,7 @@ const Index = () => {
     completeCapsule.mutate({
       habitKey: habit.key,
       index: capsule.index,
+      value: capsule.value,
       mood,
     });
 
