@@ -18,6 +18,7 @@ interface HabitCapsuleProps {
   scheduledTime?: string;
   onComplete: (mood?: string) => void;
   color: 'orange' | 'blue' | 'green' | 'purple' | 'red' | 'indigo';
+  showMood?: boolean;
 }
 
 export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
@@ -29,13 +30,15 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   scheduledTime,
   onComplete,
   color,
+  showMood,
 }) => {
   const [showMoodPicker, setShowMoodPicker] = useState(false);
 
   const handleComplete = (mood?: string) => {
     if (isCompleted) return;
     
-    if (!mood && !showMoodPicker) {
+    // If showMood is true and no mood provided yet, show the picker
+    if (showMood && !mood && !showMoodPicker) {
       setShowMoodPicker(true);
       return;
     }

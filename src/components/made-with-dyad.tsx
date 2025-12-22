@@ -1,6 +1,12 @@
-export const MadeWithDyad = () => {
+import { cn } from "@/lib/utils";
+
+interface MadeWithDyadProps {
+  className?: string;
+}
+
+export const MadeWithDyad = ({ className }: MadeWithDyadProps) => {
   return (
-    <div className="p-4 text-center mt-8">
+    <div className={cn("p-4 text-center mt-8", className)}>
       <a 
         href="https://www.dyad.sh/" 
         target="_blank" 

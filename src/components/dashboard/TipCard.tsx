@@ -9,6 +9,7 @@ interface TipCardProps {
     related_habit_key: string | null;
   } | null;
   bestTime?: string;
+  workingOn?: string;
   isNeurodivergent?: boolean;
 }
 
@@ -21,7 +22,7 @@ const habitIconMap: { [key: string]: React.ElementType } = {
   projectwork: Code,
 };
 
-export const TipCard: React.FC<TipCardProps> = ({ tip, bestTime, isNeurodivergent }) => {
+export const TipCard: React.FC<TipCardProps> = ({ tip, bestTime, workingOn, isNeurodivergent }) => {
   if (!tip && !bestTime) {
     return null;
   }
@@ -50,6 +51,11 @@ export const TipCard: React.FC<TipCardProps> = ({ tip, bestTime, isNeurodivergen
             <p className="text-sm font-medium leading-relaxed">
               {displayTip}
             </p>
+            {workingOn && (
+              <p className="text-[10px] font-bold text-habit-purple-foreground/70 uppercase mt-1">
+                Keep focusing on: {workingOn}
+              </p>
+            )}
             {isNeurodivergent && (
               <p className="text-[10px] italic text-muted-foreground mt-2">
                 "Progress over perfection."

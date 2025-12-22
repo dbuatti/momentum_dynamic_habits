@@ -37,7 +37,9 @@ const habitIconMap: { [key: string]: React.ElementType } = {
   medication: Pill,
 };
 
-const habitColorMap: { [key: string]: string } = {
+type HabitColor = 'orange' | 'blue' | 'green' | 'purple' | 'red' | 'indigo';
+
+const habitColorMap: Record<string, HabitColor> = {
   pushups: 'orange',
   meditation: 'blue',
   kinesiology: 'green',
