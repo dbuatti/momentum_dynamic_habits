@@ -5,20 +5,21 @@ import { useNavigate } from 'react-router-dom';
 import { showSuccess, showError } from '@/utils/toast';
 import { initialHabits } from '@/lib/habit-data';
 import { calculateLevel } from '@/utils/leveling';
+import { differenceInDays } from 'date-fns';
 
 interface LogHabitParams {
   habitKey: string;
   value: number;
   taskName: string;
+  difficultyRating?: number;
 }
 
-const logHabit = async ({ userId, habitKey, value, taskName }: LogHabitParams & { userId: string }) => {
+const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating }: LogHabitParams & { userId: string }) => {
   const habitConfig = initialHabits.find(h => h.id === habitKey);
   if (!habitConfig) {
     throw new Error(`Habit configuration not found for key: ${habitKey}`);
   }
 
-  // 1. Fetch Profile first to get Timezone and current XP/Level
   const { data: profileData, error: profileFetchError } = await supabase
     .from('profiles')
     .select('tasks_completed_today, xp, level, timezone')
@@ -28,25 +29,21 @@ const logHabit = async ({ userId, habitKey, value, taskName }: LogHabitParams & 
   if (profileFetchError) throw profileFetchError;
   const timezone = profileData.timezone || 'UTC';
   
-  // 2. Fetch current habit data before logging
   const { data: userHabitData, error: userHabitFetchError } = await supabase
     .from('user_habits')
-    .select('current_daily_goal, momentum_level, long_term_goal, last_goal_increase_date')
+    .select('*')
     .eq('user_id', userId)
     .eq('habit_key', habitKey)
     .single();
 
-  if (userHabitData === null || userHabitFetchError) {
+  if (!userHabitData || userHabitFetchError) {
     throw userHabitFetchError || new Error(`Habit data not found for key: ${habitKey}`);
   }
 
-  // 3. Calculate values for logging
-  // For time-based habits, convert minutes (value) to seconds (actualValue)
   const actualValue = habitConfig.type === 'time' && habitConfig.unit === 'min' ? value * 60 : value;
   const xpEarned = Math.round(actualValue * habitConfig.xpPerUnit);
   const energyCost = Math.round(actualValue * habitConfig.energyCostPerUnit);
 
-  // 4. Insert completed task, explicitly setting completed_at to NOW
   const { error: insertError } = await supabase.from('completedtasks').insert({
     user_id: userId,
     original_source: habitKey,
@@ -54,125 +51,104 @@ const logHabit = async ({ userId, habitKey, value, taskName }: LogHabitParams & 
     duration_used: habitConfig.type === 'time' ? actualValue : null,
     xp_earned: xpEarned,
     energy_cost: energyCost,
-    completed_at: new Date().toISOString(), // Explicitly set to current time
+    difficulty_rating: difficultyRating || null,
+    completed_at: new Date().toISOString(),
   });
 
   if (insertError) throw insertError;
 
-  // 5. Increment lifetime progress
-  const { error: rpcError } = await supabase.rpc('increment_lifetime_progress', {
+  await supabase.rpc('increment_lifetime_progress', {
     p_user_id: userId,
     p_habit_key: habitKey,
     p_increment_value: actualValue,
   });
 
-  if (rpcError) throw rpcError;
-
-  // 6. Recalculate total daily progress *after* the new task is logged
-  const { data: completedToday, error: completedTodayError } = await supabase.rpc('get_completed_tasks_today', { 
+  const { data: completedToday } = await supabase.rpc('get_completed_tasks_today', { 
     p_user_id: userId, 
     p_timezone: timezone 
   });
-  
-  if (completedTodayError) throw completedTodayError;
 
   let totalDailyProgress = 0;
   (completedToday || []).filter((task: any) => task.original_source === habitKey).forEach((task: any) => {
-    let progress = 0;
     if (habitConfig.type === 'time' && habitConfig.unit === 'min') {
-      progress = (task.duration_used || 0) / 60; // Convert seconds to minutes
+      totalDailyProgress += (task.duration_used || 0) / 60;
     } else if (habitConfig.type === 'count') {
-      const xpPerUnit = habitConfig.xpPerUnit || 1;
-      progress = (task.xp_earned || 0) / xpPerUnit;
+      totalDailyProgress += (task.xp_earned || 0) / (habitConfig.xpPerUnit || 1);
     }
-    totalDailyProgress += progress;
   });
 
-  // 7. Adaptive Goal Logic
-  const fixedGoalHabits = ['teeth_brushing', 'medication', 'housework', 'projectwork'];
-  const isFixedGoalHabit = fixedGoalHabits.includes(habitKey);
-
+  // Algorithm Refinement Logic
+  const isFixedGoalHabit = ['teeth_brushing', 'medication'].includes(habitKey);
   let newDailyGoal = userHabitData.current_daily_goal;
   let newMomentumLevel = userHabitData.momentum_level;
-  const oldDailyGoal = userHabitData.current_daily_goal;
-  const oldMomentumLevel = userHabitData.momentum_level;
   let goalIncreased = false;
   let goalDecreased = false;
   
-  const todayDateString = new Date().toISOString().split('T')[0];
-  const lastIncreaseDateString = userHabitData.last_goal_increase_date;
-  const alreadyIncreasedToday = lastIncreaseDateString === todayDateString;
+  const todayDate = new Date();
+  const todayDateString = todayDate.toISOString().split('T')[0];
+  const daysInPlateau = differenceInDays(todayDate, new Date(userHabitData.last_plateau_start_date));
+  
+  // Track completions in plateau
+  const isHabitCompletedToday = totalDailyProgress >= userHabitData.current_daily_goal;
+  const newCompletionsInPlateau = userHabitData.completions_in_plateau + (isHabitCompletedToday ? 1 : 0);
 
-  // Only adjust goals for non-fixed habits
-  if (!isFixedGoalHabit) {
-    const goalMet = totalDailyProgress >= oldDailyGoal;
-
-    if (goalMet) {
-      // A. Goal Met: Increase goal (max once per day) and improve momentum
-      if (!alreadyIncreasedToday) {
-        const potentialNewGoal = Math.min(oldDailyGoal + 1, userHabitData.long_term_goal);
-        if (potentialNewGoal > oldDailyGoal) {
-          newDailyGoal = potentialNewGoal;
-          goalIncreased = true;
+  if (!isFixedGoalHabit && !userHabitData.is_frozen) {
+    // 1. Check if plateau period is over
+    if (daysInPlateau >= userHabitData.plateau_days_required) {
+      const completionRate = newCompletionsInPlateau / (daysInPlateau + 1);
+      
+      // 2. Only increase if 80% consistency reached
+      if (completionRate >= 0.8) {
+        if (habitConfig.type === 'time') {
+          // 15-second increment (0.25 min)
+          newDailyGoal = parseFloat((userHabitData.current_daily_goal + 0.25).toFixed(2));
+        } else {
+          // 1 rep increment
+          newDailyGoal = userHabitData.current_daily_goal + 1;
         }
         
-        if (newMomentumLevel === 'Struggling') newMomentumLevel = 'Building';
-        else if (newMomentumLevel === 'Building') newMomentumLevel = 'Strong';
-        else if (newMomentumLevel === 'Strong') newMomentumLevel = 'Crushing';
-      }
-    } else {
-      // B. Goal Not Met: Degrade momentum and potentially decrease goal
-      
-      // Momentum Degradation
-      if (newMomentumLevel === 'Crushing') newMomentumLevel = 'Strong';
-      else if (newMomentumLevel === 'Strong') newMomentumLevel = 'Building';
-      else if (newMomentumLevel === 'Building') newMomentumLevel = 'Struggling';
-      
-      // Goal Decrease (Only if struggling and goal is > 1)
-      if (newMomentumLevel === 'Struggling' && oldDailyGoal > 1) {
-        newDailyGoal = oldDailyGoal - 1;
-        goalDecreased = true;
+        // Respect Max Cap
+        if (userHabitData.max_goal_cap && newDailyGoal > userHabitData.max_goal_cap) {
+          newDailyGoal = userHabitData.max_goal_cap;
+        } else {
+          goalIncreased = true;
+          // Reset plateau tracking
+          await supabase.from('user_habits').update({
+            last_plateau_start_date: todayDateString,
+            completions_in_plateau: 0,
+            last_goal_increase_date: todayDateString
+          }).eq('id', userHabitData.id);
+        }
       }
     }
-  }
-  
-  console.log(`Habit Log: ${habitKey}. Progress: ${totalDailyProgress}. Old Goal: ${oldDailyGoal}. New Goal: ${newDailyGoal}. Goal Increased: ${goalIncreased}. Goal Decreased: ${goalDecreased}. New Momentum: ${newMomentumLevel}`);
-
-  // 8. Update habit data (goal, momentum, and last_goal_increase_date if increased)
-  if (!isFixedGoalHabit && (goalIncreased || goalDecreased || newMomentumLevel !== oldMomentumLevel)) {
-    const updates: Record<string, any> = {
-      current_daily_goal: newDailyGoal,
-      momentum_level: newMomentumLevel,
-    };
     
-    if (goalIncreased) {
-      updates.last_goal_increase_date = todayDateString;
+    // Recovery Logic: If struggling (last 3 days < 3 difficulty stars or missing days)
+    if (!isHabitCompletedToday && userHabitData.current_daily_goal > 1) {
+       // Simple struggling check: reduce goal slightly if momentum drops to 'Struggling'
+       if (newMomentumLevel === 'Struggling') {
+         newDailyGoal = Math.max(1, userHabitData.current_daily_goal - (habitConfig.type === 'time' ? 0.25 : 1));
+         goalDecreased = true;
+       }
     }
-    
-    const { error: habitUpdateError } = await supabase
-      .from('user_habits')
-      .update(updates)
-      .eq('user_id', userId)
-      .eq('habit_key', habitKey);
-
-    if (habitUpdateError) throw habitUpdateError;
   }
 
-  // 9. Update profile data (XP, level, tasks completed today)
-  let newXp = (profileData.xp || 0) + xpEarned;
-  let newLevel = calculateLevel(newXp);
+  // Update Habit Record
+  await supabase.from('user_habits').update({
+    current_daily_goal: newDailyGoal,
+    completions_in_plateau: isHabitCompletedToday ? newCompletionsInPlateau : userHabitData.completions_in_plateau,
+    momentum_level: isHabitCompletedToday ? 
+      (newMomentumLevel === 'Struggling' ? 'Building' : newMomentumLevel) : 
+      (newMomentumLevel === 'Building' ? 'Struggling' : newMomentumLevel)
+  }).eq('id', userHabitData.id);
 
-  const { error: profileUpdateError } = await supabase
-    .from('profiles')
-    .update({
-      last_active_at: new Date().toISOString(),
-      tasks_completed_today: (profileData.tasks_completed_today || 0) + 1,
-      xp: newXp,
-      level: newLevel,
-    })
-    .eq('id', userId);
-
-  if (profileUpdateError) throw profileUpdateError;
+  // Profile Updates
+  const newXp = (profileData.xp || 0) + xpEarned;
+  await supabase.from('profiles').update({
+    last_active_at: new Date().toISOString(),
+    tasks_completed_today: (profileData.tasks_completed_today || 0) + 1,
+    xp: newXp,
+    level: calculateLevel(newXp),
+  }).eq('id', userId);
 
   return { success: true, goalIncreased, goalDecreased };
 };
@@ -188,19 +164,14 @@ export const useHabitLog = () => {
       return logHabit({ ...params, userId: session.user.id });
     },
     onSuccess: (data, variables) => {
-      // Increase delay to 750ms to ensure database write propagation before invalidating cache and navigating.
       setTimeout(() => {
         let message = 'Habit logged successfully!';
-        if (data.goalIncreased) {
-          message = 'Habit logged successfully! Daily goal increased!';
-        } else if (data.goalDecreased) {
-          message = 'Habit logged successfully! Daily goal decreased to keep things manageable.';
-        }
+        if (data.goalIncreased) message += ' Goal increased after consistency plateau!';
+        if (data.goalDecreased) message += ' Goal reduced to help you recover.';
         
         showSuccess(message);
         queryClient.invalidateQueries({ queryKey: ['dashboardData', session?.user?.id] });
         queryClient.invalidateQueries({ queryKey: ['journeyData', session?.user?.id] });
-        // Invalidate the specific daily completion check for this habit
         queryClient.invalidateQueries({ queryKey: ['dailyHabitCompletion', session?.user?.id, variables.habitKey] });
         navigate('/');
       }, 750); 

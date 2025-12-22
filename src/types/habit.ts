@@ -5,13 +5,31 @@ export interface Habit {
   id: string;
   name: string;
   type: HabitType;
-  targetGoal: number; // The current adaptive goal (e.g., 10 pushups, 5 minutes)
+  targetGoal: number; // The current adaptive goal
   unit: string; // e.g., "reps", "minutes"
   currentProgress: number;
   momentum: MomentumLevel;
-  route: string; // Route for the dedicated logging screen
-  xpPerUnit: number; // XP earned per unit of progress
-  energyCostPerUnit: number; // Energy cost per unit of progress
+  route: string;
+  xpPerUnit: number;
+  energyCostPerUnit: number;
+}
+
+export interface UserHabitRecord {
+  id: string;
+  user_id: string;
+  habit_key: string;
+  current_daily_goal: number;
+  long_term_goal: number;
+  momentum_level: MomentumLevel;
+  lifetime_progress: number;
+  target_completion_date: string;
+  updated_at: string;
+  last_goal_increase_date: string | null;
+  is_frozen: boolean;
+  max_goal_cap: number | null;
+  last_plateau_start_date: string;
+  plateau_days_required: number;
+  completions_in_plateau: number;
 }
 
 export interface PianoHabit extends Habit {
