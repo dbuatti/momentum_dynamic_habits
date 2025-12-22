@@ -96,8 +96,6 @@ const Index = () => {
         const lastCapsuleAdjustment = i === numCapsules - 1 ? goal - capsuleValue * (numCapsules - 1) : capsuleValue;
         const value = Math.max(0, lastCapsuleAdjustment);
 
-        // A capsule is complete if manually marked OR progress has reached its threshold
-        // Special case: if goal is > 0, progress must be > 0 to auto-complete based on value
         const isCompleted = dbCapsule?.is_completed || 
           (goal > 0 && progress >= cumulativeNeeded) || 
           (goal > 0 && i === numCapsules - 1 && progress >= goal);
@@ -114,7 +112,6 @@ const Index = () => {
         };
       });
 
-      // Habit is fully completed only if ALL parts are done or progress exceeds goal
       const allCompleted = (goal > 0 && progress >= goal) || (capsules.length > 0 && capsules.every(c => c.isCompleted));
 
       return {
@@ -126,24 +123,20 @@ const Index = () => {
       };
     });
 
-    // Strictly sort: Incomplete tasks first (priority)
     return [...groups].sort((a, b) => {
       if (a.allCompleted === b.allCompleted) return 0;
       return a.allCompleted ? 1 : -1;
     });
   }, [data?.habits, dbCapsules]);
 
-  // Handle automatic expansion and collapse
   useEffect(() => {
     if (habitGroups.length === 0) return;
 
-    // Initial load: Expand incomplete ones if state is empty
     if (expandedItems.length === 0) {
       const incompleteKeys = habitGroups.filter(h => !h.allCompleted).map(h => h.key);
       setExpandedItems(incompleteKeys);
     }
 
-    // Monitor for transitions from incomplete to complete
     const habitsToCollapse: string[] = [];
     habitGroups.forEach(h => {
       const previouslyComplete = !!prevCompletions.current[h.key];
@@ -158,18 +151,18 @@ const Index = () => {
     }
   }, [habitGroups]);
 
-  const handleCapsuleComplete = (habit: any, capsule: any, mood?: string) => {
+  const handleCapsuleComplete = (habit: any, capsule: any, actualValue: number, mood?: string) => {
     completeCapsule.mutate({
       habitKey: habit.key,
       index: capsule.index,
-      value: capsule.value,
+      value: capsule.value, // Planned value for the capsule status
       mood,
     });
 
     logHabit({
       habitKey: habit.key,
-      value: capsule.value,
-      taskName: `${habit.name} (${capsule.label}: ${capsule.value} ${capsule.unit})`,
+      value: actualValue, // Actual elapsed time for the habit log
+      taskName: `${habit.name} (${capsule.label}: ${actualValue} ${capsule.unit})`,
     });
   };
 
@@ -291,7 +284,7 @@ const Index = () => {
                               key={capsule.id}
                               {...capsule}
                               color={color}
-                              onComplete={(mood) => handleCapsuleComplete(habit, capsule, mood)}
+                              onComplete={(actual, mood) => handleCapsuleComplete(habit, capsule, actual, mood)}
                               onUncomplete={() => handleCapsuleUncomplete(habit, capsule)}
                               showMood={data.neurodivergentMode}
                             />
