@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import Index from "./pages/Index"; // Corrected import
+import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Settings from "./pages/Settings";
 import Journey from "./pages/Journey";
@@ -12,7 +12,7 @@ import OnboardingFlow from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 import HelpPage from "./pages/HelpPage";
 import LandingPage from "./pages/LandingPage";
-import HabitWizard from "./pages/HabitWizard";
+import HabitWizard from "./pages/HabitWizard"; // Renamed from CreateHabit
 import Analytics from "./pages/Analytics";
 import TemplatesPage from "./pages/TemplatesPage";
 import { SessionContextProvider, useSession } from "./contexts/SessionContext";
@@ -139,7 +139,7 @@ const AppRoutes = () => {
       <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
       <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
       <Route path="/help" element={<ProtectedRoute><HelpPage /></ProtectedRoute>} />
-      <Route path="/create-habit" element={<ProtectedRoute><HabitWizard /></ProtectedRoute>} />
+      <Route path="/create-habit" element={<ProtectedRoute><HabitWizard /></ProtectedRoute>} /> {/* Updated route */}
       <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
       <Route path="/templates" element={<ProtectedRoute><TemplatesPage /></ProtectedRoute>} />
       <Route path="*" element={<ProtectedRoute><NotFound /></ProtectedRoute>} />
