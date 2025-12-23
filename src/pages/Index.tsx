@@ -49,6 +49,7 @@ const Index = () => {
       .map(habit => {
       const goal = habit.adjustedDailyGoal;
       const progress = habit.dailyProgress;
+      const taskIds = (habit as any).todayTaskIds || [];
       
       const { numChunks, chunkValue } = calculateDynamicChunks(
         habit.key,
@@ -66,9 +67,10 @@ const Index = () => {
 
       const capsules = Array.from({ length: numChunks }).map((_, i) => {
         const dbCapsule = dbCapsules?.find(c => c.habit_key === habit.key && c.capsule_index === i);
-        const isCompletedByDb = dbCapsule?.is_completed || false;
-        const isVisuallyComplete = progress >= ((i + 1) * chunkValue - 0.01);
-        const isCompleted = isCompletedByDb || isVisuallyComplete;
+        
+        // STRICT RULE: Completion is derived strictly from progress
+        // A capsule is complete if progress has covered its total threshold
+        const isCompleted = progress >= ((i + 1) * chunkValue - 0.01);
 
         return {
           id: `${habit.key}-${i}`,
@@ -82,7 +84,8 @@ const Index = () => {
           isHabitComplete: isOverallComplete,
           isFixed: habit.is_fixed,
           scheduledTime: dbCapsule?.scheduled_time,
-          completedTaskId: dbCapsule?.completed_task_id,
+          // Correctly map the task ID from the list of today's tasks
+          completedTaskId: taskIds[i] || null, 
         };
       });
 
@@ -117,7 +120,6 @@ const Index = () => {
   const anchorHabits = useMemo(() => habitGroups.filter(h => h.category === 'anchor' && h.is_visible), [habitGroups]);
   const dailyHabits = useMemo(() => habitGroups.filter(h => h.category !== 'anchor' && h.is_visible), [habitGroups]);
 
-  // Load initial expanded state from localStorage
   useEffect(() => {
     if (habitGroups.length === 0 || hasInitializedState) return;
 
@@ -125,9 +127,6 @@ const Index = () => {
       const stored = localStorage.getItem(`habitAccordionState:${h.key}`);
       if (stored === 'expanded') return true;
       if (stored === 'collapsed') return false;
-      
-      // Default behavior for habits that haven't been manually toggled yet
-      // (e.g., first-time view or new habit)
       return !h.allCompleted && !h.isLockedByDependency && (h.category === 'anchor' || h.is_trial_mode);
     }).map(h => h.key);
 
@@ -135,11 +134,8 @@ const Index = () => {
     setHasInitializedState(true);
   }, [habitGroups, hasInitializedState]);
 
-  // Handle manual toggle and persist choice
   const handleExpandedChange = (newValues: string[]) => {
     setExpandedItems(newValues);
-    
-    // Explicitly update storage for all habits in the current groups
     habitGroups.forEach(h => {
       const isNowExpanded = newValues.includes(h.key);
       localStorage.setItem(`habitAccordionState:${h.key}`, isNowExpanded ? 'expanded' : 'collapsed');
@@ -158,22 +154,11 @@ const Index = () => {
     queryClient.invalidateQueries({ queryKey: ['dashboardData', session?.user?.id] });
   };
 
-  const handleLogExtra = async (habit: any, value: number, mood?: string) => {
-    await logHabit({
-      habitKey: habit.key,
-      value,
-      taskName: `${habit.name} (Bonus)`,
-      note: mood
-    });
-    queryClient.invalidateQueries({ queryKey: ['dashboardData', session?.user?.id] });
-  };
-
   const handleCapsuleUncomplete = (habit: any, capsule: any) => {
     if (capsule.completedTaskId) {
       uncompleteCapsule.mutate({ habitKey: habit.key, index: capsule.index, completedTaskId: capsule.completedTaskId });
     } else {
-      console.error("Cannot uncomplete capsule: completedTaskId is missing.");
-      showError("Failed to undo task. Please try again.");
+      showError("Please undo the most recent task for this habit from the History page.");
     }
   };
 
@@ -244,12 +229,6 @@ const Index = () => {
                   )}>
                     {habit.allCompleted ? "Goal Reached" : (habit.isWithinWindow ? "Ready Now" : "Restricted")}
                   </span>
-                  {habit.displayProgress > habit.adjustedDailyGoal && (
-                    <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-success/20 text-success border border-success/30 flex items-center gap-1">
-                      <Sparkles className="w-3 h-3" />
-                      Bonus!
-                    </span>
-                  )}
                 </div>
                 <p className={cn("text-sm font-bold mt-2", habit.allCompleted ? "text-success-foreground" : "text-foreground")}>
                   Progress: {Math.round(habit.displayProgress)}/{Math.round(habit.adjustedDailyGoal)} {habit.unit}
@@ -261,17 +240,6 @@ const Index = () => {
               <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2 ml-[72px]">
                 <Lock className="w-3.5 h-3.5" />
                 <span>Locked. Complete {dependentHabitName} first.</span>
-                <Button 
-                  variant="link" 
-                  size="sm" 
-                  className="h-auto p-0 text-xs text-primary hover:text-primary/80"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleOverrideDependency(habit.key);
-                  }}
-                >
-                  (Override)
-                </Button>
               </div>
             )}
           </div>
@@ -315,67 +283,6 @@ const Index = () => {
               className="h-1.5 [&>div]:bg-primary"
             />
           </div>
-
-          {isTrial && !habit.allCompleted && (
-            <TrialStatusCard 
-              habitName={habit.name} 
-              sessionsPerWeek={habit.frequency_per_week} 
-              duration={habit.dailyGoal} 
-              unit={habit.unit} 
-              completionsInPlateau={habit.growth_stats.completions}
-              plateauDaysRequired={habit.growth_stats.required}
-              className="mt-6"
-            />
-          )}
-
-          {isGrowth && !habit.allCompleted && (
-            <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10 flex items-start gap-3 mt-6">
-                <div className="bg-primary/10 p-2 rounded-xl">
-                    <ShieldCheck className="w-4 h-4 text-primary" />
-                </div>
-                <div className="flex-grow">
-                    <div className="flex justify-between items-center mb-1">
-                        <p className="text-[10px] font-black uppercase tracking-widest">Stability Status</p>
-                        <span className="text-[10px] font-black text-primary">{habit.growth_stats.completions}/{habit.growth_stats.required} days</span>
-                    </div>
-                    <Progress value={(habit.growth_stats.completions / habit.growth_stats.required) * 100} className="h-1 [&>div]:bg-primary" />
-                    <p className="text-[11px] font-medium opacity-60 mt-2 leading-tight">
-                        {habit.growth_stats.daysRemaining} consistent days until dynamic goal increase ({habit.growth_stats.phase === 'frequency' ? 'Frequency' : 'Duration'} phase).
-                    </p>
-                </div>
-            </div>
-          )}
-
-          {habit.allCompleted && !habit.is_fixed && (
-            <div className="p-5 bg-success/10 rounded-[28px] border-2 border-dashed border-success/30 flex flex-col items-center gap-4 text-center animate-in zoom-in-95">
-              <div className="w-14 h-14 rounded-2xl bg-success/20 flex items-center justify-center text-success">
-                <Sparkles className="w-8 h-8" />
-              </div>
-              <div className="space-y-1">
-                <h4 className="font-black text-lg text-success">Goal Crushed!</h4>
-                <p className="text-sm font-medium text-success-foreground opacity-80">You've hit your target for today. Ready for a little extra?</p>
-              </div>
-              
-              <div className="w-full">
-                <HabitCapsule
-                  id={`${habit.key}-bonus`}
-                  habitKey={habit.key}
-                  habitName={habit.name}
-                  label="Bonus Session"
-                  value={habit.capsules[0]?.value || 10}
-                  unit={habit.unit}
-                  measurementType={habit.measurement_type}
-                  isCompleted={false}
-                  isHabitComplete={true}
-                  isFixed={false}
-                  color={color}
-                  onLogProgress={(actual, isComplete, mood) => handleCapsuleProgress(habit, { index: habit.numChunks }, actual, isComplete, mood)}
-                  onUncomplete={() => {}}
-                  showMood={data.neurodivergentMode}
-                />
-              </div>
-            </div>
-          )}
 
           {!habit.allCompleted && (
             <div className="grid gap-3">
@@ -428,6 +335,37 @@ const Index = () => {
                   )}
                 </div>
               )}
+            </div>
+          )}
+
+          {habit.allCompleted && !habit.is_fixed && (
+            <div className="p-5 bg-success/10 rounded-[28px] border-2 border-dashed border-success/30 flex flex-col items-center gap-4 text-center animate-in zoom-in-95">
+              <div className="w-14 h-14 rounded-2xl bg-success/20 flex items-center justify-center text-success">
+                <Sparkles className="w-8 h-8" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="font-black text-lg text-success">Goal Crushed!</h4>
+                <p className="text-sm font-medium text-success-foreground opacity-80">You've hit your target for today.</p>
+              </div>
+              
+              <div className="w-full">
+                <HabitCapsule
+                  id={`${habit.key}-bonus`}
+                  habitKey={habit.key}
+                  habitName={habit.name}
+                  label="Bonus Session"
+                  value={habit.capsules[0]?.value || 10}
+                  unit={habit.unit}
+                  measurementType={habit.measurement_type}
+                  isCompleted={false}
+                  isHabitComplete={true}
+                  isFixed={false}
+                  color={color}
+                  onLogProgress={(actual, isComplete, mood) => handleCapsuleProgress(habit, { index: habit.numChunks }, actual, isComplete, mood)}
+                  onUncomplete={() => {}}
+                  showMood={data.neurodivergentMode}
+                />
+              </div>
             </div>
           )}
         </AccordionContent>

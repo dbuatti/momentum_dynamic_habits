@@ -29,7 +29,7 @@ const fetchDashboardData = async (userId: string) => {
   ] = await Promise.all([
     supabase.from('user_habits').select('*, measurement_type').eq('user_id', userId),
     supabase.rpc('get_completed_tasks_today', { p_user_id: userId, p_timezone: timezone }),
-    supabase.from('completedtasks').select('original_source, duration_used, xp_earned, completed_at').eq('user_id', userId).gte('completed_at', startOfWeek(today).toISOString()).lte('completed_at', endOfWeek(today).toISOString()),
+    supabase.from('completedtasks').select('id, original_source, duration_used, xp_earned, completed_at').eq('user_id', userId).gte('completed_at', startOfWeek(today).toISOString()).lte('completed_at', endOfWeek(today).toISOString()),
     supabase.from('completedtasks').select('original_source, duration_used, xp_earned').eq('user_id', userId).gte('completed_at', startOfWeek(subWeeks(today, 1)).toISOString()).lte('completed_at', endOfWeek(subWeeks(today, 1)).toISOString()),
     supabase.from('completedtasks').select('id', { count: 'exact' }),
     supabase.rpc('get_distinct_completed_days', { p_user_id: userId }),
@@ -49,10 +49,17 @@ const fetchDashboardData = async (userId: string) => {
   });
 
   const dailyProgressMap = new Map<string, number>();
+  const dailyTasksMap = new Map<string, string[]>(); // Map habit key to list of task IDs for today
   const completedHabitKeysToday = new Set<string>();
-  (completedToday || []).forEach((task: any) => {
+
+  (completedToday || []).sort((a: any, b: any) => new Date(a.completed_at).getTime() - new Date(b.completed_at).getTime()).forEach((task: any) => {
     const key = task.original_source;
     completedHabitKeysToday.add(key);
+    
+    // Track task IDs for unlogging
+    const currentTasks = dailyTasksMap.get(key) || [];
+    dailyTasksMap.set(key, [...currentTasks, task.id]);
+
     const userHabit = habits?.find(h => h.habit_key === key);
     const mType = userHabit?.measurement_type || 'timer';
     const xpPerUnit = userHabit?.xp_per_unit || 1;
@@ -69,6 +76,7 @@ const fetchDashboardData = async (userId: string) => {
     .filter(h => h.is_visible)
     .map(h => {
     const rawDailyProgress = dailyProgressMap.get(h.habit_key) || 0;
+    const taskIds = dailyTasksMap.get(h.habit_key) || [];
     const baseAdjustedDailyGoal = h.current_daily_goal + (h.carryover_value || 0);
     const isScheduledForToday = h.days_of_week ? h.days_of_week.includes(currentDayOfWeek) : true;
 
@@ -101,7 +109,6 @@ const fetchDashboardData = async (userId: string) => {
       adjustedDailyGoal = 1;
     } else {
       isComplete = rawDailyProgress >= (baseAdjustedDailyGoal - 0.01);
-      // Logic: Let the user do more. Uncapped progress.
       dailyProgress = rawDailyProgress; 
       adjustedDailyGoal = baseAdjustedDailyGoal;
     }
@@ -129,7 +136,8 @@ const fetchDashboardData = async (userId: string) => {
         phase: h.growth_phase
       },
       isLockedByDependency: isLockedByDependency,
-    };
+      todayTaskIds: taskIds, // New field to help Index.tsx map capsules
+    } as any;
   });
 
   const calculateTotals = (tasks: any[]) => {
