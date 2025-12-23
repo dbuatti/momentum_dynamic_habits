@@ -3,9 +3,9 @@
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import HomeHeader from "@/components/HomeHeader";
 import { 
-  BookOpen, Dumbbell, Music, Wind, Home, Code, Sparkles, Pill, 
-  CheckCircle2, Timer, Target, Anchor, Clock, Zap, ChevronDown, ChevronUp,
-  Layers, TrendingUp, ShieldCheck, Info, PlusCircle, Lock
+  CheckCircle2, Target, Anchor, Zap, 
+  Layers, PlusCircle, Lock, ChevronRight,
+  AlertCircle, Sparkles, TrendingUp // Added TrendingUp
 } from "lucide-react";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { DashboardSkeleton } from "@/components/dashboard/DashboardSkeleton";
@@ -16,26 +16,21 @@ import React, { useState, useMemo, useEffect } from "react";
 import { useOnboardingCheck } from "@/hooks/useOnboardingCheck";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card"; // Added Card and CardContent
 import { cn } from "@/lib/utils";
 import { TipCard } from "@/components/dashboard/TipCard";
 import { calculateDynamicChunks } from "@/utils/progress-utils";
 import { MacroGoalProgress } from "@/components/dashboard/MacroGoalProgress";
 import { Progress } from "@/components/ui/progress";
-import { TrialStatusCard } from "@/components/dashboard/TrialStatusCard";
 import { GrowthGuide } from "@/components/dashboard/GrowthGuide";
 import { Link } from "react-router-dom";
-import { showSuccess, showError } from "@/utils/toast";
+import { showError } from "@/utils/toast";
 import { habitIconMap, habitColorMap } from '@/lib/habit-utils';
-import { useSession } from "@/contexts/SessionContext";
-import { useQueryClient } from "@tanstack/react-query";
 
 const Index = () => {
   const { data, isLoading, isError } = useDashboardData();
-  const { dbCapsules, isLoading: isCapsulesLoading, logCapsuleProgress, uncompleteCapsule } = useCapsules();
+  const { isLoading: isCapsulesLoading, logCapsuleProgress, uncompleteCapsule } = useCapsules(); // Fixed isCapsulesLoading
   const { isLoading: isOnboardingLoading } = useOnboardingCheck();
-  const { mutate: logHabit, unlog } = useHabitLog();
-  const { session } = useSession();
-  const queryClient = useQueryClient();
   
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [hasInitializedState, setHasInitializedState] = useState(false);
@@ -84,36 +79,39 @@ const Index = () => {
         };
       });
 
-      const showExtraCapsule = isOverallComplete && !habit.is_fixed;
-
       return {
         ...habit,
         displayProgress: progress,
         capsules,
         allCompleted: isOverallComplete,
         numChunks,
-        showExtraCapsule
+        showExtraCapsule: isOverallComplete && !habit.is_fixed
       };
     }).sort((a, b) => {
+      // 1. Actionable state: Unlocked first
       if (a.isLockedByDependency !== b.isLockedByDependency) {
         return a.isLockedByDependency ? 1 : -1;
       }
+      // 2. Incomplete habits first (Focus)
       if (a.allCompleted !== b.allCompleted) {
         return a.allCompleted ? 1 : -1;
       }
+      // 3. Anchors have priority
       if (a.category === 'anchor' && b.category !== 'anchor') return -1;
       if (a.category !== 'anchor' && b.category === 'anchor') return 1;
+      
+      // 4. Progress ratio (closer to finished = higher priority to nudge completion)
       const aProgressRatio = a.adjustedDailyGoal > 0 ? a.displayProgress / a.adjustedDailyGoal : 0;
       const bProgressRatio = b.adjustedDailyGoal > 0 ? b.displayProgress / b.adjustedDailyGoal : 0;
       if (aProgressRatio !== bProgressRatio) {
-        return aProgressRatio - bProgressRatio;
+        return bProgressRatio - aProgressRatio; // Descending progress
       }
       return (a.name || '').localeCompare(b.name || '');
     });
-  }, [data?.habits, dbCapsules, data?.neurodivergentMode]);
+  }, [data?.habits, data?.neurodivergentMode]);
 
-  const anchorHabits = useMemo(() => habitGroups.filter(h => h.category === 'anchor' && h.is_visible), [habitGroups]);
-  const dailyHabits = useMemo(() => habitGroups.filter(h => h.category !== 'anchor' && h.is_visible), [habitGroups]);
+  const anchorHabits = useMemo(() => habitGroups.filter(h => h.category === 'anchor'), [habitGroups]);
+  const dailyHabits = useMemo(() => habitGroups.filter(h => h.category !== 'anchor'), [habitGroups]);
 
   useEffect(() => {
     if (habitGroups.length === 0 || hasInitializedState) return;
@@ -185,6 +183,9 @@ const Index = () => {
     const showOnlyNext = !showAllMomentum[habit.key] && habit.numChunks > 1;
     const isLocked = habit.isLockedByDependency;
     const dependentHabitName = data.habits.find(h => h.id === habit.dependent_on_habit_id)?.name || 'previous habit';
+    
+    // Quality of Life: Quick log for single-part habits
+    const canQuickLog = !habit.allCompleted && !isLocked && habit.numChunks === 1 && habit.measurement_type !== 'timer';
 
     return (
       <AccordionItem
@@ -192,7 +193,7 @@ const Index = () => {
         value={habit.key}
         className={cn(
           "border-2 rounded-3xl mb-4 overflow-hidden transition-all duration-500",
-          habit.allCompleted ? "opacity-75 border-success/30 bg-success/5" : cn(accentColorClasses, "shadow-md"),
+          habit.allCompleted ? "opacity-75 border-success/30 bg-success/5 shadow-none" : cn(accentColorClasses, "shadow-md"),
           !habit.isWithinWindow && !habit.allCompleted && "opacity-75",
           isLocked && "opacity-40 grayscale-[0.5]"
         )}
@@ -201,16 +202,33 @@ const Index = () => {
           <div className="flex flex-col w-full text-left gap-2">
             <div className="flex items-center gap-5 text-left w-full">
               <div className={cn(
-                "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border border-border",
+                "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border border-border transition-transform group-hover:scale-105",
                 habit.allCompleted ? "bg-success/20 text-success" : "bg-card/90"
               )}>
                 <Icon className="w-6 h-6" />
               </div>
               <div className="min-w-0 flex-grow pr-2">
-                <h3 className="font-black text-lg flex items-center gap-2 leading-tight truncate">
-                  {habit.name}
-                  {habit.allCompleted && <CheckCircle2 className="w-5 h-5 text-success" />}
-                </h3>
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="font-black text-lg flex items-center gap-2 leading-tight truncate">
+                    {habit.name}
+                    {habit.allCompleted && <CheckCircle2 className="w-5 h-5 text-success" />}
+                  </h3>
+                  
+                  {/* Quick Action: Log single-part manual habits directly on header */}
+                  {canQuickLog && (
+                    <Button 
+                      size="sm" 
+                      variant="secondary"
+                      className="h-8 px-3 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm hover:scale-105 transition-transform"
+                      onClick={(e) => {
+                        e.stopPropagation(); // Don't open accordion
+                        handleCapsuleProgress(habit, habit.capsules[0], habit.capsules[0].value, true);
+                      }}
+                    >
+                      Log {habit.capsules[0].value} {habit.unit}
+                    </Button>
+                  )}
+                </div>
                 <div className="flex flex-wrap items-center gap-2 mt-1">
                   <span className={cn(
                     "text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border",
@@ -381,15 +399,30 @@ const Index = () => {
         </div>
 
         <main className="space-y-8">
+          {/* Quality of Life: Critical Nudge if streak at risk (past 8pm and no tasks done) */}
+          {data.patterns.streak > 0 && data.tasks_completed_today === 0 && new Date().getHours() >= 20 && (
+            <Card className="bg-destructive/10 border-destructive border-2 rounded-2xl animate-pulse">
+              <CardContent className="p-4 flex items-center gap-3">
+                <AlertCircle className="w-6 h-6 text-destructive" />
+                <div>
+                  <p className="font-black text-sm text-destructive uppercase tracking-tight">Streak at Risk!</p>
+                  <p className="text-xs font-bold opacity-80">Complete any habit session to protect your {data.patterns.streak}-day streak.</p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <TipCard tip={data.tip} bestTime={data.patterns.bestTime} isNeurodivergent={data.neurodivergentMode} />
 
-          {anchorHabits.length > 0 && (
-            <div className="space-y-4">
-              <div className="sticky top-[60px] z-20 bg-background/95 backdrop-blur-sm py-3 flex items-center gap-3 border-b border-border">
-                <Anchor className="w-5 h-5 text-primary" />
-                <h2 className="text-xs font-black uppercase tracking-[0.2em] text-primary/80">Anchor Practices</h2>
-                <div className="ml-auto h-px flex-grow bg-border" />
-              </div>
+          {/* Anchor Habits Section */}
+          <div className="space-y-4">
+            <div className="sticky top-[60px] z-20 bg-background/95 backdrop-blur-sm py-3 flex items-center gap-3 border-b border-border">
+              <Anchor className="w-5 h-5 text-primary" />
+              <h2 className="text-xs font-black uppercase tracking-[0.2em] text-primary/80">Anchor Practices</h2>
+              <div className="ml-auto h-px flex-grow bg-border" />
+            </div>
+            
+            {anchorHabits.length > 0 ? (
               <Accordion 
                 type="multiple" 
                 value={expandedItems} 
@@ -398,23 +431,60 @@ const Index = () => {
               >
                 {anchorHabits.map(renderHabitItem)}
               </Accordion>
-            </div>
-          )}
+            ) : (
+              <div className="p-6 bg-muted/20 border-2 border-dashed border-border rounded-3xl text-center">
+                <p className="text-sm font-bold text-muted-foreground">No anchor practices yet.</p>
+                <Link to="/create-habit">
+                  <Button variant="link" className="text-xs font-black uppercase text-primary mt-1">Design your first anchor →</Button>
+                </Link>
+              </div>
+            )}
+          </div>
 
+          {/* Daily Momentum Section */}
           <div className="space-y-4">
             <div className="sticky top-[60px] z-20 bg-background/95 backdrop-blur-sm py-3 flex items-center gap-3 border-b border-border">
               <Zap className="w-5 h-5 text-warning" />
               <h2 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Daily Momentum</h2>
               <div className="ml-auto h-px flex-grow bg-border" />
             </div>
-            <Accordion 
-              type="multiple" 
-              value={expandedItems} 
-              onValueChange={handleExpandedChange} 
-              className="space-y-4"
-            >
-              {dailyHabits.map(renderHabitItem)}
-            </Accordion>
+            
+            {dailyHabits.length > 0 ? (
+              <Accordion 
+                type="multiple" 
+                value={expandedItems} 
+                onValueChange={handleExpandedChange} 
+                className="space-y-4"
+              >
+                {dailyHabits.map(renderHabitItem)}
+              </Accordion>
+            ) : !anchorHabits.length ? (
+              <div className="bg-card border-2 border-primary/20 rounded-[2rem] p-10 text-center space-y-6 shadow-xl">
+                <div className="w-20 h-20 bg-primary/10 rounded-[2rem] flex items-center justify-center mx-auto">
+                  <PlusCircle className="w-10 h-10 text-primary" />
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-black tracking-tight">Your Dashboard is Empty</h3>
+                  <p className="text-muted-foreground font-medium max-w-xs mx-auto">Build your routines using the Habit Wizard or explore community templates.</p>
+                </div>
+                <div className="flex flex-col gap-3">
+                  <Link to="/create-habit">
+                    <Button size="lg" className="w-full h-14 rounded-2xl font-black text-base shadow-lg shadow-primary/20">
+                      Open Habit Wizard
+                    </Button>
+                  </Link>
+                  <Link to="/templates">
+                    <Button variant="outline" size="lg" className="w-full h-14 rounded-2xl font-black text-base border-2">
+                      Explore Templates
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <div className="p-6 bg-muted/20 border-2 border-dashed border-border rounded-3xl text-center">
+                <p className="text-sm font-bold text-muted-foreground">No additional daily habits scheduled today.</p>
+              </div>
+            )}
           </div>
 
           <GrowthGuide />

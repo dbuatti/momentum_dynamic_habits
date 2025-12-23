@@ -14,7 +14,7 @@ interface QuickLogButtonProps {
   route: string;
   state?: object;
   completedColorClass?: string;
-  habitKey?: string; // Added habitKey to map colors correctly
+  habitKey?: string; 
 }
 
 export const QuickLogButton: React.FC<QuickLogButtonProps> = ({ 
@@ -25,37 +25,31 @@ export const QuickLogButton: React.FC<QuickLogButtonProps> = ({
   variant, 
   route, 
   state,
-  completedColorClass,
   habitKey
 }) => {
   const baseClasses = "rounded-2xl p-4 flex flex-col justify-between h-full transition-all hover:scale-[1.02] active:scale-[0.98] shadow-sm";
   
-  // Determine the color to use for the border
-  const borderColor = habitKey ? habitColorMap[habitKey] : variant;
-  const borderClass = `border-4 border-${borderColor}-border`; // Use theme-aware border
-
   const variantClasses = {
-    green: 'bg-habit-green text-habit-green-foreground hover:bg-habit-green/90',
-    purple: 'bg-habit-purple text-habit-purple-foreground hover:bg-habit-purple/90',
-    orange: 'bg-habit-orange text-habit-orange-foreground hover:bg-habit-orange/90',
-    blue: 'bg-habit-blue text-habit-blue-foreground hover:bg-habit-blue/90',
-    red: 'bg-habit-red text-habit-red-foreground hover:bg-habit-red/90',
-    indigo: 'bg-habit-indigo text-habit-indigo-foreground hover:bg-habit-indigo/90',
+    green: 'bg-habit-green text-habit-green-foreground hover:bg-habit-green/90 border-habit-green-border',
+    purple: 'bg-habit-purple text-habit-purple-foreground hover:bg-habit-purple/90 border-habit-purple-border',
+    orange: 'bg-habit-orange text-habit-orange-foreground hover:bg-habit-orange/90 border-habit-orange-border',
+    blue: 'bg-habit-blue text-habit-blue-foreground hover:bg-habit-blue/90 border-habit-blue-border',
+    red: 'bg-habit-red text-habit-red-foreground hover:bg-habit-red/90 border-habit-red-border',
+    indigo: 'bg-habit-indigo text-habit-indigo-foreground hover:bg-habit-indigo/90 border-habit-indigo-border',
   };
 
   let currentClasses = variantClasses[variant];
 
   if (isComplete) {
-    // If complete, use the success style
     currentClasses = cn("bg-success-background text-success-foreground border-success-border");
   } else {
-    // If incomplete, override the border to be red and slightly thicker/more prominent
-    currentClasses = cn(currentClasses, "border-4 border-destructive");
+    // Quality of Life: Stronger border for actionable but incomplete items
+    currentClasses = cn(currentClasses, "border-2 opacity-100");
   }
 
   return (
     <Link to={route} state={state} className="h-full block">
-      <Card className={cn(baseClasses, currentClasses, "h-full")}>
+      <Card className={cn(baseClasses, currentClasses, "h-full border-2")}>
         <CardContent className="p-0">
           <div className="flex justify-between items-start">
             {isComplete ? (
@@ -71,7 +65,7 @@ export const QuickLogButton: React.FC<QuickLogButtonProps> = ({
           
           <div className="mt-4">
             <p className="font-bold text-lg">{progress}</p>
-            <p className="text-sm mt-1">{title}</p>
+            <p className="text-sm font-medium mt-1">{title}</p>
           </div>
         </CardContent>
       </Card>

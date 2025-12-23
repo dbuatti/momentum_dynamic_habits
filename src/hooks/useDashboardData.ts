@@ -175,6 +175,7 @@ const fetchDashboardData = async (userId: string) => {
     neurodivergentMode: profile?.neurodivergent_mode || false,
     enable_sound: profile?.enable_sound ?? true,
     enable_haptics: profile?.enable_haptics ?? true,
+    tasks_completed_today: profile?.tasks_completed_today || 0, // Added missing field
     weeklySummary: { 
       activeDays: new Set((completedThisWeek || []).map(t => startOfDay(new Date(t.completed_at)).toISOString())).size,
       pushups: { current: currentWeekTotals.pushups, previous: previousWeekTotals.pushups },
