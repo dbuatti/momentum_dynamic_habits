@@ -97,10 +97,17 @@ const Settings = () => {
                 <div>
                   <h4 className="font-black text-lg uppercase tracking-tight">{habit.habit_key.replace('_', ' ')}</h4>
                   <div className="flex gap-2 mt-1">
-                    <span className={cn("text-[10px] font-black px-2 py-0.5 rounded-full uppercase", habit.category === 'anchor' ? "bg-primary text-white" : "bg-orange-100 text-orange-700")}>
+                    <span className={cn(
+                      "text-[10px] font-black px-2 py-0.5 rounded-full uppercase", 
+                      habit.category === 'anchor' ? "bg-primary text-primary-foreground" : "bg-orange-100 text-orange-700"
+                    )}>
                         {habit.category === 'anchor' ? 'Anchor' : 'Momentum'}
                     </span>
-                    {habit.is_trial_mode && <span className="text-[10px] font-black bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full uppercase">Trial Mode</span>}
+                    {habit.is_trial_mode && (
+                      <span className="text-[10px] font-black bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full uppercase">
+                        Trial Mode
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -125,7 +132,7 @@ const Settings = () => {
               </div>
 
               {/* Chunking Configuration */}
-              <div className="p-4 bg-white/50 rounded-2xl border border-black/5 space-y-3">
+              <div className="p-4 bg-white/50 dark:bg-white/5 rounded-2xl border border-black/5 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <LayoutGrid className="w-4 h-4 text-blue-500" />
@@ -158,7 +165,7 @@ const Settings = () => {
                         key={idx}
                         size="sm"
                         variant={isSelected ? "default" : "outline"}
-                        className={cn("h-8 w-8 rounded-lg p-0 text-[10px] font-black", isSelected ? "bg-primary" : "bg-white")}
+                        className="h-8 w-8 rounded-lg p-0 text-[10px] font-black"
                         onClick={() => toggleDay(habit.id, habit.days_of_week || [], idx)}
                       >
                         {day}
