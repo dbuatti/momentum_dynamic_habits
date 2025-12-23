@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Check, Clock, Smile, Meh, Frown, Undo2, Play, Pause, Square, Edit2, Zap } from 'lucide-react'; // Removed X icon
+import { Check, Clock, Smile, Meh, Frown, Undo2, Play, Pause, Square, Edit2, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
@@ -326,7 +326,8 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                     )}
                   </p>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className={cn("text-xs font-bold", isCompleted ? "opacity-40" : "opacity-60")}>{value} {unit}</span>
+                    {/* FIX: Apply colors.text directly and remove opacity */}
+                    <span className={cn("text-xs font-bold", isCompleted ? "text-muted-foreground opacity-40" : colors.text)}>{value} {unit}</span>
                     {scheduledTime && (
                       <span className="flex items-center gap-1 text-[10px] font-bold opacity-70 bg-secondary px-2 py-0.5 rounded-full">
                         <Clock className="w-3 h-3" />
@@ -392,7 +393,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                     <Square className="w-4 h-4 mr-2 fill-current" />
                     Done
                   </Button>
-                  {/* Removed the explicit X button here */}
                 </div>
               </div>
             </div>
