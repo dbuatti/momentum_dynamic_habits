@@ -1,4 +1,4 @@
-import { Dumbbell, Wind, BookOpen, Music, Home, Code, Sparkles, Pill, Target, Heart, Zap, Anchor, ShieldCheck, FlaskConical, Calendar, Clock, Layers, Settings } from 'lucide-react'; // Added Calendar, Clock, Layers, Settings
+import { Dumbbell, Wind, BookOpen, Music, Home, Code, Sparkles, Pill, Target, Heart, Zap, Anchor, ShieldCheck, FlaskConical, Calendar, Clock, Layers, Settings, Brain, TrendingUp, Smile, Lightbulb } from 'lucide-react'; // Added new icons
 import { HabitCategory } from '@/types/habit'; // Import HabitCategory
 
 export interface HabitTemplate {
@@ -158,12 +158,12 @@ export const habitTemplates: HabitTemplate[] = [
   },
 ];
 
-export const habitCategories: { value: HabitCategory; label: string; icon: React.ElementType }[] = [
-  { value: 'cognitive', label: 'Cognitive', icon: BookOpen },
-  { value: 'physical', label: 'Physical', icon: Dumbbell },
-  { value: 'wellness', label: 'Wellness', icon: Wind },
-  { value: 'daily', label: 'Daily Task', icon: Home },
-  { value: 'anchor', label: 'Anchor Practice', icon: Anchor },
+export const habitCategories: { value: HabitCategory; label: string; icon: React.ElementType; icon_name: string }[] = [
+  { value: 'cognitive', label: 'Cognitive', icon: BookOpen, icon_name: 'BookOpen' },
+  { value: 'physical', label: 'Physical', icon: Dumbbell, icon_name: 'Dumbbell' },
+  { value: 'wellness', label: 'Wellness', icon: Wind, icon_name: 'Wind' },
+  { value: 'daily', label: 'Daily Task', icon: Home, icon_name: 'Home' },
+  { value: 'anchor', label: 'Anchor Practice', icon: Anchor, icon_name: 'Anchor' },
 ];
 
 export const habitUnits: { value: 'min' | 'reps' | 'dose'; label: string }[] = [
@@ -197,4 +197,17 @@ export const habitIcons: { value: string; label: string; icon: React.ElementType
   { value: 'Clock', label: 'Clock', icon: Clock },
   { value: 'Layers', label: 'Layers', icon: Layers },
   { value: 'Settings', label: 'Settings', icon: Settings },
+  { value: 'Brain', label: 'Brain', icon: Brain },
+  { value: 'TrendingUp', label: 'Trending Up', icon: TrendingUp },
+  { value: 'Smile', label: 'Smile', icon: Smile },
+  { value: 'Lightbulb', label: 'Lightbulb', icon: Lightbulb },
+];
+
+export const motivationTypes: { value: string; label: string; icon: React.ElementType; description: string }[] = [
+  { value: 'stress_reduction', label: 'Stress Reduction', icon: Wind, description: 'To find calm and manage daily pressures.' },
+  { value: 'skill_development', label: 'Skill Development', icon: BookOpen, description: 'To learn something new or improve an existing skill.' },
+  { value: 'health_improvement', label: 'Health Improvement', icon: Dumbbell, description: 'To boost physical or mental well-being.' },
+  { value: 'routine_building', label: 'Routine Building', icon: Home, description: 'To establish a consistent daily structure.' },
+  { value: 'personal_growth', label: 'Personal Growth', icon: TrendingUp, description: 'To challenge myself and grow as a person.' },
+  { value: 'creative_expression', label: 'Creative Expression', icon: Music, description: 'To explore my creativity and artistic side.' },
 ];
