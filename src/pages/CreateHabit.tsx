@@ -332,10 +332,10 @@ const CreateHabit = () => {
                       <div className="flex items-center gap-2">
                         <icon.icon className="w-4 h-4" />
                         {icon.label}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </Select>
             </div>
           </CardContent>
@@ -450,14 +450,14 @@ const CreateHabit = () => {
             <div className="space-y-3">
                 <Label className="text-[10px] font-black uppercase tracking-widest opacity-60 ml-1">Dependent On</Label>
                 <Select 
-                  value={dependentOnHabitId || ''} 
-                  onValueChange={(value) => setDependentOnHabitId(value || null)}
+                  value={dependentOnHabitId || 'none'} 
+                  onValueChange={(value) => setDependentOnHabitId(value === 'none' ? null : value)}
                 >
                   <SelectTrigger className="h-11 rounded-xl font-bold text-base">
                     <SelectValue placeholder="No dependency" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No dependency</SelectItem>
+                    <SelectItem value="none">No dependency</SelectItem>
                     {otherHabits.map(otherHabit => (
                       <SelectItem key={otherHabit.id} value={otherHabit.id}>
                         {otherHabit.name}

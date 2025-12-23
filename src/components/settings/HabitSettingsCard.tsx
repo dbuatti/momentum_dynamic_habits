@@ -268,14 +268,14 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
              <div className="space-y-3">
                 <Label className="text-[10px] font-black uppercase tracking-widest opacity-60 ml-1">Dependent On</Label>
                 <Select 
-                  value={habit.dependent_on_habit_id || ''} 
-                  onValueChange={(value) => onUpdateHabitField(habit.id, { dependent_on_habit_id: value || null })}
+                  value={habit.dependent_on_habit_id || 'none'} 
+                  onValueChange={(value) => onUpdateHabitField(habit.id, { dependent_on_habit_id: value === 'none' ? null : value })}
                 >
                   <SelectTrigger className="h-11 rounded-xl font-bold text-base">
                     <SelectValue placeholder="No dependency" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No dependency</SelectItem>
+                    <SelectItem value="none">No dependency</SelectItem>
                     {otherHabits.map(otherHabit => (
                       <SelectItem key={otherHabit.id} value={otherHabit.id}>
                         {otherHabit.name}
