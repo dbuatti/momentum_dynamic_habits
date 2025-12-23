@@ -338,7 +338,7 @@ const HabitWizard = () => {
     <div className="w-full max-w-4xl mx-auto px-4 py-6 space-y-8 pb-32">
       <PageHeader title={isTemplateCreationMode ? "Contribute New Template" : "Habit Wizard"} />
 
-      <Card className="w-full max-w-md mx-auto shadow-xl rounded-3xl overflow-hidden border-0">
+      <Card className="w-full max-w-2xl mx-auto shadow-xl rounded-3xl overflow-hidden border-0">
         <CardHeader className="pb-0">
           {!isTemplateCreationMode && (
             <div className="flex justify-between items-center mb-4">
