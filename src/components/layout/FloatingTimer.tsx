@@ -27,8 +27,9 @@ export const FloatingTimer = () => {
   if (!activeTimer) return null;
 
   const formatTime = (totalSeconds: number) => {
-    const mins = Math.floor(totalSeconds / 60);
-    const secs = totalSeconds % 60;
+    const roundedTotalSeconds = Math.round(totalSeconds); // Round the total seconds first
+    const mins = Math.floor(roundedTotalSeconds / 60);
+    const secs = roundedTotalSeconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
