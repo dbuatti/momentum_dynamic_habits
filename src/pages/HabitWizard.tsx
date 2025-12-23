@@ -128,7 +128,7 @@ const getHabitIconComponent = (iconName: string) => {
   return habitIcons.find(i => i.value === iconName)?.icon || habitIconMap.custom_habit;
 };
 
-const CreateHabit = () => {
+const HabitWizard = () => { // Renamed component
   const { session } = useSession();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -897,8 +897,8 @@ const CreateHabit = () => {
               onClick={() => { setFlowType('guided'); setStep(1); }}
             >
               <Zap className="w-8 h-8" />
-              <span>Template</span>
-              <span className="text-sm font-normal opacity-80">Guided through curated templates</span>
+              <span>Guided Wizard</span>
+              <span className="text-sm font-normal opacity-80">Step-by-step with smart suggestions</span>
             </Button>
             <Button
               variant="outline"
@@ -906,7 +906,7 @@ const CreateHabit = () => {
               onClick={() => setShowNewHabitModal(true)}
             >
               <Brain className="w-8 h-8" />
-              <span>Custom</span>
+              <span>Custom Habit</span>
               <span className="text-sm font-normal opacity-80">Define all parameters manually</span>
             </Button>
           </div>
@@ -928,4 +928,4 @@ const CreateHabit = () => {
   );
 };
 
-export default CreateHabit;
+export default HabitWizard;

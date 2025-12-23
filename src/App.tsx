@@ -12,7 +12,7 @@ import OnboardingFlow from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 import HelpPage from "./pages/HelpPage";
 import LandingPage from "./pages/LandingPage";
-import CreateHabit from "./pages/CreateHabit";
+import HabitWizard from "./pages/HabitWizard"; // Renamed from CreateHabit
 import Analytics from "./pages/Analytics";
 import TemplatesPage from "./pages/TemplatesPage";
 import { SessionContextProvider, useSession } from "./contexts/SessionContext";
@@ -139,7 +139,7 @@ const AppRoutes = () => {
       <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
       <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
       <Route path="/help" element={<ProtectedRoute><HelpPage /></ProtectedRoute>} />
-      <Route path="/create-habit" element={<ProtectedRoute><CreateHabit /></ProtectedRoute>} />
+      <Route path="/create-habit" element={<ProtectedRoute><HabitWizard /></ProtectedRoute>} /> {/* Updated route */}
       <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
       <Route path="/templates" element={<ProtectedRoute><TemplatesPage /></ProtectedRoute>} />
       <Route path="*" element={<ProtectedRoute><NotFound /></ProtectedRoute>} />
