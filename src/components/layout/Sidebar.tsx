@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Home, Dumbbell, Wind, BookOpen, Music, Trophy, Settings, Menu, LogOut, BarChart, Code, Moon, Sun, Calendar, Target, Sparkles, Pill, HelpCircle, PlusCircle, BarChart3, LayoutTemplate } from 'lucide-react';
+import { Home, Dumbbell, Wind, BookOpen, Music, Trophy, Settings, Menu, LogOut, BarChart, Code, Moon, Sun, Calendar, Target, Sparkles, Pill, HelpCircle, PlusCircle, BarChart3, LayoutTemplate, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useSession } from '@/contexts/SessionContext';
@@ -18,10 +18,11 @@ interface NavLinkProps {
   icon: React.ElementType;
   label: string;
   currentPath: string;
+  isCollapsed: boolean; // New prop
   onClick?: () => void;
 }
 
-const NavLink: React.FC<NavLinkProps> = ({ to, icon: Icon, label, currentPath, onClick }) => {
+const NavLink: React.FC<NavLinkProps> = ({ to, icon: Icon, label, currentPath, isCollapsed, onClick }) => {
   const isActive = currentPath === to;
   return (
     <Link 
@@ -31,20 +32,24 @@ const NavLink: React.FC<NavLinkProps> = ({ to, icon: Icon, label, currentPath, o
         "flex items-center gap-3 rounded-lg px-3 py-2.5 transition-all hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
         isActive 
           ? "bg-sidebar-primary text-sidebar-primary-foreground font-medium" 
-          : "text-sidebar-foreground"
+          : "text-sidebar-foreground",
+        isCollapsed && "justify-center px-2" // Center icon when collapsed
       )}
     >
       <Icon className="h-5 w-5" />
-      {label}
+      {!isCollapsed && label}
     </Link>
   );
 };
 
 interface SidebarContentProps {
   onLinkClick?: () => void;
+  isCollapsed: boolean; // New prop
+  onToggleCollapse: () => void; // New prop
+  isMobile: boolean; // Added isMobile prop
 }
 
-const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick }) => {
+const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick, isCollapsed, onToggleCollapse, isMobile }) => {
   const { session, signOut } = useSession();
   const { data: dashboardData, isLoading: isDashboardLoading } = useDashboardData();
   const location = useLocation();
@@ -90,16 +95,22 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick }) => {
 
   return (
     <div className="flex h-full max-h-screen flex-col gap-2">
-      <div className="flex h-16 items-center border-b px-4 lg:h-[60px] lg:px-6">
+      <div className={cn(
+        "flex h-16 items-center border-b px-4 lg:h-[60px]",
+        isCollapsed ? "justify-center px-2" : "lg:px-6"
+      )}>
         <Link to="/" className="flex items-center gap-2 font-semibold" onClick={onLinkClick}>
           <div className="bg-primary w-8 h-8 rounded-lg flex items-center justify-center">
             <Target className="h-5 w-5 text-primary-foreground" />
           </div>
-          <span className="text-lg">Adaptive Growth</span>
+          {!isCollapsed && <span className="text-lg">Adaptive Growth</span>}
         </Link>
       </div>
       <ScrollArea className="flex-1 overflow-auto py-2">
-        <nav className="grid items-start px-4 text-sm font-medium lg:px-6 gap-1">
+        <nav className={cn(
+          "grid items-start text-sm font-medium gap-1",
+          isCollapsed ? "px-2" : "px-4 lg:px-6"
+        )}>
           {navItems.map((item, index) => (
             <NavLink 
               key={item.to} 
@@ -107,39 +118,68 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick }) => {
               icon={item.icon} 
               label={item.label} 
               currentPath={location.pathname} 
+              isCollapsed={isCollapsed} // Pass isCollapsed
               onClick={onLinkClick} 
             />
           ))}
         </nav>
       </ScrollArea>
-      <div className="mt-auto p-4 border-t border-sidebar-border">
+      <div className={cn(
+        "mt-auto p-4 border-t border-sidebar-border",
+        isCollapsed && "flex flex-col items-center p-2"
+      )}>
         {session?.user && (
-          <div className="flex items-center gap-3 mb-4">
+          <div className={cn(
+            "flex items-center gap-3 mb-4",
+            isCollapsed && "flex-col gap-1 mb-2"
+          )}>
             <Avatar className="h-10 w-10">
               <AvatarImage src={session.user.user_metadata?.avatar_url} />
               <AvatarFallback>{displayName?.charAt(0).toUpperCase() || '?'}</AvatarFallback>
             </Avatar>
-            <div className="flex-grow min-w-0">
-              <p className="font-semibold text-sm truncate">{displayName}</p>
-              <p className="text-xs text-muted-foreground truncate">Logged in</p>
-            </div>
+            {!isCollapsed && (
+              <div className="flex-grow min-w-0">
+                <p className="font-semibold text-sm truncate">{displayName}</p>
+                <p className="text-xs text-muted-foreground truncate">Logged in</p>
+              </div>
+            )}
           </div>
         )}
-        <div className="flex gap-2">
-          <Button variant="secondary" className="flex-1" onClick={handleSignOut}>
-            <LogOut className="h-4 w-4 mr-2" />
-            Sign Out
+        <div className={cn(
+          "flex gap-2",
+          isCollapsed && "flex-col gap-2"
+        )}>
+          <Button 
+            variant="secondary" 
+            className={cn("flex-1", isCollapsed && "w-full")} 
+            onClick={handleSignOut}
+          >
+            <LogOut className={cn("h-4 w-4", !isCollapsed && "mr-2")} />
+            {!isCollapsed && "Sign Out"}
           </Button>
           <Button variant="outline" size="icon" onClick={toggleTheme} aria-label="Toggle theme">
             {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
         </div>
+        {!isMobile && (
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={onToggleCollapse} 
+            className={cn(
+              "mt-4 w-full rounded-lg",
+              isCollapsed ? "h-10" : "h-8"
+            )}
+          >
+            {isCollapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
+          </Button>
+        )}
       </div>
     </div>
   );
 };
 
-export const Sidebar: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const Sidebar: React.FC<{ children: React.ReactNode; isCollapsed: boolean; onToggleCollapse: () => void }> = ({ children, isCollapsed, onToggleCollapse }) => {
   const isMobile = useIsMobile();
   const [open, setOpen] = React.useState(false);
 
@@ -152,7 +192,7 @@ export const Sidebar: React.FC<{ children: React.ReactNode }> = ({ children }) =
           </Button>
         </SheetTrigger>
         <SheetContent side="left" className="flex flex-col w-[280px] p-0 bg-sidebar-background text-sidebar-foreground border-sidebar-border">
-          <SidebarContent onLinkClick={() => setOpen(false)} />
+          <SidebarContent onLinkClick={() => setOpen(false)} isCollapsed={false} onToggleCollapse={onToggleCollapse} isMobile={isMobile} />
         </SheetContent>
         <main className="flex flex-1 flex-col overflow-hidden">
           {children}
@@ -162,13 +202,16 @@ export const Sidebar: React.FC<{ children: React.ReactNode }> = ({ children }) =
   }
 
   return (
-    <div className="grid min-h-screen w-full lg:grid-cols-[280px_1fr]">
-      <div className="hidden border-r bg-sidebar-background lg:block">
-        <SidebarContent />
+    <>
+      <div className={cn(
+        "hidden border-r bg-sidebar-background",
+        isCollapsed ? "lg:block lg:w-16" : "lg:block lg:w-[280px]"
+      )}>
+        <SidebarContent isCollapsed={isCollapsed} onToggleCollapse={onToggleCollapse} isMobile={isMobile} />
       </div>
       <main className="flex flex-1 flex-col overflow-hidden">
         {children}
       </main>
-    </div>
+    </>
   );
 };

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { PageHeader } from '@/components/layout/PageHeader';
+// import { PageHeader } from '@/components/layout/PageHeader'; // Removed
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, RotateCcw } from 'lucide-react';
@@ -584,11 +584,11 @@ const HabitWizard = () => {
   const buttonText = isFinalStep || currentStep === 99 ? 'Create Habit' : 'Next';
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-4 py-8">
-      <PageHeader title={isTemplateCreationMode ? "Contribute New Template" : "Habit Wizard"} />
+    <div className="w-full max-w-full mx-auto px-4 py-8"> {/* Changed max-w-4xl to max-w-full */}
+      {/* Removed PageHeader */}
 
       {/* Single clean card with fixed layout */}
-      <Card className="w-full max-w-4xl mx-auto shadow-2xl rounded-3xl overflow-hidden border-0 bg-card">
+      <Card className="w-full max-w-6xl mx-auto shadow-2xl rounded-3xl overflow-hidden border-0 bg-card"> {/* Changed max-w-4xl to max-w-6xl */}
         {/* Header with progress - always present and fixed height */}
         {!isTemplateCreationMode && (
           <CardHeader className="pb-6 pt-8 px-10 bg-gradient-to-b from-primary/5 to-transparent">
