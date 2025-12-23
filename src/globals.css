@@ -140,6 +140,11 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Dark mode specific habit-purple colors for better contrast */
+    --habit-purple: 250 50% 15%; /* Darker purple for background */
+    --habit-purple-foreground: 250 70% 70%; /* Lighter purple for text */
+    --habit-purple-border: 250 40% 30%; /* Medium dark purple for border */
   }
 
   /* Landing Page specific theme override */
