@@ -38,6 +38,7 @@ const Index = () => {
   const queryClient = useQueryClient();
   
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
+  const [hasInitializedState, setHasInitializedState] = useState(false);
   const [showAllMomentum, setShowAllMomentum] = useState<Record<string, boolean>>({});
 
   const habitGroups = useMemo(() => {
@@ -55,7 +56,7 @@ const Index = () => {
         habit.unit,
         data.neurodivergentMode,
         habit.auto_chunking,
-        habit.enable_chunks, // Correctly pass enable_chunks
+        habit.enable_chunks, 
         habit.num_chunks,
         habit.chunk_duration,
         habit.measurement_type
@@ -116,16 +117,34 @@ const Index = () => {
   const anchorHabits = useMemo(() => habitGroups.filter(h => h.category === 'anchor' && h.is_visible), [habitGroups]);
   const dailyHabits = useMemo(() => habitGroups.filter(h => h.category !== 'anchor' && h.is_visible), [habitGroups]);
 
+  // Load initial expanded state from localStorage
   useEffect(() => {
-    if (habitGroups.length === 0) return;
-    const initialExpanded = habitGroups
-      .filter(h => h.is_visible && !h.allCompleted && !h.isLockedByDependency && (h.category === 'anchor' || h.is_trial_mode))
-      .map(h => h.key);
+    if (habitGroups.length === 0 || hasInitializedState) return;
+
+    const initialExpanded = habitGroups.filter(h => {
+      const stored = localStorage.getItem(`habitAccordionState:${h.key}`);
+      if (stored === 'expanded') return true;
+      if (stored === 'collapsed') return false;
+      
+      // Default behavior for habits that haven't been manually toggled yet
+      // (e.g., first-time view or new habit)
+      return !h.allCompleted && !h.isLockedByDependency && (h.category === 'anchor' || h.is_trial_mode);
+    }).map(h => h.key);
+
+    setExpandedItems(initialExpanded);
+    setHasInitializedState(true);
+  }, [habitGroups, hasInitializedState]);
+
+  // Handle manual toggle and persist choice
+  const handleExpandedChange = (newValues: string[]) => {
+    setExpandedItems(newValues);
     
-    if (JSON.stringify(initialExpanded.sort()) !== JSON.stringify(expandedItems.sort())) {
-      setExpandedItems(initialExpanded);
-    }
-  }, [habitGroups]);
+    // Explicitly update storage for all habits in the current groups
+    habitGroups.forEach(h => {
+      const isNowExpanded = newValues.includes(h.key);
+      localStorage.setItem(`habitAccordionState:${h.key}`, isNowExpanded ? 'expanded' : 'collapsed');
+    });
+  };
 
   const handleCapsuleProgress = async (habit: any, capsule: any, actualValue: number, isComplete: boolean, mood?: string) => {
     await logCapsuleProgress.mutateAsync({ 
@@ -418,7 +437,7 @@ const Index = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <div className="max-w-3xl mx-auto w-full px-4 py-6 pb-32">
+      <div className="max-w-3xl auto w-full px-4 py-6 pb-32">
         <div className="mb-4">
            <HomeHeader
             dayCounter={data.daysActive}
@@ -440,7 +459,12 @@ const Index = () => {
                 <h2 className="text-xs font-black uppercase tracking-[0.2em] text-primary/80">Anchor Practices</h2>
                 <div className="ml-auto h-px flex-grow bg-border" />
               </div>
-              <Accordion type="multiple" value={expandedItems} onValueChange={setExpandedItems} className="space-y-4">
+              <Accordion 
+                type="multiple" 
+                value={expandedItems} 
+                onValueChange={handleExpandedChange} 
+                className="space-y-4"
+              >
                 {anchorHabits.map(renderHabitItem)}
               </Accordion>
             </div>
@@ -452,7 +476,12 @@ const Index = () => {
               <h2 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Daily Momentum</h2>
               <div className="ml-auto h-px flex-grow bg-border" />
             </div>
-            <Accordion type="multiple" value={expandedItems} onValueChange={setExpandedItems} className="space-y-4">
+            <Accordion 
+              type="multiple" 
+              value={expandedItems} 
+              onValueChange={handleExpandedChange} 
+              className="space-y-4"
+            >
               {dailyHabits.map(renderHabitItem)}
             </Accordion>
           </div>
