@@ -215,6 +215,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
 
   const handleResetTimer = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    e.preventDefault(); // Prevent default behavior to avoid accordion collapse
     setIsResetting(true);
     stopInterval();
     setElapsedSeconds(0);
