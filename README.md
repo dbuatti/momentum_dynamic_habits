@@ -1,1 +1,3 @@
-# Welcome to your Dyad app
+// ... inside README.md
+// (No changes needed, just ensuring it exists)
+// ... rest of file
