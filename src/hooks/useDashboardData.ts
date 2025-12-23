@@ -105,7 +105,13 @@ const fetchDashboardData = async (userId: string) => {
     let adjustedDailyGoal = baseAdjustedDailyGoal;
     let isComplete = false;
 
-    if (h.measurement_type === 'binary') {
+    const mType = h.measurement_type || 'timer';
+    
+    // Defensive Unit Fallback
+    const fallbackUnit = mType === 'timer' ? 'min' : (mType === 'binary' ? 'dose' : 'reps');
+    const unit = h.unit || fallbackUnit;
+
+    if (mType === 'binary') {
       isComplete = completedHabitKeysToday.has(h.habit_key);
       dailyProgress = isComplete ? 1 : 0;
       adjustedDailyGoal = 1;
@@ -119,18 +125,19 @@ const fetchDashboardData = async (userId: string) => {
       ...h,
       key: h.habit_key,
       name: h.name || h.habit_key.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase()),
-      dailyGoal: h.measurement_type === 'binary' ? 1 : h.current_daily_goal,
+      unit, // Use the reinforced unit
+      dailyGoal: mType === 'binary' ? 1 : h.current_daily_goal,
       adjustedDailyGoal: adjustedDailyGoal,
-      carryoverValue: h.measurement_type === 'binary' ? 0 : (h.carryover_value || 0),
+      carryoverValue: mType === 'binary' ? 0 : (h.carryover_value || 0),
       dailyProgress, 
       isComplete: isComplete,
       xpPerUnit: h.xp_per_unit || 0,
       energyCostPerUnit: h.energy_cost_per_unit || 0,
       weekly_completions: weeklyCompletions,
-      weekly_goal: (h.measurement_type === 'binary' ? 1 : h.current_daily_goal) * h.frequency_per_week,
+      weekly_goal: (mType === 'binary' ? 1 : h.current_daily_goal) * h.frequency_per_week,
       isScheduledForToday: isScheduledForToday,
       isWithinWindow,
-      measurement_type: h.measurement_type || 'timer', 
+      measurement_type: mType, 
       growth_stats: {
         completions: h.completions_in_plateau,
         required: plateauRequired,
@@ -138,7 +145,7 @@ const fetchDashboardData = async (userId: string) => {
         phase: h.growth_phase
       },
       isLockedByDependency: isLockedByDependency,
-      capsuleTaskMapping: capsuleTaskMapping, // New field for reliable mapping
+      capsuleTaskMapping: capsuleTaskMapping, 
     } as any;
   });
 

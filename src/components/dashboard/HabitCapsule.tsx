@@ -62,6 +62,9 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   const isLoggingDisabled = isFixed && isHabitComplete && !isCompleted;
   const isBonusMode = !isFixed && isHabitComplete && !isCompleted;
 
+  // Defensive Unit Fallback for rendering
+  const displayUnit = unit || (measurementType === 'timer' ? 'min' : (measurementType === 'binary' ? 'dose' : 'reps'));
+
   useEffect(() => {
     setCompletedTaskIdState(initialCompletedTaskId || null);
   }, [initialCompletedTaskId]);
@@ -91,7 +94,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
       window.dispatchEvent(new CustomEvent('habit-timer-update', {
         detail: {
           label,
-          remaining: timeLeft, // Broadcasting remaining time
+          remaining: timeLeft, 
           isPaused,
           habitKey,
           habitName,
@@ -171,7 +174,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
 
   const handleFinishTiming = (mood?: string, promptMood: boolean = false) => {
     stopInterval();
-    // Calculate final value: if finished normally it's the full value, otherwise rounded up minutes
     const totalSessionMinutes = timeLeft === 0 ? value : Math.max(1, Math.ceil((value * 60 - timeLeft) / 60));
     
     if (promptMood && showMood && mood === undefined) {
@@ -307,7 +309,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                       {isBonusMode ? 'Log More?' : label}
                     </p>
                     <p className="text-sm font-bold opacity-70">
-                      {isBonusMode ? `Bonus ${unit}` : `${value} ${unit} Goal`}
+                      {isBonusMode ? `Bonus ${displayUnit}` : `${value} ${displayUnit} Goal`}
                     </p>
                   </div>
                 </div>
@@ -327,7 +329,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                     {isBonusMode ? 'Bonus Reps' : label}
                   </p>
                   <p className="text-sm font-bold opacity-70">
-                    {isBonusMode ? 'Goal already met!' : `Goal: ${value} ${unit}`}
+                    {isBonusMode ? 'Goal already met!' : `Goal: ${value} ${displayUnit}`}
                   </p>
                 </div>
                 <div className="flex items-center bg-card rounded-2xl p-1 border shadow-inner">
@@ -353,7 +355,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                 )} 
                 onClick={() => handleLogManual(undefined, true)}
               >
-                Log {manualValue} {unit} {isBonusMode && 'Extra'}
+                Log {manualValue} {displayUnit} {isBonusMode && 'Extra'}
               </Button>
             </div>
           ) : (
