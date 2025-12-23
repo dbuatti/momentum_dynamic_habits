@@ -130,6 +130,21 @@ const Index = () => {
     });
   };
 
+  // Improved focus function to expand and scroll
+  const focusHabit = (habitKey: string) => {
+    if (!expandedItems.includes(habitKey)) {
+      handleExpandedChange([...expandedItems, habitKey]);
+    }
+    
+    // Allow time for the accordion to start expanding before scrolling
+    setTimeout(() => {
+      const element = document.getElementById(`habit-card-${habitKey}`);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 100);
+  };
+
   const handleCapsuleProgress = async (habit: any, capsule: any, actualValue: number, isComplete: boolean, mood?: string) => {
     await logCapsuleProgress.mutateAsync({ 
       habitKey: habit.key, index: capsule.index, value: actualValue, mood, 
@@ -141,7 +156,6 @@ const Index = () => {
     const remaining = Math.max(0, habit.adjustedDailyGoal - habit.displayProgress);
     if (remaining <= 0) return;
 
-    // Log the remaining as one single entry
     await logCapsuleProgress.mutateAsync({
       habitKey: habit.key,
       index: 999, // Specialty index for "Log Remaining"
@@ -185,13 +199,13 @@ const Index = () => {
     const isLocked = habit.isLockedByDependency;
     const dependentHabitName = data.habits.find(h => h.id === habit.dependent_on_habit_id)?.name || 'previous habit';
     
-    // Quick log is possible if not completed and not locked
     const canQuickFinish = !habit.allCompleted && !isLocked;
 
     return (
       <AccordionItem
         key={habit.key}
         value={habit.key}
+        id={`habit-card-${habit.key}`}
         className={cn(
           "border-2 rounded-3xl mb-4 overflow-hidden transition-all duration-500",
           habit.allCompleted ? "opacity-75 border-success/30 bg-success/5 shadow-none" : cn(accentColorClasses, "shadow-md"),
@@ -359,7 +373,7 @@ const Index = () => {
                 </div>
                 <Button 
                    className="w-full sm:w-auto h-16 px-8 rounded-2xl font-black text-lg shadow-lg hover:scale-105 transition-transform"
-                   onClick={() => handleExpandedChange([suggestedAction.key])}
+                   onClick={() => focusHabit(suggestedAction.key)}
                 >
                   <Play className="w-5 h-5 mr-2 fill-current" /> Get Started
                 </Button>
