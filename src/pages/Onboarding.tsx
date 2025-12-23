@@ -379,7 +379,7 @@ const OnboardingFlow = ({ onComplete }: { onComplete: () => void }) => {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-background">
-      <Card className="w-full shadow-xl rounded-3xl overflow-hidden border-0">
+      <Card className="w-full max-w-4xl shadow-xl rounded-3xl overflow-hidden border-0">
         <CardHeader className="pb-0">
           <div className="flex justify-between items-center mb-4">
             <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Step {step} of 6</div>

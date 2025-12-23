@@ -252,8 +252,8 @@ const CreateHabit = () => {
       icon_name: selectedIconName,
       dependent_on_habit_id: dependentOnHabitId,
       plateau_days_required: plateauDaysRequired,
-      window_start: windowStart,
-      window_end: windowEnd,
+      window_start: windowStart, // Corrected from window_start
+      window_end: windowEnd,     // Corrected from window_end
     });
   };
 
@@ -973,8 +973,8 @@ const CreateHabit = () => {
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto px-4 py-6 space-y-8 pb-32">
-      <PageHeader title="Create New Habit" backLink="/" />
+    <div className="w-full max-w-4xl mx-auto px-4 py-6 space-y-8 pb-32">
+      <PageHeader title="Create New Habit" />
 
       {flowType === 'entry' && (
         <div className="space-y-6 text-center">
