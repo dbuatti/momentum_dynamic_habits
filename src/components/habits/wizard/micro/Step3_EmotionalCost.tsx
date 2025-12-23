@@ -26,6 +26,7 @@ export const Step3_EmotionalCost: React.FC<Props> = ({ wizardData, setWizardData
           <Heart className="w-5 h-5 text-primary" />
           <h3 className="font-bold text-lg">How does this habit *feel* to start?</h3>
         </div>
+        <p className="text-sm text-muted-foreground mb-3">Select an option to continue.</p>
         <div className="grid grid-cols-1 gap-3">
           {options.map((opt) => {
             const isSelected = wizardData.emotional_cost === opt.id;

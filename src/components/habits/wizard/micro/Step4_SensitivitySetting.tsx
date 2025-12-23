@@ -26,6 +26,7 @@ export const Step4_SensitivitySetting: React.FC<Props> = ({ wizardData, setWizar
           <Heart className="w-5 h-5 text-primary" />
           <h3 className="font-bold text-lg">How should the app respond when things go off track?</h3>
         </div>
+        <p className="text-sm text-muted-foreground mb-3">Select an option to continue.</p>
         <div className="space-y-2">
           {options.map((opt) => {
             const isSelected = wizardData.sensitivity_setting === opt.id;

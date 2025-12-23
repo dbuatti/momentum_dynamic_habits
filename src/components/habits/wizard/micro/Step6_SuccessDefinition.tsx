@@ -26,6 +26,7 @@ export const Step6_SuccessDefinition: React.FC<Props> = ({ wizardData, setWizard
           <Target className="w-5 h-5 text-primary" />
           <h3 className="font-bold text-lg">This habit is successful if...</h3>
         </div>
+        <p className="text-sm text-muted-foreground mb-3">Select an option to continue.</p>
         <div className="space-y-2">
           {options.map((opt) => {
             const isSelected = wizardData.success_definition === opt.id;

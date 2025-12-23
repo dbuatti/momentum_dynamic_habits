@@ -26,6 +26,7 @@ export const Step4_MissedDayResponse: React.FC<Props> = ({ wizardData, setWizard
           <Frown className="w-5 h-5 text-primary" />
           <h3 className="font-bold text-lg">If you miss a day, what tends to happen next?</h3>
         </div>
+        <p className="text-sm text-muted-foreground mb-3">Select an option to continue.</p>
         <div className="space-y-2">
           {options.map((opt) => {
             const isSelected = wizardData.missed_day_response === opt.id;

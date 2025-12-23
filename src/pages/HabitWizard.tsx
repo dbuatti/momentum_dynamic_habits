@@ -488,9 +488,15 @@ const HabitWizard = () => {
   };
 
   // Calculate progress for micro-steps
-  const totalSteps = 2 + MICRO_STEPS.length; // 2 macro + N micro
-  const currentGlobalIndex = currentStep === 1 ? 1 : currentStep === 2 ? 2 : 3 + currentMicroStep;
-  const progress = (currentGlobalIndex / totalSteps) * 100;
+  const totalDisplaySteps = isTemplateCreationMode ? 1 : (2 + MICRO_STEPS.length);
+  const currentDisplayStep = useMemo(() => {
+    if (isTemplateCreationMode) return 1;
+    if (currentStep === 1) return 1;
+    if (currentStep === 2) return 2;
+    if (currentStep === 3) return 2 + currentMicroStep + 1;
+    return 1; // Fallback
+  }, [currentStep, currentMicroStep, isTemplateCreationMode]);
+  const progress = (currentDisplayStep / totalDisplaySteps) * 100;
 
   // Validation for micro-steps
   const isNextDisabled = useMemo(() => {
@@ -504,9 +510,16 @@ const HabitWizard = () => {
       if (stepId === '3.2' && !wizardData.consistency_reality) return true;
       if (stepId === '3.3' && !wizardData.emotional_cost) return true;
       if (stepId === '3.4' && !wizardData.confidence_check) return true;
-      // Step 4 is optional
-      // Step 5 is optional
-      // Step 6 is optional
+      if (stepId === '4.1' && (!wizardData.barriers || wizardData.barriers.length === 0)) return true; // Added check for barriers
+      if (stepId === '4.2' && !wizardData.missed_day_response) return true;
+      if (stepId === '4.3' && !wizardData.sensitivity_setting) return true;
+      if (stepId === '5.1' && !wizardData.time_of_day_fit) return true;
+      if (stepId === '5.2' && !wizardData.dependency_check) return true;
+      if (stepId === '5.3' && !wizardData.time_pressure_check) return true;
+      if (stepId === '6.1' && !wizardData.growth_appetite) return true;
+      if (stepId === '6.2' && !wizardData.growth_style) return true;
+      if (stepId === '6.3' && !wizardData.failure_response) return true;
+      if (stepId === '6.4' && !wizardData.success_definition) return true;
     }
     return false;
   }, [currentStep, currentMicroStep, wizardData]);
@@ -575,9 +588,7 @@ const HabitWizard = () => {
           {!isTemplateCreationMode && (
             <div className="flex justify-between items-center mb-4">
               <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
-                {currentStep === 1 && "Step 1 of 2"}
-                {currentStep === 2 && "Step 2 of 2"}
-                {currentStep === 3 && `Micro-Step ${currentMicroStep + 1} of ${MICRO_STEPS.length}`}
+                {`Step ${currentDisplayStep} of ${totalDisplaySteps}`}
               </div>
               <div className="text-xs font-bold text-primary">{Math.round(progress)}%</div>
             </div>

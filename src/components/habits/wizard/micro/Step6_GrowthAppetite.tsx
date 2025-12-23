@@ -26,6 +26,7 @@ export const Step6_GrowthAppetite: React.FC<Props> = ({ wizardData, setWizardDat
           <Zap className="w-5 h-5 text-primary" />
           <h3 className="font-bold text-lg">Do you want this to grow over time?</h3>
         </div>
+        <p className="text-sm text-muted-foreground mb-3">Select an option to continue.</p>
         <div className="space-y-2">
           {options.map((opt) => {
             const isSelected = wizardData.growth_appetite === opt.id;

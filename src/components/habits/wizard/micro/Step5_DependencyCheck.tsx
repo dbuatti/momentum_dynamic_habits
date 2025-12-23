@@ -14,10 +14,10 @@ interface Props {
 
 export const Step5_DependencyCheck: React.FC<Props> = ({ wizardData, setWizardData }) => {
   const options = [
-    { id: 'after_waking', label: 'After waking', icon: Bed },
-    { id: 'after_work', label: 'After work', icon: Briefcase },
-    { id: 'after_another_habit', label: 'After another habit', icon: Link },
-    { id: 'none', label: 'No dependency', icon: X },
+    { id: 'after_waking', label: 'After waking', icon: Bed, desc: 'Start your day with this' },
+    { id: 'after_work', label: 'After work', icon: Briefcase, desc: 'Transition from work to personal time' },
+    { id: 'after_another_habit', label: 'After another habit', icon: Link, desc: 'Build a chain reaction' },
+    { id: 'none', label: 'No dependency', icon: X, desc: 'This habit stands alone' },
   ];
 
   return (
@@ -27,6 +27,7 @@ export const Step5_DependencyCheck: React.FC<Props> = ({ wizardData, setWizardDa
           <Link className="w-5 h-5 text-primary" />
           <h3 className="font-bold text-lg">Is this easier after something else?</h3>
         </div>
+        <p className="text-sm text-muted-foreground mb-3">Select an option to continue.</p>
         <div className="space-y-2">
           {options.map((opt) => {
             const isSelected = wizardData.dependency_check === opt.id;
@@ -43,7 +44,10 @@ export const Step5_DependencyCheck: React.FC<Props> = ({ wizardData, setWizardDa
                 onClick={() => setWizardData(prev => ({ ...prev, dependency_check: opt.id as any }))}
               >
                 <Icon className="w-5 h-5" />
-                {opt.label}
+                <div className="flex flex-col items-start">
+                  <span className="font-bold">{opt.label}</span>
+                  <span className="text-[10px] opacity-70">{opt.desc}</span>
+                </div>
               </Button>
             );
           })}

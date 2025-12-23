@@ -37,6 +37,7 @@ export const Step4_Barriers: React.FC<Props> = ({ wizardData, setWizardData }) =
           <AlertCircle className="w-5 h-5 text-primary" />
           <h3 className="font-bold text-lg">What usually gets in the way? (Pick up to 3)</h3>
         </div>
+        <p className="text-sm text-muted-foreground mb-3">Select at least one option to continue.</p>
         <div className="grid grid-cols-2 gap-2">
           {options.map((opt) => {
             const isSelected = wizardData.barriers?.includes(opt.id);
