@@ -55,7 +55,7 @@ export interface CreateHabitParams {
   name: string;
   habit_key: string;
   category: HabitCategoryType;
-  current_daily_goal: number; // Added
+  current_daily_goal: number;
   frequency_per_week: number;
   is_trial_mode: boolean;
   is_fixed: boolean;
@@ -69,6 +69,7 @@ export interface CreateHabitParams {
   plateau_days_required: number;
   window_start: string | null;
   window_end: string | null;
+  carryover_enabled: boolean; // Added
 }
 
 const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: string; habit: CreateHabitParams; neurodivergentMode: boolean }) => {
@@ -76,7 +77,7 @@ const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: s
   const oneYearFromNow = new Date(today.setFullYear(today.getFullYear() + 1));
   const oneYearDateString = oneYearFromNow.toISOString().split('T')[0];
 
-  const { name, habit_key, category, current_daily_goal, frequency_per_week, is_trial_mode, is_fixed, anchor_practice, auto_chunking, unit, xp_per_unit, energy_cost_per_unit, icon_name, dependent_on_habit_id, window_start, window_end } = habit;
+  const { name, habit_key, category, current_daily_goal, frequency_per_week, is_trial_mode, is_fixed, anchor_practice, auto_chunking, unit, xp_per_unit, energy_cost_per_unit, icon_name, dependent_on_habit_id, window_start, window_end, carryover_enabled } = habit;
 
   // Determine plateau days based on mode and neurodivergent setting
   let calculatedPlateauDays = habit.plateau_days_required;
@@ -134,7 +135,7 @@ const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: s
     is_visible: true,
     dependent_on_habit_id: dependent_on_habit_id,
     anchor_practice: anchor_practice,
-    carryover_value: 0, // Initialize carryover_value
+    carryover_value: carryover_enabled ? 1 : 0, // Initialize carryover_value based on flag
   };
 
   const { error } = await supabase.from('user_habits').upsert(habitToInsert, { onConflict: 'user_id, habit_key' });
@@ -154,6 +155,84 @@ const MICRO_STEPS = [
   // Step 6: Confidence & Growth
   '6.1', '6.2', '6.3', '6.4',
 ];
+
+// --- LOGIC MAPPING ---
+// This function calculates final habit parameters from micro-step answers
+const calculateHabitParams = (data: Partial<WizardHabitData>): Partial<CreateHabitParams> => {
+  // 1. Calculate Daily Goal & Frequency
+  let dailyGoal = 15; // Default
+  let frequency = 3; // Default
+
+  if (data.energy_per_session === 'very_little') dailyGoal = 5;
+  if (data.energy_per_session === 'a_bit') dailyGoal = 10;
+  if (data.energy_per_session === 'moderate') dailyGoal = 20;
+  if (data.energy_per_session === 'plenty') dailyGoal = 30;
+
+  if (data.consistency_reality === '1-2_days') frequency = 2;
+  if (data.consistency_reality === '3-4_days') frequency = 3;
+  if (data.consistency_reality === 'most_days') frequency = 5;
+  if (data.consistency_reality === 'daily') frequency = 7;
+
+  // 2. Determine Mode (Trial vs Growth vs Fixed)
+  let isTrial = false;
+  let isFixed = false;
+  let plateauDays = 7;
+
+  // Confidence Check influences plateau
+  const confidence = data.confidence_check || 5;
+  if (confidence < 4) plateauDays = 14;
+  else if (confidence > 7) plateauDays = 5;
+
+  // Emotional Cost influences trial mode
+  if (data.emotional_cost === 'heavy') isTrial = true;
+
+  // Growth Appetite influences fixed/trial
+  if (data.growth_appetite === 'steady') isFixed = true;
+  if (data.growth_appetite === 'suggest' || data.growth_appetite === 'auto') isTrial = false; // Start in growth
+
+  // 3. Auto-Chunking & Anchor Practice
+  const autoChunking = data.energy_per_session === 'plenty' || data.energy_per_session === 'moderate';
+  const anchorPractice = data.motivation_type === 'routine_building' || data.motivation_type === 'stress_reduction';
+
+  // 4. XP & Energy Cost (Base values, can be tweaked)
+  let xpPerUnit = 30;
+  let energyCostPerUnit = 6;
+  if (data.unit === 'reps') { xpPerUnit = 1; energyCostPerUnit = 0.5; }
+  if (data.unit === 'dose') { xpPerUnit = 10; energyCostPerUnit = 0; }
+
+  // 5. Windows
+  let windowStart = null;
+  let windowEnd = null;
+  if (data.time_of_day_fit === 'morning') { windowStart = '06:00'; windowEnd = '10:00'; }
+  if (data.time_of_day_fit === 'afternoon') { windowStart = '10:00'; windowEnd = '14:00'; }
+  if (data.time_of_day_fit === 'evening') { windowStart = '18:00'; windowEnd = '22:00'; }
+
+  // 6. Dependencies
+  let dependentOnHabitId = null;
+  if (data.dependency_check === 'after_another_habit') {
+    // We can't resolve the ID here, the user must select it in the macro form or we add a micro-step for selection.
+    // For now, we'll leave it null and let the user edit it later.
+  }
+
+  // 7. Carryover
+  const carryoverEnabled = data.time_pressure_check === 'only_if_time' || data.time_pressure_check === 'decide_later';
+
+  return {
+    current_daily_goal: dailyGoal, // Fixed: Changed from daily_goal to current_daily_goal
+    frequency_per_week: frequency,
+    is_trial_mode: isTrial,
+    is_fixed: isFixed,
+    anchor_practice: anchorPractice,
+    auto_chunking: autoChunking,
+    xp_per_unit: xpPerUnit,
+    energy_cost_per_unit: energyCostPerUnit,
+    dependent_on_habit_id: dependentOnHabitId,
+    plateau_days_required: plateauDays,
+    window_start: windowStart,
+    window_end: windowEnd,
+    carryover_enabled: carryoverEnabled,
+  };
+};
 
 const HabitWizard = () => {
   const { session } = useSession();
@@ -356,6 +435,7 @@ const HabitWizard = () => {
       plateau_days_required: wizardData.plateau_days_required || 7,
       window_start: wizardData.window_start || null,
       window_end: wizardData.window_end || null,
+      carryover_enabled: wizardData.carryover_enabled || false,
     };
 
     if (isTemplateCreationMode) {
