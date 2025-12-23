@@ -75,21 +75,21 @@
     --habit-indigo-foreground: 240 50% 40%;
     --habit-indigo-border: 240 60% 85%;
 
-    /* Landing Page Specific Base Colors */
-    --landing-background: 220 13% 5%;
-    --landing-foreground: 210 40% 98%;
-    --landing-muted-foreground: 215 16% 65%;
-    --landing-primary: 210 40% 98%; /* Light primary for dark background */
-    --landing-primary-foreground: 220 13% 5%;
+    /* Standardized Landing Variables */
+    --landing-background: 240 10% 3.9%;
+    --landing-foreground: 0 0% 98%;
+    --landing-muted-foreground: 240 5% 64.9%;
+    --landing-primary: 0 0% 98%;
+    --landing-primary-foreground: 240 5.9% 10%;
     --landing-accent: 240 3.7% 15.9%;
-    --landing-accent-foreground: 210 40% 98%;
-    --landing-border: 217.2 32.6% 17.5%;
+    --landing-accent-foreground: 0 0% 98%;
+    --landing-border: 240 3.7% 15.9%;
     --landing-indigo: 240 70% 60%;
-    --landing-purple: 250 100% 65%;
-    --landing-green: 145 63.8% 55%;
-    --landing-orange: 25 95% 55%;
-    --landing-yellow: 40 95% 60%;
-    --landing-red: 0 84.2% 65%;
+    --landing-purple: 262 83% 58%;
+    --landing-green: 142 71% 45%;
+    --landing-orange: 25 95% 53%;
+    --landing-yellow: 48 96% 53%;
+    --landing-red: 0 84% 60%;
   }
 
   .dark {
@@ -161,24 +161,27 @@
     --habit-indigo-border: 240 40% 30%;
   }
 
-  /* Landing Page specific theme override */
+  /* Force consistent Dark Theme for Landing Page */
   .landing-page-theme {
-    --background: 220 13% 5%;
-    --foreground: 210 40% 98%;
-    --muted-foreground: 215 16% 65%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 220 13% 5%;
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 5.9% 10%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
     --accent: 240 3.7% 15.9%;
-    --accent-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --card: 220 13% 7%;
-    --card-foreground: 210 40% 98%;
-    
-    /* Ensure other state colors are visible on dark */
-    --success: 145 63.8% 55%;
-    --info: 220 80% 60%;
-    --warning: 40 95% 60%;
-    --destructive: 0 84.2% 65%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
   }
 }
 
