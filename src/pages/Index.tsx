@@ -96,17 +96,17 @@ const Index = () => {
     });
   }, [data?.habits, dbCapsules, data?.neurodivergentMode]);
 
-  const anchorHabits = useMemo(() => habitGroups.filter(h => h.category === 'anchor' && h.isVisible), [habitGroups]);
+  const anchorHabits = useMemo(() => habitGroups.filter(h => h.category === 'anchor' && h.is_visible), [habitGroups]);
   const dailyHabits = useMemo(() => {
     return habitGroups
-      .filter(h => h.category === 'daily' && h.isVisible)
+      .filter(h => h.category === 'daily' && h.is_visible)
       .sort((a, b) => (a.allCompleted === b.allCompleted ? 0 : a.allCompleted ? 1 : -1)); // Completed habits last
   }, [habitGroups]);
 
   useEffect(() => {
     if (habitGroups.length === 0) return;
     if (expandedItems.length === 0) {
-      setExpandedItems(habitGroups.filter(h => h.isVisible && !h.allCompleted && h.isWithinWindow).map(h => h.key));
+      setExpandedItems(habitGroups.filter(h => h.is_visible && !h.allCompleted && h.isWithinWindow).map(h => h.key));
     }
   }, [habitGroups]);
 
@@ -304,7 +304,7 @@ const Index = () => {
                   <Button 
                     variant="ghost" 
                     size="sm" 
-                    className="w-full text-[10px] font-black uppercase tracking-widest opacity-40 h-8"
+                    className="w-full text-[10px] font-black uppercase opacity-40 h-8"
                     onClick={() => toggleShowAll(habit.key)}
                   >
                     Simplify View (Focus Next)
