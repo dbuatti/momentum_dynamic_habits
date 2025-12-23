@@ -12,9 +12,10 @@ interface LogHabitParams {
   value: number;
   taskName: string;
   difficultyRating?: number;
+  note?: string; // Added optional note field
 }
 
-const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating }: LogHabitParams & { userId: string }) => {
+const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, note }: LogHabitParams & { userId: string }) => {
   const habitConfig = initialHabits.find(h => h.id === habitKey);
   if (!habitConfig) throw new Error(`Habit configuration not found for key: ${habitKey}`);
 
@@ -45,6 +46,7 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating }:
     duration_used: habitConfig.type === 'time' ? actualValue : null,
     xp_earned: xpEarned, energy_cost: energyCost, difficulty_rating: difficultyRating || null,
     completed_at: new Date().toISOString(),
+    note: note || null, // Inserting the optional note
   });
 
   if (insertError) throw insertError;

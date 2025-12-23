@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Dumbbell, Wind, BookOpen, Music, AlertCircle, Loader2, Zap, Home, Code, ClipboardList, Calendar, Filter, Sparkles, Pill } from 'lucide-react';
+import { ArrowLeft, Dumbbell, Wind, BookOpen, Music, AlertCircle, Loader2, Zap, Home, Code, ClipboardList, Calendar, Filter, Sparkles, Pill, MessageSquare } from 'lucide-react';
 import { useCompletedTasks } from '@/hooks/useCompletedTasks';
 import { format, parseISO, isSameDay } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -138,7 +138,7 @@ const History = () => {
                             )}
                             <div>
                               <p className="font-medium">{task.task_name}</p>
-                              <p className="text-sm text-muted-foreground">
+                              <p className="text-sm text-muted-foreground mt-0.5">
                                 {format(parseISO(task.completed_at), 'hh:mm a')}
                               </p>
                             </div>
@@ -155,6 +155,14 @@ const History = () => {
                             </div>
                           </div>
                         </div>
+                        
+                        {task.note && (
+                          <div className="flex items-start space-x-2 p-3 bg-muted/50 rounded-lg border border-border/50">
+                            <MessageSquare className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+                            <p className="text-sm italic text-muted-foreground">{task.note}</p>
+                          </div>
+                        )}
+                        
                         {index < tasks.length - 1 && <Separator />}
                       </React.Fragment>
                     );

@@ -13,6 +13,7 @@ interface CompletedTask {
   xp_earned: number;
   energy_cost: number;
   completed_at: string;
+  note: string | null; // Added note field
 }
 
 const fetchCompletedTasks = async (userId: string): Promise<CompletedTask[]> => {
@@ -33,7 +34,7 @@ const fetchCompletedTasks = async (userId: string): Promise<CompletedTask[]> => 
   
   const { data, error } = await supabase
     .from('completedtasks')
-    .select('id, task_name, original_source, duration_used, xp_earned, energy_cost, completed_at')
+    .select('id, task_name, original_source, duration_used, xp_earned, energy_cost, completed_at, note') // Select note
     .eq('user_id', userId)
     .order('completed_at', { ascending: false });
 

@@ -29,7 +29,7 @@ export const initialHabits: (Habit | PianoHabit)[] = [
     id: "kinesiology",
     name: "Kinesiology Study",
     type: "time",
-    targetGoal: 1, // Changed to 1 minute (was 30 seconds)
+    targetGoal: 10, // Set default to 10 minutes
     unit: "min", // Unit changed to minutes
     currentProgress: 0,
     momentum: "Struggling",
@@ -41,7 +41,7 @@ export const initialHabits: (Habit | PianoHabit)[] = [
     id: "piano",
     name: "Piano Practice",
     type: "time",
-    targetGoal: 5, // Changed to 5 minutes (was 30 seconds)
+    targetGoal: 10, // Set default to 10 minutes
     unit: "min", // Unit changed to minutes
     currentProgress: 0,
     momentum: "Strong",

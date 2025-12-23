@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { showError } from '@/utils/toast';
+import { Textarea } from '@/components/ui/textarea';
 
 interface TimerState {
   timeRemaining: number;
@@ -17,11 +18,14 @@ interface TimerState {
   selectedDuration: number;
 }
 
+const HABIT_KEY = 'kinesiology';
+const HABIT_NAME = 'Kinesiology Practice';
+const DEFAULT_DURATION = 10; // Default duration set to 10 minutes
 const LOCAL_STORAGE_KEY = 'kinesiologyTimerState';
 
 const StudyLog = () => {
   const location = useLocation();
-  const initialDurationFromState = location.state?.duration || 1; // Default from dashboard or 1 min
+  const initialDurationFromState = location.state?.duration || DEFAULT_DURATION;
   const [selectedDuration, setSelectedDuration] = useState<number>(initialDurationFromState);
   const initialTimeInSeconds = selectedDuration * 60;
 
@@ -80,6 +84,7 @@ const StudyLog = () => {
   }, [selectedDuration, initialTimeInSeconds]);
 
   const [timerState, setTimerState] = useState<TimerState>(getInitialState());
+  const [sessionNote, setSessionNote] = useState(''); // State for optional note
   const { timeRemaining, isActive, isFinished } = timerState;
   const { mutate: logHabit, isPending } = useHabitLog();
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -173,6 +178,7 @@ const StudyLog = () => {
       startTime: null,
       selectedDuration: selectedDuration,
     });
+    setSessionNote(''); // Reset note on timer reset
     localStorage.removeItem(LOCAL_STORAGE_KEY);
   };
 
@@ -192,8 +198,7 @@ const StudyLog = () => {
     } else if (durationToLogMinutes > 0) {
       minutesToLog = durationToLogMinutes;
     } else if (selectedDuration > 0) {
-      // Timer is not active, not finished, and no time spent yet.
-      // Log the full selected duration, assuming manual completion.
+      // Log the full selected duration, assuming manual completion if timer wasn't used
       minutesToLog = selectedDuration;
     } else {
       showError('Please select a duration to log.');
@@ -202,9 +207,10 @@ const StudyLog = () => {
     
     if (minutesToLog > 0) {
       logHabit({ 
-        habitKey: 'kinesiology', 
+        habitKey: HABIT_KEY, 
         value: minutesToLog, 
-        taskName: 'Kinesiology Study' 
+        taskName: HABIT_NAME,
+        note: sessionNote, // Pass the note
       });
       localStorage.removeItem(LOCAL_STORAGE_KEY);
     }
@@ -230,7 +236,7 @@ const StudyLog = () => {
   return (
     <div className="flex flex-col items-center w-full max-w-md mx-auto px-4 py-6">
       <div className="w-full space-y-8">
-        <PageHeader title="Kinesiology Study" backLink="/" />
+        <PageHeader title={HABIT_NAME} backLink="/" />
         
         <div className="space-y-6">
           <div className="space-y-3">
@@ -282,7 +288,7 @@ const StudyLog = () => {
                     )}
                   </Button>
                   
-                  {(isActive || isFinished) && (
+                  {(isActive || isFinished || timeRemaining < initialTimeInSeconds) && (
                     <Button 
                       size="icon" 
                       variant="outline" 
@@ -297,6 +303,21 @@ const StudyLog = () => {
               </div>
             </CardContent>
           </Card>
+        </div>
+        
+        {/* Optional Note Field */}
+        <div className="space-y-3">
+          <Label htmlFor="session-note" className="text-lg font-medium text-muted-foreground">
+            Optional: What did I notice?
+          </Label>
+          <Textarea 
+            id="session-note" 
+            value={sessionNote} 
+            onChange={(e) => setSessionNote(e.target.value)} 
+            placeholder="E.g., Felt focused for 8 minutes, struggled with balance."
+            disabled={isPending}
+            className="rounded-2xl"
+          />
         </div>
         
         <div className="space-y-4">
@@ -319,7 +340,7 @@ const StudyLog = () => {
         <div className="p-4 bg-accent rounded-md border border-border">
           <p className="text-sm font-medium text-accent-foreground flex items-center justify-center">
             <BookOpen className="w-4 h-4 mr-2" />
-            Completion Prompt: Space built. You showed up! Now, look at one piece of paper before you leave the area.
+            Completion Prompt: Session entered. No judgment on outcome, insight, or quality.
           </p>
         </div>
       </div>
