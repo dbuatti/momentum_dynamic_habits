@@ -75,6 +75,7 @@ const OnboardingFlow = ({ onComplete }: { onComplete: () => void }) => {
         initial_low_pressure_start: isLowPressureStart,
         initial_session_duration_preference: sessionDurationPreference,
         initial_allow_chunks: allowChunks,
+        initial_weekly_frequency: weeklyFrequencyPreference, // Store weekly frequency preference
       });
 
       await initializeHabits({
