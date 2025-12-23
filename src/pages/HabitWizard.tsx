@@ -15,7 +15,7 @@ import {
   Target, Anchor, Zap, ShieldCheck, Brain, Clock, Layers,
   Dumbbell, Wind, BookOpen, Music, Home, Code, Sparkles, Pill,
   Plus, Loader2, Check, Info, Eye, EyeOff, ArrowRight, FlaskConical,
-  Calendar, Timer, Settings, LayoutTemplate, X, TrendingUp, Smile, Lightbulb
+  Calendar, Timer, Settings, LayoutTemplate, X, TrendingUp, Smile, Lightbulb, RotateCcw
 } from 'lucide-react';
 import { habitTemplates, habitCategories, habitUnits, habitModes, habitIcons, HabitTemplate, motivationTypes } from '@/lib/habit-templates';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -50,6 +50,19 @@ import { Step6_GrowthStyle } from '@/components/habits/wizard/micro/Step6_Growth
 import { Step6_FailureResponse } from '@/components/habits/wizard/micro/Step6_FailureResponse';
 import { Step6_SuccessDefinition } from '@/components/habits/wizard/micro/Step6_SuccessDefinition';
 import { HabitTemplateForm } from '@/components/habits/wizard/HabitTemplateForm';
+
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
 
 export interface CreateHabitParams {
   name: string;
@@ -388,8 +401,8 @@ const HabitWizard = () => {
     if (currentStep === 2) {
       prevStep = 1;
     } else if (currentStep === 3) {
-      if (currentMicroStep > 0) { // Fixed: changed currentMicroIndex to currentMicroStep
-        prevMicroIndex = currentMicroStep - 1; // Fixed: changed currentMicroIndex to currentMicroStep
+      if (currentMicroStep > 0) {
+        prevMicroIndex = currentMicroStep - 1;
       } else {
         prevStep = 2;
         prevMicroIndex = 0;
@@ -507,7 +520,7 @@ const HabitWizard = () => {
   }
 
   const renderWizardStepContent = () => {
-    if (currentStep === 1) return <HabitWizardStep1 wizardData={wizardData} setWizardData={setWizardData} onResetProgress={handleResetProgress} hasSavedProgress={!!wizardProgress} />;
+    if (currentStep === 1) return <HabitWizardStep1 wizardData={wizardData} setWizardData={setWizardData} />;
     if (currentStep === 2) return <HabitWizardStep2 wizardData={wizardData} setWizardData={setWizardData} />;
     
     if (currentStep === 3) {
@@ -588,6 +601,38 @@ const HabitWizard = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Global Reset Progress Button */}
+      {wizardProgress && !isTemplateCreationMode && (
+        <div className="flex justify-center mt-6">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-xs text-muted-foreground hover:text-destructive"
+              >
+                <RotateCcw className="w-3.5 h-3.5 mr-2" />
+                Reset Wizard Progress
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent className="rounded-2xl">
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete your saved progress in the Habit Wizard and you will start from Step 1.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleResetProgress} className="rounded-xl bg-destructive hover:bg-destructive/90">
+                  Reset Progress
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      )}
     </div>
   );
 };
