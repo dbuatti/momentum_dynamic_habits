@@ -28,8 +28,8 @@ interface HabitTemplateFormProps {
   setWizardData: React.Dispatch<React.SetStateAction<Partial<WizardHabitData>>>;
   handleSubmitFinal: (e?: React.FormEvent) => Promise<void>;
   isSaving: boolean;
-  createHabitMutation: ReturnType<typeof useMutation>;
-  createTemplateMutation: ReturnType<typeof typeof useCreateTemplate>;
+  createHabitMutation: ReturnType<typeof useMutation>; // Corrected type
+  createTemplateMutation: ReturnType<typeof useCreateTemplate>; // Corrected type
 }
 
 const timeOptions = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0') + ':00');

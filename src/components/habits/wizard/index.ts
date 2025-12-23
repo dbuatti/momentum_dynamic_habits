@@ -1,3 +1,5 @@
-export * from './HabitWizardStep1';
-export * from './HabitWizardStep2';
-export * from './HabitTemplateForm';
+import { HabitWizardStep1 } from './HabitWizardStep1';
+import { HabitWizardStep2 } from './HabitWizardStep2';
+import { HabitTemplateForm } from './HabitTemplateForm';
+
+export { HabitWizardStep1, HabitWizardStep2, HabitTemplateForm };

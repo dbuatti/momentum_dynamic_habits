@@ -31,7 +31,7 @@ import { useCreateTemplate } from '@/hooks/useCreateTemplate';
 import { useUserHabitWizardTemp, WizardHabitData } from '@/hooks/useUserHabitWizardTemp';
 import { HabitWizardStep1, HabitWizardStep2, HabitTemplateForm } from '@/components/habits/wizard'; // Import new components
 
-interface CreateHabitParams {
+export interface CreateHabitParams {
   name: string;
   habit_key: string;
   category: HabitCategoryType;
