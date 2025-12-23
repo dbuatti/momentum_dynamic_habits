@@ -34,7 +34,7 @@
     --success-border: 145 63.8% 70%;
 
     --info: 220 80% 50%;
-    --info-foreground: 220 80% 20%; /* Changed for better contrast in light theme */
+    --info-foreground: 220 80% 20%;
     --info-background: 220 80% 90%;
     --info-border: 220 80% 70%;
 
@@ -75,21 +75,21 @@
     --habit-indigo-foreground: 240 50% 40%;
     --habit-indigo-border: 240 60% 85%;
 
-    /* Landing Page Specific Colors (Always Dark) */
-    --landing-background: 220 13% 5%; /* A deep slate */
-    --landing-foreground: 210 40% 98%; /* White */
-    --landing-muted-foreground: 215 16% 65%; /* Light slate gray */
-    --landing-primary: 240 5.9% 10%; /* Dark primary */
-    --landing-primary-foreground: 210 40% 98%; /* White */
-    --landing-accent: 240 3.7% 15.9%; /* Darker accent */
-    --landing-accent-foreground: 210 40% 98%; /* White */
-    --landing-border: 217.2 32.6% 17.5%; /* Dark border */
-    --landing-indigo: 240 70% 50%; /* Indigo for highlights */
-    --landing-purple: 250 100% 40%; /* Purple for highlights */
-    --landing-green: 145 63.8% 42.8%; /* Green for highlights */
-    --landing-orange: 25 95% 40%; /* Orange for highlights */
-    --landing-yellow: 40 95% 50%; /* Yellow for highlights */
-    --landing-red: 0 84.2% 60.2%; /* Red for highlights */
+    /* Landing Page Specific Base Colors */
+    --landing-background: 220 13% 5%;
+    --landing-foreground: 210 40% 98%;
+    --landing-muted-foreground: 215 16% 65%;
+    --landing-primary: 210 40% 98%; /* Light primary for dark background */
+    --landing-primary-foreground: 220 13% 5%;
+    --landing-accent: 240 3.7% 15.9%;
+    --landing-accent-foreground: 210 40% 98%;
+    --landing-border: 217.2 32.6% 17.5%;
+    --landing-indigo: 240 70% 60%;
+    --landing-purple: 250 100% 65%;
+    --landing-green: 145 63.8% 55%;
+    --landing-orange: 25 95% 55%;
+    --landing-yellow: 40 95% 60%;
+    --landing-red: 0 84.2% 65%;
   }
 
   .dark {
@@ -123,7 +123,7 @@
     --success-border: 145 63.8% 30%;
 
     --info: 220 80% 50%;
-    --info-foreground: 210 40% 98%; /* Kept white for dark theme */
+    --info-foreground: 210 40% 98%;
     --info-background: 220 80% 20%;
     --info-border: 220 80% 30%;
 
@@ -141,32 +141,21 @@
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
 
-    /* Dark mode specific habit-purple colors for better contrast */
-    --habit-purple: 250 50% 15%; /* Darker purple for background */
-    --habit-purple-foreground: 250 70% 70%; /* Lighter purple for text */
-    --habit-purple-border: 250 40% 30%; /* Medium dark purple for border */
-
-    /* Dark mode specific habit-green colors for better contrast */
-    --habit-green: 145 50% 15%; /* Darker green for background */
-    --habit-green-foreground: 145 70% 70%; /* Lighter green for text */
-    --habit-green-border: 145 40% 30%; /* Medium dark green for border */
-
-    /* Dark mode specific habit-orange colors for better contrast */
+    --habit-purple: 250 50% 15%;
+    --habit-purple-foreground: 250 70% 70%;
+    --habit-purple-border: 250 40% 30%;
+    --habit-green: 145 50% 15%;
+    --habit-green-foreground: 145 70% 70%;
+    --habit-green-border: 145 40% 30%;
     --habit-orange: 25 95% 15%;
     --habit-orange-foreground: 25 95% 70%;
     --habit-orange-border: 25 95% 30%;
-
-    /* Dark mode specific habit-blue colors for better contrast */
     --habit-blue: 220 80% 15%;
     --habit-blue-foreground: 220 80% 70%;
     --habit-blue-border: 220 80% 30%;
-
-    /* Dark mode specific habit-red colors for better contrast */
     --habit-red: 0 70% 15%;
     --habit-red-foreground: 0 70% 70%;
     --habit-red-border: 0 70% 30%;
-
-    /* Dark mode specific habit-indigo colors for better contrast */
     --habit-indigo: 240 50% 15%;
     --habit-indigo-foreground: 240 70% 70%;
     --habit-indigo-border: 240 40% 30%;
@@ -174,16 +163,22 @@
 
   /* Landing Page specific theme override */
   .landing-page-theme {
-    --background: var(--landing-background);
-    --foreground: var(--landing-foreground);
-    --muted-foreground: var(--landing-muted-foreground);
-    --primary: var(--landing-primary);
-    --primary-foreground: var(--landing-primary-foreground);
-    --accent: var(--landing-accent);
-    --accent-foreground: var(--landing-accent-foreground);
-    --border: var(--landing-border);
-    --card: var(--landing-background); /* Cards on landing page also use landing background */
-    --card-foreground: var(--landing-foreground);
+    --background: 220 13% 5%;
+    --foreground: 210 40% 98%;
+    --muted-foreground: 215 16% 65%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 220 13% 5%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --card: 220 13% 7%;
+    --card-foreground: 210 40% 98%;
+    
+    /* Ensure other state colors are visible on dark */
+    --success: 145 63.8% 55%;
+    --info: 220 80% 60%;
+    --warning: 40 95% 60%;
+    --destructive: 0 84.2% 65%;
   }
 }
 
