@@ -231,6 +231,8 @@ export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, t
       is_fixed: isFixed,
       anchor_practice: isAnchorPractice,
       auto_chunking: autoChunking,
+      enable_chunks: autoChunking,
+      chunking_mode: 'auto',
       unit,
       measurement_type: measurementType,
       xp_per_unit: xpPerUnit,
