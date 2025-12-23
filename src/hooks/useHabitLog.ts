@@ -184,7 +184,7 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
     level: calculateLevel(newXp),
   }).eq('id', userId);
 
-  return { success: true };
+  return { success: true, taskName, xpEarned }; // Return taskName and xpEarned for success message
 };
 
 const unlogHabit = async ({ userId, habitKey, taskName }: { userId: string, habitKey: string, taskName: string }) => {
@@ -293,7 +293,8 @@ export const useHabitLog = () => {
       if (!session?.user?.id) throw new Error('User not authenticated');
       return logHabit({ ...params, userId: session.user.id });
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      showSuccess(`${data.taskName} completed! +${data.xpEarned} XP`); // More specific success message
       queryClient.invalidateQueries({ queryKey: ['dashboardData', session?.user?.id] });
       queryClient.invalidateQueries({ queryKey: ['journeyData', session?.user?.id] });
       queryClient.invalidateQueries({ queryKey: ['dailyHabitCompletion', session?.user?.id] });

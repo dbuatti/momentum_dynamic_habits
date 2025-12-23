@@ -114,14 +114,25 @@ const Index = () => {
   const dailyHabits = useMemo(() => {
     return habitGroups
       .filter(h => h.category !== 'anchor' && h.is_visible)
-      .sort((a, b) => (a.allCompleted === b.allCompleted ? 0 : a.allCompleted ? 1 : -1)); // Completed habits last
+      .sort((a, b) => {
+        // Sort by completion status (incomplete first)
+        if (a.allCompleted !== b.allCompleted) {
+          return a.allCompleted ? 1 : -1;
+        }
+        // Then by progress (least complete first)
+        const aProgressRatio = a.dailyGoal > 0 ? a.dailyProgress / a.dailyGoal : 0;
+        const bProgressRatio = b.dailyGoal > 0 ? b.dailyProgress / b.dailyGoal : 0;
+        return aProgressRatio - bProgressRatio;
+      });
   }, [habitGroups]);
 
   useEffect(() => {
     if (habitGroups.length === 0) return;
-    if (expandedItems.length === 0) {
-      setExpandedItems(habitGroups.filter(h => h.is_visible && !h.allCompleted && h.isWithinWindow).map(h => h.key));
-    }
+    // Expand all incomplete anchor/trial habits by default
+    const initialExpanded = habitGroups
+      .filter(h => h.is_visible && !h.allCompleted && (h.category === 'anchor' || h.is_trial_mode))
+      .map(h => h.key);
+    setExpandedItems(initialExpanded);
   }, [habitGroups]);
 
   const handleCapsuleComplete = (habit: any, capsule: any, actualValue: number, mood?: string) => {
@@ -207,6 +218,11 @@ const Index = () => {
                       {isGrowth && (
                         <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-700 border border-purple-200">
                           Growth Mode
+                        </span>
+                      )}
+                      {habit.is_fixed && (
+                        <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-gray-100 text-gray-700 border border-gray-200">
+                          Fixed Mode
                         </span>
                       )}
                     </div>
