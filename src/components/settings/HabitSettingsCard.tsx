@@ -12,15 +12,16 @@ import {
   Anchor, Target, Sparkles, ShieldCheck, Calendar, 
   Clock, Dumbbell, Wind, BookOpen, Music, 
   Home, Code, Pill, Timer, BarChart3, Layers, Zap, Info, Eye, EyeOff, Link as LinkIcon, FlaskConical,
-  Trash2 
+  Trash2, ChevronDown, ChevronUp, CheckCircle2, ListOrdered
 } from 'lucide-react';
-import { UserHabitRecord, MeasurementType } from '@/types/habit';
+import { UserHabitRecord, MeasurementType, ChunkingMode } from '@/types/habit';
 import { useUpdateHabitVisibility } from '@/hooks/useUpdateHabitVisibility';
 import { habitIcons, habitModes, habitUnits, habitMeasurementTypes } from '@/lib/habit-templates';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useJourneyData } from '@/hooks/useJourneyData';
 import { habitIconMap } from '@/lib/habit-utils';
 import { useDeleteHabit } from '@/hooks/useDeleteHabit';
+import { calculateDynamicChunks } from '@/utils/progress-utils';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,7 +42,6 @@ interface HabitSettingsCardProps {
 }
 
 const days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-const timeOptions = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0') + ':00');
 
 export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
   habit,
@@ -50,8 +50,8 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
   isActiveHabit,
 }) => {
   const Icon = habitIconMap[habit.habit_key] || habitIconMap.custom_habit;
-  const { mutate: updateHabitVisibility } = useUpdateHabitVisibility();
   const { data: journeyData } = useJourneyData();
+  const neurodivergentMode = journeyData?.profile?.neurodivergent_mode || false;
   const { mutate: deleteHabit, isPending: isDeletingHabit } = useDeleteHabit();
 
   const [editedHabitName, setEditedHabitName] = useState(habit.name || habit.habit_key.replace(/_/g, ' '));
@@ -66,21 +66,38 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
 
   const handleUnitChange = (newUnit: 'min' | 'reps' | 'dose') => {
     const updates: any = { unit: newUnit };
-    
-    // Re-validate measurementType based on the new unit
     if (newUnit === 'dose') {
       updates.measurement_type = 'binary';
       updates.current_daily_goal = 1;
-      updates.auto_chunking = false;
       updates.enable_chunks = false;
     } else if (newUnit === 'min') {
       updates.measurement_type = 'timer';
     } else if (newUnit === 'reps') {
       updates.measurement_type = 'unit';
     }
-
     onUpdateHabitField(habit.id, updates);
   };
+
+  // Preview the calculated chunks
+  const chunkPreview = useMemo(() => {
+    return calculateDynamicChunks(
+      habit.habit_key,
+      habit.current_daily_goal,
+      habit.unit,
+      neurodivergentMode,
+      habit.auto_chunking,
+      habit.enable_chunks,
+      habit.num_chunks,
+      habit.chunk_duration,
+      habit.measurement_type,
+      habit.chunking_mode || 'auto',
+      habit.preferred_chunk_duration,
+      habit.preferred_chunk_count
+    );
+  }, [habit, neurodivergentMode]);
+
+  const durationOptions = habit.unit === 'min' ? [5, 10, 15, 20, 30, 45, 60] : [5, 10, 20, 25, 50];
+  const countOptions = [2, 3, 4, 5, 6, 8, 10, 12];
 
   return (
     <AccordionItem 
@@ -122,7 +139,7 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
                    {habit.is_fixed ? 'Fixed' : (habit.is_trial_mode ? 'Trial' : 'Growth')}
                  </span>
                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                   • {habit.frequency_per_week}x Weekly
+                   • {chunkPreview.numChunks} {chunkPreview.numChunks === 1 ? 'Part' : 'Parts'}
                  </span>
               </div>
             </div>
@@ -139,26 +156,6 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
           </TabsList>
 
           <TabsContent value="basics" className="space-y-6 focus-visible:outline-none">
-            <div className="space-y-3">
-              <Label className="text-[10px] font-black uppercase tracking-widest opacity-60 ml-1">Measurement Type</Label>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                {habitMeasurementTypes.map((m) => (
-                  <button
-                    key={m.value}
-                    type="button"
-                    onClick={() => onUpdateHabitField(habit.id, { measurement_type: m.value })}
-                    className={cn(
-                      "p-3 rounded-2xl border-2 text-left transition-all",
-                      habit.measurement_type === m.value ? "border-primary bg-primary/5" : "border-transparent bg-muted/30"
-                    )}
-                  >
-                    <p className="text-[10px] font-black uppercase">{m.label}</p>
-                    <p className="text-[8px] text-muted-foreground mt-1 leading-tight">{m.description}</p>
-                  </button>
-                ))}
-              </div>
-            </div>
-
             <div className="grid grid-cols-2 gap-4 bg-primary/[0.03] p-4 rounded-2xl border border-primary/10">
                <div className="space-y-2">
                  <Label className="text-[10px] font-black uppercase opacity-60 ml-1">Daily Target</Label>
@@ -169,13 +166,8 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
                      defaultValue={habit.current_daily_goal} 
                      onBlur={(e) => onUpdateHabitField(habit.id, { current_daily_goal: Math.round(parseInt(e.target.value)) })}
                    />
-                   <Select 
-                     value={habit.unit} 
-                     onValueChange={(v: any) => handleUnitChange(v)}
-                   >
-                     <SelectTrigger className="h-11 w-[100px] rounded-xl font-bold text-base">
-                       <SelectValue placeholder="Unit" />
-                     </SelectTrigger>
+                   <Select value={habit.unit} onValueChange={(v: any) => handleUnitChange(v)}>
+                     <SelectTrigger className="h-11 w-[100px] rounded-xl font-bold text-base"><SelectValue /></SelectTrigger>
                      <SelectContent>{habitUnits.map(u => <SelectItem key={u.value} value={u.value}>{u.label}</SelectItem>)}</SelectContent>
                    </Select>
                  </div>
@@ -242,73 +234,96 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
           </TabsContent>
 
           <TabsContent value="advanced" className="space-y-6 focus-visible:outline-none">
-             <div className="flex items-center justify-between p-4 rounded-2xl bg-primary/5 border border-primary/10">
-                <div className="flex gap-4">
-                  <div className="bg-primary/20 p-2 rounded-xl"><Anchor className="w-5 h-5 text-primary" /></div>
-                  <div className="space-y-0.5">
-                    <p className="text-xs font-black uppercase">Anchor Practice</p>
-                    <p className="text-[10px] text-muted-foreground">Prioritize on dashboard.</p>
-                  </div>
-                </div>
-                <Switch checked={habit.anchor_practice} onCheckedChange={(v) => onUpdateHabitField(habit.id, { anchor_practice: v })} />
-             </div>
-
              <div className="space-y-4">
                <div className="flex items-center gap-2 px-1">
                  <Layers className="w-4 h-4 text-primary" />
                  <h3 className="text-[10px] font-black uppercase tracking-widest opacity-60">Modular Capsules (Chunking)</h3>
                </div>
                
-               <div className="bg-muted/30 p-4 rounded-2xl border border-border space-y-4">
+               <div className="bg-muted/30 p-4 rounded-[2rem] border border-border space-y-6">
                  <div className="flex items-center justify-between">
                    <div className="space-y-0.5">
-                     <p className="text-xs font-bold">Auto-Chunking</p>
-                     <p className="text-[10px] text-muted-foreground">System suggests optimal parts.</p>
+                     <p className="text-sm font-bold">Enable Chunking</p>
+                     <p className="text-[10px] text-muted-foreground">Break session into manageable parts.</p>
                    </div>
                    <Switch 
-                     checked={habit.auto_chunking} 
-                     onCheckedChange={(v) => onUpdateHabitField(habit.id, { auto_chunking: v, enable_chunks: true })} 
+                     checked={habit.enable_chunks} 
+                     onCheckedChange={(v) => onUpdateHabitField(habit.id, { enable_chunks: v })} 
                    />
                  </div>
 
-                 {!habit.auto_chunking && (
-                   <div className="pt-3 border-t border-border space-y-4">
-                     <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
-                          <p className="text-xs font-bold">Enable Chunks</p>
-                          <p className="text-[10px] text-muted-foreground">Break sessions into multiple parts.</p>
-                        </div>
-                        <Switch 
-                          checked={habit.enable_chunks} 
-                          onCheckedChange={(v) => onUpdateHabitField(habit.id, { enable_chunks: v })} 
-                        />
+                 {habit.enable_chunks && (
+                   <div className="space-y-6 pt-4 border-t border-border">
+                     <div className="space-y-3">
+                       <Label className="text-[10px] font-black uppercase tracking-widest opacity-60">How would you like to break this up?</Label>
+                       <div className="grid grid-cols-3 gap-2">
+                         {[
+                           { id: 'auto', label: 'Auto', icon: Sparkles },
+                           { id: 'by_duration', label: 'Time', icon: Clock },
+                           { id: 'by_parts', label: 'Steps', icon: ListOrdered }
+                         ].map((m) => (
+                           <Button
+                             key={m.id}
+                             variant={habit.chunking_mode === m.id ? "default" : "outline"}
+                             className="h-10 rounded-xl text-[10px] font-bold uppercase gap-2"
+                             onClick={() => onUpdateHabitField(habit.id, { chunking_mode: m.id })}
+                           >
+                             <m.icon className="w-3.5 h-3.5" /> {m.label}
+                           </Button>
+                         ))}
+                       </div>
                      </div>
 
-                     {habit.enable_chunks && (
-                       <div className="grid grid-cols-2 gap-4 pt-2">
-                         <div className="space-y-2">
-                           <Label className="text-[10px] font-bold text-muted-foreground uppercase">Number of Parts</Label>
-                           <Input 
-                             type="number" 
-                             min="1" 
-                             max="10" 
-                             className="h-10 rounded-xl font-bold"
-                             defaultValue={habit.num_chunks}
-                             onBlur={(e) => onUpdateHabitField(habit.id, { num_chunks: Math.round(parseInt(e.target.value)) })}
-                           />
-                         </div>
-                         <div className="space-y-2">
-                           <Label className="text-[10px] font-bold text-muted-foreground uppercase">Value per Part</Label>
-                           <Input 
-                             type="number" 
-                             step="0.5"
-                             className="h-10 rounded-xl font-bold"
-                             defaultValue={habit.chunk_duration}
-                             onBlur={(e) => onUpdateHabitField(habit.id, { chunk_duration: parseFloat(e.target.value) })}
-                           />
+                     {habit.chunking_mode === 'by_duration' && (
+                       <div className="space-y-3 animate-in fade-in slide-in-from-top-1">
+                         <Label className="text-[10px] font-black uppercase tracking-widest opacity-60">Preferred Block Size</Label>
+                         <div className="flex flex-wrap gap-2">
+                           {durationOptions.map((d) => (
+                             <Button
+                               key={d}
+                               variant={habit.preferred_chunk_duration === d ? "secondary" : "outline"}
+                               className={cn("h-9 px-3 rounded-lg text-xs font-bold", habit.preferred_chunk_duration === d && "ring-2 ring-primary")}
+                               onClick={() => onUpdateHabitField(habit.id, { preferred_chunk_duration: d })}
+                             >
+                               {d} {habit.unit}
+                             </Button>
+                           ))}
                          </div>
                        </div>
                      )}
+
+                     {habit.chunking_mode === 'by_parts' && (
+                       <div className="space-y-3 animate-in fade-in slide-in-from-top-1">
+                         <Label className="text-[10px] font-black uppercase tracking-widest opacity-60">Number of Steps</Label>
+                         <div className="flex flex-wrap gap-2">
+                           {countOptions.map((c) => (
+                             <Button
+                               key={c}
+                               variant={habit.preferred_chunk_count === c ? "secondary" : "outline"}
+                               className={cn("h-9 px-4 rounded-lg text-xs font-bold", habit.preferred_chunk_count === c && "ring-2 ring-primary")}
+                               onClick={() => onUpdateHabitField(habit.id, { preferred_chunk_count: c })}
+                             >
+                               {c}
+                             </Button>
+                           ))}
+                         </div>
+                       </div>
+                     )}
+
+                     <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10 flex items-start gap-3">
+                       <div className="bg-primary/10 p-2 rounded-xl text-primary mt-1">
+                         <Info className="w-4 h-4" />
+                       </div>
+                       <div className="space-y-1">
+                         <p className="text-[10px] font-black uppercase text-primary/70 tracking-widest">Active Strategy</p>
+                         <p className="text-sm font-bold text-foreground leading-tight">
+                           This will create <span className="text-primary">{chunkPreview.numChunks} × {chunkPreview.chunkValue} {habit.unit}</span> parts for your {habit.current_daily_goal} {habit.unit} goal.
+                         </p>
+                         {habit.chunking_mode === 'auto' && (
+                           <p className="text-[10px] text-muted-foreground italic">Human-centric defaults: focusing on sustainable momentum.</p>
+                         )}
+                       </div>
+                     </div>
                    </div>
                  )}
                </div>

@@ -1,6 +1,6 @@
 import { WizardHabitData } from '@/hooks/useUserHabitWizardTemp';
 import { CreateHabitParams } from '@/pages/HabitWizard';
-import { HabitCategory, MeasurementType, GrowthType } from '@/types/habit';
+import { HabitCategory, MeasurementType, GrowthType, ChunkingMode } from '@/types/habit';
 
 export const timeOfDayOptions = [
   { id: 'morning', label: 'Morning', icon: 'Sunrise', start: '06:00', end: '10:00' },
@@ -17,7 +17,6 @@ export const calculateHabitParams = (data: Partial<WizardHabitData>, neurodiverg
   const energyPerSession = data.energy_per_session_skipped ? 'moderate' : data.energy_per_session;
   const unit = data.unit || 'min';
   
-  // Explicitly determine measurement type if not present
   let measurementType: MeasurementType = data.measurement_type || 'timer';
   if (!data.measurement_type) {
     if (unit === 'min') measurementType = 'timer';
@@ -25,7 +24,6 @@ export const calculateHabitParams = (data: Partial<WizardHabitData>, neurodiverg
     else if (unit === 'dose') measurementType = 'binary';
   }
 
-  // Determine recommended Growth settings
   let growthType: GrowthType = 'fixed';
   let growthValue = 1;
 
@@ -35,22 +33,20 @@ export const calculateHabitParams = (data: Partial<WizardHabitData>, neurodiverg
     else if (energyPerSession === 'moderate') dailyGoal = 20;
     else if (energyPerSession === 'plenty') dailyGoal = 30;
     
-    // Auto-recommend percentage for time
     growthType = 'percentage';
-    growthValue = neurodivergentMode ? 10 : 20; // +10% or +20%
+    growthValue = neurodivergentMode ? 10 : 20;
   } else if (unit === 'reps') {
     if (energyPerSession === 'very_little') dailyGoal = 5;
     else if (energyPerSession === 'a_bit') dailyGoal = 10;
     else if (energyPerSession === 'moderate') dailyGoal = 20;
     else if (energyPerSession === 'plenty') dailyGoal = 30;
     
-    // Auto-recommend fixed for reps
     growthType = 'fixed';
-    growthValue = neurodivergentMode ? 1 : 2; // +1 or +2 reps
+    growthValue = neurodivergentMode ? 1 : 2;
   } else if (unit === 'dose') {
     dailyGoal = 1;
     growthType = 'fixed';
-    growthValue = 0; // Binary growth disabled
+    growthValue = 0;
   }
 
   const consistencyReality = data.consistency_reality_skipped ? '3-4_days' : data.consistency_reality;
@@ -70,7 +66,9 @@ export const calculateHabitParams = (data: Partial<WizardHabitData>, neurodiverg
   const motivationType = data.motivation_type_skipped ? 'personal_growth' : data.motivation_type;
   const anchorPractice = motivationType === 'routine_building' || motivationType === 'stress_reduction';
 
-  const autoChunking = energyPerSession === 'plenty' || energyPerSession === 'moderate';
+  // NEW: Intelligent Chunking initialization
+  const enableChunks = measurementType !== 'binary' && dailyGoal > 5;
+  const chunkingMode: ChunkingMode = 'auto';
 
   let xpPerUnit = 30;
   let energyCostPerUnit = 6;
@@ -115,7 +113,9 @@ export const calculateHabitParams = (data: Partial<WizardHabitData>, neurodiverg
     is_trial_mode: isTrial,
     is_fixed: isFixed,
     anchor_practice: anchorPractice,
-    auto_chunking: autoChunking,
+    auto_chunking: true, // Legacy support
+    enable_chunks: enableChunks,
+    chunking_mode: chunkingMode,
     xp_per_unit: xpPerUnit,
     energy_cost_per_unit: energyCostPerUnit,
     dependent_on_habit_id: data.dependent_on_habit_id || null,

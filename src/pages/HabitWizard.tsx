@@ -22,7 +22,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { showError, showSuccess } from '@/utils/toast';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { UserHabitRecord, HabitCategory, MeasurementType, GrowthType } from '@/types/habit';
+import { UserHabitRecord, HabitCategory, MeasurementType, GrowthType, ChunkingMode } from '@/types/habit';
 import { useJourneyData } from '@/hooks/useJourneyData';
 import { useCreateTemplate } from '@/hooks/useCreateTemplate';
 import { useUserHabitWizardTemp, WizardHabitData } from '@/hooks/useUserHabitWizardTemp';
@@ -61,6 +61,10 @@ export interface CreateHabitParams {
   is_fixed: boolean;
   anchor_practice: boolean;
   auto_chunking: boolean;
+  enable_chunks: boolean;
+  chunking_mode: ChunkingMode;
+  preferred_chunk_duration?: number | null;
+  preferred_chunk_count?: number | null;
   unit: 'min' | 'reps' | 'dose';
   measurement_type: MeasurementType;
   xp_per_unit: number;
@@ -83,8 +87,9 @@ const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: s
 
   const { 
     name, habit_key, category, current_daily_goal, frequency_per_week, 
-    is_trial_mode, is_fixed, anchor_practice, auto_chunking, unit, 
-    measurement_type, xp_per_unit, energy_cost_per_unit, icon_name, 
+    is_trial_mode, is_fixed, anchor_practice, auto_chunking, enable_chunks,
+    chunking_mode, preferred_chunk_duration, preferred_chunk_count,
+    unit, measurement_type, xp_per_unit, energy_cost_per_unit, icon_name, 
     dependent_on_habit_id, window_start, window_end, carryover_enabled,
     growth_type, growth_value
   } = habit;
@@ -141,7 +146,7 @@ const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: s
     p_completions_in_plateau: 0,
     p_growth_phase: 'duration',
     p_days_of_week: [0, 1, 2, 3, 4, 5, 6],
-    p_enable_chunks: auto_chunking,
+    p_enable_chunks: enable_chunks,
     p_num_chunks: Math.round(numChunks),
     p_chunk_duration: chunkDuration,
     p_is_visible: true,

@@ -1,84 +1,83 @@
-import { Habit } from '@/types/habit';
-
 /**
  * Calculates the suggested chunks for a habit based on goal and user preferences.
- * Logic:
- * - Binary habits or disabled chunks: ALWAYS 1 chunk matching the goal.
- * - Time habits: Max 10-15 mins per chunk (smaller for neurodivergent)
- * - Count habits: Max 20-25 reps per chunk
+ * Implements an emotionally intelligent heuristic that avoids visual overwhelm.
  */
 export const calculateDynamicChunks = (
   habitKey: string, 
-  goal: number, // This should be the adjustedDailyGoal
+  goal: number, 
   unit: string, 
   isNeurodivergent: boolean,
-  autoChunking: boolean,
-  enableChunks: boolean, // Parameter to respect the enable_chunks setting
-  manualNumChunks?: number,
-  manualChunkDuration?: number,
-  measurementType?: string
+  autoChunking: boolean, // Legacy field
+  enableChunks: boolean, 
+  manualNumChunks?: number, // Legacy field
+  manualChunkDuration?: number, // Legacy field
+  measurementType?: string,
+  chunkingMode: string = 'auto',
+  preferredDuration?: number | null,
+  preferredCount?: number | null
 ) => {
   // HARD GUARDRAIL 1: Binary measurement (like medication) 
   // or explicitly disabled chunks should NEVER have more than 1 capsule.
   if (measurementType === 'binary' || !enableChunks) {
+    return { numChunks: 1, chunkValue: goal };
+  }
+
+  // HARD GUARDRAIL 2: Tiny goals (e.g., <= 5 mins) shouldn't be chunked.
+  if (goal <= 5) {
+    return { numChunks: 1, chunkValue: goal };
+  }
+
+  // OPTION A: BY DURATION (analytical thinking)
+  if (chunkingMode === 'by_duration' && preferredDuration && preferredDuration > 0) {
+    const num = Math.ceil(goal / preferredDuration);
     return {
-      numChunks: 1,
-      chunkValue: goal
+      numChunks: Math.max(1, num),
+      chunkValue: preferredDuration
     };
   }
 
-  // HARD GUARDRAIL 2: Tiny goals (e.g., 2 mins) shouldn't be chunked even if auto is on.
-  const isTinyGoal = (unit === 'min' && goal <= 5) || (unit === 'reps' && goal <= 5);
-  if (isTinyGoal) {
+  // OPTION B: BY PARTS (emotion/step-based thinking)
+  if (chunkingMode === 'by_parts' && preferredCount && preferredCount > 0) {
     return {
-      numChunks: 1,
-      chunkValue: goal
+      numChunks: preferredCount,
+      chunkValue: Number((goal / preferredCount).toFixed(1))
     };
   }
 
-  // RECONCILIATION: If auto-chunking is OFF but chunks are enabled, ensure totals match goal
-  if (!autoChunking) {
-    if (manualNumChunks && manualNumChunks > 0) {
-      // Prioritize number of chunks if specified, calculate duration per chunk
-      return {
-        numChunks: manualNumChunks,
-        chunkValue: Number((goal / manualNumChunks).toFixed(1))
-      };
-    }
-    if (manualChunkDuration && manualChunkDuration > 0) {
-      // Use duration to calculate how many chunks are needed for the goal
-      const num = Math.ceil(goal / manualChunkDuration);
-      return {
-        numChunks: Math.max(1, num),
-        chunkValue: manualChunkDuration
-      };
-    }
-  }
-
-  // AUTO-CHUNKING LOGIC
-  const isTime = unit === 'min';
-  const isReps = unit === 'reps';
-
+  // OPTION C: AUTO (Human-First Heuristic)
   let numChunks = 1;
   let chunkValue = goal;
 
+  const isTime = unit === 'min';
+
   if (isTime) {
-    // For time, target ~10 min chunks, or ~5 min for neurodivergent
-    const threshold = isNeurodivergent ? 5 : 10;
-    if (goal > threshold) {
-      numChunks = Math.ceil(goal / threshold);
-      chunkValue = goal / numChunks;
+    // Avoid "To-Do Explosion": 60 mins -> 2 x 30m, not 12 x 5m
+    if (goal <= 15) {
+      numChunks = 1;
+    } else if (goal <= 30) {
+      numChunks = 2; // 15m chunks
+    } else if (goal <= 60) {
+      numChunks = 2; // 30m chunks (better focus blocks)
+    } else if (goal <= 120) {
+      numChunks = 3; // 40m chunks
+    } else {
+      numChunks = Math.ceil(goal / 30); // Default to 30m blocks for very long tasks
     }
-  } else if (isReps) {
-    // For reps, target ~20 reps, or ~10 for neurodivergent
-    const threshold = isNeurodivergent ? 10 : 20;
-    if (goal > threshold) {
-      numChunks = Math.ceil(goal / threshold);
-      chunkValue = goal / numChunks;
+
+    // ND Adjustment: If ND mode is on, we might want slightly smaller blocks,
+    // but still avoid the 5-min fragmentation for cognitive tasks.
+    if (isNeurodivergent && goal > 30) {
+      numChunks = Math.ceil(goal / 20); // 20m chunks are often the ND sweet spot
     }
+  } else {
+    // For Count-based (Reps):
+    if (goal <= 10) numChunks = 1;
+    else if (goal <= 30) numChunks = 2;
+    else numChunks = Math.ceil(goal / 20);
   }
 
-  // Ensure minimums and clean formatting
+  chunkValue = goal / numChunks;
+
   return {
     numChunks: Math.max(1, numChunks),
     chunkValue: Number(chunkValue.toFixed(1))
@@ -90,7 +89,6 @@ export const calculateDailyParts = (habits: any[], isNeurodivergent: boolean) =>
   let completedParts = 0;
 
   habits.forEach(habit => {
-    // 1. Calculate chunks
     const { numChunks, chunkValue } = calculateDynamicChunks(
       habit.key,
       habit.adjustedDailyGoal,
@@ -100,20 +98,18 @@ export const calculateDailyParts = (habits: any[], isNeurodivergent: boolean) =>
       habit.enable_chunks, 
       habit.num_chunks,
       habit.chunk_duration,
-      habit.measurement_type
+      habit.measurement_type,
+      habit.chunking_mode,
+      habit.preferred_chunk_duration,
+      habit.preferred_chunk_count
     );
 
     totalParts += numChunks;
     
-    // 2. Determine effective progress
-    const dailyTarget = habit.adjustedDailyGoal;
     const rawProgress = habit.dailyProgress;
-    
-    // 3. Calculate completed parts for this habit based on raw progress
     for (let i = 0; i < numChunks; i++) {
       const isLast = i === numChunks - 1;
-      const cumulativeNeeded = isLast ? dailyTarget : (i + 1) * chunkValue;
-      
+      const cumulativeNeeded = isLast ? habit.adjustedDailyGoal : (i + 1) * chunkValue;
       if (rawProgress >= (cumulativeNeeded - 0.01)) {
         completedParts++;
       }

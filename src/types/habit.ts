@@ -4,6 +4,7 @@ export type HabitCategory = 'anchor' | 'daily' | 'cognitive' | 'physical' | 'wel
 export type GrowthPhase = 'frequency' | 'duration';
 export type MeasurementType = 'timer' | 'unit' | 'binary';
 export type GrowthType = 'fixed' | 'percentage';
+export type ChunkingMode = 'auto' | 'by_duration' | 'by_parts';
 
 export interface Habit {
   id: string;
@@ -59,6 +60,11 @@ export interface UserHabitRecord {
   measurement_type: MeasurementType;
   growth_type: GrowthType;
   growth_value: number;
+  
+  // New Chunking Control Fields
+  chunking_mode: ChunkingMode;
+  preferred_chunk_duration: number | null;
+  preferred_chunk_count: number | null;
 }
 
 export interface ProcessedUserHabit extends UserHabitRecord {
