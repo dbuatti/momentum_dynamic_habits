@@ -1,3 +1,5 @@
+"use client";
+
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
@@ -70,7 +72,7 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
   if (insertError) throw insertError;
 
   await supabase.rpc('increment_lifetime_progress', {
-    p_user_id: userId, p_habit_key: habitKey, p_increment_value: lifetimeProgressIncrementValue,
+    p_user_id: userId, p_habit_key: habitKey, p_increment_value: Math.round(lifetimeProgressIncrementValue),
   });
 
   // Fetch current daily progress *after* this log
@@ -182,8 +184,8 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
         last_plateau_start_date: todayDateString,
         completions_in_plateau: 0, // Reset after growth
         last_goal_increase_date: todayDateString,
-        current_daily_goal: newDailyGoal,
-        frequency_per_week: newFrequency,
+        current_daily_goal: Math.round(newDailyGoal), // Round here
+        frequency_per_week: Math.round(newFrequency), // Round here
         growth_phase: newGrowthPhase,
         is_trial_mode: newIsTrialMode, // Update trial mode status
       }).eq('id', userHabitData.id);
@@ -191,7 +193,7 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
   } else {
     // If not in growth mode (e.g., trial, fixed, or frozen), just update plateau progress
     await supabase.from('user_habits').update({
-      completions_in_plateau: newCompletionsInPlateau,
+      completions_in_plateau: Math.round(newCompletionsInPlateau), // Round here
       last_plateau_start_date: newLastPlateauStartDate,
       is_trial_mode: newIsTrialMode, // Update trial mode status
     }).eq('id', userHabitData.id);
@@ -257,7 +259,7 @@ const unlogHabit = async ({ userId, habitKey, taskName }: { userId: string, habi
   console.log(`[XP Debug]   lifetimeProgressDecrementValue: ${lifetimeProgressDecrementValue}`);
 
   await supabase.rpc('increment_lifetime_progress', {
-    p_user_id: userId, p_habit_key: habitKey, p_increment_value: -lifetimeProgressDecrementValue,
+    p_user_id: userId, p_habit_key: habitKey, p_increment_value: -Math.round(lifetimeProgressDecrementValue),
   });
 
   const { data: profile } = await supabase.from('profiles').select('xp, tasks_completed_today').eq('id', userId).single();
@@ -293,7 +295,7 @@ const unlogHabit = async ({ userId, habitKey, taskName }: { userId: string, habi
 
   if (!isGoalMetAfterUnlog && userHabitData.completions_in_plateau > 0) {
     await supabase.from('user_habits').update({
-      completions_in_plateau: userHabitData.completions_in_plateau - 1,
+      completions_in_plateau: Math.round(userHabitData.completions_in_plateau - 1), // Round here
     }).eq('id', userHabitData.id);
   }
 

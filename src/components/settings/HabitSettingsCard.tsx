@@ -136,7 +136,7 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
                      type="number" 
                      className="pl-3 pr-3 h-11 rounded-xl font-bold text-base flex-grow" // Removed pr-12, added flex-grow
                      defaultValue={habit.current_daily_goal} 
-                     onBlur={(e) => onUpdateHabitField(habit.id, { current_daily_goal: parseInt(e.target.value) })}
+                     onBlur={(e) => onUpdateHabitField(habit.id, { current_daily_goal: Math.round(parseInt(e.target.value)) })} // Round here
                    />
                    <Select 
                      value={habitUnit} 
@@ -169,7 +169,7 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
                     min="1" max="7"
                     className="h-11 rounded-xl font-bold text-base" 
                     defaultValue={habit.frequency_per_week}
-                    onBlur={(e) => onUpdateHabitField(habit.id, { frequency_per_week: parseInt(e.target.value) })}
+                    onBlur={(e) => onUpdateHabitField(habit.id, { frequency_per_week: Math.round(parseInt(e.target.value)) })} // Round here
                   />
                </div>
             </div>
@@ -310,7 +310,7 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
                         type="number" 
                         className="h-10 w-20 rounded-xl font-bold" 
                         defaultValue={habit.plateau_days_required}
-                        onBlur={(e) => onUpdateHabitField(habit.id, { plateau_days_required: parseInt(e.target.value) })}
+                        onBlur={(e) => onUpdateHabitField(habit.id, { plateau_days_required: Math.round(parseInt(e.target.value)) })} // Round here
                     />
                     <p className="text-[10px] text-muted-foreground leading-snug">
                         Days of 100% consistency required before the system suggests a goal increase.

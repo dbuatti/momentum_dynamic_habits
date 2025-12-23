@@ -1,9 +1,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useSession } from '@/contexts/SessionContext';
 import { showError } from '@/utils/toast';
 import { habitTemplates } from '@/lib/habit-templates';
 import { UserHabitRecord, HabitCategory } from '@/types/habit';
+import { useSession } from '@/contexts/SessionContext'; // Added import
 
 interface OnboardingHabitParams {
   numHabits: number;
@@ -112,34 +112,41 @@ const initializeSelectedHabits = async (userId: string, params: OnboardingHabitP
       chunkDuration = Number((currentDailyGoal / numChunks).toFixed(1));
     }
 
+    // Round integer values before upserting
+    const roundedCurrentDailyGoal = Math.round(currentDailyGoal);
+    const roundedFrequencyPerWeek = Math.round(weeklyFrequency);
+    const roundedXpPerUnit = Math.round(template.xpPerUnit);
+    const roundedPlateauDaysRequired = Math.round(plateauDays);
+    const roundedNumChunks = Math.round(numChunks);
+
     return {
       user_id: userId,
       habit_key: template.id,
       name: template.name,
       unit: template.unit,
-      xp_per_unit: template.xpPerUnit,
+      xp_per_unit: roundedXpPerUnit, // Use rounded value
       energy_cost_per_unit: template.energyCostPerUnit,
-      current_daily_goal: currentDailyGoal,
-      long_term_goal: currentDailyGoal * (template.unit === 'min' ? 365 * 60 : 365),
+      current_daily_goal: roundedCurrentDailyGoal, // Use rounded value
+      long_term_goal: Math.round(currentDailyGoal * (template.unit === 'min' ? 365 * 60 : 365)), // Ensure this is rounded
       momentum_level: 'Building',
       lifetime_progress: 0,
       last_goal_increase_date: today.toISOString().split('T')[0],
       is_frozen: false,
       max_goal_cap: null,
       last_plateau_start_date: today.toISOString().split('T')[0],
-      plateau_days_required: plateauDays,
+      plateau_days_required: roundedPlateauDaysRequired, // Use rounded value
       completions_in_plateau: 0,
       is_fixed: isFixed,
       category: category as HabitCategory,
       is_trial_mode: isTrial,
-      frequency_per_week: weeklyFrequency, // Use weeklyFrequency from params
+      frequency_per_week: roundedFrequencyPerWeek, // Use rounded value
       growth_phase: 'duration',
       window_start: null,
       window_end: null,
       days_of_week: [0, 1, 2, 3, 4, 5, 6],
       auto_chunking: shouldAutoChunk,
       enable_chunks: shouldAutoChunk,
-      num_chunks: numChunks,
+      num_chunks: roundedNumChunks, // Use rounded value
       chunk_duration: chunkDuration,
       is_visible: true,
       dependent_on_habit_id: null,
@@ -156,10 +163,10 @@ const initializeSelectedHabits = async (userId: string, params: OnboardingHabitP
     habit_key: template.id,
     name: template.name,
     unit: template.unit,
-    xp_per_unit: template.xpPerUnit,
+    xp_per_unit: Math.round(template.xpPerUnit), // Ensure rounded
     energy_cost_per_unit: template.energyCostPerUnit,
-    current_daily_goal: template.defaultDuration,
-    long_term_goal: template.defaultDuration * (template.unit === 'min' ? 365 * 60 : 365),
+    current_daily_goal: Math.round(template.defaultDuration), // Ensure rounded
+    long_term_goal: Math.round(template.defaultDuration * (template.unit === 'min' ? 365 * 60 : 365)), // Ensure rounded
     target_completion_date: oneYearDateString,
     momentum_level: 'Building',
     lifetime_progress: 0,
@@ -167,12 +174,12 @@ const initializeSelectedHabits = async (userId: string, params: OnboardingHabitP
     is_frozen: false,
     max_goal_cap: null,
     last_plateau_start_date: today.toISOString().split('T')[0],
-    plateau_days_required: template.plateauDaysRequired || 7,
+    plateau_days_required: Math.round(template.plateauDaysRequired || 7), // Ensure rounded
     completions_in_plateau: 0,
     is_fixed: true,
     category: template.category as HabitCategory,
     is_trial_mode: false,
-    frequency_per_week: template.defaultFrequency,
+    frequency_per_week: Math.round(template.defaultFrequency), // Ensure rounded
     growth_phase: 'duration',
     window_start: null,
     window_end: null,
@@ -184,13 +191,12 @@ const initializeSelectedHabits = async (userId: string, params: OnboardingHabitP
     is_visible: true,
     dependent_on_habit_id: null,
     anchor_practice: template.anchorPractice,
-    carryover_value: 0, // Initialize carryover_value
+    carryover_value: 0,
   }));
 
   const finalHabitsToUpsert = [...habitsToUpsert, ...fixedHabitsToAdd];
 
   if (finalHabitsToUpsert.length > 0) {
-    // Remove the onConflict option. The client handles upserts based on primary key or unique constraints.
     const { error: upsertError } = await supabase
       .from('user_habits')
       .upsert(finalHabitsToUpsert);

@@ -80,40 +80,49 @@ const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: s
     chunkDuration = Number((current_daily_goal / numChunks).toFixed(1));
   }
 
+  // Round integer values before sending to RPC
+  const roundedCurrentDailyGoal = Math.round(current_daily_goal);
+  const roundedFrequencyPerWeek = Math.round(frequency_per_week);
+  const roundedXpPerUnit = Math.round(xp_per_unit);
+  const roundedPlateauDaysRequired = Math.round(calculatedPlateauDays);
+  const roundedLongTermGoal = Math.round(current_daily_goal * (unit === 'min' ? 365 * 60 : 365));
+  const roundedNumChunks = Math.round(numChunks);
+  const roundedLifetimeProgress = Math.round(0); // Lifetime progress starts at 0, ensure it's an integer
+
   // Call the RPC function instead of upsert
   const { error } = await supabase.rpc('upsert_user_habit', {
     p_user_id: userId,
     p_habit_key: habit_key,
     p_name: name,
     p_category: category,
-    p_current_daily_goal: current_daily_goal,
-    p_frequency_per_week: frequency_per_week,
+    p_current_daily_goal: roundedCurrentDailyGoal, // Use rounded value
+    p_frequency_per_week: roundedFrequencyPerWeek, // Use rounded value
     p_is_trial_mode: is_trial_mode,
     p_is_fixed: is_fixed,
     p_anchor_practice: anchor_practice,
     p_auto_chunking: auto_chunking,
     p_unit: unit,
-    p_xp_per_unit: xp_per_unit,
+    p_xp_per_unit: roundedXpPerUnit, // Use rounded value
     p_energy_cost_per_unit: energy_cost_per_unit,
     p_icon_name: icon_name,
     p_dependent_on_habit_id: dependent_on_habit_id,
-    p_plateau_days_required: calculatedPlateauDays,
+    p_plateau_days_required: roundedPlateauDaysRequired, // Use rounded value
     p_window_start: window_start,
     p_window_end: window_end,
     p_carryover_enabled: carryover_enabled,
-    p_long_term_goal: current_daily_goal * (unit === 'min' ? 365 * 60 : 365),
+    p_long_term_goal: roundedLongTermGoal, // Use rounded value
     p_target_completion_date: oneYearDateString,
     p_momentum_level: 'Building',
-    p_lifetime_progress: 0,
+    p_lifetime_progress: roundedLifetimeProgress, // Use rounded value
     p_last_goal_increase_date: today.toISOString().split('T')[0],
     p_is_frozen: false,
     p_max_goal_cap: null,
     p_last_plateau_start_date: today.toISOString().split('T')[0],
-    p_completions_in_plateau: 0,
+    p_completions_in_plateau: 0, // This is an integer, ensure it's 0 or rounded
     p_growth_phase: 'duration',
     p_days_of_week: [0, 1, 2, 3, 4, 5, 6],
     p_enable_chunks: auto_chunking,
-    p_num_chunks: numChunks,
+    p_num_chunks: roundedNumChunks, // Use rounded value
     p_chunk_duration: chunkDuration,
     p_is_visible: true,
   });

@@ -120,18 +120,18 @@ export const EditHabitDetailsModal: React.FC<EditHabitDetailsModalProps> = ({
       name: habitName,
       habit_key: habitKey.toLowerCase().replace(/\s/g, '_'),
       category: category,
-      current_daily_goal: dailyGoal,
-      frequency_per_week: frequency,
+      current_daily_goal: Math.round(dailyGoal), // Round here
+      frequency_per_week: Math.round(frequency), // Round here
       is_trial_mode: isTrialMode,
       is_fixed: isFixed,
       anchor_practice: isAnchorPractice,
       auto_chunking: autoChunking,
       unit: unit,
-      xp_per_unit: xpPerUnit,
+      xp_per_unit: Math.round(xpPerUnit), // Round here
       energy_cost_per_unit: energyCostPerUnit,
       icon_name: selectedIconName,
       dependent_on_habit_id: dependentOnHabitId,
-      plateau_days_required: plateauDaysRequired,
+      plateau_days_required: Math.round(plateauDaysRequired), // Round here
       window_start: windowStart,
       window_end: windowEnd,
       carryover_enabled: carryoverEnabled,
@@ -557,8 +557,8 @@ export const EditHabitDetailsModal: React.FC<EditHabitDetailsModalProps> = ({
                 <Loader2 className="w-6 h-6 animate-spin" />
               ) : (
                 <>
-                  <Plus className="w-6 h-6 mr-2" />
-                  Save Changes
+                  {isTemplateMode ? <LayoutTemplate className="w-6 h-6 mr-2" /> : <Plus className="w-6 h-6 mr-2" />}
+                  {isTemplateMode ? 'Contribute Template' : 'Create Habit'}
                 </>
               )}
             </Button>

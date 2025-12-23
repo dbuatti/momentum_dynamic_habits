@@ -14,9 +14,37 @@ interface UpdateHabitParams {
 }
 
 const updateHabit = async ({ userId, habitId, updates }: UpdateHabitParams & { userId: string }) => {
+  const roundedUpdates: Partial<UserHabitRecord> = { ...updates };
+
+  // Explicitly round integer fields if they are present in updates
+  if (typeof roundedUpdates.current_daily_goal === 'number') {
+    roundedUpdates.current_daily_goal = Math.round(roundedUpdates.current_daily_goal);
+  }
+  if (typeof roundedUpdates.frequency_per_week === 'number') {
+    roundedUpdates.frequency_per_week = Math.round(roundedUpdates.frequency_per_week);
+  }
+  if (typeof roundedUpdates.xp_per_unit === 'number') {
+    roundedUpdates.xp_per_unit = Math.round(roundedUpdates.xp_per_unit);
+  }
+  if (typeof roundedUpdates.plateau_days_required === 'number') {
+    roundedUpdates.plateau_days_required = Math.round(roundedUpdates.plateau_days_required);
+  }
+  if (typeof roundedUpdates.num_chunks === 'number') {
+    roundedUpdates.num_chunks = Math.round(roundedUpdates.num_chunks);
+  }
+  if (typeof roundedUpdates.long_term_goal === 'number') {
+    roundedUpdates.long_term_goal = Math.round(roundedUpdates.long_term_goal);
+  }
+  if (typeof roundedUpdates.lifetime_progress === 'number') {
+    roundedUpdates.lifetime_progress = Math.round(roundedUpdates.lifetime_progress);
+  }
+  if (typeof roundedUpdates.completions_in_plateau === 'number') {
+    roundedUpdates.completions_in_plateau = Math.round(roundedUpdates.completions_in_plateau);
+  }
+
   const { error } = await supabase
     .from('user_habits')
-    .update(updates)
+    .update(roundedUpdates) // Use rounded updates
     .eq('id', habitId)
     .eq('user_id', userId); // Ensure user can only update their own habits
 
