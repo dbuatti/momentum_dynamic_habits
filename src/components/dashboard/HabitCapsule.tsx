@@ -33,7 +33,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   value,
   unit,
   isCompleted,
-  initialValue = 0,
+  initialValue = 0, // This is the prop from parent
   scheduledTime,
   completedTaskId: initialCompletedTaskId,
   onLogProgress,
@@ -49,11 +49,21 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   const [completedTaskIdState, setCompletedTaskIdState] = useState<string | null>(initialCompletedTaskId || null);
   const [isResetting, setIsResetting] = useState(false); // New state for reset lock
   
+  // NEW STATE: Local representation of the initial value for the current session
+  const [currentSessionInitialValue, setCurrentSessionInitialValue] = useState(initialValue);
+  
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number | null>(null);
   const isTimeBased = unit === 'min';
   
   const storageKey = `timer_${habitKey}_${label}_${new Date().toISOString().split('T')[0]}`;
+
+  // NEW EFFECT: Update local initial value when prop changes, unless resetting
+  useEffect(() => {
+    if (!isResetting) {
+      setCurrentSessionInitialValue(initialValue);
+    }
+  }, [initialValue, isResetting]);
 
   const formatTime = (totalSeconds: number) => {
     const roundedTotalSeconds = Math.round(totalSeconds);
@@ -82,14 +92,14 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
             label, 
             habitName,
             goalValue: value,
-            elapsed: initialValue * 60 + totalElapsed,
+            elapsed: currentSessionInitialValue * 60 + totalElapsed, // Use local initial value
             isPaused: false,
             habitKey 
           } 
         }));
       }
     }, 1000);
-  }, [label, initialValue, habitKey, habitName, value]);
+  }, [label, currentSessionInitialValue, habitKey, habitName, value]); // Dependency on currentSessionInitialValue
 
   useEffect(() => {
     console.log(`[HabitCapsule:${habitKey}-${label}] Component mounted/updated. initialCompletedTaskId: ${initialCompletedTaskId}, completedTaskIdState: ${completedTaskIdState}`);
@@ -103,15 +113,17 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
       setIsPaused(false);
       setGoalReachedAlerted(false);
       startTimeRef.current = null;
+      setCurrentSessionInitialValue(0); // Also reset local initial value on completion
       return;
     }
 
     const saved = localStorage.getItem(storageKey);
     if (saved) {
-      const { start, elapsed, paused, timing } = JSON.parse(saved);
-      console.log(`[HabitCapsule:${habitKey}-${label}] Loaded from localStorage:`, { start, elapsed, paused, timing });
+      const { start, elapsed, paused, timing, initialVal } = JSON.parse(saved); // Read initialVal from storage
+      console.log(`[HabitCapsule:${habitKey}-${label}] Loaded from localStorage:`, { start, elapsed, paused, timing, initialVal });
       setIsPaused(paused);
       setIsTiming(timing);
+      setCurrentSessionInitialValue(initialVal !== undefined ? initialVal : initialValue); // Use stored initialVal or prop
       
       if (timing && !paused) {
         startTimeRef.current = start;
@@ -121,7 +133,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
         setElapsedSeconds(elapsed);
         if (timing && paused) {
           window.dispatchEvent(new CustomEvent('habit-timer-update', { 
-            detail: { label, habitName, goalValue: value, elapsed: initialValue * 60 + elapsed, isPaused: true, habitKey } 
+            detail: { label, habitName, goalValue: value, elapsed: (initialVal !== undefined ? initialVal : initialValue) * 60 + elapsed, isPaused: true, habitKey } // Use stored initialVal
           }));
         }
       }
@@ -131,37 +143,38 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
       console.log(`[HabitCapsule:${habitKey}-${label}] Component unmounting. Stopping interval.`);
       stopInterval();
     };
-  }, [storageKey, isCompleted, startInterval, label, initialValue, habitKey, habitName, value, initialCompletedTaskId]);
+  }, [storageKey, isCompleted, startInterval, label, initialValue, habitKey, habitName, value, initialCompletedTaskId, completedTaskIdState]); // Added completedTaskIdState to dependencies
 
   useEffect(() => {
     if (isTiming && isTimeBased && !goalReachedAlerted) {
-      const totalMinutes = (initialValue * 60 + elapsedSeconds) / 60;
+      const totalMinutes = (currentSessionInitialValue * 60 + elapsedSeconds) / 60; // Use local initial value
       if (totalMinutes >= value) {
         playGoalSound();
         if (window.navigator?.vibrate) window.navigator.vibrate([100, 50, 100]);
         setGoalReachedAlerted(true);
       }
     }
-  }, [elapsedSeconds, isTiming, isTimeBased, value, initialValue, goalReachedAlerted]);
+  }, [elapsedSeconds, isTiming, isTimeBased, value, currentSessionInitialValue, goalReachedAlerted]); // Dependency on currentSessionInitialValue
 
   useEffect(() => {
-    if (!isCompleted && (isTiming || elapsedSeconds > 0)) {
+    if (!isCompleted && (isTiming || elapsedSeconds > 0 || currentSessionInitialValue > 0)) { // Also save if currentSessionInitialValue > 0
       localStorage.setItem(storageKey, JSON.stringify({
         start: startTimeRef.current,
         elapsed: elapsedSeconds,
         paused: isPaused,
-        timing: isTiming
+        timing: isTiming,
+        initialVal: currentSessionInitialValue // Save local initial value
       }));
-      console.log(`[HabitCapsule:${habitKey}-${label}] Saved to localStorage:`, { start: startTimeRef.current, elapsed: elapsedSeconds, paused: isPaused, timing: isTiming });
+      console.log(`[HabitCapsule:${habitKey}-${label}] Saved to localStorage:`, { start: startTimeRef.current, elapsed: elapsedSeconds, paused: isPaused, timing: isTiming, initialVal: currentSessionInitialValue });
     } else if (isCompleted) {
       console.log(`[HabitCapsule:${habitKey}-${label}] isCompleted is true, removing from localStorage.`);
       localStorage.removeItem(storageKey);
     }
-  }, [isTiming, elapsedSeconds, isPaused, isCompleted, storageKey]);
+  }, [isTiming, elapsedSeconds, isPaused, isCompleted, storageKey, currentSessionInitialValue]); // Dependency on currentSessionInitialValue
 
   const handleStartTimer = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (isResetting) return; // Guard against ghost clicks during reset
+    if (isResetting) return;
     console.log(`[HabitCapsule:${habitKey}-${label}] handleStartTimer called.`);
     playStartSound();
     setIsTiming(true);
@@ -173,7 +186,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
 
   const handlePauseTimer = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (isResetting) return; // Guard against ghost clicks during reset
+    if (isResetting) return;
     console.log(`[HabitCapsule:${habitKey}-${label}] handlePauseTimer called. Current isPaused: ${isPaused}`);
     if (isPaused) {
       playStartSound();
@@ -184,14 +197,14 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
       setIsPaused(true);
       stopInterval();
       window.dispatchEvent(new CustomEvent('habit-timer-update', { 
-        detail: { label, habitName, goalValue: value, elapsed: initialValue * 60 + elapsedSeconds, isPaused: true, habitKey } 
+        detail: { label, habitName, goalValue: value, elapsed: currentSessionInitialValue * 60 + elapsedSeconds, isPaused: true, habitKey } // Use local initial value
       }));
     }
   };
 
   const handleResetTimer = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    setIsResetting(true); // Set resetting lock
+    setIsResetting(true);
     console.log(`[HabitCapsule:${habitKey}-${label}] handleResetTimer called. completedTaskIdState: ${completedTaskIdState}`);
     
     stopInterval();
@@ -203,23 +216,25 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     localStorage.removeItem(storageKey);
     window.dispatchEvent(new CustomEvent('habit-timer-update', { detail: null }));
     
+    // Explicitly reset local initial value to 0
+    setCurrentSessionInitialValue(0); 
+
     if (completedTaskIdState) {
       console.log(`[HabitCapsule:${habitKey}-${label}] Calling onUncomplete with completedTaskIdState: ${completedTaskIdState}`);
-      await onUncomplete(completedTaskIdState); // Await the uncomplete action
-      setCompletedTaskIdState(null); // Clear local state immediately after uncomplete
+      await onUncomplete(completedTaskIdState);
+      setCompletedTaskIdState(null);
     } else {
       console.log(`[HabitCapsule:${habitKey}-${label}] No completedTaskIdState to uncomplete.`);
     }
 
-    // Add a small delay to prevent immediate re-triggering of start/quick complete
     setTimeout(() => setIsResetting(false), 300); 
   };
 
   const handleFinishTiming = (mood?: string, promptMood: boolean = false) => {
-    if (isResetting) return; // Guard against ghost clicks during reset
+    if (isResetting) return;
     console.log(`[HabitCapsule:${habitKey}-${label}] handleFinishTiming called. Mood: ${mood}, PromptMood: ${promptMood}`);
     stopInterval();
-    const totalSessionMinutes = Math.max(1, Math.ceil((initialValue * 60 + elapsedSeconds) / 60));
+    const totalSessionMinutes = Math.max(1, Math.ceil((currentSessionInitialValue * 60 + elapsedSeconds) / 60)); // Use local initial value
     
     if (promptMood && showMood && mood === undefined) {
       setShowMoodPicker(true);
@@ -247,11 +262,12 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     setShowMoodPicker(false);
     setGoalReachedAlerted(false);
     startTimeRef.current = null;
+    setCurrentSessionInitialValue(0); // Also reset local initial value on completion
   };
 
   const handleQuickComplete = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (isResetting) return; // Guard against ghost clicks during reset
+    if (isResetting) return;
     console.log(`[HabitCapsule:${habitKey}-${label}] handleQuickComplete called. isCompleted: ${isCompleted}`);
     if (isCompleted) return;
     
@@ -267,9 +283,10 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     
     console.log(`[HabitCapsule:${habitKey}-${label}] Calling onLogProgress (quick complete) with actualValue: ${value}, isComplete: true`);
     onLogProgress(value, true);
+    setCurrentSessionInitialValue(0); // Also reset local initial value on quick complete
   };
 
-  const currentTotalMinutes = isTimeBased ? initialValue + (elapsedSeconds / 60) : initialValue;
+  const currentTotalMinutes = isTimeBased ? currentSessionInitialValue + (elapsedSeconds / 60) : currentSessionInitialValue; // Use local initial value
   const progressPercent = Math.min(100, (currentTotalMinutes / value) * 100);
 
   const colors = {
@@ -346,7 +363,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
           isTiming && "ring-4 ring-primary/30 shadow-2xl scale-[1.02]"
         )}
         onClick={isTiming ? () => {
-          const totalSessionMinutes = (initialValue * 60 + elapsedSeconds) / 60;
+          const totalSessionMinutes = (currentSessionInitialValue * 60 + elapsedSeconds) / 60; // Use local initial value
           if (totalSessionMinutes >= value) {
             handleFinishTiming(undefined, false);
           } else {
@@ -360,12 +377,13 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
             setIsPaused(false);
             setGoalReachedAlerted(false);
             startTimeRef.current = null;
+            setCurrentSessionInitialValue(0); // Also reset local initial value on partial log
           }
         } : (!isCompleted && !showMoodPicker && !isResetting) ? (isTimeBased ? handleStartTimer : handleQuickComplete) : undefined}
       >
         {/* Enhanced liquid fill with multi-stop gradient + subtle wave effect */}
         <AnimatePresence>
-          {(!isCompleted && (isTiming || initialValue > 0 || elapsedSeconds > 0)) && (
+          {(!isCompleted && (isTiming || currentSessionInitialValue > 0 || elapsedSeconds > 0)) && ( {/* Use local initial value */}
             <motion.div 
               className="absolute inset-x-0 bottom-0 z-0 pointer-events-none"
               initial={{ height: "0%" }}
@@ -419,9 +437,9 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                 <div className="min-w-0">
                   <p className={cn("font-bold text-lg leading-tight truncate", isCompleted ? "text-muted-foreground" : colors.text)}>
                     {label}
-                    {initialValue > 0 && !isCompleted && (
+                    {currentSessionInitialValue > 0 && !isCompleted && ( {/* Use local initial value */}
                       <span className={cn("ml-2 text-xs bg-white/20 dark:bg-black/20 px-2 py-0.5 rounded-md font-black", colors.text)}>
-                        +{initialValue.toFixed(1)} {unit}
+                        +{currentSessionInitialValue.toFixed(1)} {unit}
                       </span>
                     )}
                   </p>
@@ -465,7 +483,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                         variant="ghost" 
                         className="h-11 w-11 rounded-full hover:bg-secondary/70" 
                         onClick={handleQuickComplete}
-                        disabled={isResetting} // Disable during reset
+                        disabled={isResetting}
                       >
                         <Edit2 className="w-5 h-5 opacity-50" />
                       </Button>
@@ -479,9 +497,9 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
               <div className="flex justify-between items-start">
                 <div className="pl-1">
                   <p className="text-xs font-black uppercase tracking-widest opacity-60">Active • {label}</p>
-                  <p className="text-5xl font-black tabular-nums mt-2">{formatTime(initialValue * 60 + elapsedSeconds)}</p>
+                  <p className="text-5xl font-black tabular-nums mt-2">{formatTime(currentSessionInitialValue * 60 + elapsedSeconds)}</p> {/* Use local initial value */}
                   <p className="text-xs opacity-60 mt-2 font-bold">
-                    Goal: {value} min {initialValue > 0 && `(incl. +${initialValue.toFixed(1)}m)`}
+                    Goal: {value} min {currentSessionInitialValue > 0 && `(incl. +${currentSessionInitialValue.toFixed(1)}m)`} {/* Use local initial value */}
                   </p>
                 </div>
                 
@@ -492,7 +510,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                     variant="ghost"
                     className="h-14 w-14 rounded-full bg-card/90 text-foreground/70 hover:text-foreground hover:bg-secondary/80 shadow-lg border border-border/30"
                     onClick={handleResetTimer}
-                    disabled={isResetting} // Disable during reset
+                    disabled={isResetting}
                   >
                     <RotateCcw className="w-6 h-6" />
                   </Button>
@@ -501,7 +519,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                     size="icon" 
                     className="h-14 w-14 rounded-full bg-card/90 text-foreground hover:bg-secondary shadow-lg border border-border/30"
                     onClick={handlePauseTimer}
-                    disabled={isResetting} // Disable during reset
+                    disabled={isResetting}
                   >
                     {isPaused ? <Play className="w-7 h-7 ml-0.5 fill-current" /> : <Pause className="w-7 h-7 fill-current" />}
                   </Button>
@@ -509,7 +527,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                     size="lg" 
                     className="h-14 px-8 rounded-full font-black shadow-xl bg-primary text-primary-foreground hover:bg-primary/90 border-2 border-primary-foreground/30"
                     onClick={() => handleFinishTiming(undefined, true)}
-                    disabled={isResetting} // Disable during reset
+                    disabled={isResetting}
                   >
                     <Square className="w-5 h-5 mr-2 fill-current" />
                     Done
