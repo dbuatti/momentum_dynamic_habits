@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils";
 import { TipCard } from "@/components/dashboard/TipCard";
 import { calculateDynamicChunks } from "@/utils/progress-utils";
 import { MacroGoalProgress } from "@/components/dashboard/MacroGoalProgress";
-import { Progress } from "@/components/ui/progress';
+import { Progress } from "@/components/ui/progress";
 import { TrialStatusCard } from "@/components/dashboard/TrialStatusCard";
 import { GrowthGuide } from "@/components/dashboard/GrowthGuide";
 import { Link } from "react-router-dom";
