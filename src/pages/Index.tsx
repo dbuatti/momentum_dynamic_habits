@@ -437,7 +437,7 @@ const Index = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <div className="max-w-3xl auto w-full px-4 py-6 pb-32">
+      <div className="max-w-3xl mx-auto w-full px-4 py-6 pb-32">
         <div className="mb-4">
            <HomeHeader
             dayCounter={data.daysActive}
