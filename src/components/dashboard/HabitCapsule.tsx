@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Check, Clock, Smile, Meh, Frown, Undo2, Play, Pause, Square, Edit2 } from 'lucide-react';
+import { Check, Clock, Smile, Meh, Frown, Undo2, Play, Pause, Square, Edit2, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
@@ -171,6 +171,19 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     }
   };
 
+  // New: Reset timer function
+  const handleResetTimer = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    stopInterval();
+    setElapsedSeconds(0);
+    setIsTiming(false);
+    setIsPaused(false);
+    setGoalReachedAlerted(false);
+    startTimeRef.current = null;
+    localStorage.removeItem(storageKey);
+    window.dispatchEvent(new CustomEvent('habit-timer-update', { detail: null }));
+  };
+
   const handleFinishTiming = (mood?: string, promptMood: boolean = false) => {
     stopInterval();
     const totalSessionMinutes = Math.max(1, Math.ceil((initialValue * 60 + elapsedSeconds) / 60));
@@ -321,13 +334,8 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
               animate={{ height: `${progressPercent}%` }}
               transition={{ type: "spring", stiffness: 80, damping: 20 }}
             >
-              {/* Main gradient fill */}
               <div className={cn("absolute inset-0 bg-gradient-to-t", colors.light, colors.mid, colors.dark)} />
-              
-              {/* Glossy highlight */}
               <div className="absolute inset-0 bg-gradient-to-t from-transparent via-white/20 to-transparent opacity-60" />
-              
-              {/* Subtle animated waves */}
               <div className="absolute inset-0 overflow-hidden">
                 <div className="absolute bottom-0 w-full h-12 opacity-40">
                   <motion.div
@@ -406,14 +414,16 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
               ) : (
                 <div className="flex items-center gap-2">
                   {isTimeBased && (
-                    <Button 
-                      size="icon" 
-                      variant="ghost" 
-                      className="h-11 w-11 rounded-full hover:bg-secondary/70" 
-                      onClick={handleQuickComplete}
-                    >
-                      <Edit2 className="w-5 h-5 opacity-50" />
-                    </Button>
+                    <>
+                      <Button 
+                        size="icon" 
+                        variant="ghost" 
+                        className="h-11 w-11 rounded-full hover:bg-secondary/70" 
+                        onClick={handleQuickComplete}
+                      >
+                        <Edit2 className="w-5 h-5 opacity-50" />
+                      </Button>
+                    </>
                   )}
                 </div>
               )}
@@ -430,6 +440,16 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                 </div>
                 
                 <div className="flex gap-3">
+                  {/* Reset button added here */}
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-14 w-14 rounded-full bg-card/90 text-foreground/70 hover:text-foreground hover:bg-secondary/80 shadow-lg border border-border/30"
+                    onClick={handleResetTimer}
+                  >
+                    <RotateCcw className="w-6 h-6" />
+                  </Button>
+
                   <Button 
                     size="icon" 
                     className="h-14 w-14 rounded-full bg-card/90 text-foreground hover:bg-secondary shadow-lg border border-border/30"
