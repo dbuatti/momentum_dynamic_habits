@@ -9,7 +9,7 @@ import Settings from "./pages/Settings";
 import LogHabit from "./pages/LogHabit";
 import Journey from "./pages/Journey";
 import History from "./pages/History";
-import Onboarding from "./pages/Onboarding";
+import Onboarding from "./pages/Onboarding"; // Changed to default import
 import NotFound from "./pages/NotFound";
 import HelpPage from "./pages/HelpPage";
 import LandingPage from "./pages/LandingPage";

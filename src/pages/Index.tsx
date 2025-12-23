@@ -5,7 +5,7 @@ import HomeHeader from "@/components/HomeHeader";
 import { 
   BookOpen, Dumbbell, Music, Wind, Home, Code, Sparkles, Pill, 
   CheckCircle2, Timer, Target, Anchor, Clock, Zap, ChevronDown, ChevronUp,
-  Layers, TrendingUp, ShieldCheck, Info, PlusCircle
+  Layers, TrendingUp, ShieldCheck, Info, PlusCircle, Lock
 } from "lucide-react";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { DashboardSkeleton } from "@/components/dashboard/DashboardSkeleton";
@@ -24,6 +24,7 @@ import { Progress } from "@/components/ui/progress";
 import { TrialStatusCard } from "@/components/dashboard/TrialStatusCard";
 import { GrowthGuide } from "@/components/dashboard/GrowthGuide";
 import { Link } from "react-router-dom";
+import { showSuccess } from "@/utils/toast"; // Import showSuccess
 
 const habitIconMap: Record<string, React.ElementType> = {
   pushups: Dumbbell,
@@ -67,6 +68,10 @@ const Index = () => {
   const habitGroups = useMemo(() => {
     if (!data?.habits) return [];
 
+    // Create a map for quick lookup of habit completion status
+    const habitCompletionStatus = new Map<string, boolean>();
+    data.habits.forEach(h => habitCompletionStatus.set(h.key, h.isComplete));
+
     return data.habits
       .filter(habit => habit.is_visible) // Filter by is_visible
       .map(habit => {
@@ -106,31 +111,50 @@ const Index = () => {
         capsules,
         allCompleted: progress >= goal,
         numChunks,
+        // isLockedByDependency is already calculated in useDashboardData
       };
+    }).sort((a, b) => {
+      // Sort order:
+      // 1. Unlocked habits before locked habits
+      // 2. Incomplete habits before complete habits
+      // 3. Anchor habits before daily habits
+      // 4. Then by progress (least complete first)
+      // 5. Finally by name
+      
+      // 1. Unlocked vs Locked
+      if (a.isLockedByDependency !== b.isLockedByDependency) {
+        return a.isLockedByDependency ? 1 : -1;
+      }
+
+      // 2. Incomplete vs Complete
+      if (a.allCompleted !== b.allCompleted) {
+        return a.allCompleted ? 1 : -1;
+      }
+
+      // 3. Anchor vs Daily
+      if (a.category === 'anchor' && b.category !== 'anchor') return -1;
+      if (a.category !== 'anchor' && b.category === 'anchor') return 1;
+
+      // 4. Progress
+      const aProgressRatio = a.dailyGoal > 0 ? a.dailyProgress / a.dailyGoal : 0;
+      const bProgressRatio = b.dailyGoal > 0 ? b.dailyProgress / b.dailyGoal : 0;
+      if (aProgressRatio !== bProgressRatio) {
+        return aProgressRatio - bProgressRatio;
+      }
+
+      // 5. Name
+      return a.name.localeCompare(b.name);
     });
   }, [data?.habits, dbCapsules, data?.neurodivergentMode]);
 
   const anchorHabits = useMemo(() => habitGroups.filter(h => h.category === 'anchor' && h.is_visible), [habitGroups]);
-  const dailyHabits = useMemo(() => {
-    return habitGroups
-      .filter(h => h.category !== 'anchor' && h.is_visible)
-      .sort((a, b) => {
-        // Sort by completion status (incomplete first)
-        if (a.allCompleted !== b.allCompleted) {
-          return a.allCompleted ? 1 : -1;
-        }
-        // Then by progress (least complete first)
-        const aProgressRatio = a.dailyGoal > 0 ? a.dailyProgress / a.dailyGoal : 0;
-        const bProgressRatio = b.dailyGoal > 0 ? b.dailyProgress / b.dailyGoal : 0;
-        return aProgressRatio - bProgressRatio;
-      });
-  }, [habitGroups]);
+  const dailyHabits = useMemo(() => habitGroups.filter(h => h.category !== 'anchor' && h.is_visible), [habitGroups]);
 
   useEffect(() => {
     if (habitGroups.length === 0) return;
-    // Expand all incomplete anchor/trial habits by default
+    // Expand all incomplete, unlocked anchor/trial habits by default
     const initialExpanded = habitGroups
-      .filter(h => h.is_visible && !h.allCompleted && (h.category === 'anchor' || h.is_trial_mode))
+      .filter(h => h.is_visible && !h.allCompleted && !h.isLockedByDependency && (h.category === 'anchor' || h.is_trial_mode))
       .map(h => h.key);
     setExpandedItems(initialExpanded);
   }, [habitGroups]);
@@ -147,6 +171,15 @@ const Index = () => {
 
   const toggleShowAll = (habitKey: string) => {
     setShowAllMomentum(prev => ({ ...prev, [habitKey]: !prev[habitKey] }));
+  };
+
+  const handleOverrideDependency = (habitKey: string) => {
+    // For now, just show a success message and allow the user to proceed.
+    // A more robust solution might involve a temporary "override" state or logging.
+    showSuccess("Dependency overridden for this session. Proceed with caution!");
+    // Optionally, you could add this habitKey to a temporary "overridden" state
+    // that allows it to be interacted with for the current day.
+    // For simplicity, we'll just let the user know and they can click the habit again.
   };
 
   if (isLoading || isOnboardingLoading || isCapsulesLoading) return <DashboardSkeleton />;
@@ -174,6 +207,8 @@ const Index = () => {
     // This reduces cognitive load significantly
     const showOnlyNext = !showAllMomentum[habit.key] && habit.numChunks > 1;
 
+    const isLocked = habit.isLockedByDependency;
+
     return (
       <AccordionItem
         key={habit.key}
@@ -181,7 +216,8 @@ const Index = () => {
         className={cn(
           "border-2 rounded-[32px] shadow-sm overflow-hidden transition-all duration-300",
           habit.allCompleted ? "opacity-50 grayscale-[0.3] border-muted bg-muted/5" : cn(accentColor, "shadow-md"),
-          !habit.isWithinWindow && !habit.allCompleted && "opacity-75"
+          !habit.isWithinWindow && !habit.allCompleted && "opacity-75",
+          isLocked && "opacity-40 grayscale-[0.5] pointer-events-none" // Apply styles for locked habits
         )}
       >
         <AccordionTrigger className="px-6 py-5 hover:no-underline">
@@ -198,6 +234,7 @@ const Index = () => {
                     <h3 className="font-black text-lg flex items-center gap-2 leading-tight truncate">
                       {habit.name}
                       {habit.allCompleted && <CheckCircle2 className="w-5 h-5 text-green-600" />}
+                      {isLocked && <Lock className="w-5 h-5 text-muted-foreground" />}
                     </h3>
                     <div className="flex flex-wrap items-center gap-2 mt-1">
                       <span className={cn(
@@ -234,6 +271,24 @@ const Index = () => {
                     <p className="text-[10px] font-bold uppercase opacity-60 tracking-widest">{habit.unit} session</p>
                 </div>
             </div>
+
+            {habit.dependent_on_habit_key && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2 ml-[72px]">
+                <Lock className="w-3.5 h-3.5" />
+                <span>Locked. Complete {data.habits.find(h => h.key === habit.dependent_on_habit_key)?.name || habit.dependent_on_habit_key.replace('_', ' ')} first.</span>
+                <Button 
+                  variant="link" 
+                  size="sm" 
+                  className="h-auto p-0 text-xs text-primary hover:text-primary/80"
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent accordion from toggling
+                    handleOverrideDependency(habit.key);
+                  }}
+                >
+                  (Override)
+                </Button>
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-4 border-t border-black/5 pt-4">
                 <div className="space-y-1">

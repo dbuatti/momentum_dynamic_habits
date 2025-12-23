@@ -11,12 +11,14 @@ import { cn } from "@/lib/utils";
 import { 
   Anchor, Target, Sparkles, ShieldCheck, Calendar, 
   Clock, Dumbbell, Wind, BookOpen, Music, 
-  Home, Code, Pill, Timer, BarChart3, Layers, Zap, Info, Eye, EyeOff
+  Home, Code, Pill, Timer, BarChart3, Layers, Zap, Info, Eye, EyeOff, Link as LinkIcon
 } from 'lucide-react';
 import { UserHabitRecord } from '@/types/habit';
 import { useUpdateHabitVisibility } from '@/hooks/useUpdateHabitVisibility';
 import { initialHabits } from '@/lib/habit-data'; // Keep for fallback if needed
 import { habitIcons, habitCategories, habitUnits, habitModes } from '@/lib/habit-templates'; // Import new template data
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'; // Import Select components
+import { useJourneyData } from '@/hooks/useJourneyData'; // Import useJourneyData to get other habits
 
 interface HabitSettingsCardProps {
   habit: UserHabitRecord;
@@ -52,11 +54,14 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
 }) => {
   const Icon = getHabitIcon(habit.habit_key) || Target; // Use habit.habit_key to get icon
   const { mutate: updateHabitVisibility } = useUpdateHabitVisibility();
+  const { data: journeyData } = useJourneyData(); // Fetch all habits for dependency selection
 
   // Use habit.unit directly from the UserHabitRecord
   const habitUnit = habit.unit || '';
 
-  const calculatedParts = Math.ceil(habit.current_daily_goal / (habit.chunk_duration || 1));
+  const otherHabits = useMemo(() => {
+    return (journeyData?.habits || []).filter(h => h.id !== habit.id && h.is_visible);
+  }, [journeyData?.habits, habit.id]);
 
   return (
     <AccordionItem 
@@ -68,31 +73,39 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
       )}
     >
       <AccordionTrigger className="px-6 py-5 hover:no-underline group">
-        <div className="flex items-center gap-5 text-left w-full">
-          <div className={cn(
-            "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-all duration-300",
-            isActiveHabit ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20" : "bg-background border shadow-sm"
-          )}>
-            <Icon className="w-6 h-6" />
-          </div>
-          <div className="flex-grow">
-            <h4 className="font-black text-lg tracking-tight group-hover:text-primary transition-colors capitalize">
-              {habit.name || habit.habit_key.replace('_', ' ')} {/* Use habit.name */}
-            </h4>
-            <div className="flex items-center gap-2 mt-0.5">
-               <span className={cn(
-                 "text-[9px] font-black uppercase px-2 py-0.5 rounded-full border",
-                 habit.is_fixed ? "bg-blue-50 text-blue-600 border-blue-200" : 
-                 habit.is_trial_mode ? "bg-amber-50 text-amber-600 border-amber-200" : 
-                 "bg-green-50 text-green-600 border-green-200"
-               )}>
-                 {habit.is_fixed ? 'Fixed' : (habit.is_trial_mode ? 'Trial' : 'Growth')}
-               </span>
-               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                 • {habit.frequency_per_week}x Weekly
-               </span>
+        <div className="flex flex-col w-full text-left gap-2"> {/* Changed to flex-col for better layout */}
+          <div className="flex items-center gap-5 text-left w-full">
+            <div className={cn(
+              "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-all duration-300",
+              isActiveHabit ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20" : "bg-background border shadow-sm"
+            )}>
+              <Icon className="w-6 h-6" />
+            </div>
+            <div className="flex-grow">
+              <h4 className="font-black text-lg tracking-tight group-hover:text-primary transition-colors capitalize">
+                {habit.name || habit.habit_key.replace('_', ' ')} {/* Use habit.name */}
+              </h4>
+              <div className="flex items-center gap-2 mt-0.5">
+                 <span className={cn(
+                   "text-[9px] font-black uppercase px-2 py-0.5 rounded-full border",
+                   habit.is_fixed ? "bg-blue-50 text-blue-600 border-blue-200" : 
+                   habit.is_trial_mode ? "bg-amber-50 text-amber-600 border-amber-200" : 
+                   "bg-green-50 text-green-600 border-green-200"
+                 )}>
+                   {habit.is_fixed ? 'Fixed' : (habit.is_trial_mode ? 'Trial' : 'Growth')}
+                 </span>
+                 <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                   • {habit.frequency_per_week}x Weekly
+                 </span>
+              </div>
             </div>
           </div>
+          {habit.dependent_on_habit_key && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2 ml-[72px]"> {/* Indent to align with habit name */}
+              <LinkIcon className="w-3.5 h-3.5" />
+              <span>Depends on: {otherHabits.find(h => h.habit_key === habit.dependent_on_habit_key)?.name || habit.dependent_on_habit_key.replace('_', ' ')}</span>
+            </div>
+          )}
         </div>
       </AccordionTrigger>
 
@@ -250,6 +263,29 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
                         Days of 100% consistency required before the system suggests a goal increase.
                     </p>
                 </div>
+             </div>
+
+             <div className="space-y-3">
+                <Label className="text-[10px] font-black uppercase tracking-widest opacity-60 ml-1">Dependent On</Label>
+                <Select 
+                  value={habit.dependent_on_habit_key || ''} 
+                  onValueChange={(value) => onUpdateHabitField(habit.id, { dependent_on_habit_key: value || null })}
+                >
+                  <SelectTrigger className="h-11 rounded-xl font-bold text-base">
+                    <SelectValue placeholder="No dependency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">No dependency</SelectItem>
+                    {otherHabits.map(otherHabit => (
+                      <SelectItem key={otherHabit.habit_key} value={otherHabit.habit_key}>
+                        {otherHabit.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-[10px] text-muted-foreground leading-snug">
+                  This habit will be marked as "locked" until the dependent habit is completed for the day.
+                </p>
              </div>
           </TabsContent>
         </Tabs>

@@ -32,7 +32,7 @@ const initializeSelectedHabits = async (userId: string, params: OnboardingHabitP
   const oneYearFromNow = new Date(today.setFullYear(today.getFullYear() + 1));
   const oneYearDateString = oneYearFromNow.toISOString().split('T')[0];
 
-  // Determine base duration based on preference
+  // Determine base duration based on preference and neurodivergent mode
   let baseDuration: number; // in minutes
   if (sessionDuration === 'short') baseDuration = neurodivergentMode ? 5 : 10;
   else if (sessionDuration === 'medium') baseDuration = neurodivergentMode ? 10 : 20;
@@ -72,7 +72,7 @@ const initializeSelectedHabits = async (userId: string, params: OnboardingHabitP
     const category = isFoundational ? 'anchor' : template.category; // Override category if foundational
 
     // Adjust plateau days for neurodivergent mode in trial
-    const plateauDays = (neurodivergentMode && isTrial) ? 14 : template.plateauDaysRequired || 7;
+    const plateauDays = (neurodivergentMode && isTrial) ? 14 : (template.plateauDaysRequired || 7);
 
     // Calculate daily goal based on template's unit and user's duration preference
     let currentDailyGoal = template.defaultDuration;

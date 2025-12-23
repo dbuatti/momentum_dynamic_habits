@@ -27,7 +27,7 @@ const fetchDashboardData = async (userId: string) => {
     { data: bestTime, error: bestTimeError },
     { data: randomTip, error: randomTipError },
   ] = await Promise.all([
-    supabase.from('user_habits').select('*').eq('user_id', userId),
+    supabase.from('user_habits').select('*, dependent_on_habit_key').eq('user_id', userId), // Fetch dependent_on_habit_key
     supabase.rpc('get_completed_tasks_today', { p_user_id: userId, p_timezone: timezone }),
     supabase.from('completedtasks').select('original_source, duration_used, xp_earned, completed_at').eq('user_id', userId).gte('completed_at', startOfWeek(today).toISOString()).lte('completed_at', endOfWeek(today).toISOString()),
     supabase.from('completedtasks').select('original_source, duration_used, xp_earned').eq('user_id', userId).gte('completed_at', startOfWeek(subWeeks(today, 1)).toISOString()).lte('completed_at', endOfWeek(subWeeks(today, 1)).toISOString()),
@@ -50,8 +50,10 @@ const fetchDashboardData = async (userId: string) => {
   });
 
   const dailyProgressMap = new Map<string, number>();
+  const completedHabitKeysToday = new Set<string>(); // Track which habits are completed today
   (completedToday || []).forEach((task: any) => {
     const key = task.original_source;
+    completedHabitKeysToday.add(key); // Mark as completed
     const habitConfig = initialHabitsMap.get(key); // Fallback to initial config if needed
     
     // Determine unit and xp_per_unit from user_habits table first, then fallback to initialHabits
@@ -92,6 +94,11 @@ const fetchDashboardData = async (userId: string) => {
     const daysInPlateau = differenceInDays(new Date(), new Date(h.last_plateau_start_date));
     const daysRemainingInPlateau = Math.max(0, plateauRequired - h.completions_in_plateau);
 
+    // Dependency check
+    const isDependent = !!h.dependent_on_habit_key;
+    const isDependencyMet = isDependent ? completedHabitKeysToday.has(h.dependent_on_habit_key!) : true;
+    const isLockedByDependency = isDependent && !isDependencyMet;
+
     return {
       key: h.habit_key,
       name: h.name || initialHabit?.name || h.habit_key.charAt(0).toUpperCase() + h.habit_key.slice(1), // Use name from DB
@@ -125,7 +132,9 @@ const fetchDashboardData = async (userId: string) => {
         required: plateauRequired,
         daysRemaining: daysRemainingInPlateau,
         phase: h.growth_phase
-      }
+      },
+      dependent_on_habit_key: h.dependent_on_habit_key, // Include dependency key
+      isLockedByDependency: isLockedByDependency, // New: indicates if this habit is locked
     };
   });
 

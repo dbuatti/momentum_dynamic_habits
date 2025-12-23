@@ -15,7 +15,7 @@ export interface HabitTemplate {
   xpPerUnit: number; // Added XP per unit
   energyCostPerUnit: number; // Added energy cost per unit
   icon: React.ElementType; // Added icon for display
-  plateauDaysRequired?: number; // Added this property
+  plateauDaysRequired: number; // Added this property
 }
 
 export const habitTemplates: HabitTemplate[] = [

@@ -6,7 +6,7 @@ import { initialHabits } from '@/lib/habit-data';
 
 const fetchJourneyData = async (userId: string) => {
   const profilePromise = supabase.from('profiles').select('journey_start_date, daily_streak, timezone, default_auto_schedule_start_time, default_auto_schedule_end_time, first_name, last_name, neurodivergent_mode').eq('id', userId).single();
-  const habitsPromise = supabase.from('user_habits').select('*').eq('user_id', userId);
+  const habitsPromise = supabase.from('user_habits').select('*, dependent_on_habit_key').eq('user_id', userId); // Fetch dependent_on_habit_key
   const allBadgesPromise = supabase.from('badges').select('id, name, icon_name, requirement_type, requirement_value, habit_key');
   const achievedBadgesPromise = supabase.from('user_badges').select('badge_id').eq('user_id', userId);
   const bestTimePromise = supabase.rpc('get_best_time', { p_user_id: userId });

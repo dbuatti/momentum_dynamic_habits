@@ -177,50 +177,34 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick }) => {
 
 export const Sidebar: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const isMobile = useIsMobile();
-  const [isOpen, setIsOpen] = React.useState(false);
-
-  const handleLinkClick = () => {
-    if (isMobile) {
-      setIsOpen(false);
-    }
-  };
+  const [open, setOpen] = React.useState(false);
 
   if (isMobile) {
     return (
-      <div className="flex min-h-screen w-full flex-col">
-        <header className="sticky top-0 flex h-16 items-center gap-4 border-b bg-background px-4 lg:h-[60px] lg:px-6 z-20">
-          <Sheet open={isOpen} onOpenChange={setIsOpen}>
-            <SheetTrigger asChild>
-              <Button variant="outline" size="icon" className="shrink-0 md:hidden">
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">Toggle navigation menu</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="flex flex-col w-[280px] sm:w-[320px] p-0">
-              <SidebarContent onLinkClick={handleLinkClick} />
-            </SheetContent>
-          </Sheet>
-          <div className="w-full flex-1 text-center">
-            <h1 className="text-lg font-semibold">Adaptive Growth</h1>
-          </div>
-        </header>
-        <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetTrigger asChild>
+          <Button variant="ghost" size="icon" className="fixed top-4 left-4 z-[100] rounded-full">
+            <Menu className="h-6 w-6" />
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="left" className="flex flex-col w-[280px] p-0 bg-sidebar-background text-sidebar-foreground border-sidebar-border">
+          <SidebarContent onLinkClick={() => setOpen(false)} />
+        </SheetContent>
+        <main className="flex flex-1 flex-col overflow-hidden">
           {children}
         </main>
-      </div>
+      </Sheet>
     );
   }
 
   return (
-    <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
-      <div className="hidden border-r bg-sidebar md:block">
+    <div className="grid min-h-screen w-full lg:grid-cols-[280px_1fr]">
+      <div className="hidden border-r bg-sidebar-background lg:block">
         <SidebarContent />
       </div>
-      <div className="flex flex-col">
-        <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
-          {children}
-        </main>
-      </div>
+      <main className="flex flex-1 flex-col overflow-hidden">
+        {children}
+      </main>
     </div>
   );
 };

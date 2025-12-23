@@ -123,6 +123,7 @@ const CreateHabit = () => {
         xpPerUnit: 30,
         energyCostPerUnit: 6,
         icon: Target,
+        plateauDaysRequired: 7, // Added this line
       } as HabitTemplate;
     }
     return habitTemplates.find(t => t.id === selectedTemplateId);
