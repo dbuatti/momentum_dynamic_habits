@@ -116,8 +116,10 @@ const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: s
     carryover_value: carryover_enabled ? 1 : 0,
   };
 
-  // Remove the onConflict option. The client handles upserts based on primary key or unique constraints.
-  const { error } = await supabase.from('user_habits').upsert(habitToInsert);
+  // Explicitly set onConflict in the options for upsert
+  const { error } = await supabase.from('user_habits').upsert(habitToInsert, {
+    onConflict: 'user_id,habit_key',
+  });
 
   if (error) throw error;
   return { success: true };
