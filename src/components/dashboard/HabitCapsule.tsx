@@ -17,7 +17,7 @@ interface HabitCapsuleProps {
   label: string;
   value: number;
   unit: string;
-  measurementType: MeasurementType; // Added
+  measurementType: MeasurementType;
   isCompleted: boolean;
   initialValue?: number;
   scheduledTime?: string;
@@ -46,15 +46,12 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
 }) => {
   const [showMoodPicker, setShowMoodPicker] = useState(false);
   const [isTiming, setIsTiming] = useState(false);
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(value * 60); // Changed from elapsedSeconds to timeLeft
   const [isPaused, setIsPaused] = useState(false);
   const [completedTaskIdState, setCompletedTaskIdState] = useState<string | null>(initialCompletedTaskId || null);
   const [manualValue, setManualValue] = useState<number>(value);
-  const [isResetting, setIsResetting] = useState(false);
   
-  const ignoreClicksRef = useRef(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const startTimeRef = useRef<number | null>(null);
   const storageKey = `timer_${habitKey}_${label}_${new Date().toISOString().split('T')[0]}`;
 
   useEffect(() => {
@@ -71,44 +68,65 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   const startInterval = useCallback(() => {
     stopInterval();
     timerRef.current = setInterval(() => {
-      if (startTimeRef.current) {
-        const now = Date.now();
-        const totalElapsed = Math.floor((now - startTimeRef.current) / 1000);
-        setElapsedSeconds(totalElapsed);
-      }
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          stopInterval();
+          return 0;
+        }
+        return prev - 1;
+      });
     }, 1000);
   }, []);
+
+  // Monitor timeLeft to trigger completion when zero is reached
+  useEffect(() => {
+    if (isTiming && timeLeft === 0) {
+      handleFinishTiming(undefined, true);
+      playGoalSound(); // Play goal hit sound when reaching zero
+    }
+  }, [timeLeft, isTiming]);
 
   useEffect(() => {
     if (measurementType !== 'timer') return;
     if (isCompleted) {
       localStorage.removeItem(storageKey);
       setIsTiming(false);
-      setElapsedSeconds(0);
+      setTimeLeft(value * 60);
       return;
     }
     const saved = localStorage.getItem(storageKey);
     if (saved) {
-      const { start, elapsed, paused, timing } = JSON.parse(saved);
+      const { timeLeft: savedTimeLeft, paused, timing } = JSON.parse(saved);
       setIsPaused(paused);
       setIsTiming(timing);
+      setTimeLeft(savedTimeLeft);
       if (timing && !paused) {
-        startTimeRef.current = start;
-        setElapsedSeconds(Math.floor((Date.now() - start) / 1000));
         startInterval();
-      } else {
-        setElapsedSeconds(elapsed);
       }
+    } else {
+      setTimeLeft(value * 60);
     }
     return () => stopInterval();
-  }, [isCompleted, storageKey, measurementType, startInterval]);
+  }, [isCompleted, storageKey, measurementType, startInterval, value]);
+
+  // Sync state to local storage
+  useEffect(() => {
+    if (measurementType === 'timer' && isTiming && !isCompleted) {
+      localStorage.setItem(storageKey, JSON.stringify({
+        timeLeft,
+        paused: isPaused,
+        timing: isTiming,
+        lastUpdated: Date.now()
+      }));
+    }
+  }, [timeLeft, isPaused, isTiming, isCompleted, storageKey, measurementType]);
 
   const handleStartTimer = (e: React.MouseEvent) => {
     e.stopPropagation();
     playStartSound();
     setIsTiming(true);
     setIsPaused(false);
-    startTimeRef.current = Date.now() - elapsedSeconds * 1000;
+    if (timeLeft <= 0) setTimeLeft(value * 60);
     startInterval();
   };
 
@@ -117,7 +135,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     if (isPaused) {
       playStartSound();
       setIsPaused(false);
-      startTimeRef.current = Date.now() - elapsedSeconds * 1000;
       startInterval();
     } else {
       setIsPaused(true);
@@ -127,7 +144,9 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
 
   const handleFinishTiming = (mood?: string, promptMood: boolean = false) => {
     stopInterval();
-    const totalSessionMinutes = Math.max(1, Math.ceil(elapsedSeconds / 60));
+    // For countdown, actual value is the target value (or time spent if stopped early)
+    const totalSessionMinutes = timeLeft === 0 ? value : Math.max(1, Math.ceil((value * 60 - timeLeft) / 60));
+    
     if (promptMood && showMood && mood === undefined) {
       setShowMoodPicker(true);
       return;
@@ -136,7 +155,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     localStorage.removeItem(storageKey);
     onLogProgress(totalSessionMinutes, true, mood);
     setIsTiming(false);
-    setElapsedSeconds(0);
+    setTimeLeft(value * 60);
     setShowMoodPicker(false);
   };
 
@@ -176,7 +195,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   };
 
   const progressPercent = measurementType === 'timer' 
-    ? Math.min(100, (elapsedSeconds / (value * 60)) * 100)
+    ? Math.min(100, ((value * 60 - timeLeft) / (value * 60)) * 100)
     : 0;
 
   return (
@@ -220,15 +239,15 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
             isTiming ? (
               <div className={cn('flex flex-col sm:flex-row justify-between items-center gap-4', colors.text)}>
                 <div className="pl-1">
-                  <p className="text-[10px] font-black uppercase opacity-60 tracking-widest leading-none">Active • {label}</p>
-                  <p className="text-4xl font-black tabular-nums mt-1 leading-none">{formatTimeDisplay(elapsedSeconds)}</p>
+                  <p className="text-[10px] font-black uppercase opacity-60 tracking-widest leading-none">Focusing • {label}</p>
+                  <p className="text-4xl font-black tabular-nums mt-1 leading-none">{formatTimeDisplay(timeLeft)}</p>
                 </div>
                 <div className="flex items-center gap-3">
                   <Button size="icon" variant="ghost" className="h-12 w-12 rounded-full bg-card/90 shadow-md border border-border/30" onClick={handlePauseTimer}>
                     {isPaused ? <Play className="w-6 h-6 ml-0.5 fill-current" /> : <Pause className="w-6 h-6 fill-current" />}
                   </Button>
                   <Button size="lg" className="h-12 px-6 rounded-full font-black shadow-lg bg-primary text-primary-foreground" onClick={() => handleFinishTiming(undefined, true)}>
-                    <Square className="w-4 h-4 mr-2 fill-current" /> Done
+                    <Square className="w-4 h-4 mr-2 fill-current" /> Finish Early
                   </Button>
                 </div>
               </div>
@@ -240,7 +259,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                   </Button>
                   <div>
                     <p className={cn('font-bold text-lg leading-tight', colors.text)}>{label}</p>
-                    <p className="text-sm font-bold opacity-70">{value} {unit}</p>
+                    <p className="text-sm font-bold opacity-70">{value} {unit} Goal</p>
                   </div>
                 </div>
                 <div className="flex flex-col items-end">
