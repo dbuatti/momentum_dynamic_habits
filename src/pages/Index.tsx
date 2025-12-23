@@ -283,7 +283,7 @@ const Index = () => {
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="w-full text-[10px] font-black uppercase tracking-widest h-9 rounded-xl border-dashed"
+                  className="w-full text-[10px] font-black uppercase tracking-widest h-9 rounded-xl border-dashed text-muted-foreground"
                   onClick={() => toggleShowAll(habit.key)}
                 >
                   <Layers className="w-3.5 h-3.5 mr-2" />
