@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
-import { useHabitLog } from './useHabitLog'; // Import useHabitLog
+import { useHabitLog } from './useHabitLog';
 
 export interface Capsule {
   id?: string;
@@ -16,7 +16,7 @@ export interface Capsule {
   mood?: string | null;
   scheduled_time?: string | null;
   created_at: string;
-  completed_task_id?: string | null; // New field
+  completed_task_id?: string | null;
 }
 
 export const useCapsules = () => {
@@ -51,7 +51,7 @@ export const useCapsules = () => {
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
-  const { mutate: logHabit, unlog: unlogHabitFromHook } = useHabitLog(); // Get logHabit and unlog from useHabitLog
+  const { mutate: logHabit, unlog: unlogHabitFromHook } = useHabitLog();
 
   const logCapsuleProgress = useMutation({
     mutationFn: async ({
@@ -59,33 +59,38 @@ export const useCapsules = () => {
       index,
       value,
       mood,
-      taskName, // Added taskName for logging
-      isComplete, // Added isComplete parameter
+      taskName,
+      isComplete,
     }: {
       habitKey: string;
       index: number;
       value: number;
       mood?: string;
-      taskName: string; // Required for logging
-      isComplete: boolean; // New parameter
+      taskName: string;
+      isComplete: boolean;
     }) => {
       if (!userId) throw new Error('User not authenticated');
-      console.log(`[useCapsules] logCapsuleProgress mutationFn called for habitKey: ${habitKey}, index: ${index}, value: ${value}, isComplete: ${isComplete}`);
 
-      // First, log the habit and get the completedTaskId
-      const { completedTaskId } = await logHabit({ habitKey, value, taskName, note: mood }); // Destructure completedTaskId
-      console.log(`[useCapsules] logHabit returned completedTaskId: ${completedTaskId}`);
+      // 1. Log the habit WITH the capsuleIndex
+      const { completedTaskId } = await logHabit({ 
+        habitKey, 
+        value, 
+        taskName, 
+        note: mood,
+        capsuleIndex: index // PASS THE INDEX
+      });
 
+      // 2. Legacy support for habit_capsules table
       const upsertData: Partial<Capsule> = {
         user_id: userId,
         habit_key: habitKey,
         capsule_index: index,
         value,
-        is_completed: isComplete, // Use the new isComplete parameter
+        is_completed: isComplete,
         mood: mood || null,
         created_at: today,
         label: `Part ${index + 1}`,
-        completed_task_id: completedTaskId, // Store the completed task ID
+        completed_task_id: completedTaskId,
       };
 
       const { error } = await supabase
@@ -95,15 +100,12 @@ export const useCapsules = () => {
         });
 
       if (error) {
-        console.error(`[useCapsules] Error upserting capsule for ${habitKey}-${index}:`, error);
+        console.error(`[useCapsules] Error upserting capsule:`, error);
         throw error;
       }
-      console.log(`[useCapsules] Capsule upserted successfully for ${habitKey}-${index}.`);
     },
     onSuccess: () => {
-      console.log('[useCapsules] logCapsuleProgress onSuccess. Invalidating queries.');
       queryClient.invalidateQueries({ queryKey: ['habitCapsules', userId, today] });
-      // Also invalidate dashboard data to reflect changes in dailyProgress
       queryClient.invalidateQueries({ queryKey: ['dashboardData', userId] });
     },
     onError: (error) => {
@@ -115,37 +117,33 @@ export const useCapsules = () => {
     mutationFn: async ({
       habitKey,
       index,
-      completedTaskId, // Accept completedTaskId
+      completedTaskId,
     }: {
       habitKey: string;
       index: number;
-      completedTaskId: string; // Required for unlogging
+      completedTaskId: string;
     }) => {
       if (!userId) throw new Error('User not authenticated');
-      console.log(`[useCapsules] uncompleteCapsule mutationFn called for habitKey: ${habitKey}, index: ${index}, completedTaskId: ${completedTaskId}`);
 
-      // First, unlog the habit using the completedTaskId
+      // 1. Unlog using the task ID
       await unlogHabitFromHook({ completedTaskId });
-      console.log(`[useCapsules] unlogHabitFromHook called for completedTaskId: ${completedTaskId}`);
 
+      // 2. Update legacy table
       const { error } = await supabase
         .from('habit_capsules')
-        .update({ is_completed: false, mood: null, completed_task_id: null }) // Set completed_task_id to null
+        .update({ is_completed: false, mood: null, completed_task_id: null })
         .eq('user_id', userId)
         .eq('habit_key', habitKey)
         .eq('capsule_index', index)
         .eq('created_at', today);
 
       if (error) {
-        console.error(`[useCapsules] Error updating capsule to uncomplete for ${habitKey}-${index}:`, error);
+        console.error(`[useCapsules] Error updating capsule:`, error);
         throw error;
       }
-      console.log(`[useCapsules] Capsule marked as uncompleted for ${habitKey}-${index}.`);
     },
     onSuccess: () => {
-      console.log('[useCapsules] uncompleteCapsule onSuccess. Invalidating queries.');
       queryClient.invalidateQueries({ queryKey: ['habitCapsules', userId, today] });
-      // Also invalidate dashboard data to reflect changes in dailyProgress
       queryClient.invalidateQueries({ queryKey: ['dashboardData', userId] });
     },
     onError: (error) => {
@@ -164,7 +162,6 @@ export const useCapsules = () => {
       time: string;
     }) => {
       if (!userId) throw new Error('User not authenticated');
-      console.log(`[useCapsules] scheduleCapsule mutationFn called for habitKey: ${habitKey}, index: ${index}, time: ${time}`);
 
       const { error } = await supabase
         .from('habit_capsules')
@@ -176,39 +173,27 @@ export const useCapsules = () => {
             scheduled_time: time,
             created_at: today,
             value: 0,
-            is_completed: false, // Ensure it's not marked complete on schedule
-            completed_task_id: null, // Ensure no completed_task_id on schedule
+            is_completed: false,
+            completed_task_id: null,
           },
           {
             onConflict: 'user_id,habit_key,capsule_index,created_at',
           }
         );
 
-      if (error) {
-        console.error(`[useCapsules] Error scheduling capsule for ${habitKey}-${index}:`, error);
-        throw error;
-      }
-      console.log(`[useCapsules] Capsule scheduled successfully for ${habitKey}-${index}.`);
+      if (error) throw error;
     },
     onSuccess: () => {
-      console.log('[useCapsules] scheduleCapsule onSuccess. Invalidating queries.');
       queryClient.invalidateQueries({ queryKey: ['habitCapsules', userId, today] });
     },
-    onError: (error) => {
-      console.error('[useCapsules] scheduleCapsule onError:', error);
-    }
   });
 
   const resetCapsulesForToday = useMutation({
     mutationFn: async () => {
       if (!userId) return;
-      console.log(`[useCapsules] resetCapsulesForToday mutationFn called for userId: ${userId}`);
-
-      // Before deleting capsules, unlog any associated completed tasks
       const currentCapsules = await fetchCapsules();
       for (const capsule of currentCapsules) {
-        if (capsule.completed_task_id) { // Check for completed_task_id
-          console.log(`[useCapsules] Resetting: Unlogging task ${capsule.completed_task_id} for capsule ${capsule.habit_key}-${capsule.capsule_index}`);
+        if (capsule.completed_task_id) {
           unlogHabitFromHook({ completedTaskId: capsule.completed_task_id });
         }
       }
@@ -219,19 +204,11 @@ export const useCapsules = () => {
         .eq('user_id', userId)
         .eq('created_at', today);
 
-      if (error) {
-        console.error(`[useCapsules] Error deleting capsules for userId: ${userId}:`, error);
-        throw error;
-      }
-      console.log(`[useCapsules] All capsules reset for userId: ${userId}.`);
+      if (error) throw error;
     },
     onSuccess: () => {
-      console.log('[useCapsules] resetCapsulesForToday onSuccess. Invalidating queries.');
       queryClient.invalidateQueries({ queryKey: ['habitCapsules', userId, today] });
     },
-    onError: (error) => {
-      console.error('[useCapsules] resetCapsulesForToday onError:', error);
-    }
   });
 
   return {

@@ -49,7 +49,7 @@ const Index = () => {
       .map(habit => {
       const goal = habit.adjustedDailyGoal;
       const progress = habit.dailyProgress;
-      const taskIds = (habit as any).todayTaskIds || [];
+      const capsuleMapping = (habit as any).capsuleTaskMapping || {};
       
       const { numChunks, chunkValue } = calculateDynamicChunks(
         habit.key,
@@ -66,11 +66,8 @@ const Index = () => {
       const isOverallComplete = habit.isComplete;
 
       const capsules = Array.from({ length: numChunks }).map((_, i) => {
-        const dbCapsule = dbCapsules?.find(c => c.habit_key === habit.key && c.capsule_index === i);
-        
-        // STRICT RULE: Completion is derived strictly from progress
-        // A capsule is complete if progress has covered its total threshold
         const isCompleted = progress >= ((i + 1) * chunkValue - 0.01);
+        const taskId = capsuleMapping[i] || null;
 
         return {
           id: `${habit.key}-${i}`,
@@ -83,9 +80,7 @@ const Index = () => {
           isCompleted,
           isHabitComplete: isOverallComplete,
           isFixed: habit.is_fixed,
-          scheduledTime: dbCapsule?.scheduled_time,
-          // Correctly map the task ID from the list of today's tasks
-          completedTaskId: taskIds[i] || null, 
+          completedTaskId: taskId, 
         };
       });
 
@@ -151,23 +146,22 @@ const Index = () => {
       taskName: `${habit.name} session`,
       isComplete: isComplete,
     });
-    queryClient.invalidateQueries({ queryKey: ['dashboardData', session?.user?.id] });
   };
 
   const handleCapsuleUncomplete = (habit: any, capsule: any) => {
     if (capsule.completedTaskId) {
-      uncompleteCapsule.mutate({ habitKey: habit.key, index: capsule.index, completedTaskId: capsule.completedTaskId });
+      uncompleteCapsule.mutate({ 
+        habitKey: habit.key, 
+        index: capsule.index, 
+        completedTaskId: capsule.completedTaskId 
+      });
     } else {
-      showError("Please undo the most recent task for this habit from the History page.");
+      showError("No specific log found for this part. You can still undo recent activity from the History page.");
     }
   };
 
   const toggleShowAll = (habitKey: string) => {
     setShowAllMomentum(prev => ({ ...prev, [habitKey]: !prev[habitKey] }));
-  };
-
-  const handleOverrideDependency = (habitKey: string) => {
-    showSuccess("Dependency overridden for this session. Proceed with caution!");
   };
 
   if (isLoading || isOnboardingLoading || isCapsulesLoading) return <DashboardSkeleton />;
@@ -176,7 +170,6 @@ const Index = () => {
   const renderHabitItem = (habit: any) => {
     const Icon = habitIconMap[habit.key] || habitIconMap.custom_habit;
     const color = habitColorMap[habit.key] || 'blue';
-    const isGrowth = !habit.is_fixed && !habit.is_trial_mode;
     const isTrial = habit.is_trial_mode;
     
     const accentColorClasses = {
@@ -296,7 +289,7 @@ const Index = () => {
                         habitName={habit.name}
                         color={color}
                         onLogProgress={(actual, isComplete, mood) => handleCapsuleProgress(habit, nextCapsule, actual, isComplete, mood)}
-                        onUncomplete={(completedTaskId) => handleCapsuleUncomplete(habit, nextCapsule)}
+                        onUncomplete={() => handleCapsuleUncomplete(habit, nextCapsule)}
                         showMood={data.neurodivergentMode}
                       />
                   </div>
@@ -319,7 +312,7 @@ const Index = () => {
                       habitName={habit.name}
                       color={color}
                       onLogProgress={(actual, isComplete, mood) => handleCapsuleProgress(habit, capsule, actual, isComplete, mood)}
-                      onUncomplete={(completedTaskId) => handleCapsuleUncomplete(habit, capsule)}
+                      onUncomplete={() => handleCapsuleUncomplete(habit, capsule)}
                       showMood={data.neurodivergentMode}
                     />
                   ))}
@@ -361,7 +354,7 @@ const Index = () => {
                   isHabitComplete={true}
                   isFixed={false}
                   color={color}
-                  onLogProgress={(actual, isComplete, mood) => handleCapsuleProgress(habit, { index: habit.numChunks }, actual, isComplete, mood)}
+                  onLogProgress={(actual, isComplete, mood) => handleCapsuleProgress(habit, { index: 99 }, actual, isComplete, mood)}
                   onUncomplete={() => {}}
                   showMood={data.neurodivergentMode}
                 />

@@ -3,7 +3,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
-import { useNavigate } from 'react-router-dom';
 import { showSuccess, showError } from '@/utils/toast';
 import { calculateLevel } from '@/utils/leveling';
 import { isSameDay, subDays } from 'date-fns';
@@ -15,9 +14,10 @@ interface LogHabitParams {
   taskName: string;
   difficultyRating?: number;
   note?: string;
+  capsuleIndex?: number; // New field for attribution
 }
 
-const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, note }: LogHabitParams & { userId: string }) => {
+const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, note, capsuleIndex }: LogHabitParams & { userId: string }) => {
   // Fetch user_habit data to get dynamic properties
   const { data: userHabitDataResult, error: userHabitFetchError } = await supabase
     .from('user_habits')
@@ -44,7 +44,6 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
   let lifetimeProgressIncrementValue = value; 
   let durationUsedForDB = null; 
 
-  // STRICT RULE: Use measurement_type for time-based logic, not unit name
   if (userHabitData.measurement_type === 'timer') {
     durationUsedForDB = value * 60; 
     lifetimeProgressIncrementValue = value * 60; 
@@ -57,12 +56,16 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
   const energyCost = Math.round(xpBaseValue * (userHabitData.energy_cost_per_unit ?? 0));
 
   const { data: insertedTask, error: insertError } = await supabase.from('completedtasks').insert({
-    user_id: userId, original_source: habitKey, task_name: taskName,
+    user_id: userId, 
+    original_source: habitKey, 
+    task_name: taskName,
     duration_used: durationUsedForDB,
     xp_earned: xpEarned,
-    energy_cost: energyCost, difficulty_rating: difficultyRating || null,
+    energy_cost: energyCost, 
+    difficulty_rating: difficultyRating || null,
     completed_at: new Date().toISOString(),
     note: note || null,
+    capsule_index: capsuleIndex !== undefined ? capsuleIndex : null, // Explicitly save the index
   }).select('id').single();
 
   if (insertError) throw insertError;

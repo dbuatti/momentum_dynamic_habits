@@ -39,7 +39,6 @@ const fetchDashboardData = async (userId: string) => {
 
   if (profileError || habitsError || completedTodayError) throw new Error('Failed to fetch essential data');
 
-  const initialHabitsMap = new Map(initialHabits.map(h => [h.id, h]));
   const weeklyCompletionMap = new Map<string, number>();
   
   (completedThisWeek || []).forEach(task => {
@@ -49,16 +48,19 @@ const fetchDashboardData = async (userId: string) => {
   });
 
   const dailyProgressMap = new Map<string, number>();
-  const dailyTasksMap = new Map<string, string[]>(); // Map habit key to list of task IDs for today
+  const dailyCapsuleTasksMap = new Map<string, Record<number, string>>(); // Map habit key -> capsule index -> task ID
   const completedHabitKeysToday = new Set<string>();
 
-  (completedToday || []).sort((a: any, b: any) => new Date(a.completed_at).getTime() - new Date(b.completed_at).getTime()).forEach((task: any) => {
+  (completedToday || []).forEach((task: any) => {
     const key = task.original_source;
     completedHabitKeysToday.add(key);
     
-    // Track task IDs for unlogging
-    const currentTasks = dailyTasksMap.get(key) || [];
-    dailyTasksMap.set(key, [...currentTasks, task.id]);
+    // Explicitly link task IDs to capsule indices if provided
+    if (task.capsule_index !== null) {
+      const habitMap = dailyCapsuleTasksMap.get(key) || {};
+      habitMap[task.capsule_index] = task.id;
+      dailyCapsuleTasksMap.set(key, habitMap);
+    }
 
     const userHabit = habits?.find(h => h.habit_key === key);
     const mType = userHabit?.measurement_type || 'timer';
@@ -76,7 +78,7 @@ const fetchDashboardData = async (userId: string) => {
     .filter(h => h.is_visible)
     .map(h => {
     const rawDailyProgress = dailyProgressMap.get(h.habit_key) || 0;
-    const taskIds = dailyTasksMap.get(h.habit_key) || [];
+    const capsuleTaskMapping = dailyCapsuleTasksMap.get(h.habit_key) || {};
     const baseAdjustedDailyGoal = h.current_daily_goal + (h.carryover_value || 0);
     const isScheduledForToday = h.days_of_week ? h.days_of_week.includes(currentDayOfWeek) : true;
 
@@ -136,7 +138,7 @@ const fetchDashboardData = async (userId: string) => {
         phase: h.growth_phase
       },
       isLockedByDependency: isLockedByDependency,
-      todayTaskIds: taskIds, // New field to help Index.tsx map capsules
+      capsuleTaskMapping: capsuleTaskMapping, // New field for reliable mapping
     } as any;
   });
 
