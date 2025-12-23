@@ -40,7 +40,7 @@ export const NavigationProgressToast = () => {
 
   if (!data) return null;
 
-  const { completed, total } = calculateDailyParts(data.habits);
+  const { completed, total } = calculateDailyParts(data.habits, data.neurodivergentMode);
   const xpStart = getXpForCurrentLevelStart(data.level);
   const xpNext = getXpForNextLevel(data.level);
   const xpProgress = ((data.xp - xpStart) / (xpNext - xpStart)) * 100;

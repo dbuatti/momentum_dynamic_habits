@@ -21,7 +21,7 @@ export const useTabProgress = () => {
   useEffect(() => {
     if (!data) return;
 
-    const { completed, total } = calculateDailyParts(data.habits);
+    const { completed, total } = calculateDailyParts(data.habits, data.neurodivergentMode);
     const streak = data.patterns.streak;
     
     let title = "";
