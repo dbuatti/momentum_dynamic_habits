@@ -150,6 +150,26 @@
     --habit-green: 145 50% 15%; /* Darker green for background */
     --habit-green-foreground: 145 70% 70%; /* Lighter green for text */
     --habit-green-border: 145 40% 30%; /* Medium dark green for border */
+
+    /* Dark mode specific habit-orange colors for better contrast */
+    --habit-orange: 25 95% 15%;
+    --habit-orange-foreground: 25 95% 70%;
+    --habit-orange-border: 25 95% 30%;
+
+    /* Dark mode specific habit-blue colors for better contrast */
+    --habit-blue: 220 80% 15%;
+    --habit-blue-foreground: 220 80% 70%;
+    --habit-blue-border: 220 80% 30%;
+
+    /* Dark mode specific habit-red colors for better contrast */
+    --habit-red: 0 70% 15%;
+    --habit-red-foreground: 0 70% 70%;
+    --habit-red-border: 0 70% 30%;
+
+    /* Dark mode specific habit-indigo colors for better contrast */
+    --habit-indigo: 240 50% 15%;
+    --habit-indigo-foreground: 240 70% 70%;
+    --habit-indigo-border: 240 40% 30%;
   }
 
   /* Landing Page specific theme override */
