@@ -24,8 +24,8 @@ import { Progress } from "@/components/ui/progress";
 import { TrialStatusCard } from "@/components/dashboard/TrialStatusCard";
 import { GrowthGuide } from "@/components/dashboard/GrowthGuide";
 import { Link } from "react-router-dom";
-import { showSuccess } from "@/utils/toast"; // Import showSuccess
-import { habitIconMap, habitColorMap } from '@/lib/habit-utils'; // Import from centralized utility
+import { showSuccess } from "@/utils/toast";
+import { habitIconMap, habitColorMap } from '@/lib/habit-utils';
 
 const Index = () => {
   const { data, isLoading, isError } = useDashboardData();
@@ -127,8 +127,12 @@ const Index = () => {
     const initialExpanded = habitGroups
       .filter(h => h.is_visible && !h.allCompleted && !h.isLockedByDependency && (h.category === 'anchor' || h.is_trial_mode))
       .map(h => h.key);
-    setExpandedItems(initialExpanded);
-  }, [habitGroups]);
+    
+    // Only update if the expanded items are different to prevent infinite loop
+    if (JSON.stringify(initialExpanded.sort()) !== JSON.stringify(expandedItems.sort())) {
+      setExpandedItems(initialExpanded);
+    }
+  }, [habitGroups]); // Only depend on habitGroups
 
   const handleCapsuleComplete = (habit: any, capsule: any, actualValue: number, mood?: string) => {
     logHabit({ habitKey: habit.key, value: actualValue, taskName: `${habit.name} session` });
