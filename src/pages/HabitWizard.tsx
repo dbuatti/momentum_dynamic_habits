@@ -9,12 +9,12 @@ import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
-  AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
+  AlertDialogContent,
 } from "@/components/ui/alert-dialog";
 
 import { habitTemplates, HabitTemplate } from '@/lib/habit-templates';
@@ -23,7 +23,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { showError, showSuccess } from '@/utils/toast';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { UserHabitRecord, HabitCategory } from '@/types/habit'; // Corrected import
+import { UserHabitRecord, HabitCategory } from '@/types/habit';
 import { useJourneyData } from '@/hooks/useJourneyData';
 import { useCreateTemplate } from '@/hooks/useCreateTemplate';
 import { useUserHabitWizardTemp, WizardHabitData } from '@/hooks/useUserHabitWizardTemp';
@@ -52,7 +52,7 @@ import { HabitTemplateForm } from '@/components/habits/wizard/HabitTemplateForm'
 export interface CreateHabitParams {
   name: string;
   habit_key: string;
-  category: HabitCategory; // Corrected type
+  category: HabitCategory;
   current_daily_goal: number;
   frequency_per_week: number;
   is_trial_mode: boolean;
@@ -260,7 +260,7 @@ const HabitWizard = () => {
     const habitData: CreateHabitParams = {
       name: wizardData.name!,
       habit_key: wizardData.habit_key.toLowerCase().replace(/\s/g, '_'),
-      category: wizardData.category as HabitCategory, // Corrected type
+      category: wizardData.category as HabitCategory,
       current_daily_goal: wizardData.daily_goal || 1,
       frequency_per_week: wizardData.frequency_per_week || 1,
       is_trial_mode: wizardData.is_trial_mode || false,
@@ -392,7 +392,7 @@ const HabitWizard = () => {
           const finalHabitData: CreateHabitParams = {
             name: updatedWizardData.name!,
             habit_key: updatedWizardData.habit_key!,
-            category: updatedWizardData.category as HabitCategory, // Corrected type
+            category: updatedWizardData.category as HabitCategory,
             unit: updatedWizardData.unit || 'min',
             icon_name: updatedWizardData.icon_name || 'Target',
             ...calculatedParams,
@@ -472,6 +472,9 @@ const HabitWizard = () => {
     }
     return count;
   }, [currentStep, currentMicroStepIndex, isTemplateCreationMode]);
+
+  // Define the 'progress' variable here
+  const progress = (currentDisplayStep / totalDisplaySteps) * 100;
 
   const isNextDisabled = useMemo(() => {
     if (currentStep === 1 && !wizardData.category) return true;

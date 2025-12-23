@@ -68,6 +68,7 @@ export const FooterStats: React.FC<FooterStatsProps> = ({
             <p className="text-sm text-muted-foreground">TOTAL MEDITATION</p>
           </div>
         </div>
-      </CardContent>
+      </div> {/* This closing div was missing */}
+    </CardContent>
   </Card>
 );
