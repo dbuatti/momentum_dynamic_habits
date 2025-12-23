@@ -13,15 +13,18 @@ export const calculateDailyParts = (habits: any[]) => {
     let numCapsules = 1;
     let capsuleValue = goal;
 
+    // For pushups, keep the small set logic as it supports the physical nature of reps
     if (habit.key === 'pushups' && isReps) {
       const idealSetSize = Math.min(7, Math.max(5, Math.ceil(goal / 4)));
       numCapsules = Math.max(1, Math.ceil(goal / idealSetSize));
       capsuleValue = idealSetSize;
     } else if (isMinutes) {
+      // Simplification: Only split into parts if duration is significant (>= 20m)
+      // This keeps 10m habits (Kinesiology/Piano) as single, binary sessions.
       if (goal >= 60) numCapsules = 4;
       else if (goal >= 45) numCapsules = 3;
       else if (goal >= 20) numCapsules = 2;
-      else if (goal >= 10) numCapsules = 2;
+      else numCapsules = 1;
       
       capsuleValue = Math.ceil(goal / numCapsules);
     }
@@ -32,7 +35,8 @@ export const calculateDailyParts = (habits: any[]) => {
     for (let i = 0; i < numCapsules; i++) {
       const cumulativeNeeded = (i + 1) * capsuleValue;
       const isLast = i === numCapsules - 1;
-      if (progress >= cumulativeNeeded || (isLast && progress >= goal)) {
+      // Ensure we check against the actual goal for the last capsule to handle rounding
+      if (progress >= (isLast ? goal : cumulativeNeeded)) {
         completedParts++;
       }
     }

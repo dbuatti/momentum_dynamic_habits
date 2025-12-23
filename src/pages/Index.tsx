@@ -76,6 +76,8 @@ const Index = () => {
         numCapsules = Math.max(1, Math.ceil(goal / idealSetSize));
         capsuleValue = idealSetSize;
       } else if (isMinutes) {
+        // Updated Threshold: Only split into parts if >= 20 min.
+        // This forces 10m habits (Kinesiology/Piano) into a single session.
         if (goal >= 60) {
           numCapsules = 4;
           capsuleValue = 15;
@@ -85,21 +87,18 @@ const Index = () => {
         } else if (goal >= 20) {
           numCapsules = 2;
           capsuleValue = Math.ceil(goal / 2);
-        } else if (goal >= 10) {
-          numCapsules = 2;
-          capsuleValue = Math.ceil(goal / 2);
+        } else {
+          numCapsules = 1;
+          capsuleValue = goal;
         }
       }
 
       const capsules = Array.from({ length: numCapsules }).map((_, i) => {
         const dbCapsule = dbCapsules?.find(c => c.habit_key === habit.key && c.capsule_index === i);
         
-        // Spillover Logic:
-        // Calculate how much of the total habit progress applies to THIS capsule
         const startOfThisCapsule = i * capsuleValue;
         const endOfThisCapsule = (i + 1) * capsuleValue;
         
-        // Current value for this capsule (capped at its capacity)
         const initialValue = Math.max(0, Math.min(capsuleValue, progress - startOfThisCapsule));
         
         const isCompleted = dbCapsule?.is_completed || initialValue >= capsuleValue || (i === numCapsules - 1 && progress >= goal);
@@ -108,9 +107,10 @@ const Index = () => {
           id: `${habit.key}-${i}`,
           habitKey: habit.key,
           index: i,
-          label: habit.key === 'pushups' ? `Set ${i + 1}` : `Part ${i + 1}`,
+          // Simplify label if only one capsule exists
+          label: numCapsules === 1 ? 'Session' : (habit.key === 'pushups' ? `Set ${i + 1}` : `Part ${i + 1}`),
           value: i === numCapsules - 1 ? goal - capsuleValue * (numCapsules - 1) : capsuleValue,
-          initialValue, // The surplus/existing progress for this part
+          initialValue,
           unit: habit.unit,
           isCompleted,
           scheduledTime: dbCapsule?.scheduled_time,
@@ -161,7 +161,6 @@ const Index = () => {
     const isActuallyComplete = totalEffectiveProgress >= capsule.value;
     const spillover = Math.max(0, totalEffectiveProgress - capsule.value);
 
-    // Only mark the capsule as finished in the DB if the goal was actually met
     if (isActuallyComplete) {
       completeCapsule.mutate({
         habitKey: habit.key,
@@ -312,7 +311,7 @@ const Index = () => {
                                 {habit.allCompleted && <CheckCircle2 className="w-5 h-5 text-green-500" />}
                               </h3>
                               <p className="text-sm text-muted-foreground font-medium">
-                                {habit.completedCapsulesCount}/{habit.totalCapsulesCount} parts done
+                                {habit.completedCapsulesCount}/{habit.totalCapsulesCount} {habit.totalCapsulesCount === 1 ? 'session' : 'parts'} done
                                 {habit.is_fixed && " • Fixed goal"}
                               </p>
                             </div>
@@ -326,7 +325,7 @@ const Index = () => {
                             <HabitCapsule
                               key={capsule.id}
                               {...capsule}
-                              habitName={habit.name} // Passing habitName here
+                              habitName={habit.name}
                               color={color}
                               onComplete={(actual, mood) => handleCapsuleComplete(habit, capsule, actual, mood)}
                               onUncomplete={() => handleCapsuleUncomplete(habit, capsule)}
