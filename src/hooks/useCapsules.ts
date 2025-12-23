@@ -70,7 +70,7 @@ export const useCapsules = () => {
       if (!userId) throw new Error('User not authenticated');
 
       // First, log the habit and get the completedTaskId
-      const { completedTaskId } = await logHabit({ habitKey, value, taskName, note: mood }); // Corrected destructuring
+      const { completedTaskId } = await logHabit({ habitKey, value, taskName, note: mood }); // Destructure completedTaskId
 
       const upsertData: Partial<Capsule> = {
         user_id: userId,
