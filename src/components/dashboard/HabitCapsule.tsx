@@ -49,7 +49,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   const [completedTaskIdState, setCompletedTaskIdState] = useState<string | null>(initialCompletedTaskId || null);
   const [isResetting, setIsResetting] = useState(false);
 
-  // Local representation of the session's starting value (for carry-over)
   const [currentSessionInitialValue, setCurrentSessionInitialValue] = useState(initialValue);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -58,9 +57,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
 
   const storageKey = `timer_${habitKey}_${label}_${new Date().toISOString().split('T')[0]}`;
 
-  // Update local initial value when prop changes (unless resetting)
   useEffect(() => {
-    console.log(`[HabitCapsule useEffect] ${habitKey}-${label}: initialValue prop changed to ${initialValue}, isResetting: ${isResetting}`);
     if (!isResetting) {
       setCurrentSessionInitialValue(initialValue);
     }
@@ -104,37 +101,33 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     }, 1000);
   }, [label, currentSessionInitialValue, habitKey, habitName, value]);
 
-  // Load / reset on mount or when completion status changes
   useEffect(() => {
-    console.log(`[HabitCapsule useEffect] ${habitKey}-${label}: Running main effect. isCompleted: ${isCompleted}, initialCompletedTaskId: ${initialCompletedTaskId}, isResetting: ${isResetting}`);
     setCompletedTaskIdState(initialCompletedTaskId || null);
 
     if (isCompleted) {
-      console.log(`[HabitCapsule useEffect] ${habitKey}-${label}: isCompleted is true. Clearing state.`);
       localStorage.removeItem(storageKey);
       setIsTiming(false);
       setElapsedSeconds(0);
       setIsPaused(false);
       setGoalReachedAlerted(false);
       startTimeRef.current = null;
-      setCurrentSessionInitialValue(0); // This is set to 0 when completed
+      setCurrentSessionInitialValue(0);
       return;
     }
 
     const saved = localStorage.getItem(storageKey);
     if (saved) {
-      console.log(`[HabitCapsule useEffect] ${habitKey}-${label}: Found saved state.`);
       const { start, elapsed, paused, timing, initialVal } = JSON.parse(saved);
       setIsPaused(paused);
       setIsTiming(timing);
-      setCurrentSessionInitialValue(initialVal !== undefined ? initialVal : initialValue); 
-      setElapsedSeconds(elapsed); // Ensure elapsedSeconds is also loaded from saved state
+      setCurrentSessionInitialValue(initialVal !== undefined ? initialVal : initialValue);
 
       if (timing && !paused) {
         startTimeRef.current = start;
         setElapsedSeconds(Math.floor((Date.now() - start) / 1000));
         startInterval();
       } else {
+        setElapsedSeconds(elapsed);
         if (timing && paused) {
           window.dispatchEvent(
             new CustomEvent('habit-timer-update', {
@@ -150,20 +143,11 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
           );
         }
       }
-    } else {
-      console.log(`[HabitCapsule useEffect] ${habitKey}-${label}: No saved state found. Initializing with prop initialValue: ${initialValue}`);
-      setCurrentSessionInitialValue(initialValue);
-      setElapsedSeconds(0); // Ensure elapsed is 0 if no saved state
-      setIsTiming(false);
-      setIsPaused(false);
-      setGoalReachedAlerted(false);
-      startTimeRef.current = null;
     }
 
     return () => stopInterval();
-  }, [storageKey, isCompleted, startInterval, label, initialValue, habitKey, habitName, value, initialCompletedTaskId, isResetting]);
+  }, [storageKey, isCompleted, startInterval, label, initialValue, habitKey, habitName, value, initialCompletedTaskId]);
 
-  // Goal reached sound/vibration
   useEffect(() => {
     if (isTiming && isTimeBased && !goalReachedAlerted) {
       const totalMinutes = (currentSessionInitialValue * 60 + elapsedSeconds) / 60;
@@ -175,10 +159,8 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     }
   }, [elapsedSeconds, isTiming, isTimeBased, value, currentSessionInitialValue, goalReachedAlerted]);
 
-  // Persist timer state
   useEffect(() => {
     if (!isCompleted && (isTiming || elapsedSeconds > 0 || currentSessionInitialValue > 0)) {
-      console.log(`[HabitCapsule persist] ${habitKey}-${label}: Saving state. elapsed: ${elapsedSeconds}, initialVal: ${currentSessionInitialValue}`);
       localStorage.setItem(
         storageKey,
         JSON.stringify({
@@ -190,7 +172,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
         })
       );
     } else if (isCompleted) {
-      console.log(`[HabitCapsule persist] ${habitKey}-${label}: isCompleted is true. Removing saved state.`);
       localStorage.removeItem(storageKey);
     }
   }, [isTiming, elapsedSeconds, isPaused, isCompleted, storageKey, currentSessionInitialValue]);
@@ -198,7 +179,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   const handleStartTimer = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isResetting) return;
-    console.log(`[HabitCapsule handleStartTimer] ${habitKey}-${label}: Starting timer.`);
     playStartSound();
     setIsTiming(true);
     setIsPaused(false);
@@ -211,13 +191,11 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     e.stopPropagation();
     if (isResetting) return;
     if (isPaused) {
-      console.log(`[HabitCapsule handlePauseTimer] ${habitKey}-${label}: Resuming timer.`);
       playStartSound();
       setIsPaused(false);
       startTimeRef.current = Date.now() - elapsedSeconds * 1000;
       startInterval();
     } else {
-      console.log(`[HabitCapsule handlePauseTimer] ${habitKey}-${label}: Pausing timer.`);
       setIsPaused(true);
       stopInterval();
       window.dispatchEvent(
@@ -237,7 +215,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
 
   const handleResetTimer = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    console.log(`[HabitCapsule handleResetTimer] ${habitKey}-${label}: Initiating reset.`);
     setIsResetting(true);
     stopInterval();
     setElapsedSeconds(0);
@@ -247,23 +224,18 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     startTimeRef.current = null;
     localStorage.removeItem(storageKey);
     window.dispatchEvent(new CustomEvent('habit-timer-update', { detail: null }));
-    setCurrentSessionInitialValue(0); // Explicitly reset initial value to 0
+    setCurrentSessionInitialValue(0);
 
     if (completedTaskIdState) {
-      console.log(`[HabitCapsule handleResetTimer] ${habitKey}-${label}: Calling onUncomplete for task ID: ${completedTaskIdState}`);
       await onUncomplete(completedTaskIdState);
       setCompletedTaskIdState(null);
     }
 
-    setTimeout(() => {
-      console.log(`[HabitCapsule handleResetTimer] ${habitKey}-${label}: Resetting complete, isResetting to false.`);
-      setIsResetting(false);
-    }, 300);
+    setTimeout(() => setIsResetting(false), 300);
   };
 
   const handleFinishTiming = (mood?: string, promptMood: boolean = false) => {
     if (isResetting) return;
-    console.log(`[HabitCapsule handleFinishTiming] ${habitKey}-${label}: Finishing timing. Mood prompt: ${promptMood}, mood: ${mood}`);
     stopInterval();
     const totalSessionMinutes = Math.max(1, Math.ceil((currentSessionInitialValue * 60 + elapsedSeconds) / 60));
 
@@ -305,8 +277,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   const handleQuickComplete = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isResetting || isCompleted) return;
-
-    console.log(`[HabitCapsule handleQuickComplete] ${habitKey}-${label}: Quick completing.`);
 
     if (showMood) {
       setShowMoodPicker(true);
@@ -400,26 +370,9 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
             : cn('bg-card/80 backdrop-blur-sm', colors.border, 'hover:shadow-xl'),
           isTiming && 'ring-4 ring-primary/30 shadow-2xl scale-[1.02]'
         )}
+        // Only allow card click when not timing (to start) or completed
         onClick={
-          isTiming
-            ? () => {
-                const totalSessionMinutes = (currentSessionInitialValue * 60 + elapsedSeconds) / 60;
-                if (totalSessionMinutes >= value) {
-                  handleFinishTiming(undefined, false);
-                } else {
-                  stopInterval();
-                  window.dispatchEvent(new CustomEvent('habit-timer-update', { detail: null }));
-                  localStorage.removeItem(storageKey);
-                  onLogProgress(elapsedSeconds / 60, false);
-                  setIsTiming(false);
-                  setElapsedSeconds(0);
-                  setIsPaused(false);
-                  setGoalReachedAlerted(false);
-                  startTimeRef.current = null;
-                  setCurrentSessionInitialValue(0);
-                }
-              }
-            : !isCompleted && !showMoodPicker && !isResetting
+          !isTiming && !isCompleted && !showMoodPicker && !isResetting
             ? isTimeBased
               ? handleStartTimer
               : handleQuickComplete
@@ -548,8 +501,8 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                   </p>
                 </div>
 
-                <div className="flex gap-3">
-                  {/* Reset button on the left */}
+                {/* Buttons container - stop propagation so clicks don't trigger card onClick */}
+                <div className="flex gap-3" onClick={(e) => e.stopPropagation()}>
                   <Button
                     size="icon"
                     variant="ghost"
@@ -584,7 +537,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
           )}
         </div>
 
-        {/* Mood Picker */}
         <AnimatePresence>
           {showMoodPicker && (
             <motion.div
@@ -621,7 +573,12 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                   >
                     <Smile className="w-7 h-7 text-success" />
                   </Button>
-                  <Button variant="ghost" size="sm" className="font-bold text-muted-foreground px-4" onClick={() => handleFinishTiming(undefined, false)}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="font-bold text-muted-foreground px-4"
+                    onClick={() => handleFinishTiming(undefined, false)}
+                  >
                     Skip
                   </Button>
                 </div>
