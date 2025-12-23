@@ -27,7 +27,7 @@ const LandingPage = () => {
             <span className="font-black text-xl tracking-tighter text-white uppercase italic">Adaptive Growth</span>
           </div>
           <Link to="/login">
-            <Button variant="ghost" className="font-bold text-slate-400 hover:text-white hover:bg-slate-800">Login</Button>
+            <Button variant="ghost" className="font-bold text-slate-300 hover:text-white hover:bg-slate-800">Login</Button>
           </Link>
         </div>
       </nav>
@@ -45,7 +45,7 @@ const LandingPage = () => {
             brain can <span className="text-indigo-500">actually keep.</span>
           </h1>
 
-          <p className="text-xl md:text-2xl text-slate-400 max-w-2xl mx-auto font-medium leading-relaxed">
+          <p className="text-xl md:text-2xl text-slate-300 max-w-2xl mx-auto font-medium leading-relaxed">
             The first modular habit tracker that adapts to your energy, reduces overwhelm, and grows with you.
           </p>
 
@@ -75,7 +75,7 @@ const LandingPage = () => {
         <div className="container mx-auto px-6 max-w-6xl space-y-16">
           <div className="text-center space-y-4">
             <h2 className="text-4xl md:text-5xl font-black text-white tracking-tighter">How it Works</h2>
-            <p className="text-lg text-slate-400 max-w-2xl mx-auto">
+            <p className="text-lg text-slate-300 max-w-2xl mx-auto">
               Adaptive Growth is designed to meet you where you are, making habit building accessible and sustainable.
             </p>
           </div>
@@ -90,7 +90,7 @@ const LandingPage = () => {
                 </div>
                 <div>
                   <h3 className="text-2xl font-black text-white mb-3 uppercase tracking-tight">Anchor Practices</h3>
-                  <p className="text-slate-400 font-medium leading-relaxed">
+                  <p className="text-slate-300 font-medium leading-relaxed">
                     Designate core habits that keep you grounded and consistent, even on chaotic days.
                   </p>
                 </div>
@@ -105,7 +105,7 @@ const LandingPage = () => {
                 </div>
                 <div>
                   <h3 className="text-2xl font-black text-white mb-3 uppercase tracking-tight">Trial Mode</h3>
-                  <p className="text-indigo-100/70 font-medium leading-relaxed">
+                  <p className="text-indigo-200 font-medium leading-relaxed">
                     Start new habits in a low-pressure phase, focusing on consistency until it feels routine.
                   </p>
                 </div>
@@ -120,7 +120,7 @@ const LandingPage = () => {
                 </div>
                 <div>
                   <h3 className="text-2xl font-black text-white mb-3 uppercase tracking-tight">Modular Capsules</h3>
-                  <p className="text-slate-400 font-medium leading-relaxed">
+                  <p className="text-slate-300 font-medium leading-relaxed">
                     Break down larger goals into smaller, manageable "capsules" to reduce overwhelm and build momentum.
                   </p>
                 </div>
@@ -135,7 +135,7 @@ const LandingPage = () => {
                 </div>
                 <div>
                   <h3 className="text-2xl font-black text-white mb-3 uppercase tracking-tight">Adaptive Growth</h3>
-                  <p className="text-slate-400 font-medium leading-relaxed">
+                  <p className="text-slate-300 font-medium leading-relaxed">
                     Your goals adjust dynamically to your actual progress, preventing burnout and ensuring sustainable growth.
                   </p>
                 </div>
@@ -150,7 +150,7 @@ const LandingPage = () => {
                 </div>
                 <div>
                   <h3 className="text-2xl font-black text-white mb-3 uppercase tracking-tight">XP & Streaks</h3>
-                  <p className="text-slate-400 font-medium leading-relaxed">
+                  <p className="text-slate-300 font-medium leading-relaxed">
                     Gamified progress and micro-rewards keep you motivated and celebrate every step of your journey.
                   </p>
                 </div>
@@ -165,7 +165,7 @@ const LandingPage = () => {
                 </div>
                 <div>
                   <h3 className="text-2xl font-black text-white mb-3 uppercase tracking-tight">Neurodivergent Mode</h3>
-                  <p className="text-slate-400 font-medium leading-relaxed">
+                  <p className="text-slate-300 font-medium leading-relaxed">
                     Tailored settings for ADHD and neurodivergent individuals to reduce overwhelm and support consistency.
                   </p>
                 </div>
@@ -180,7 +180,7 @@ const LandingPage = () => {
       <section className="py-24 container mx-auto px-6 max-w-6xl space-y-16">
         <div className="text-center space-y-4">
           <h2 className="text-4xl md:text-5xl font-black text-white tracking-tighter">See It In Action</h2>
-          <p className="text-lg text-slate-400 max-w-2xl mx-auto">
+          <p className="text-lg text-slate-300 max-w-2xl mx-auto">
             A glimpse into how Adaptive Growth helps you manage your daily habits.
           </p>
         </div>
@@ -194,14 +194,14 @@ const LandingPage = () => {
               </div>
               <div>
                 <h3 className="font-bold text-lg text-white">Study Session</h3>
-                <p className="text-sm text-slate-400">Cognitive Growth</p>
+                <p className="text-sm text-slate-300">Cognitive Growth</p>
               </div>
             </div>
             <div className="bg-slate-800 rounded-xl p-4 text-center">
               <p className="text-4xl font-black text-green-400">25<span className="text-xl">min</span></p>
-              <p className="text-xs text-slate-500 uppercase tracking-widest mt-1">Daily Goal</p>
+              <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">Daily Goal</p>
             </div>
-            <div className="flex items-center justify-between text-sm text-slate-400">
+            <div className="flex items-center justify-between text-sm text-slate-300">
               <span>Progress: 1/2 capsules</span>
               <span className="text-green-400 font-semibold">50%</span>
             </div>
@@ -218,14 +218,14 @@ const LandingPage = () => {
               </div>
               <div>
                 <h3 className="font-bold text-lg text-white">Morning Meditation</h3>
-                <p className="text-sm text-slate-400">Wellness Anchor</p>
+                <p className="text-sm text-slate-300">Wellness Anchor</p>
               </div>
             </div>
             <div className="bg-slate-800 rounded-xl p-4 text-center">
               <p className="text-4xl font-black text-blue-400">10<span className="text-xl">min</span></p>
-              <p className="text-xs text-slate-500 uppercase tracking-widest mt-1">Daily Goal</p>
+              <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">Daily Goal</p>
             </div>
-            <div className="flex items-center justify-between text-sm text-slate-400">
+            <div className="flex items-center justify-between text-sm text-slate-300">
               <span>Progress: Completed!</span>
               <span className="text-blue-400 font-semibold">100%</span>
             </div>
@@ -242,12 +242,12 @@ const LandingPage = () => {
               </div>
               <div>
                 <h3 className="font-bold text-lg text-white">Push-ups</h3>
-                <p className="text-sm text-slate-400">Physical Daily</p>
+                <p className="text-sm text-slate-300">Physical Daily</p>
               </div>
             </div>
             <div className="bg-slate-800 rounded-xl p-4 text-center">
               <p className="text-4xl font-black text-orange-400">30<span className="text-xl">reps</span></p>
-              <p className="text-xs text-slate-500 uppercase tracking-widest mt-1">Daily Goal</p>
+              <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">Daily Goal</p>
             </div>
             <div className="w-full bg-slate-800 rounded-full h-2">
               <div className="bg-orange-500 h-full rounded-full w-1/2"></div>
@@ -261,7 +261,7 @@ const LandingPage = () => {
         <div className="container mx-auto px-6 max-w-4xl space-y-16">
           <div className="text-center space-y-4">
             <h2 className="text-4xl md:text-5xl font-black text-white tracking-tighter">What Our Users Say</h2>
-            <p className="text-lg text-slate-400 max-w-2xl mx-auto">
+            <p className="text-lg text-slate-300 max-w-2xl mx-auto">
               Real stories from people transforming their habits with Adaptive Growth.
             </p>
           </div>
@@ -269,14 +269,14 @@ const LandingPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <Card className="rounded-2xl border border-slate-800 bg-slate-900/50 p-6 space-y-4">
               <MessageSquare className="w-8 h-8 text-indigo-500" />
-              <p className="text-slate-300 leading-relaxed italic">
+              <p className="text-slate-200 leading-relaxed italic">
                 "This app finally helped me stick to meditation. The 'Trial Mode' took all the pressure off, and the small increments actually work for my ADHD brain."
               </p>
               <p className="font-semibold text-white">- Alex P.</p>
             </Card>
             <Card className="rounded-2xl border border-slate-800 bg-slate-900/50 p-6 space-y-4">
               <MessageSquare className="w-8 h-8 text-indigo-500" />
-              <p className="text-slate-300 leading-relaxed italic">
+              <p className="text-slate-200 leading-relaxed italic">
                 "I used to dread my project work, but breaking it into capsules made it so much more manageable. I'm actually making consistent progress now!"
               </p>
               <p className="font-semibold text-white">- Jamie L.</p>
@@ -289,7 +289,7 @@ const LandingPage = () => {
       <section className="py-24 container mx-auto px-6 max-w-4xl space-y-16">
         <div className="text-center space-y-4">
           <h2 className="text-4xl md:text-5xl font-black text-white tracking-tighter">Frequently Asked Questions</h2>
-          <p className="text-lg text-slate-400 max-w-2xl mx-auto">
+          <p className="text-lg text-slate-300 max-w-2xl mx-auto">
             Got questions? We've got answers.
           </p>
         </div>
@@ -299,7 +299,7 @@ const LandingPage = () => {
             <AccordionTrigger className="text-lg font-semibold text-white hover:no-underline py-4">
               What's the difference between Trial, Growth, and Fixed modes?
             </AccordionTrigger>
-            <AccordionContent className="text-slate-400 leading-relaxed pb-4">
+            <AccordionContent className="text-slate-300 leading-relaxed pb-4">
               <p>
                 <strong>Trial Mode:</strong> Focuses purely on consistency. There's no pressure to increase your goal; your only job is to show up. This mode helps you anchor new habits without overwhelm.
               </p>
@@ -316,7 +316,7 @@ const LandingPage = () => {
             <AccordionTrigger className="text-lg font-semibold text-white hover:no-underline py-4">
               What are Anchor Practices?
             </AccordionTrigger>
-            <AccordionContent className="text-slate-400 leading-relaxed pb-4">
+            <AccordionContent className="text-slate-300 leading-relaxed pb-4">
               Anchor Practices are core habits you designate to keep you grounded and consistent, especially during busy or chaotic periods. They are prioritized on your dashboard and are designed to be foundational to your routine.
             </AccordionContent>
           </AccordionItem>
@@ -325,7 +325,7 @@ const LandingPage = () => {
             <AccordionTrigger className="text-lg font-semibold text-white hover:no-underline py-4">
               How do Capsules prevent overwhelm?
             </AccordionTrigger>
-            <AccordionContent className="text-slate-400 leading-relaxed pb-4">
+            <AccordionContent className="text-slate-300 leading-relaxed pb-4">
               Capsules break down larger habit sessions into smaller, more manageable chunks. For example, a 30-minute meditation might become three 10-minute capsules. This makes starting and completing tasks less daunting, especially for neurodivergent individuals, by focusing on one small part at a time.
             </AccordionContent>
           </AccordionItem>
@@ -334,7 +334,7 @@ const LandingPage = () => {
             <AccordionTrigger className="text-lg font-semibold text-white hover:no-underline py-4">
               How do XP, streaks, and leveling work?
             </AccordionTrigger>
-            <AccordionContent className="text-slate-400 leading-relaxed pb-4">
+            <AccordionContent className="text-slate-300 leading-relaxed pb-4">
               Every completed habit session earns you Experience Points (XP). Accumulate XP to level up, unlocking new insights and celebrating your journey. Maintaining consistency builds your daily streak, and achieving specific milestones earns you special badges, providing micro-rewards and motivation.
             </AccordionContent>
           </AccordionItem>
@@ -343,7 +343,7 @@ const LandingPage = () => {
             <AccordionTrigger className="text-lg font-semibold text-white hover:no-underline py-4">
               Is there a Neurodivergent Mode?
             </AccordionTrigger>
-            <AccordionContent className="text-slate-400 leading-relaxed pb-4">
+            <AccordionContent className="text-slate-300 leading-relaxed pb-4">
               <p>
                 Yes! Our Neurodivergent Mode optimizes the app for individuals with ADHD and other neurodivergent profiles. It enables smaller habit increments, longer stabilization plateaus, and modular task capsules to reduce overwhelm, support consistent engagement, and make habit building more accessible.
               </p>
@@ -369,7 +369,7 @@ const LandingPage = () => {
 
       {/* Footer */}
       <footer className="bg-slate-900/50 border-t border-slate-800/50 py-12">
-        <div className="container mx-auto px-6 text-center text-slate-400 space-y-6">
+        <div className="container mx-auto px-6 text-center text-slate-300 space-y-6">
           <div className="flex items-center justify-center gap-2">
             <div className="w-6 h-6 bg-indigo-600 rounded-md flex items-center justify-center shadow-lg shadow-indigo-500/20">
               <Zap className="w-4 h-4 text-white" />
@@ -385,8 +385,8 @@ const LandingPage = () => {
           </div>
           <div className="flex justify-center space-x-4 mt-4">
             {/* Placeholder for social icons */}
-            <a href="#" aria-label="Twitter" className="text-slate-400 hover:text-white"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-twitter"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17-18 11.6 2.2.1 4.4-.6 6-2 1.1-1.1 1.8-2.5 2-4 2.2.2 4.4-.4 6-2 1.1-1.1 1.8-2.5 2-4z"/></svg></a>
-            <a href="#" aria-label="LinkedIn" className="text-slate-400 hover:text-white"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-linkedin"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg></a>
+            <a href="#" aria-label="Twitter" className="text-slate-300 hover:text-white"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-twitter"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17-18 11.6 2.2.1 4.4-.6 6-2 1.1-1.1 1.8-2.5 2-4 2.2.2 4.4-.4 6-2 1.1-1.1 1.8-2.5 2-4z"/></svg></a>
+            <a href="#" aria-label="LinkedIn" className="text-slate-300 hover:text-white"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-linkedin"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg></a>
           </div>
         </div>
       </footer>
