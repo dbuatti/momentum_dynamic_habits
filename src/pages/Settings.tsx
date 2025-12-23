@@ -17,7 +17,7 @@ import { SettingsSkeleton } from '@/components/dashboard/SettingsSkeleton';
 import { Switch } from '@/components/ui/switch';
 import { 
   Brain, LogOut, Anchor, Target, Sparkles, 
-  Settings2, Shield, Calendar, 
+  Settings2, Shield, ShieldCheck, Calendar, // added ShieldCheck here
   Clock, Dumbbell, Wind, BookOpen, Music, 
   Home, Code, Pill, Timer, BarChart3, Layers, Zap
 } from 'lucide-react';
