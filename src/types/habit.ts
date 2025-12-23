@@ -41,7 +41,8 @@ export interface UserHabitRecord {
   window_start: string | null;
   window_end: string | null;
   days_of_week: number[];
-  enable_chunks: boolean;
+  auto_chunking: boolean; // Added for dynamic scaling
+  enable_chunks: boolean; // Manual chunks toggle
   num_chunks: number;
   chunk_duration: number;
 }

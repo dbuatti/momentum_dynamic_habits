@@ -1,43 +1,80 @@
 import { Habit } from '@/types/habit';
 
-export const calculateDailyParts = (habits: any[]) => {
+/**
+ * Calculates the suggested chunks for a habit based on goal and user preferences.
+ * Logic:
+ * - Time habits: Max 10-15 mins per chunk (smaller for neurodivergent)
+ * - Count habits: Max 20-25 reps per chunk
+ */
+export const calculateDynamicChunks = (
+  habitKey: string, 
+  goal: number, 
+  unit: string, 
+  isNeurodivergent: boolean,
+  autoChunking: boolean,
+  manualNumChunks?: number,
+  manualChunkDuration?: number
+) => {
+  // If manual chunking is explicitly enabled and auto is off, use manual settings
+  if (!autoChunking && manualNumChunks && manualChunkDuration) {
+    return {
+      numChunks: manualNumChunks,
+      chunkValue: manualChunkDuration
+    };
+  }
+
+  const isTime = unit === 'min';
+  const isReps = unit === 'reps';
+
+  let numChunks = 1;
+  let chunkValue = goal;
+
+  if (isTime) {
+    // For time, target ~10 min chunks, or ~5 min for neurodivergent
+    const threshold = isNeurodivergent ? 5 : 10;
+    if (goal > threshold) {
+      numChunks = Math.ceil(goal / threshold);
+      chunkValue = goal / numChunks;
+    }
+  } else if (isReps) {
+    // For reps, target ~20 reps, or ~10 for neurodivergent
+    const threshold = isNeurodivergent ? 10 : 20;
+    if (goal > threshold) {
+      numChunks = Math.ceil(goal / threshold);
+      chunkValue = goal / numChunks;
+    }
+  }
+
+  // Ensure minimums
+  return {
+    numChunks: Math.max(1, numChunks),
+    chunkValue: Number(chunkValue.toFixed(1))
+  };
+};
+
+export const calculateDailyParts = (habits: any[], isNeurodivergent: boolean) => {
   let totalParts = 0;
   let completedParts = 0;
 
   habits.forEach(habit => {
-    const goal = habit.dailyGoal;
-    const progress = habit.dailyProgress;
-    const isReps = habit.unit === 'reps';
-    const isMinutes = habit.unit === 'min';
+    const { numChunks, chunkValue } = calculateDynamicChunks(
+      habit.key,
+      habit.dailyGoal,
+      habit.unit,
+      isNeurodivergent,
+      habit.auto_chunking,
+      habit.num_chunks,
+      habit.chunk_duration
+    );
 
-    let numCapsules = 1;
-    let capsuleValue = goal;
-
-    // For pushups, keep the small set logic as it supports the physical nature of reps
-    if (habit.key === 'pushups' && isReps) {
-      const idealSetSize = Math.min(7, Math.max(5, Math.ceil(goal / 4)));
-      numCapsules = Math.max(1, Math.ceil(goal / idealSetSize));
-      capsuleValue = idealSetSize;
-    } else if (isMinutes) {
-      // Simplified Logic: Only split into parts if duration is at least 60 minutes.
-      // This ensures 30m Housework, 10m Piano, etc., stay as single, binary sessions (0/1).
-      if (goal >= 60) {
-        numCapsules = 4;
-      } else {
-        numCapsules = 1;
-      }
-      
-      capsuleValue = Math.ceil(goal / numCapsules);
-    }
-
-    totalParts += numCapsules;
+    totalParts += numChunks;
     
     // Calculate completed parts for this habit
-    for (let i = 0; i < numCapsules; i++) {
-      const cumulativeNeeded = (i + 1) * capsuleValue;
-      const isLast = i === numCapsules - 1;
+    for (let i = 0; i < numChunks; i++) {
+      const cumulativeNeeded = (i + 1) * chunkValue;
+      const isLast = i === numChunks - 1;
       // Ensure we check against the actual goal for the last capsule to handle rounding
-      if (progress >= (isLast ? goal : cumulativeNeeded)) {
+      if (habit.dailyProgress >= (isLast ? habit.dailyGoal : cumulativeNeeded)) {
         completedParts++;
       }
     }

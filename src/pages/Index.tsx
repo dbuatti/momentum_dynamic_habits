@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { TipCard } from "@/components/dashboard/TipCard";
-import { toast } from "sonner";
+import { calculateDynamicChunks } from "@/utils/progress-utils";
 
 const habitIconMap: { [key: string]: React.ElementType } = {
   pushups: Dumbbell,
@@ -49,23 +49,30 @@ const Index = () => {
       const goal = habit.dailyGoal;
       const progress = habit.dailyProgress;
       
-      const numCapsules = habit.enable_chunks ? habit.num_chunks : 1;
-      const chunkDuration = habit.enable_chunks ? habit.chunk_duration : goal;
+      const { numChunks, chunkValue } = calculateDynamicChunks(
+        habit.key,
+        goal,
+        habit.unit,
+        data.neurodivergentMode,
+        habit.auto_chunking,
+        habit.num_chunks,
+        habit.chunk_duration
+      );
 
-      const capsules = Array.from({ length: numCapsules }).map((_, i) => {
+      const capsules = Array.from({ length: numChunks }).map((_, i) => {
         const dbCapsule = dbCapsules?.find(c => c.habit_key === habit.key && c.capsule_index === i);
         
         // Progress based completion
-        const threshold = (i + 1) * chunkDuration;
-        const isCompleted = dbCapsule?.is_completed || progress >= threshold;
+        const threshold = (i + 1) * chunkValue;
+        const isCompleted = dbCapsule?.is_completed || progress >= (i === numChunks - 1 ? goal : threshold);
 
         return {
           id: `${habit.key}-${i}`,
           habitKey: habit.key,
           index: i,
-          label: habit.enable_chunks ? `Part ${i + 1}` : (habit.is_trial_mode ? 'Trial Session' : 'Daily Goal'),
-          value: chunkDuration,
-          initialValue: Math.max(0, Math.min(chunkDuration, progress - (i * chunkDuration))),
+          label: habit.auto_chunking ? `Part ${i + 1}` : (habit.enable_chunks ? `Part ${i + 1}` : (habit.is_trial_mode ? 'Trial Session' : 'Daily Goal')),
+          value: chunkValue,
+          initialValue: Math.max(0, Math.min(chunkValue, progress - (i * chunkValue))),
           unit: habit.unit,
           isCompleted,
           scheduledTime: dbCapsule?.scheduled_time,
@@ -78,9 +85,10 @@ const Index = () => {
         ...habit,
         capsules,
         allCompleted,
+        numChunks,
       };
     });
-  }, [data?.habits, dbCapsules]);
+  }, [data?.habits, dbCapsules, data?.neurodivergentMode]);
 
   const anchorHabits = useMemo(() => habitGroups.filter(h => h.category === 'anchor' && h.isVisible), [habitGroups]);
   const dailyHabits = useMemo(() => {
@@ -97,7 +105,6 @@ const Index = () => {
   }, [habitGroups]);
 
   const handleCapsuleComplete = (habit: any, capsule: any, actualValue: number, mood?: string) => {
-    // If it's a chunked habit, we log the duration of the chunk
     logHabit({ habitKey: habit.key, value: actualValue, taskName: `${habit.name} session` });
     completeCapsule.mutate({ habitKey: habit.key, index: capsule.index, value: actualValue, mood });
   };
@@ -122,7 +129,7 @@ const Index = () => {
         indigo: 'text-indigo-900 bg-indigo-50 border-indigo-200',
     }[color];
 
-    const completedChunks = habit.capsules.filter(c => c.isCompleted).length;
+    const completedChunksCount = habit.capsules.filter(c => c.isCompleted).length;
 
     return (
       <AccordionItem
@@ -137,7 +144,7 @@ const Index = () => {
         <AccordionTrigger className="px-6 py-5 hover:no-underline">
           <div className="flex items-center justify-between w-full pr-4">
             <div className="flex items-center gap-4 text-left">
-              <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center relative shadow-sm border border-black/5">
+              <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center shrink-0 shadow-sm border border-black/5">
                 <Icon className="w-6 h-6" />
               </div>
               <div>
@@ -147,7 +154,7 @@ const Index = () => {
                 </h3>
                 <div className="flex items-center gap-2 mt-1">
                   <p className="text-sm opacity-80 font-bold">
-                    {habit.enable_chunks ? `${completedChunks}/${habit.num_chunks} chunks` : (habit.is_trial_mode ? `Trial: ${habit.weekly_completions}/${habit.frequency_per_week} weekly` : `${habit.dailyGoal} ${habit.unit} goal`)}
+                    {habit.numChunks > 1 ? `${completedChunksCount}/${habit.numChunks} parts` : (habit.is_trial_mode ? `Trial Session` : `${habit.dailyGoal} ${habit.unit} goal`)}
                   </p>
                   {!habit.allCompleted && (
                     <span className={cn(

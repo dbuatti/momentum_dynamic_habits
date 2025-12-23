@@ -97,6 +97,7 @@ const fetchDashboardData = async (userId: string) => {
       isWithinWindow,
       window_start: h.window_start,
       window_end: h.window_end,
+      auto_chunking: h.auto_chunking ?? true,
       enable_chunks: h.enable_chunks,
       num_chunks: h.num_chunks,
       chunk_duration: h.chunk_duration,
