@@ -3,11 +3,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Check, Clock, Smile, Meh, Frown, Undo2, Play, Pause, Square, RotateCcw } from 'lucide-react';
+import { Check, Clock, Smile, Meh, Frown, Undo2, Play, Pause, Square, RotateCcw, Plus, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
-import confetti from 'canvas-confetti';
 import { playStartSound, playEndSound, playGoalSound } from '@/utils/audio';
+import { Input } from '@/components/ui/input';
+import { MeasurementType } from '@/types/habit';
 
 interface HabitCapsuleProps {
   id: string;
@@ -16,6 +17,7 @@ interface HabitCapsuleProps {
   label: string;
   value: number;
   unit: string;
+  measurementType: MeasurementType; // Added
   isCompleted: boolean;
   initialValue?: number;
   scheduledTime?: string;
@@ -32,6 +34,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   label,
   value,
   unit,
+  measurementType,
   isCompleted,
   initialValue = 0,
   scheduledTime,
@@ -45,30 +48,18 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   const [isTiming, setIsTiming] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
-  const [goalReachedAlerted, setGoalReachedAlerted] = useState(false);
   const [completedTaskIdState, setCompletedTaskIdState] = useState<string | null>(initialCompletedTaskId || null);
+  const [manualValue, setManualValue] = useState<number>(value);
   const [isResetting, setIsResetting] = useState(false);
   
   const ignoreClicksRef = useRef(false);
-
-  const [currentSessionInitialValue, setCurrentSessionInitialValue] = useState(initialValue);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number | null>(null);
-  const isTimeBased = unit === 'min';
   const storageKey = `timer_${habitKey}_${label}_${new Date().toISOString().split('T')[0]}`;
 
   useEffect(() => {
-    if (!isResetting && !ignoreClicksRef.current) {
-      setCurrentSessionInitialValue(initialValue);
-    }
-  }, [initialValue, isResetting]);
-
-  const formatTime = (totalSeconds: number) => {
-    const rounded = Math.round(totalSeconds);
-    const mins = Math.floor(rounded / 60);
-    const secs = rounded % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
+    setCompletedTaskIdState(initialCompletedTaskId || null);
+  }, [initialCompletedTaskId]);
 
   const stopInterval = () => {
     if (timerRef.current) {
@@ -89,7 +80,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   }, []);
 
   useEffect(() => {
-    setCompletedTaskIdState(initialCompletedTaskId || null);
+    if (measurementType !== 'timer') return;
     if (isCompleted) {
       localStorage.removeItem(storageKey);
       setIsTiming(false);
@@ -98,10 +89,9 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     }
     const saved = localStorage.getItem(storageKey);
     if (saved) {
-      const { start, elapsed, paused, timing, initialVal } = JSON.parse(saved);
+      const { start, elapsed, paused, timing } = JSON.parse(saved);
       setIsPaused(paused);
       setIsTiming(timing);
-      setCurrentSessionInitialValue(initialVal ?? initialValue);
       if (timing && !paused) {
         startTimeRef.current = start;
         setElapsedSeconds(Math.floor((Date.now() - start) / 1000));
@@ -111,12 +101,10 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
       }
     }
     return () => stopInterval();
-  }, [isCompleted, storageKey, initialValue, initialCompletedTaskId, startInterval]);
+  }, [isCompleted, storageKey, measurementType, startInterval]);
 
-  const handleStartTimer = (e: React.MouseEvent | React.PointerEvent) => {
+  const handleStartTimer = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (ignoreClicksRef.current || isResetting) return;
-    
     playStartSound();
     setIsTiming(true);
     setIsPaused(false);
@@ -124,34 +112,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     startInterval();
   };
 
-  const handleResetTimer = async (e: React.MouseEvent | React.PointerEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    ignoreClicksRef.current = true;
-    setIsResetting(true);
-    
-    stopInterval();
-    localStorage.removeItem(storageKey);
-    setElapsedSeconds(0);
-    setCurrentSessionInitialValue(0); 
-    setIsTiming(false);
-    setIsPaused(false);
-    setGoalReachedAlerted(false);
-    startTimeRef.current = null;
-
-    if (completedTaskIdState) {
-      await onUncomplete(completedTaskIdState);
-      setCompletedTaskIdState(null);
-    }
-
-    setTimeout(() => {
-      ignoreClicksRef.current = false;
-      setIsResetting(false);
-    }, 500);
-  };
-
-  const handlePauseTimer = (e: React.MouseEvent | React.PointerEvent) => {
+  const handlePauseTimer = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isPaused) {
       playStartSound();
@@ -166,7 +127,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
 
   const handleFinishTiming = (mood?: string, promptMood: boolean = false) => {
     stopInterval();
-    const totalSessionMinutes = Math.max(1, Math.ceil((currentSessionInitialValue * 60 + elapsedSeconds) / 60));
+    const totalSessionMinutes = Math.max(1, Math.ceil(elapsedSeconds / 60));
     if (promptMood && showMood && mood === undefined) {
       setShowMoodPicker(true);
       return;
@@ -177,10 +138,27 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     setIsTiming(false);
     setElapsedSeconds(0);
     setShowMoodPicker(false);
-    setCurrentSessionInitialValue(0);
   };
 
-  const progressPercent = Math.min(100, ((currentSessionInitialValue + elapsedSeconds / 60) / value) * 100);
+  const handleLogManual = (mood?: string, promptMood: boolean = false) => {
+    if (promptMood && showMood && mood === undefined) {
+      setShowMoodPicker(true);
+      return;
+    }
+    playEndSound();
+    onLogProgress(manualValue, true, mood);
+    setShowMoodPicker(false);
+  };
+
+  const handleLogBinary = (mood?: string, promptMood: boolean = false) => {
+    if (promptMood && showMood && mood === undefined) {
+      setShowMoodPicker(true);
+      return;
+    }
+    playEndSound();
+    onLogProgress(value, true, mood);
+    setShowMoodPicker(false);
+  };
 
   const colors = {
     orange: { light: 'from-habit-orange/60', mid: 'via-habit-orange/80', dark: 'to-habit-orange', text: 'text-habit-orange-foreground', border: 'border-habit-orange-border' },
@@ -190,6 +168,16 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     red: { light: 'from-habit-red/60', mid: 'via-habit-red/80', dark: 'to-habit-red', text: 'text-habit-red-foreground', border: 'border-habit-red-border' },
     indigo: { light: 'from-habit-indigo/60', mid: 'via-habit-indigo/80', dark: 'to-habit-indigo', text: 'text-habit-indigo-foreground', border: 'border-habit-indigo-border' },
   }[color];
+
+  const formatTimeDisplay = (totalSeconds: number) => {
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const progressPercent = measurementType === 'timer' 
+    ? Math.min(100, (elapsedSeconds / (value * 60)) * 100)
+    : 0;
 
   return (
     <motion.div layout className="relative">
@@ -201,12 +189,11 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
         )}
       >
         <AnimatePresence>
-          {!isCompleted && (isTiming || currentSessionInitialValue > 0 || elapsedSeconds > 0) && (
+          {!isCompleted && measurementType === 'timer' && isTiming && (
             <motion.div
               className="absolute inset-x-0 bottom-0 z-0 pointer-events-none"
               initial={{ height: '0%' }}
               animate={{ height: `${progressPercent}%` }}
-              transition={{ type: 'spring', stiffness: 80, damping: 20 }}
             >
               <div className={cn('absolute inset-0 bg-gradient-to-t', colors.light, colors.mid, colors.dark)} />
             </motion.div>
@@ -214,76 +201,88 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
         </AnimatePresence>
 
         <div className="relative z-10 p-5">
-          {!isTiming ? (
+          {isCompleted ? (
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-4 min-w-0">
-                <Button
-                  size="icon"
-                  variant="ghost" 
-                  className={cn('w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border border-border/50', isCompleted ? 'bg-card/80' : 'bg-card/95')}
-                  onClick={handleStartTimer}
-                  disabled={isCompleted}
-                >
-                  {isCompleted ? <Check className="w-7 h-7 text-success" /> : <Play className={cn('w-6 h-6 ml-0.5 fill-current', colors.text)} />}
-                </Button>
-                <div className="min-w-0">
-                  <p className={cn('font-bold text-lg leading-tight truncate', isCompleted ? 'text-muted-foreground' : colors.text)}>
-                    {label}
-                    {currentSessionInitialValue > 0 && !isCompleted && (
-                      <span className={cn('ml-2 text-[10px] bg-white/20 dark:bg-black/20 px-2 py-0.5 rounded-md font-black', colors.text)}>
-                        +{currentSessionInitialValue.toFixed(1)} {unit}
-                      </span>
-                    )}
-                  </p>
-                  <div className="flex items-center gap-2 mt-1 text-sm font-bold opacity-70">
-                    {value} {unit}
-                  </div>
+                <div className="w-12 h-12 rounded-2xl bg-card/80 flex items-center justify-center shrink-0 border border-border/50">
+                  <Check className="w-7 h-7 text-success" />
+                </div>
+                <div>
+                  <p className="font-bold text-lg text-muted-foreground truncate">{label}</p>
+                  <p className="text-xs font-bold text-muted-foreground opacity-70">Completed</p>
                 </div>
               </div>
-              {isCompleted && (
-                <Button size="sm" variant="ghost" className="h-10 px-4 rounded-xl font-bold" onClick={(e) => { e.stopPropagation(); if (completedTaskIdState) onUncomplete(completedTaskIdState); }}>
-                  <Undo2 className="w-4 h-4 mr-1.5" /> Undo
-                </Button>
-              )}
+              <Button size="sm" variant="ghost" className="h-10 px-4 rounded-xl font-bold" onClick={() => completedTaskIdState && onUncomplete(completedTaskIdState)}>
+                <Undo2 className="w-4 h-4 mr-1.5" /> Undo
+              </Button>
             </div>
-          ) : (
-            <div className={cn('flex flex-col sm:flex-row justify-between items-center gap-4', colors.text)}>
-                <div className="flex items-center gap-4 w-full sm:w-auto">
-                    <div className="pl-1">
-                        <p className="text-[10px] font-black uppercase opacity-60 tracking-widest leading-none">Active • {label}</p>
-                        <p className="text-4xl font-black tabular-nums mt-1 leading-none">
-                            {formatTime(currentSessionInitialValue * 60 + elapsedSeconds)}
-                        </p>
-                    </div>
+          ) : measurementType === 'timer' ? (
+            isTiming ? (
+              <div className={cn('flex flex-col sm:flex-row justify-between items-center gap-4', colors.text)}>
+                <div className="pl-1">
+                  <p className="text-[10px] font-black uppercase opacity-60 tracking-widest leading-none">Active • {label}</p>
+                  <p className="text-4xl font-black tabular-nums mt-1 leading-none">{formatTimeDisplay(elapsedSeconds)}</p>
                 </div>
-                
-                <div className="flex items-center gap-3 w-full sm:w-auto justify-end" onPointerDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-12 w-12 rounded-full bg-card/90 shadow-md border border-border/30"
-                    onClick={handleResetTimer}
-                    disabled={isResetting}
-                  >
-                    <RotateCcw className="w-5 h-5" />
-                  </Button>
-                  <Button
-                    size="icon"
-                    className="h-12 w-12 rounded-full bg-card/90 shadow-md border border-border/30"
-                    onClick={handlePauseTimer}
-                    disabled={isResetting}
-                  >
+                <div className="flex items-center gap-3">
+                  <Button size="icon" variant="ghost" className="h-12 w-12 rounded-full bg-card/90 shadow-md border border-border/30" onClick={handlePauseTimer}>
                     {isPaused ? <Play className="w-6 h-6 ml-0.5 fill-current" /> : <Pause className="w-6 h-6 fill-current" />}
                   </Button>
-                  <Button
-                    size="lg"
-                    className="h-12 px-6 rounded-full font-black shadow-lg bg-primary text-primary-foreground border-2 border-primary-foreground/30"
-                    onClick={(e) => { e.stopPropagation(); handleFinishTiming(undefined, true); }}
-                    disabled={isResetting}
-                  >
+                  <Button size="lg" className="h-12 px-6 rounded-full font-black shadow-lg bg-primary text-primary-foreground" onClick={() => handleFinishTiming(undefined, true)}>
                     <Square className="w-4 h-4 mr-2 fill-current" /> Done
                   </Button>
                 </div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <Button size="icon" variant="ghost" className="w-12 h-12 rounded-2xl bg-card/95 border border-border/50" onClick={handleStartTimer}>
+                    <Play className={cn('w-6 h-6 ml-0.5 fill-current', colors.text)} />
+                  </Button>
+                  <div>
+                    <p className={cn('font-bold text-lg leading-tight', colors.text)}>{label}</p>
+                    <p className="text-sm font-bold opacity-70">{value} {unit}</p>
+                  </div>
+                </div>
+                <div className="flex flex-col items-end">
+                   <p className="text-[10px] font-black uppercase opacity-40">Ready to Start</p>
+                </div>
+              </div>
+            )
+          ) : measurementType === 'unit' ? (
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className={cn('font-bold text-lg leading-tight', colors.text)}>{label}</p>
+                  <p className="text-sm font-bold opacity-70">Goal: {value} {unit}</p>
+                </div>
+                <div className="flex items-center bg-card rounded-2xl p-1 border shadow-inner">
+                  <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl" onClick={() => setManualValue(v => Math.max(1, v - 1))}>
+                    <Minus className="w-4 h-4" />
+                  </Button>
+                  <Input 
+                    type="number" 
+                    value={manualValue} 
+                    onChange={(e) => setManualValue(Number(e.target.value))}
+                    className="w-16 h-10 border-none bg-transparent text-center font-black text-lg focus-visible:ring-0"
+                  />
+                  <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl" onClick={() => setManualValue(v => v + 1)}>
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+              <Button size="lg" className="w-full h-12 rounded-2xl font-black shadow-md bg-primary text-primary-foreground" onClick={() => handleLogManual(undefined, true)}>
+                Log {manualValue} {unit}
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between">
+              <div>
+                <p className={cn('font-bold text-lg leading-tight', colors.text)}>{label}</p>
+                <p className="text-sm font-bold opacity-70">Single session</p>
+              </div>
+              <Button size="lg" className="h-12 px-8 rounded-2xl font-black shadow-md bg-primary text-primary-foreground" onClick={() => handleLogBinary(undefined, true)}>
+                Complete
+              </Button>
             </div>
           )}
         </div>
@@ -296,15 +295,14 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 10 }}
               className="absolute inset-0 z-50 bg-card/95 backdrop-blur-md flex flex-col items-center justify-center p-4 gap-4"
-              onClick={(e) => e.stopPropagation()}
             >
-                <p className="text-sm font-black uppercase tracking-widest opacity-60">Session Complete! How was it?</p>
-                <div className="flex gap-4">
-                  <Button variant="ghost" className="h-14 w-14 rounded-full text-3xl" onClick={() => handleFinishTiming('sad', false)}><Frown className="w-8 h-8 text-red-500" /></Button>
-                  <Button variant="ghost" className="h-14 w-14 rounded-full text-3xl" onClick={() => handleFinishTiming('neutral', false)}><Meh className="w-8 h-8 text-yellow-500" /></Button>
-                  <Button variant="ghost" className="h-14 w-14 rounded-full text-3xl" onClick={() => handleFinishTiming('happy', false)}><Smile className="w-8 h-8 text-green-500" /></Button>
-                </div>
-                <Button variant="link" size="sm" onClick={() => handleFinishTiming(undefined, false)} className="text-muted-foreground">Skip</Button>
+              <p className="text-sm font-black uppercase tracking-widest opacity-60">Success! How was it?</p>
+              <div className="flex gap-4">
+                <Button variant="ghost" className="h-14 w-14 rounded-full" onClick={() => (measurementType === 'unit' ? handleLogManual('sad', false) : measurementType === 'binary' ? handleLogBinary('sad', false) : handleFinishTiming('sad', false))}><Frown className="w-8 h-8 text-red-500" /></Button>
+                <Button variant="ghost" className="h-14 w-14 rounded-full" onClick={() => (measurementType === 'unit' ? handleLogManual('neutral', false) : measurementType === 'binary' ? handleLogBinary('neutral', false) : handleFinishTiming('neutral', false))}><Meh className="w-8 h-8 text-yellow-500" /></Button>
+                <Button variant="ghost" className="h-14 w-14 rounded-full" onClick={() => (measurementType === 'unit' ? handleLogManual('happy', false) : measurementType === 'binary' ? handleLogBinary('happy', false) : handleFinishTiming('happy', false))}><Smile className="w-8 h-8 text-green-500" /></Button>
+              </div>
+              <Button variant="link" size="sm" onClick={() => (measurementType === 'unit' ? handleLogManual(undefined, false) : measurementType === 'binary' ? handleLogBinary(undefined, false) : handleFinishTiming(undefined, false))} className="text-muted-foreground">Skip</Button>
             </motion.div>
           )}
         </AnimatePresence>

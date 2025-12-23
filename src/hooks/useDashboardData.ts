@@ -3,8 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { startOfDay, differenceInDays, startOfWeek, endOfWeek, subWeeks, addMonths, subDays, formatDistanceToNowStrict, isWithinInterval, parse } from 'date-fns';
 import { initialHabits } from '@/lib/habit-data';
-import { useEffect, useRef } from 'react';
-import { ProcessedUserHabit } from '@/types/habit'; // Import ProcessedUserHabit
+import { ProcessedUserHabit } from '@/types/habit';
 
 const fetchDashboardData = async (userId: string) => {
   const { data: profile, error: profileError } = await supabase
@@ -28,7 +27,7 @@ const fetchDashboardData = async (userId: string) => {
     { data: bestTime, error: bestTimeError },
     { data: randomTip, error: randomTipError },
   ] = await Promise.all([
-    supabase.from('user_habits').select('*, dependent_on_habit_id, anchor_practice, carryover_value').eq('user_id', userId), // Fetch dependent_on_habit_id, anchor_practice, and carryover_value
+    supabase.from('user_habits').select('*, measurement_type').eq('user_id', userId),
     supabase.rpc('get_completed_tasks_today', { p_user_id: userId, p_timezone: timezone }),
     supabase.from('completedtasks').select('original_source, duration_used, xp_earned, completed_at').eq('user_id', userId).gte('completed_at', startOfWeek(today).toISOString()).lte('completed_at', endOfWeek(today).toISOString()),
     supabase.from('completedtasks').select('original_source, duration_used, xp_earned').eq('user_id', userId).gte('completed_at', startOfWeek(subWeeks(today, 1)).toISOString()).lte('completed_at', endOfWeek(subWeeks(today, 1)).toISOString()),
@@ -40,7 +39,6 @@ const fetchDashboardData = async (userId: string) => {
 
   if (profileError || habitsError || completedTodayError) throw new Error('Failed to fetch essential data');
 
-  // Use a map for initialHabits for quick lookup, but prioritize DB values
   const initialHabitsMap = new Map(initialHabits.map(h => [h.id, h]));
   const weeklyCompletionMap = new Map<string, number>();
   
@@ -51,21 +49,18 @@ const fetchDashboardData = async (userId: string) => {
   });
 
   const dailyProgressMap = new Map<string, number>();
-  const completedHabitKeysToday = new Set<string>(); // Track which habits are completed today (by habit_key)
+  const completedHabitKeysToday = new Set<string>();
   (completedToday || []).forEach((task: any) => {
     const key = task.original_source;
-    completedHabitKeysToday.add(key); // Mark as completed
-    const habitConfig = initialHabitsMap.get(key); // Fallback to initial config if needed
-    
-    // Determine unit and xp_per_unit from user_habits table first, then fallback to initialHabits
+    completedHabitKeysToday.add(key);
     const userHabit = habits?.find(h => h.habit_key === key);
-    const unit = userHabit?.unit || habitConfig?.unit || 'min';
-    const xpPerUnit = userHabit?.xp_per_unit || habitConfig?.xpPerUnit || 1;
+    const unit = userHabit?.unit || initialHabitsMap.get(key)?.unit || 'min';
+    const xpPerUnit = userHabit?.xp_per_unit || initialHabitsMap.get(key)?.xpPerUnit || 1;
 
     let progress = 0;
     if (unit === 'min') progress = (task.duration_used || 0) / 60;
     else if (unit === 'reps' || unit === 'dose') progress = (task.xp_earned || 0) / xpPerUnit;
-    else progress = 1; // Fallback for unknown units
+    else progress = 1;
 
     dailyProgressMap.set(key, (dailyProgressMap.get(key) || 0) + progress);
   });
@@ -73,12 +68,8 @@ const fetchDashboardData = async (userId: string) => {
   const processedHabits: ProcessedUserHabit[] = (habits || [])
     .filter(h => h.is_visible)
     .map(h => {
-    const initialHabit = initialHabitsMap.get(h.habit_key);
     const dailyProgress = dailyProgressMap.get(h.habit_key) || 0;
-    
-    // Apply carryover to the daily goal for display and chunking
     const adjustedDailyGoal = h.current_daily_goal + (h.carryover_value || 0);
-    
     const isScheduledForToday = h.days_of_week ? h.days_of_week.includes(currentDayOfWeek) : true;
 
     let isWithinWindow = true;
@@ -92,39 +83,37 @@ const fetchDashboardData = async (userId: string) => {
     const weeklyCompletions = Array.from(weeklyCompletionMap.keys())
       .filter(k => k.startsWith(`${h.habit_key}_`)).length;
 
-    // Growth Metrics
     const plateauRequired = h.plateau_days_required;
-    const daysInPlateau = differenceInDays(new Date(), new Date(h.last_plateau_start_date));
     const daysRemainingInPlateau = Math.max(0, plateauRequired - h.completions_in_plateau);
 
-    // Dependency check: Check if the dependent habit (by its habit_key) is completed today
     const isDependent = !!h.dependent_on_habit_id;
     const dependentHabit = habits?.find(depH => depH.id === h.dependent_on_habit_id);
     const isDependencyMet = isDependent ? completedHabitKeysToday.has(dependentHabit?.habit_key || '') : true;
     const isLockedByDependency = isDependent && !isDependencyMet;
 
     return {
-      ...h, // Spread all properties from UserHabitRecord
-      key: h.habit_key, // Add key property
-      name: h.name || h.habit_key.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase()), // Fallback for name
-      dailyGoal: h.current_daily_goal, // Base daily goal
-      adjustedDailyGoal: adjustedDailyGoal, // New: daily goal including carryover
-      carryoverValue: h.carryover_value || 0, // New: carryover value
+      ...h,
+      key: h.habit_key,
+      name: h.name || h.habit_key.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase()),
+      dailyGoal: h.current_daily_goal,
+      adjustedDailyGoal: adjustedDailyGoal,
+      carryoverValue: h.carryover_value || 0,
       dailyProgress, 
-      isComplete: dailyProgress >= adjustedDailyGoal, // Check against adjusted goal
-      xpPerUnit: h.xp_per_unit || 0, // Use xp_per_unit from DB
-      energyCostPerUnit: h.energy_cost_per_unit || 0, // Use energy_cost_per_unit from DB
+      isComplete: dailyProgress >= adjustedDailyGoal,
+      xpPerUnit: h.xp_per_unit || 0,
+      energyCostPerUnit: h.energy_cost_per_unit || 0,
       weekly_completions: weeklyCompletions,
-      weekly_goal: h.current_daily_goal * h.frequency_per_week, // Weekly goal based on base daily goal
+      weekly_goal: h.current_daily_goal * h.frequency_per_week,
       isScheduledForToday: isScheduledForToday,
       isWithinWindow,
+      measurement_type: h.measurement_type || 'timer', // Default
       growth_stats: {
         completions: h.completions_in_plateau,
         required: plateauRequired,
         daysRemaining: daysRemainingInPlateau,
         phase: h.growth_phase
       },
-      isLockedByDependency: isLockedByDependency, // New: indicates if this habit is locked
+      isLockedByDependency: isLockedByDependency,
     };
   });
 
@@ -135,7 +124,7 @@ const fetchDashboardData = async (userId: string) => {
       const unit = userHabit?.unit || initialHabitsMap.get(t.original_source)?.unit || 'min';
       const xpPerUnit = userHabit?.xp_per_unit || initialHabitsMap.get(t.original_source)?.xpPerUnit || 1;
 
-      if (t.original_source === 'pushups') totals.pushups += (t.xp_earned || 0) / xpPerUnit; // Convert XP back to reps
+      if (t.original_source === 'pushups') totals.pushups += (t.xp_earned || 0) / xpPerUnit;
       if (t.original_source === 'meditation') totals.meditation += (t.duration_used || 0) / 60;
     });
     return totals;
@@ -150,7 +139,7 @@ const fetchDashboardData = async (userId: string) => {
 
   return {
     daysActive: totalDaysSinceStart,
-    totalJourneyDays: processedHabits[0]?.long_term_goal || 365, // Use long_term_goal from processedHabits
+    totalJourneyDays: processedHabits[0]?.long_term_goal || 365,
     habits: processedHabits,
     neurodivergentMode: profile?.neurodivergent_mode || false,
     weeklySummary: { 

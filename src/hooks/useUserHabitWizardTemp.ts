@@ -4,58 +4,52 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { showError } from '@/utils/toast';
+import { MeasurementType } from '@/types/habit';
 
-// Define the structure for the wizard's habit data
 export interface WizardHabitData {
-  // Core Info
   name: string;
   habit_key: string;
   category: string;
   unit: 'min' | 'reps' | 'dose';
+  measurement_type: MeasurementType;
   icon_name: string;
   short_description: string;
   
-  // Step 1 & 2 (Macro)
   motivation_type: 'stress_reduction' | 'skill_development' | 'health_improvement' | 'routine_building' | null;
-  motivation_type_skipped?: boolean; // Added skipped flag
+  motivation_type_skipped?: boolean;
 
-  // Step 3: Current Capacity (Micro)
   energy_per_session: 'very_little' | 'a_bit' | 'moderate' | 'plenty' | null;
-  energy_per_session_skipped?: boolean; // Added skipped flag
+  energy_per_session_skipped?: boolean;
   consistency_reality: '1-2_days' | '3-4_days' | 'most_days' | 'daily' | null;
-  consistency_reality_skipped?: boolean; // Added skipped flag
+  consistency_reality_skipped?: boolean;
   emotional_cost: 'light' | 'some_resistance' | 'heavy' | null;
-  emotional_cost_skipped?: boolean; // Added skipped flag
-  confidence_check: number | null; // 1-10
-  confidence_check_skipped?: boolean; // Added skipped flag
+  emotional_cost_skipped?: boolean;
+  confidence_check: number | null; 
+  confidence_check_skipped?: boolean; // Added confidence_check_skipped
 
-  // Step 4: Barriers (Micro)
-  barriers: string[]; // ['forgetting', 'time_pressure', 'overwhelm', 'perfectionism', 'mood', 'boredom']
-  barriers_skipped?: boolean; // Added skipped flag
+  barriers: string[];
+  barriers_skipped?: boolean;
   missed_day_response: 'keep_going' | 'discouraged' | 'stop_completely' | null;
-  missed_day_response_skipped?: boolean; // Added skipped flag
+  missed_day_response_skipped?: boolean;
   sensitivity_setting: 'gentle' | 'neutral' | 'direct' | null;
-  sensitivity_setting_skipped?: boolean; // Added skipped flag
+  sensitivity_setting_skipped?: boolean;
 
-  // Step 5: Timing & Dependencies (Micro)
-  time_of_day_fit: 'morning' | 'midday' | 'afternoon' | 'evening' | 'anytime' | null; // Updated options
-  time_of_day_fit_skipped?: boolean; // Added skipped flag
+  time_of_day_fit: 'morning' | 'midday' | 'afternoon' | 'evening' | 'anytime' | null;
+  time_of_day_fit_skipped?: boolean;
   dependency_check: 'after_waking' | 'after_work' | 'after_another_habit' | 'none' | null;
-  dependency_check_skipped?: boolean; // Added skipped flag
+  dependency_check_skipped?: boolean;
   time_pressure_check: 'always' | 'only_if_time' | 'decide_later' | null;
-  time_pressure_check_skipped?: boolean; // Added skipped flag
+  time_pressure_check_skipped?: boolean;
 
-  // Step 6: Confidence & Growth (Micro)
   growth_appetite: 'auto' | 'suggest' | 'steady' | null;
-  growth_appetite_skipped?: boolean; // Added skipped flag
+  growth_appetite_skipped?: boolean;
   growth_style: 'duration' | 'frequency' | 'both' | null;
-  growth_style_skipped?: boolean; // Added skipped flag
+  growth_style_skipped?: boolean;
   failure_response: 'reduce' | 'pause' | 'ask' | null;
-  failure_response_skipped?: boolean; // Added skipped flag
+  failure_response_skipped?: boolean;
   success_definition: 'sometimes' | 'most_weeks' | 'automatic' | null;
-  success_definition_skipped?: boolean; // Added skipped flag
+  success_definition_skipped?: boolean;
 
-  // Calculated/Inferred Fields (for final habit creation)
   daily_goal: number;
   frequency_per_week: number;
   is_trial_mode: boolean;
@@ -68,11 +62,10 @@ export interface WizardHabitData {
   plateau_days_required: number;
   window_start: string | null;
   window_end: string | null;
-  carryover_enabled: boolean; // New field
-  safety_net_choice_skipped?: boolean; // Added missing skipped flag
+  carryover_enabled: boolean;
+  safety_net_choice_skipped?: boolean;
   
-  // Additional fields for micro-step flow (these are temporary and not directly mapped to DB)
-  timing_preference?: string; // This is the ID from timeOfDayOptions, not window_start/end
+  timing_preference?: string;
   flexibility?: 'strict' | 'flexible' | 'none';
   sequence_bias?: 'early' | 'after_core' | 'energy_based';
   soft_lock?: boolean;
@@ -99,7 +92,7 @@ const fetchWizardProgress = async (userId: string): Promise<UserHabitWizardTemp 
     .eq('user_id', userId)
     .single();
 
-  if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found
+  if (error && error.code !== 'PGRST116') {
     console.error('Error fetching wizard progress:', error);
     throw error;
   }
@@ -113,7 +106,7 @@ const saveWizardProgress = async ({ userId, current_step, habit_data }: SaveWiza
   const newHabitData = {
     ...(existingProgress?.habit_data || {}),
     ...habit_data,
-  } as WizardHabitData; // Ensure type safety
+  } as WizardHabitData;
 
   const upsertData = {
     user_id: userId,
@@ -124,7 +117,7 @@ const saveWizardProgress = async ({ userId, current_step, habit_data }: SaveWiza
 
   const { error } = await supabase
     .from('user_habits_wizard_temp')
-    .upsert(upsertData); // Removed onConflict, relying on PRIMARY KEY
+    .upsert(upsertData);
 
   if (error) {
     console.error('Error saving wizard progress:', error);
@@ -143,7 +136,7 @@ export const useUserHabitWizardTemp = () => {
     queryKey: ['userHabitWizardTemp', userId],
     queryFn: () => fetchWizardProgress(userId!),
     enabled: !!userId,
-    staleTime: 0, // Always refetch to get latest state
+    staleTime: 0,
   });
 
   const saveProgressMutation = useMutation({

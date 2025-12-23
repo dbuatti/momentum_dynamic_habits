@@ -12,15 +12,15 @@ import {
   Anchor, Target, Sparkles, ShieldCheck, Calendar, 
   Clock, Dumbbell, Wind, BookOpen, Music, 
   Home, Code, Pill, Timer, BarChart3, Layers, Zap, Info, Eye, EyeOff, Link as LinkIcon, FlaskConical,
-  Trash2 // Added Trash2 icon
+  Trash2 
 } from 'lucide-react';
-import { UserHabitRecord } from '@/types/habit';
+import { UserHabitRecord, MeasurementType } from '@/types/habit';
 import { useUpdateHabitVisibility } from '@/hooks/useUpdateHabitVisibility';
-import { habitIcons, habitModes, habitUnits } from '@/lib/habit-templates'; // Import habitUnits
+import { habitIcons, habitModes, habitUnits, habitMeasurementTypes } from '@/lib/habit-templates';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useJourneyData } from '@/hooks/useJourneyData';
 import { habitIconMap } from '@/lib/habit-utils';
-import { useDeleteHabit } from '@/hooks/useDeleteHabit'; // Import useDeleteHabit
+import { useDeleteHabit } from '@/hooks/useDeleteHabit';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,36 +43,19 @@ interface HabitSettingsCardProps {
 const days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const timeOptions = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0') + ':00');
 
-const getHabitIcon = (habitKey: string) => {
-  return habitIconMap[habitKey] || habitIconMap.custom_habit;
-};
-
 export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
   habit,
   onUpdateHabitField,
   onToggleDay,
   isActiveHabit,
 }) => {
-  const Icon = getHabitIcon(habit.habit_key);
+  const Icon = habitIconMap[habit.habit_key] || habitIconMap.custom_habit;
   const { mutate: updateHabitVisibility } = useUpdateHabitVisibility();
   const { data: journeyData } = useJourneyData();
-  const { mutate: deleteHabit, isPending: isDeletingHabit } = useDeleteHabit(); // Use deleteHabit hook
+  const { mutate: deleteHabit, isPending: isDeletingHabit } = useDeleteHabit();
 
-  const habitUnit = habit.unit || '';
-
-  const otherHabits = useMemo(() => {
-    return (journeyData?.allHabits || []).filter(h => h.id !== habit.id);
-  }, [journeyData?.allHabits, habit.id]);
-
-  const selectedDependentHabit = useMemo(() => {
-    if (!habit.dependent_on_habit_id) return null;
-    return otherHabits.find(h => h.id === habit.dependent_on_habit_id);
-  }, [habit.dependent_on_habit_id, otherHabits]);
-
-  // State for editable habit name
   const [editedHabitName, setEditedHabitName] = useState(habit.name || habit.habit_key.replace(/_/g, ' '));
 
-  // Effect to update editedHabitName if habit.name changes from outside (e.g., initial load or external update)
   useEffect(() => {
     setEditedHabitName(habit.name || habit.habit_key.replace(/_/g, ' '));
   }, [habit.name, habit.habit_key]);
@@ -100,7 +83,6 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
               <Icon className="w-6 h-6" />
             </div>
             <div className="flex-grow">
-              {/* Replaced h4 with Input */}
               <Input
                 value={editedHabitName}
                 onChange={(e) => setEditedHabitName(e.target.value)}
@@ -109,7 +91,7 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
                     onUpdateHabitField(habit.id, { name: editedHabitName.trim() });
                   }
                 }}
-                onClick={(e) => e.stopPropagation()} // Prevent accordion from toggling when clicking input
+                onClick={(e) => e.stopPropagation()}
                 className="h-10 rounded-xl font-bold text-base bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-0 py-0"
               />
               <div className="flex items-center gap-2 mt-0.5">
@@ -127,12 +109,6 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
               </div>
             </div>
           </div>
-          {habit.dependent_on_habit_id && (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2 ml-[72px]">
-              <LinkIcon className="w-3.5 h-3.5" />
-              <span>Depends on: {selectedDependentHabit?.name || 'Unknown Habit'}</span>
-            </div>
-          )}
         </div>
       </AccordionTrigger>
 
@@ -144,39 +120,45 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
             <TabsTrigger value="advanced" className="text-[10px] font-black uppercase tracking-widest rounded-lg">Logic</TabsTrigger>
           </TabsList>
 
-          {/* BASICS TAB: Core Goal and Mode */}
           <TabsContent value="basics" className="space-y-6 focus-visible:outline-none">
+            <div className="space-y-3">
+              <Label className="text-[10px] font-black uppercase tracking-widest opacity-60 ml-1">Measurement Type</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {habitMeasurementTypes.map((m) => (
+                  <button
+                    key={m.value}
+                    type="button"
+                    onClick={() => onUpdateHabitField(habit.id, { measurement_type: m.value })}
+                    className={cn(
+                      "p-3 rounded-2xl border-2 text-left transition-all",
+                      habit.measurement_type === m.value ? "border-primary bg-primary/5" : "border-transparent bg-muted/30"
+                    )}
+                  >
+                    <p className="text-[10px] font-black uppercase">{m.label}</p>
+                    <p className="text-[8px] text-muted-foreground mt-1 leading-tight">{m.description}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 gap-4 bg-primary/[0.03] p-4 rounded-2xl border border-primary/10">
                <div className="space-y-2">
                  <Label className="text-[10px] font-black uppercase opacity-60 ml-1">Daily Target</Label>
-                 <div className="relative flex items-center gap-2"> {/* Added flex and gap */}
+                 <div className="relative flex items-center gap-2">
                    <Input 
                      type="number" 
-                     className="pl-3 pr-3 h-11 rounded-xl font-bold text-base flex-grow" // Removed pr-12, added flex-grow
+                     className="h-11 rounded-xl font-bold text-base flex-grow" 
                      defaultValue={habit.current_daily_goal} 
-                     onBlur={(e) => onUpdateHabitField(habit.id, { current_daily_goal: Math.round(parseInt(e.target.value)) })} // Round here
+                     onBlur={(e) => onUpdateHabitField(habit.id, { current_daily_goal: Math.round(parseInt(e.target.value)) })}
                    />
                    <Select 
-                     value={habitUnit} 
-                     onValueChange={async (newValue) => {
-                       const updates: Partial<UserHabitRecord> = { unit: newValue as 'min' | 'reps' | 'dose' };
-                       // If changing to 'dose' and current goal is not 1, suggest 1
-                       if (newValue === 'dose' && habit.current_daily_goal !== 1) {
-                         updates.current_daily_goal = 1;
-                       }
-                       await onUpdateHabitField(habit.id, updates);
-                     }}
+                     value={habit.unit} 
+                     onValueChange={(v) => onUpdateHabitField(habit.id, { unit: v })}
                    >
                      <SelectTrigger className="h-11 w-[100px] rounded-xl font-bold text-base">
                        <SelectValue placeholder="Unit" />
                      </SelectTrigger>
-                     <SelectContent>
-                       {habitUnits.map((u) => (
-                         <SelectItem key={u.value} value={u.value}>
-                           {u.label}
-                         </SelectItem>
-                       ))}
-                     </SelectContent>
+                     <SelectContent>{habitUnits.map(u => <SelectItem key={u.value} value={u.value}>{u.label}</SelectItem>)}</SelectContent>
                    </Select>
                  </div>
                </div>
@@ -187,7 +169,7 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
                     min="1" max="7"
                     className="h-11 rounded-xl font-bold text-base" 
                     defaultValue={habit.frequency_per_week}
-                    onBlur={(e) => onUpdateHabitField(habit.id, { frequency_per_week: Math.round(parseInt(e.target.value)) })} // Round here
+                    onBlur={(e) => onUpdateHabitField(habit.id, { frequency_per_week: Math.round(parseInt(e.target.value)) })}
                   />
                </div>
             </div>
@@ -207,7 +189,7 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
                       "flex items-start gap-4 p-4 rounded-2xl border-2 text-left transition-all",
                       (habit.is_trial_mode && mode.value === 'Trial') || (habit.is_fixed && mode.value === 'Fixed') || (!habit.is_trial_mode && !habit.is_fixed && mode.value === 'Growth')
                         ? "border-primary bg-primary/[0.02] shadow-sm"
-                        : "border-transparent bg-muted/30 opacity-60 hover:opacity-100"
+                        : "border-transparent bg-muted/30"
                     )}
                   >
                     <div className={cn("p-2 rounded-lg", (habit.is_trial_mode && mode.value === 'Trial') || (habit.is_fixed && mode.value === 'Fixed') || (!habit.is_trial_mode && !habit.is_fixed && mode.value === 'Growth') ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground")}>
@@ -223,7 +205,6 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
             </div>
           </TabsContent>
 
-          {/* SCHEDULE TAB: Days and Time Windows */}
           <TabsContent value="schedule" className="space-y-6 focus-visible:outline-none">
             <div className="space-y-4">
               <Label className="text-[10px] font-black uppercase tracking-widest opacity-60 ml-1">Active Days</Label>
@@ -232,10 +213,7 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
                   <Button
                     key={idx}
                     variant={habit.days_of_week?.includes(idx) ? "default" : "ghost"}
-                    className={cn(
-                        "h-10 w-10 rounded-xl font-black text-xs transition-all",
-                        habit.days_of_week?.includes(idx) ? "shadow-md" : "hover:bg-background"
-                    )}
+                    className={cn("h-10 w-10 rounded-xl font-black text-xs", habit.days_of_week?.includes(idx) && "shadow-md")}
                     onClick={() => onToggleDay(habit.id, habit.days_of_week || [], idx)}
                   >
                     {day}
@@ -243,156 +221,28 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
                 ))}
               </div>
             </div>
-
-            <div className="grid grid-cols-2 gap-4">
-               <div className="space-y-2">
-                 <div className="flex items-center gap-2 ml-1">
-                    <Clock className="w-3.5 h-3.5 text-primary" />
-                    <Label className="text-[10px] font-black uppercase opacity-60">Window Start</Label>
-                 </div>
-                 <Select value={habit.window_start || ''} onValueChange={(value) => onUpdateHabitField(habit.id, { window_start: value || null })}>
-                    <SelectTrigger id="windowStart" className="h-12 rounded-xl"><SelectValue placeholder="Anytime" /></SelectTrigger>
-                    <SelectContent>{timeOptions.map((time) => <SelectItem key={time} value={time}>{time}</SelectItem>)}</SelectContent>
-                  </Select>
-               </div>
-               <div className="space-y-2">
-                 <div className="flex items-center gap-2 ml-1">
-                    <Clock className="w-3.5 h-3.5 text-primary" />
-                    <Label className="text-[10px] font-black uppercase opacity-60">Window End</Label>
-                 </div>
-                 <Select value={habit.window_end || ''} onValueChange={(value) => onUpdateHabitField(habit.id, { window_end: value || null })}>
-                    <SelectTrigger id="windowEnd" className="h-12 rounded-xl"><SelectValue placeholder="Anytime" /></SelectTrigger>
-                    <SelectContent>{timeOptions.map((time) => <SelectItem key={time} value={time}>{time}</SelectItem>)}</SelectContent>
-                  </Select>
-               </div>
-            </div>
           </TabsContent>
 
-          {/* LOGIC TAB: Visibility, Plateau, Chunking, Danger Zone */}
           <TabsContent value="advanced" className="space-y-4 focus-visible:outline-none">
              <div className="flex items-center justify-between p-4 rounded-2xl bg-primary/5 border border-primary/10">
                 <div className="flex gap-4">
-                  <div className="bg-primary/20 p-2 rounded-xl">
-                    <Anchor className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-black uppercase">Anchor Practice</p>
-                    <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">Prioritize this habit on your dashboard.</p>
-                  </div>
+                  <div className="bg-primary/20 p-2 rounded-xl"><Anchor className="w-5 h-5 text-primary" /></div>
+                  <div><p className="text-xs font-black uppercase">Anchor Practice</p></div>
                 </div>
-                <Switch 
-                  checked={habit.anchor_practice} 
-                  onCheckedChange={(v) => onUpdateHabitField(habit.id, { anchor_practice: v })} 
-                />
+                <Switch checked={habit.anchor_practice} onCheckedChange={(v) => onUpdateHabitField(habit.id, { anchor_practice: v })} />
              </div>
-
-             <div className="flex items-center justify-between p-4 rounded-2xl bg-info-background/50 border border-info-border/50">
-                <div className="flex gap-4">
-                  <div className="bg-info-background/50 p-2 rounded-xl">
-                    <Layers className="w-5 h-5 text-info" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-black uppercase">Adaptive Auto-Chunking</p>
-                    <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">Automagically break sessions into capsules.</p>
-                  </div>
-                </div>
-                <Switch 
-                  checked={habit.auto_chunking} 
-                  onCheckedChange={(v) => onUpdateHabitField(habit.id, { auto_chunking: v, enable_chunks: v })} 
-                />
-             </div>
-             
-             <div className="flex items-center justify-between p-4 rounded-2xl bg-primary/5 border border-primary/10">
-                <div className="flex gap-4">
-                  <div className="bg-primary/20 p-2 rounded-xl">
-                    <Eye className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-black uppercase">Show on Dashboard</p>
-                    <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">Toggle visibility without losing progress.</p>
-                  </div>
-                </div>
-                <Switch 
-                  checked={habit.is_visible} 
-                  onCheckedChange={(v) => updateHabitVisibility({ habitKey: habit.habit_key, isVisible: v })} 
-                />
-             </div>
-
-             <div className="p-4 rounded-2xl bg-muted/30 border border-border space-y-3">
-                <div className="flex items-center gap-2">
-                    <Info className="w-4 h-4 text-muted-foreground" />
-                    <Label className="text-[10px] font-black uppercase opacity-60">Growth Threshold</Label>
-                </div>
-                <div className="flex items-center gap-4">
-                    <Input 
-                        type="number" 
-                        className="h-10 w-20 rounded-xl font-bold" 
-                        defaultValue={habit.plateau_days_required}
-                        onBlur={(e) => onUpdateHabitField(habit.id, { plateau_days_required: Math.round(parseInt(e.target.value)) })} // Round here
-                    />
-                    <p className="text-[10px] text-muted-foreground leading-snug">
-                        Days of 100% consistency required before the system suggests a goal increase.
-                    </p>
-                </div>
-             </div>
-
-             <div className="space-y-3">
-                <Label className="text-[10px] font-black uppercase tracking-widest opacity-60 ml-1">Dependent On</Label>
-                <Select 
-                  value={habit.dependent_on_habit_id || 'none'} 
-                  onValueChange={(value) => onUpdateHabitField(habit.id, { dependent_on_habit_id: value === 'none' ? null : value })}
-                >
-                  <SelectTrigger className="h-11 rounded-xl font-bold text-base">
-                    <SelectValue placeholder="No dependency">
-                      {selectedDependentHabit ? selectedDependentHabit.name : "No dependency"}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No dependency</SelectItem>
-                    {otherHabits.map(otherHabit => (
-                      <SelectItem key={otherHabit.id} value={otherHabit.id}>
-                        {otherHabit.name || otherHabit.habit_key.replace(/_/g, ' ')}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-[10px] text-muted-foreground leading-snug">
-                  This habit will be marked as "locked" until the dependent habit is completed for the day.
-                </p>
-             </div>
-
-             {/* Danger Zone */}
              <div className="p-4 rounded-2xl bg-destructive/5 border border-destructive/10 space-y-3 mt-8">
-                <div className="flex items-center gap-2">
-                    <Trash2 className="w-5 h-5 text-destructive" />
-                    <Label className="text-sm font-black uppercase text-destructive">Danger Zone</Label>
-                </div>
-                <p className="text-xs text-muted-foreground leading-snug">
-                    Permanently delete this habit and all its associated progress. This action cannot be undone.
-                </p>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="destructive" className="w-full rounded-xl h-10" disabled={isDeletingHabit}>
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      {isDeletingHabit ? 'Deleting...' : 'Delete Habit'}
+                      <Trash2 className="w-4 h-4 mr-2" /> {isDeletingHabit ? 'Deleting...' : 'Delete Habit'}
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent className="rounded-2xl">
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This action cannot be undone. This will permanently delete your "{habit.name}" habit and all its associated data.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
+                    <AlertDialogHeader><AlertDialogTitle>Confirm Delete</AlertDialogTitle></AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
-                      <AlertDialogAction 
-                        onClick={handleDeleteHabit} 
-                        className="rounded-xl bg-destructive hover:bg-destructive/90"
-                        disabled={isDeletingHabit}
-                      >
-                        {isDeletingHabit ? 'Deleting...' : 'Delete'}
-                      </AlertDialogAction>
+                      <AlertDialogAction onClick={handleDeleteHabit} className="rounded-xl bg-destructive" disabled={isDeletingHabit}>Delete</AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>

@@ -22,7 +22,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { showError, showSuccess } from '@/utils/toast';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { UserHabitRecord, HabitCategory } from '@/types/habit';
+import { UserHabitRecord, HabitCategory, MeasurementType } from '@/types/habit'; // Added MeasurementType
 import { useJourneyData } from '@/hooks/useJourneyData';
 import { useCreateTemplate } from '@/hooks/useCreateTemplate';
 import { useUserHabitWizardTemp, WizardHabitData } from '@/hooks/useUserHabitWizardTemp';
@@ -62,6 +62,7 @@ export interface CreateHabitParams {
   anchor_practice: boolean;
   auto_chunking: boolean;
   unit: 'min' | 'reps' | 'dose';
+  measurement_type: MeasurementType; // Added measurement_type
   xp_per_unit: number;
   energy_cost_per_unit: number;
   icon_name: string;
@@ -79,7 +80,7 @@ const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: s
   const oneYearDateString = oneYearFromNow.toISOString().split('T')[0];
 
   // Destructure habit, explicitly omitting short_description for RPC call
-  const { name, habit_key, category, current_daily_goal, frequency_per_week, is_trial_mode, is_fixed, anchor_practice, auto_chunking, unit, xp_per_unit, energy_cost_per_unit, icon_name, dependent_on_habit_id, window_start, window_end, carryover_enabled } = habit;
+  const { name, habit_key, category, current_daily_goal, frequency_per_week, is_trial_mode, is_fixed, anchor_practice, auto_chunking, unit, measurement_type, xp_per_unit, energy_cost_per_unit, icon_name, dependent_on_habit_id, window_start, window_end, carryover_enabled } = habit;
 
   let calculatedPlateauDays = habit.plateau_days_required;
   if (is_trial_mode) {
@@ -153,6 +154,7 @@ const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: s
     p_num_chunks: roundedNumChunks,
     p_chunk_duration: chunkDuration,
     p_is_visible: true,
+    p_measurement_type: measurement_type,
   });
 
   if (error) throw error;
@@ -255,6 +257,7 @@ const HabitWizard = () => {
         auto_chunking: habitData.auto_chunking,
         anchor_practice: habitData.anchor_practice,
         unit: habitData.unit,
+        measurement_type: habitData.measurement_type,
         xp_per_unit: habitData.xp_per_unit,
         energy_cost_per_unit: habitData.energy_cost_per_unit,
         icon_name: habitData.icon_name,
