@@ -107,12 +107,8 @@ const Index = () => {
 
       const allCompleted = (goal > 0 && progress >= goal) || (capsules.length > 0 && capsules.every(c => c.isCompleted));
       
-      // Categorize based on our new system
-      const category = ['kinesiology', 'piano'].includes(habit.key) ? 'anchor' : 'daily';
-
       return {
         ...habit,
-        category,
         capsules,
         allCompleted,
         completedCapsulesCount: capsules.filter(c => c.isCompleted).length,
@@ -121,7 +117,7 @@ const Index = () => {
     });
   }, [data?.habits, dbCapsules]);
 
-  // Split habits into two priority groups
+  // Split habits into two priority groups based on DB category
   const anchorHabits = useMemo(() => habitGroups.filter(h => h.category === 'anchor'), [habitGroups]);
   const dailyHabits = useMemo(() => {
     return habitGroups
@@ -291,22 +287,24 @@ const Index = () => {
             isNeurodivergent={data.neurodivergentMode}
           />
 
-          {/* Section 1: Anchor Practices - Fixed & Prominent */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 px-1">
-              <Sparkle className="w-5 h-5 text-primary fill-primary/20" />
-              <h2 className="text-lg font-black uppercase tracking-widest text-primary/80">Anchor Practices</h2>
-            </div>
+          {/* Section 1: Anchor Practices - Now based on DB Category */}
+          {anchorHabits.length > 0 && (
             <div className="space-y-4">
-              <Accordion type="multiple" value={expandedItems} onValueChange={setExpandedItems}>
-                {anchorHabits.map(renderHabitItem)}
-              </Accordion>
+              <div className="flex items-center gap-2 px-1">
+                <Sparkle className="w-5 h-5 text-primary fill-primary/20" />
+                <h2 className="text-lg font-black uppercase tracking-widest text-primary/80">Anchor Practices</h2>
+              </div>
+              <div className="space-y-4">
+                <Accordion type="multiple" value={expandedItems} onValueChange={setExpandedItems}>
+                  {anchorHabits.map(renderHabitItem)}
+                </Accordion>
+              </div>
             </div>
-          </div>
+          )}
 
           <Separator className="opacity-50" />
 
-          {/* Section 2: Daily Chunks - Momentum Building */}
+          {/* Section 2: Daily Momentum - Now based on DB Category */}
           <div className="space-y-4">
             <div className="flex items-center justify-between px-1">
               <div className="flex items-center gap-2">

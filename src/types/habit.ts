@@ -6,7 +6,7 @@ export interface Habit {
   id: string;
   name: string;
   type: HabitType;
-  category: HabitCategory; // New category field
+  category: HabitCategory;
   targetGoal: number; 
   unit: string; 
   currentProgress: number;
@@ -32,6 +32,8 @@ export interface UserHabitRecord {
   last_plateau_start_date: string;
   plateau_days_required: number;
   completions_in_plateau: number;
+  is_fixed: boolean;
+  category: HabitCategory; // Added category field
 }
 
 export interface PianoHabit extends Habit {

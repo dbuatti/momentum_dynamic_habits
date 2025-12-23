@@ -13,8 +13,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
 import { SettingsSkeleton } from '@/components/dashboard/SettingsSkeleton';
 import { Switch } from '@/components/ui/switch';
-import { Brain, Zap, Lock, LogOut, Heart, AlertCircle, Volume2, Play, Bell, Trophy } from 'lucide-react';
+import { Brain, Zap, Lock, LogOut, Heart, AlertCircle, Volume2, Play, Bell, Trophy, LayoutGrid, Anchor } from 'lucide-react';
 import { playStartSound, playEndSound, playGoalSound } from '@/utils/audio';
+import { cn } from "@/lib/utils";
 
 const Settings = () => {
   const { session, signOut } = useSession();
@@ -35,6 +36,21 @@ const Settings = () => {
     if (error) showError('Failed to update habit');
     else {
       showSuccess(!currentStatus ? 'Goal set to Fixed' : 'Goal set to Dynamic');
+      queryClient.invalidateQueries({ queryKey: ['journeyData', session?.user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardData', session?.user?.id] });
+    }
+  };
+
+  const toggleCategory = async (habitId: string, currentCategory: string) => {
+    const newCategory = currentCategory === 'anchor' ? 'daily' : 'anchor';
+    const { error } = await supabase
+      .from('user_habits')
+      .update({ category: newCategory })
+      .eq('id', habitId);
+    
+    if (error) showError('Failed to update category');
+    else {
+      showSuccess(`Moved to ${newCategory === 'anchor' ? 'Anchor Practices' : 'Daily Momentum'}`);
       queryClient.invalidateQueries({ queryKey: ['journeyData', session?.user?.id] });
       queryClient.invalidateQueries({ queryKey: ['dashboardData', session?.user?.id] });
     }
@@ -66,7 +82,6 @@ const Settings = () => {
         </CardContent>
       </Card>
 
-      {/* Audio Debug Section */}
       <Card className="rounded-3xl shadow-sm border-0 bg-blue-50/50 dark:bg-blue-950/20">
         <CardHeader className="p-6 pb-2">
           <CardTitle className="text-lg flex items-center gap-2 uppercase tracking-widest font-black text-blue-700 dark:text-blue-300">
@@ -75,33 +90,15 @@ const Settings = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-6 pt-0 space-y-4">
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            Test the sound system to ensure chimes are audible on your device.
-          </p>
           <div className="grid grid-cols-3 gap-3">
-            <Button 
-              variant="outline" 
-              className="flex flex-col h-20 rounded-2xl gap-2 bg-background border-blue-100 hover:bg-blue-50 transition-all"
-              onClick={() => playStartSound()}
-            >
-              <Play className="w-4 h-4 text-blue-600" />
-              <span className="text-[10px] font-bold uppercase">Start</span>
+            <Button variant="outline" className="flex flex-col h-20 rounded-2xl gap-2 bg-background border-blue-100 hover:bg-blue-50" onClick={() => playStartSound()}>
+              <Play className="w-4 h-4 text-blue-600" /><span className="text-[10px] font-bold uppercase">Start</span>
             </Button>
-            <Button 
-              variant="outline" 
-              className="flex flex-col h-20 rounded-2xl gap-2 bg-background border-yellow-100 hover:bg-yellow-50 transition-all"
-              onClick={() => playGoalSound()}
-            >
-              <Bell className="w-4 h-4 text-yellow-600" />
-              <span className="text-[10px] font-bold uppercase">Goal</span>
+            <Button variant="outline" className="flex flex-col h-20 rounded-2xl gap-2 bg-background border-yellow-100 hover:bg-yellow-50" onClick={() => playGoalSound()}>
+              <Bell className="w-4 h-4 text-yellow-600" /><span className="text-[10px] font-bold uppercase">Goal</span>
             </Button>
-            <Button 
-              variant="outline" 
-              className="flex flex-col h-20 rounded-2xl gap-2 bg-background border-purple-100 hover:bg-purple-50 transition-all"
-              onClick={() => playEndSound()}
-            >
-              <Trophy className="w-4 h-4 text-purple-600" />
-              <span className="text-[10px] font-bold uppercase">Finish</span>
+            <Button variant="outline" className="flex flex-col h-20 rounded-2xl gap-2 bg-background border-purple-100 hover:bg-purple-50" onClick={() => playEndSound()}>
+              <Trophy className="w-4 h-4 text-purple-600" /><span className="text-[10px] font-bold uppercase">Finish</span>
             </Button>
           </div>
         </CardContent>
@@ -117,10 +114,7 @@ const Settings = () => {
                 <p className="text-xs text-muted-foreground">Longer plateaus, smaller increments.</p>
               </div>
             </div>
-            <Switch 
-              checked={profile?.neurodivergent_mode} 
-              onCheckedChange={(val) => updateProfile({ neurodivergent_mode: val })} 
-            />
+            <Switch checked={profile?.neurodivergent_mode} onCheckedChange={(val) => updateProfile({ neurodivergent_mode: val })} />
           </div>
         </CardContent>
       </Card>
@@ -129,7 +123,7 @@ const Settings = () => {
         <CardHeader className="p-6 pb-2">
           <CardTitle className="text-lg flex items-center gap-2 uppercase tracking-widest font-black">
             <Zap className="w-5 h-5 text-primary" />
-            Habit Progression
+            Habit Configuration
           </CardTitle>
         </CardHeader>
         <CardContent className="p-6 pt-0 space-y-6">
@@ -141,12 +135,23 @@ const Settings = () => {
                     {habit.habit_key.replace('_', ' ').toUpperCase()}
                     {habit.is_fixed && <Lock className="w-4 h-4 text-primary" />}
                   </h4>
-                  <p className="text-xs font-bold text-muted-foreground mt-1">
-                    Goal: {habit.current_daily_goal} {habit.unit}
-                  </p>
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <div className={cn("w-2 h-2 rounded-full", habit.category === 'anchor' ? "bg-primary" : "bg-orange-500")} />
+                    <span className="text-[10px] font-bold uppercase text-muted-foreground">
+                      {habit.category === 'anchor' ? 'Anchor Practice' : 'Daily Momentum'}
+                    </span>
+                  </div>
                 </div>
                 <div className="flex flex-col items-end gap-2">
-                  <div className="flex items-center gap-2 bg-background p-1 px-2 rounded-full border shadow-sm">
+                   <div className="flex items-center gap-2 bg-background p-1 px-3 rounded-full border shadow-sm">
+                    <span className="text-[10px] font-bold uppercase tracking-tighter">Practice (Anchor)</span>
+                    <Switch 
+                      className="scale-75"
+                      checked={habit.category === 'anchor'} 
+                      onCheckedChange={() => toggleCategory(habit.id, habit.category)}
+                    />
+                  </div>
+                  <div className="flex items-center gap-2 bg-background p-1 px-3 rounded-full border shadow-sm">
                     <span className="text-[10px] font-bold uppercase tracking-tighter">Fixed Goal</span>
                     <Switch 
                       className="scale-75"
@@ -161,12 +166,7 @@ const Settings = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <Label className="text-[10px] font-bold uppercase opacity-60">Max Goal Cap</Label>
-                    <Input 
-                      type="number" 
-                      className="h-9 rounded-xl text-sm" 
-                      defaultValue={habit.max_goal_cap || ''} 
-                      onBlur={(e) => updateMaxCap(habit.id, e.target.value)} 
-                    />
+                    <Input type="number" className="h-9 rounded-xl text-sm" defaultValue={habit.max_goal_cap || ''} onBlur={(e) => updateMaxCap(habit.id, e.target.value)} />
                   </div>
                   <div className="flex flex-col justify-end">
                     <p className="text-[10px] font-bold uppercase opacity-60 mb-1">Stabilization</p>
@@ -179,29 +179,17 @@ const Settings = () => {
         </CardContent>
       </Card>
 
-      <Card className="rounded-3xl shadow-sm border-0 border-destructive/20 bg-destructive/5 overflow-hidden">
+      <Card className="rounded-3xl shadow-sm border-0 bg-destructive/5 overflow-hidden">
         <CardContent className="p-6">
            <div className="flex justify-between items-center">
               <div className="flex items-center gap-3">
                 <Heart className="w-6 h-6 text-destructive" />
-                <div>
-                  <p className="font-bold text-destructive">Recovery Reset</p>
-                  <p className="text-xs text-muted-foreground max-w-[200px]">Feeling overwhelmed? Reduce all goals by 20%.</p>
-                </div>
+                <div><p className="font-bold text-destructive">Recovery Reset</p><p className="text-xs text-muted-foreground">Feeling overwhelmed? Reduce all goals by 20%.</p></div>
               </div>
-              <Button variant="outline" className="rounded-xl border-destructive text-destructive hover:bg-destructive hover:text-white transition-all font-bold text-xs uppercase">
-                Apply Recovery
-              </Button>
+              <Button variant="outline" className="rounded-xl border-destructive text-destructive hover:bg-destructive hover:text-white transition-all font-bold text-xs uppercase">Apply Recovery</Button>
            </div>
         </CardContent>
       </Card>
-
-      <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10 flex gap-3 items-start">
-        <AlertCircle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-        <p className="text-xs text-muted-foreground leading-relaxed">
-          <span className="font-bold text-primary">Pro Tip:</span> Start with just one habit at a time to build cognitive momentum without burnout.
-        </p>
-      </div>
     </div>
   );
 };

@@ -87,6 +87,7 @@ const fetchDashboardData = async (userId: string) => {
       xpPerUnit: initialHabit?.xpPerUnit || 0, energyCostPerUnit: initialHabit?.energyCostPerUnit || 0,
       daysCompletedLast7Days: habitCompletionMap.get(h.habit_key) || 0,
       is_frozen: h.is_frozen, is_fixed: h.is_fixed,
+      category: h.category || 'daily', // Fetching from DB
     };
   });
 
