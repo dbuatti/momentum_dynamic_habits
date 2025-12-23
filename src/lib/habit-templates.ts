@@ -32,6 +32,7 @@ export const habitTemplates: HabitTemplate[] = [
     unit: "min",
     xpPerUnit: 42,
     energyCostPerUnit: 9,
+    icon: BookOpen, // Added icon
     plateauDaysRequired: 7, // Default for standard trial
   },
   {
@@ -47,6 +48,7 @@ export const habitTemplates: HabitTemplate[] = [
     unit: "min",
     xpPerUnit: 30,
     energyCostPerUnit: 6,
+    icon: Dumbbell, // Added icon
     plateauDaysRequired: 7, // Default for standard trial
   },
   {
@@ -62,6 +64,7 @@ export const habitTemplates: HabitTemplate[] = [
     unit: "min",
     xpPerUnit: 30,
     energyCostPerUnit: 6,
+    icon: Wind, // Added icon
     plateauDaysRequired: 7, // Default for standard trial
   },
   {
