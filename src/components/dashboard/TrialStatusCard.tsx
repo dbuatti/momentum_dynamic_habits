@@ -29,7 +29,7 @@ export const TrialStatusCard: React.FC<TrialStatusCardProps> = ({
   const isTrialComplete = completionsInPlateau >= plateauDaysRequired;
 
   return (
-    <Card className={cn("border-2 rounded-3xl overflow-hidden", "bg-info-background/20 border-info-border text-info-foreground", className)}>
+    <Card className={cn("border-2 rounded-3xl overflow-hidden", "bg-info-background/20 border-info-border", className)}>
       <CardContent className="p-5 space-y-4">
         <div className="flex items-start gap-3">
           <div className="bg-info-foreground rounded-xl p-2 mt-1 text-info">
