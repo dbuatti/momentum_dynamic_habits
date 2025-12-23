@@ -11,6 +11,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useSession } from '@/contexts/SessionContext';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useTheme } from '@/contexts/ThemeContext';
+import { initialHabits } from '@/lib/habit-data'; // Import initialHabits to get full habit details
 
 interface NavLinkProps {
   to: string;
@@ -45,7 +46,7 @@ interface SidebarContentProps {
 
 const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick }) => {
   const { session, signOut } = useSession();
-  const { data: dashboardData } = useDashboardData();
+  const { data: dashboardData, isLoading: isDashboardLoading } = useDashboardData();
   const location = useLocation();
   const { theme, setTheme } = useTheme();
 
@@ -58,22 +59,40 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick }) => {
     setTheme(theme === "dark" ? "light" : "dark");
   };
 
+  // Map habit keys to Lucide icons
+  const habitIconMap: Record<string, React.ElementType> = {
+    pushups: Dumbbell,
+    meditation: Wind,
+    kinesiology: BookOpen,
+    piano: Music,
+    housework: Home,
+    projectwork: Code,
+    'teeth-brushing': Sparkles, // Use 'teeth-brushing' for route consistency
+    medication: Pill,
+  };
+
+  // Filter habits based on dashboardData and initialHabits
+  const visibleHabits = React.useMemo(() => {
+    if (isDashboardLoading || !dashboardData?.habits) return [];
+    
+    const userHabitKeys = new Set(dashboardData.habits.map(h => h.key));
+    
+    return initialHabits
+      .filter(h => userHabitKeys.has(h.id)) // Only include habits the user has
+      .map(h => ({
+        to: h.route,
+        icon: habitIconMap[h.id] || Target, // Fallback icon
+        label: h.name,
+      }));
+  }, [dashboardData?.habits, isDashboardLoading]);
+
   const navItems = [
     { to: "/", icon: Home, label: "Dashboard" },
     { to: "/journey", icon: Trophy, label: "Journey" },
     { to: "/history", icon: BarChart, label: "History" },
     {
       label: "Habits",
-      items: [
-        { to: "/log/pushups", icon: Dumbbell, label: "Push-ups" },
-        { to: "/log/meditation", icon: Wind, label: "Meditation" },
-        { to: "/log/kinesiology", icon: BookOpen, label: "Study" },
-        { to: "/log/piano", icon: Music, label: "Piano" },
-        { to: "/log/housework", icon: Home, label: "House Work" },
-        { to: "/log/projectwork", icon: Code, label: "Project Work" },
-        { to: "/log/teeth-brushing", icon: Sparkles, label: "Brush Teeth" },
-        { to: "/log/medication", icon: Pill, label: "Take Medication" },
-      ]
+      items: visibleHabits, // Use the filtered visible habits here
     },
     { to: "/settings", icon: Settings, label: "Settings" },
   ];
