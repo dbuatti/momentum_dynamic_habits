@@ -272,7 +272,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
           "relative overflow-hidden transition-all duration-500 border-2 rounded-[24px]",
           isCompleted 
             ? "bg-muted/30 border-muted opacity-70" 
-            : cn(colors.bg, colors.border, "shadow-sm hover:shadow-md"),
+            : cn("bg-card", colors.border, "shadow-sm hover:shadow-md"), // Changed: bg-card for base, color for fill
           isTiming && "ring-4 ring-primary/20 shadow-xl scale-[1.01]"
         )}
         onClick={isTiming ? () => {
@@ -312,7 +312,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
               <div className="flex items-center gap-4 min-w-0">
                 <div className={cn(
                   "w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border border-border",
-                  colors.iconBg
+                  habit.allCompleted ? "bg-card" : "bg-card/90"
                 )}>
                   {isCompleted ? (
                     <Check className="w-6 h-6 text-success" />
@@ -329,7 +329,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                   <p className={cn("font-bold text-base leading-tight truncate", isCompleted ? "text-muted-foreground" : colors.text)}>
                     {label}
                     {initialValue > 0 && !isCompleted && (
-                      <span className={cn("ml-2 text-[10px] bg-black/10 dark:bg-white/20 px-1.5 py-0.5 rounded-md align-middle font-black", isCompleted ? "text-muted-foreground" : colors.text)}>+ {Math.round(initialValue)} {unit}</span>
+                      <span className={cn("ml-2 text-[10px] bg-black/10 dark:bg-white/20 px-1.5 py-0.5 rounded-md align-middle font-black", isCompleted ? "text-muted-foreground" : colors.text)}>+ {initialValue.toFixed(1)} {unit}</span>
                     )}
                   </p>
                   <div className="flex items-center gap-2 mt-1">
@@ -379,7 +379,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                   <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Active {label}</p>
                   <p className="text-4xl font-black tabular-nums mt-1">{formatTime(initialValue * 60 + elapsedSeconds)}</p>
                   <p className="text-[10px] opacity-60 mt-1 font-bold">
-                    Goal: {value} min {initialValue > 0 && `(incl. ${initialValue}m surplus)`}
+                    Goal: {value} min {initialValue > 0 && `(incl. ${initialValue.toFixed(1)}m surplus)`}
                   </p>
                 </div>
                 
