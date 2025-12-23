@@ -6,7 +6,7 @@ import { calculateDailyParts } from '@/utils/progress-utils';
 
 export const useTabProgress = () => {
   const { data } = useDashboardData();
-  const [activeTimer, setActiveTimer] = useState<{ label: string; elapsed: number; habitName: string; goalValue: number } | null>(null);
+  const [activeTimer, setActiveTimer] = useState<{ label: string; remaining: number; habitName: string; goalValue: number } | null>(null);
 
   useEffect(() => {
     // Listen for timer updates from HabitCapsules
@@ -27,11 +27,11 @@ export const useTabProgress = () => {
     let title = "";
 
     if (activeTimer) {
-      const mins = Math.floor(activeTimer.elapsed / 60);
-      const secs = (activeTimer.elapsed % 60).toString().padStart(2, '0');
+      const mins = Math.floor(activeTimer.remaining / 60);
+      const secs = (activeTimer.remaining % 60).toString().padStart(2, '0');
       const timeStr = `${mins}:${secs}`;
-      // Rich title format: 07:23 ↑ Project Work – Part 2 (15 min goal) | Adaptive Growth
-      title = `${timeStr} ↑ ${activeTimer.habitName} – ${activeTimer.label} (${activeTimer.goalValue} min goal) | Adaptive Growth`;
+      // Updated title to show remaining time countdown
+      title = `${timeStr} rem ↓ ${activeTimer.habitName} – ${activeTimer.label} | Adaptive Growth`;
     } else {
       // Default: Adaptive Growth • 12/18 • 🔥10
       title = `Adaptive Growth • ${completed}/${total} • 🔥${streak}`;

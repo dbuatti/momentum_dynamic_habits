@@ -8,7 +8,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
 export const FloatingTimer = () => {
-  const [activeTimer, setActiveTimer] = useState<{ label: string; elapsed: number; isPaused: boolean; habitKey: string } | null>(null);
+  const [activeTimer, setActiveTimer] = useState<{ label: string; remaining: number; isPaused: boolean; habitKey: string } | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -21,13 +21,10 @@ export const FloatingTimer = () => {
     return () => window.removeEventListener('habit-timer-update', handleTimerUpdate);
   }, []);
 
-  // Don't show if we are already on the Dashboard where the actual capsule is visible
-  // and we can see the full UI. However, it's safer to show it if we scroll down.
-  // For now, let's show it only if we are NOT on the home page or if scrolled.
   if (!activeTimer) return null;
 
   const formatTime = (totalSeconds: number) => {
-    const roundedTotalSeconds = Math.round(totalSeconds); // Round the total seconds first
+    const roundedTotalSeconds = Math.round(totalSeconds); 
     const mins = Math.floor(roundedTotalSeconds / 60);
     const secs = roundedTotalSeconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
@@ -50,9 +47,12 @@ export const FloatingTimer = () => {
             <p className="text-[10px] font-black uppercase tracking-widest opacity-50 truncate max-w-[120px]">
               {activeTimer.label}
             </p>
-            <p className="text-xl font-black tabular-nums">
-              {formatTime(activeTimer.elapsed)}
-            </p>
+            <div className="flex items-baseline gap-1">
+              <span className="text-[8px] font-black uppercase opacity-40">Rem:</span>
+              <p className="text-xl font-black tabular-nums">
+                {formatTime(activeTimer.remaining)}
+              </p>
+            </div>
           </div>
 
           <Button 

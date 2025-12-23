@@ -91,7 +91,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
       window.dispatchEvent(new CustomEvent('habit-timer-update', {
         detail: {
           label,
-          elapsed: value * 60 - timeLeft,
+          remaining: timeLeft, // Broadcasting remaining time
           isPaused,
           habitKey,
           habitName,
@@ -99,7 +99,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
         }
       }));
     } else if (measurementType === 'timer' && !isTiming) {
-      // Clear floating timer when stopped
       window.dispatchEvent(new CustomEvent('habit-timer-update', { detail: null }));
     }
   }, [timeLeft, isTiming, isPaused, label, value, habitKey, habitName, measurementType]);
@@ -172,6 +171,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
 
   const handleFinishTiming = (mood?: string, promptMood: boolean = false) => {
     stopInterval();
+    // Calculate final value: if finished normally it's the full value, otherwise rounded up minutes
     const totalSessionMinutes = timeLeft === 0 ? value : Math.max(1, Math.ceil((value * 60 - timeLeft) / 60));
     
     if (promptMood && showMood && mood === undefined) {
@@ -282,8 +282,10 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
             isTiming ? (
               <div className={cn('flex flex-col sm:flex-row justify-between items-center gap-4', colors.text)}>
                 <div className="pl-1">
-                  <p className="text-[10px] font-black uppercase opacity-60 tracking-widest leading-none">Focusing • {label}</p>
-                  <p className="text-4xl font-black tabular-nums mt-1 leading-none">{formatTimeDisplay(timeLeft)}</p>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-xs font-black uppercase opacity-60 tracking-widest leading-none">Remaining:</span>
+                    <p className="text-4xl font-black tabular-nums leading-none">{formatTimeDisplay(timeLeft)}</p>
+                  </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <Button size="icon" variant="ghost" className="h-12 w-12 rounded-full bg-card/90 shadow-md border border-border/30" onClick={handlePauseTimer}>
