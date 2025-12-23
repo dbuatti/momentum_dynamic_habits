@@ -71,15 +71,11 @@ const Index = () => {
         numCapsules = Math.max(1, Math.ceil(goal / idealSetSize));
         capsuleValue = idealSetSize;
       } else if (isMinutes) {
+        // Simplified Logic: Only split into parts if duration is significant (>= 60m)
+        // This ensures 30m Housework stays as 1 session (0/1).
         if (goal >= 60) {
           numCapsules = 4;
           capsuleValue = 15;
-        } else if (goal >= 45) {
-          numCapsules = 3;
-          capsuleValue = Math.ceil(goal / 3);
-        } else if (goal >= 20) {
-          numCapsules = 2;
-          capsuleValue = Math.ceil(goal / 2);
         } else {
           numCapsules = 1;
           capsuleValue = goal;
