@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Dumbbell, Wind, BookOpen, Music, AlertCircle, Loader2, Zap, Home, Code, ClipboardList, Calendar, Filter, Sparkles, Pill, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Dumbbell, Wind, BookOpen, Music, AlertCircle, Loader2, Zap, Home, Code, ClipboardList, Calendar, Filter, Sparkles, Pill, MessageSquare, Target } from 'lucide-react';
 import { useCompletedTasks } from '@/hooks/useCompletedTasks';
 import { format, parseISO, isSameDay } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +12,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import HabitHeatmap from '@/components/dashboard/HabitHeatmap';
 import { useHabitHeatmapData } from '@/hooks/useHabitHeatmapData';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useDashboardData } from '@/hooks/useDashboardData'; // Import useDashboardData
 
 const habitIconMap: { [key: string]: React.ElementType } = {
   pushups: Dumbbell,
@@ -22,11 +23,21 @@ const habitIconMap: { [key: string]: React.ElementType } = {
   projectwork: Code,
   teeth_brushing: Sparkles,
   medication: Pill,
+  // Default icon for new habits
+  study_generic: BookOpen,
+  exercise_generic: Dumbbell,
+  mindfulness_generic: Wind,
+  creative_practice_generic: Music,
+  daily_task_generic: Home,
+  fixed_medication: Pill,
+  fixed_teeth_brushing: Sparkles,
+  custom_habit: Target,
 };
 
 const History = () => {
   const { data: completedTasks, isLoading, isError } = useCompletedTasks();
   const { data: heatmapData, isLoading: isHeatmapLoading } = useHabitHeatmapData();
+  const { data: dashboardData, isLoading: isDashboardDataLoading } = useDashboardData(); // Fetch dashboard data
   const [filter, setFilter] = useState<string>('all');
 
   // Get unique habit types for filter
@@ -45,7 +56,7 @@ const History = () => {
     return acc;
   }, {} as Record<string, typeof completedTasks>);
 
-  if (isLoading || isHeatmapLoading) {
+  if (isLoading || isHeatmapLoading || isDashboardDataLoading) {
     return (
       <div className="w-full max-w-lg mx-auto space-y-8 px-4 py-6 animate-pulse">
         <div className="flex items-center justify-between">
@@ -87,7 +98,7 @@ const History = () => {
               <SelectItem value="all">All Habits</SelectItem>
               {habitTypes.map(type => (
                 <SelectItem key={type} value={type}>
-                  {type.charAt(0).toUpperCase() + type.slice(1).replace('_', ' ')}
+                  {dashboardData?.habits.find(h => h.key === type)?.name || type.charAt(0).toUpperCase() + type.slice(1).replace('_', ' ')}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -124,8 +135,8 @@ const History = () => {
                 <div className="space-y-4">
                   {tasks.map((task, index) => {
                     const Icon = habitIconMap[task.original_source];
-                    // Determine if the task is time-based (duration_used is not null)
-                    const isTimeBased = task.duration_used !== null && task.original_source !== 'pushups';
+                    const userHabit = dashboardData?.habits.find(h => h.key === task.original_source);
+                    const unit = userHabit?.unit || 'reps'; // Default to reps if not found
                     
                     return (
                       <React.Fragment key={task.id}>
@@ -144,10 +155,10 @@ const History = () => {
                             </div>
                           </div>
                           <div className="text-right">
-                            {isTimeBased ? (
-                              <p className="font-semibold">{task.duration_used! / 60} min</p>
+                            {unit === 'min' ? (
+                              <p className="font-semibold">{Math.round((task.duration_used || 0) / 60)} min</p>
                             ) : (
-                              <p className="font-semibold">{task.xp_earned} reps</p>
+                              <p className="font-semibold">{Math.round((task.xp_earned || 0) / (userHabit?.xpPerUnit || 1))} {unit}</p>
                             )}
                             <div className="flex items-center text-xs text-muted-foreground mt-1">
                               <Zap className="w-3 h-3 mr-1 text-yellow-500" />

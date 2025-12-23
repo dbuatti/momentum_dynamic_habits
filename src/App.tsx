@@ -12,7 +12,8 @@ import History from "./pages/History";
 import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 import HelpPage from "./pages/HelpPage";
-import LandingPage from "./pages/LandingPage"; // Import the new LandingPage
+import LandingPage from "./pages/LandingPage";
+import CreateHabit from "./pages/CreateHabit"; // Import the new CreateHabit page
 import { SessionContextProvider, useSession } from "./contexts/SessionContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import React, { useEffect, useState } from "react";
@@ -42,7 +43,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   }
 
   if (!session) {
-    return <Navigate to="/landing" replace />; // Redirect to landing page if not authenticated
+    return <Navigate to="/landing" replace />;
   }
 
   if (!isOnboarded) {
@@ -72,7 +73,7 @@ const OnboardingRoute = ({ children }: { children: React.ReactNode }) => {
   }
 
   if (!session) {
-    return <Navigate to="/login" replace />; // If no session, go to login (which might redirect to landing)
+    return <Navigate to="/login" replace />;
   }
 
   if (isOnboarded) {
@@ -122,7 +123,7 @@ const AppRoutes = () => {
 
   return (
     <Routes>
-      <Route path="/landing" element={<LandingPage />} /> {/* New Landing Page Route */}
+      <Route path="/landing" element={<LandingPage />} />
       <Route path="/login" element={<LoginRoute><Login /></LoginRoute>} />
       <Route
         path="/onboarding"
@@ -138,6 +139,7 @@ const AppRoutes = () => {
       <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
       <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
       <Route path="/help" element={<ProtectedRoute><HelpPage /></ProtectedRoute>} />
+      <Route path="/create-habit" element={<ProtectedRoute><CreateHabit /></ProtectedRoute>} /> {/* New route */}
       <Route path="*" element={<ProtectedRoute><NotFound /></ProtectedRoute>} />
     </Routes>
   );

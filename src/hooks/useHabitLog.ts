@@ -1,12 +1,12 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useSession } from '@/contexts/SessionContext';
+import { useSession } from '@/contexts/SessionContext'; // Corrected import syntax
 import { useNavigate } from 'react-router-dom';
 import { showSuccess, showError } from '@/utils/toast';
 import { initialHabits } from '@/lib/habit-data';
 import { calculateLevel } from '@/utils/leveling';
-import { differenceInDays, startOfWeek, endOfWeek, isSameDay, subDays } from 'date-fns'; // Added subDays
-import { UserHabitRecord } from '@/types/habit'; // Added UserHabitRecord import
+import { differenceInDays, startOfWeek, endOfWeek, isSameDay, subDays } from 'date-fns';
+import { UserHabitRecord } from '@/types/habit';
 
 interface LogHabitParams {
   habitKey: string;
@@ -17,8 +17,16 @@ interface LogHabitParams {
 }
 
 const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, note }: LogHabitParams & { userId: string }) => {
-  const habitConfig = initialHabits.find(h => h.id === habitKey);
-  if (!habitConfig) throw new Error(`Habit configuration not found for key: ${habitKey}`);
+  // Fetch user_habit data to get dynamic properties
+  const { data: userHabitDataResult, error: userHabitFetchError } = await supabase
+    .from('user_habits')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('habit_key', habitKey)
+    .single();
+
+  if (!userHabitDataResult || userHabitFetchError) throw userHabitFetchError || new Error(`Habit data not found for key: ${habitKey}`);
+  const userHabitData: UserHabitRecord = userHabitDataResult;
 
   const { data: profileData, error: profileFetchError } = await supabase
     .from('profiles')
@@ -29,41 +37,23 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
   if (profileFetchError) throw profileFetchError;
   const timezone = profileData.timezone || 'UTC';
   
-  const { data: userHabitDataResult, error: userHabitFetchError } = await supabase
-    .from('user_habits')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('habit_key', habitKey)
-    .single();
-
-  if (!userHabitDataResult || userHabitFetchError) throw userHabitFetchError || new Error(`Habit data not found for key: ${habitKey}`);
-  const userHabitData: UserHabitRecord = userHabitDataResult; // Explicitly type userHabitData
-
   let xpBaseValue = value; // This will be in reps or minutes, used for XP calculation
   let lifetimeProgressIncrementValue = value; // This will be in reps or minutes, used for lifetime progress
   let durationUsedForDB = null; // This will be in seconds for time-based habits
 
-  if (habitConfig.type === 'time' && habitConfig.unit === 'min') {
-    // For time-based habits, 'value' is in minutes.
-    // XP is calculated based on minutes (xpBaseValue).
-    // lifetime_progress in DB is in seconds, so increment by seconds.
-    // duration_used in completedtasks is in seconds.
+  if (userHabitData.unit === 'min') { // Corrected typo: userHababitData -> userHabitData
     durationUsedForDB = value * 60; // Convert minutes to seconds for DB storage
     lifetimeProgressIncrementValue = value * 60; // Convert minutes to seconds for lifetime progress
   } else {
-    // For count-based habits, 'value' is in reps.
-    // XP is calculated based on reps (xpBaseValue).
-    // lifetime_progress in DB is in reps, so increment by reps.
-    // duration_used is null.
     durationUsedForDB = null;
-    lifetimeProgressIncrementValue = value; // Already in reps
+    lifetimeProgressIncrementValue = value; // Already in reps or doses
   }
 
-  const xpEarned = Math.round(xpBaseValue * habitConfig.xpPerUnit);
-  const energyCost = Math.round(xpBaseValue * habitConfig.energyCostPerUnit);
+  const xpEarned = Math.round(xpBaseValue * userHabitData.xp_per_unit);
+  const energyCost = Math.round(xpBaseValue * userHabitData.energy_cost_per_unit);
 
-  console.log(`[XP Debug] Logging habit: ${habitKey}, value: ${value} ${habitConfig.unit}`);
-  console.log(`[XP Debug]   xpBaseValue: ${xpBaseValue}, xpPerUnit: ${habitConfig.xpPerUnit}, xpEarned: ${xpEarned}`);
+  console.log(`[XP Debug] Logging habit: ${habitKey}, value: ${value} ${userHabitData.unit}`);
+  console.log(`[XP Debug]   xpBaseValue: ${xpBaseValue}, xpPerUnit: ${userHabitData.xp_per_unit}, xpEarned: ${xpEarned}`);
   console.log(`[XP Debug]   lifetimeProgressIncrementValue: ${lifetimeProgressIncrementValue}`);
   console.log(`[XP Debug]   durationUsedForDB: ${durationUsedForDB}`);
   console.log(`[XP Debug]   energyCost: ${energyCost}`);
@@ -89,14 +79,14 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
   });
   let totalDailyProgressAfterLog = 0;
   (completedTodayAfterLog || []).filter((task: any) => task.original_source === habitKey).forEach((task: any) => {
-    if (habitConfig.type === 'time' && habitConfig.unit === 'min') totalDailyProgressAfterLog += (task.duration_used || 0) / 60;
-    else if (habitConfig.type === 'count') totalDailyProgressAfterLog += (task.xp_earned || 0) / (habitConfig.xpPerUnit || 1);
-    else totalDailyProgressAfterLog += 1; // For fixed count habits like medication
+    if (userHabitData.unit === 'min') totalDailyProgressAfterLog += (task.duration_used || 0) / 60;
+    else if (userHabitData.unit === 'reps' || userHabitData.unit === 'dose') totalDailyProgressAfterLog += (task.xp_earned || 0) / (userHabitData.xp_per_unit || 1);
+    else totalDailyProgressAfterLog += 1; // Fallback for unknown units
   });
   const isGoalMetAfterLog = totalDailyProgressAfterLog >= userHabitData.current_daily_goal;
 
   // Adaptive logic
-  const isFixedGoalHabit = userHabitData.is_fixed || ['teeth_brushing', 'medication'].includes(habitKey);
+  const isFixedGoalHabit = userHabitData.is_fixed; // Use is_fixed from userHabitData
   let newDailyGoal = userHabitData.current_daily_goal;
   let newFrequency = userHabitData.frequency_per_week;
   let newGrowthPhase = userHabitData.growth_phase;
@@ -158,12 +148,12 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
         newGrowthPhase = 'duration';
         showSuccess(`Dynamic Growth: Frequency increased to ${newFrequency}x per week!`);
       } else if (userHabitData.growth_phase === 'duration') {
-        if (habitConfig.type === 'time') newDailyGoal = userHabitData.current_daily_goal + 5;
+        if (userHabitData.unit === 'min') newDailyGoal = userHabitData.current_daily_goal + 5;
         else newDailyGoal = userHabitData.current_daily_goal + 1;
         
         if (!userHabitData.max_goal_cap || newDailyGoal <= userHabitData.max_goal_cap) {
           newGrowthPhase = userHabitData.frequency_per_week < 7 ? 'frequency' : 'duration';
-          showSuccess(`Dynamic Growth: Duration increased to ${newDailyGoal} ${habitConfig.unit}!`);
+          showSuccess(`Dynamic Growth: Duration increased to ${newDailyGoal} ${userHabitData.unit}!`);
         } else {
           newDailyGoal = userHabitData.max_goal_cap;
         }
@@ -209,7 +199,7 @@ const unlogHabit = async ({ userId, habitKey, taskName }: { userId: string, habi
     console.error('Error fetching profile for unlogging:', profileFetchError);
     // Fallback to UTC if profile fetch fails
   }
-  const timezone = profileData?.timezone || 'UTC'; // Defined timezone here
+  const timezone = profileData?.timezone || 'UTC';
 
   const { data: task, error: findError } = await supabase
     .from('completedtasks')
@@ -223,16 +213,22 @@ const unlogHabit = async ({ userId, habitKey, taskName }: { userId: string, habi
 
   if (findError || !task) throw findError || new Error('Task not found');
 
-  const habitConfig = initialHabits.find(h => h.id === habitKey);
-  if (!habitConfig) throw new Error(`Habit configuration not found for key: ${habitKey}`);
+  // Fetch user_habit data to get dynamic properties
+  const { data: userHabitDataResult, error: userHabitFetchError } = await supabase
+    .from('user_habits')
+    .select('unit, xp_per_unit')
+    .eq('user_id', userId)
+    .eq('habit_key', habitKey)
+    .single();
+
+  if (!userHabitDataResult || userHabitFetchError) throw userHabitFetchError || new Error(`Habit data not found for key: ${habitKey}`);
+  const userHabitData: Pick<UserHabitRecord, 'unit' | 'xp_per_unit'> = userHabitDataResult;
 
   let lifetimeProgressDecrementValue;
-  if (habitConfig.type === 'time' && habitConfig.unit === 'min') {
+  if (userHabitData.unit === 'min') {
     lifetimeProgressDecrementValue = task.duration_used || 0; // In seconds
   } else {
-    // For count-based habits, lifetime_progress is in reps.
-    // task.xp_earned is XP, so convert back to reps.
-    lifetimeProgressDecrementValue = (task.xp_earned || 0) / (habitConfig.xpPerUnit || 1);
+    lifetimeProgressDecrementValue = (task.xp_earned || 0) / (userHabitData.xp_per_unit || 1); // Convert XP back to reps/doses
   }
 
   console.log(`[XP Debug] Unlogging habit: ${habitKey}, task_id: ${task.id}`);
@@ -254,32 +250,30 @@ const unlogHabit = async ({ userId, habitKey, taskName }: { userId: string, habi
   }
 
   // Decrement completions_in_plateau if unlogging causes goal to be unmet for today
-  const { data: userHabitDataResult, error: userHabitFetchError } = await supabase
+  const { data: userHabitDataForPlateau, error: userHabitPlateauFetchError } = await supabase
     .from('user_habits')
-    .select('id, current_daily_goal, completions_in_plateau, last_plateau_start_date') // Select id explicitly
+    .select('id, current_daily_goal, completions_in_plateau, last_plateau_start_date, unit, xp_per_unit')
     .eq('user_id', userId)
     .eq('habit_key', habitKey)
     .single();
 
-  if (userHabitDataResult && !userHabitFetchError) {
-    const userHabitData: UserHabitRecord = userHabitDataResult as UserHabitRecord; // Explicitly type it here
+  if (userHabitDataForPlateau && !userHabitPlateauFetchError) {
+    const userHabit: UserHabitRecord = userHabitDataForPlateau as UserHabitRecord;
     const { data: completedTodayAfterUnlog } = await supabase.rpc('get_completed_tasks_today', { 
       p_user_id: userId, p_timezone: timezone 
     });
     let totalDailyProgressAfterUnlog = 0;
     (completedTodayAfterUnlog || []).filter((t: any) => t.original_source === habitKey && t.id !== task.id).forEach((t: any) => {
-      if (habitConfig?.type === 'time' && habitConfig?.unit === 'min') totalDailyProgressAfterUnlog += (t.duration_used || 0) / 60;
-      else if (habitConfig?.type === 'count') totalDailyProgressAfterUnlog += (t.xp_earned || 0) / (habitConfig.xpPerUnit || 1);
+      if (userHabit.unit === 'min') totalDailyProgressAfterUnlog += (t.duration_used || 0) / 60;
+      else if (userHabit.unit === 'reps' || userHabit.unit === 'dose') totalDailyProgressAfterUnlog += (t.xp_earned || 0) / (userHabit.xp_per_unit || 1);
       else totalDailyProgressAfterUnlog += 1;
     });
-    const isGoalMetAfterUnlog = totalDailyProgressAfterUnlog >= userHabitData.current_daily_goal;
+    const isGoalMetAfterUnlog = totalDailyProgressAfterUnlog >= userHabit.current_daily_goal;
 
-    // If goal was met before unlogging, but now isn't, decrement completions_in_plateau
-    // This is a simplification, a full re-evaluation of the plateau state would be more robust.
-    if (!isGoalMetAfterUnlog && userHabitData.completions_in_plateau > 0) {
+    if (!isGoalMetAfterUnlog && userHabit.completions_in_plateau > 0) {
       await supabase.from('user_habits').update({
-        completions_in_plateau: userHabitData.completions_in_plateau - 1,
-      }).eq('id', userHabitData.id);
+        completions_in_plateau: userHabit.completions_in_plateau - 1,
+      }).eq('id', userHabit.id);
     }
   }
 

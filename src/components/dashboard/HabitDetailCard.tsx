@@ -68,7 +68,7 @@ export const HabitDetailCard: React.FC<HabitDetailCardProps> = ({
             </div>
           </div>
           
-          <HabitCheckButton habitKey={habitKey} isComplete={isComplete} dailyGoal={dailyGoal} onCheck={onCheck} />
+          <HabitCheckButton habitKey={habitKey} habitName={title} isComplete={isComplete} dailyGoal={dailyGoal} onCheck={onCheck} />
         </div>
         
         <div className="mt-5">

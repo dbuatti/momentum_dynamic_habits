@@ -2,10 +2,11 @@ import { Button } from '@/components/ui/button';
 import { Check } from 'lucide-react';
 import { useHabitLog } from '@/hooks/useHabitLog';
 import { Habit } from '@/types/habit';
-import { initialHabits } from '@/lib/habit-data';
+import { initialHabits } from '@/lib/habit-data'; // Keep for fallback if needed, but prioritize DB
 
 interface HabitCheckButtonProps {
   habitKey: string;
+  habitName: string; // Added habitName prop
   isComplete: boolean;
   dailyGoal: number;
   onCheck: () => void;
@@ -13,6 +14,7 @@ interface HabitCheckButtonProps {
 
 export const HabitCheckButton: React.FC<HabitCheckButtonProps> = ({ 
   habitKey, 
+  habitName, // Use habitName prop
   isComplete, 
   dailyGoal, 
   onCheck 
@@ -20,15 +22,11 @@ export const HabitCheckButton: React.FC<HabitCheckButtonProps> = ({
   const { mutate: logHabit, isPending } = useHabitLog();
   
   const handleCheck = () => {
-    // Find the habit configuration
-    const habitConfig = initialHabits.find(h => h.id === habitKey);
-    if (!habitConfig) return;
-    
     // Log the habit with the daily goal value
     logHabit({ 
       habitKey: habitKey, 
-      value: habitConfig.type === 'time' ? dailyGoal : dailyGoal,
-      taskName: habitConfig.name,
+      value: dailyGoal, // Log the daily goal as the value
+      taskName: habitName, // Use the passed habitName
     });
     
     // Notify parent component

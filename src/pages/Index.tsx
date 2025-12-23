@@ -5,7 +5,7 @@ import HomeHeader from "@/components/HomeHeader";
 import { 
   BookOpen, Dumbbell, Music, Wind, Home, Code, Sparkles, Pill, 
   CheckCircle2, Timer, Target, Anchor, Clock, Zap, ChevronDown, ChevronUp,
-  Layers, TrendingUp, ShieldCheck, Info
+  Layers, TrendingUp, ShieldCheck, Info, PlusCircle
 } from "lucide-react";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { DashboardSkeleton } from "@/components/dashboard/DashboardSkeleton";
@@ -23,6 +23,7 @@ import { MacroGoalProgress } from "@/components/dashboard/MacroGoalProgress";
 import { Progress } from "@/components/ui/progress";
 import { TrialStatusCard } from "@/components/dashboard/TrialStatusCard";
 import { GrowthGuide } from "@/components/dashboard/GrowthGuide";
+import { Link } from "react-router-dom";
 
 const habitIconMap: Record<string, React.ElementType> = {
   pushups: Dumbbell,
@@ -33,12 +34,25 @@ const habitIconMap: Record<string, React.ElementType> = {
   projectwork: Code,
   teeth_brushing: Sparkles,
   medication: Pill,
+  // Add new icons for custom habits if needed, or use a default
+  study_generic: BookOpen,
+  exercise_generic: Dumbbell,
+  mindfulness_generic: Wind,
+  creative_practice_generic: Music,
+  daily_task_generic: Home,
+  fixed_medication: Pill,
+  fixed_teeth_brushing: Sparkles,
+  custom_habit: Target,
 };
 
 type HabitColor = 'orange' | 'blue' | 'green' | 'purple' | 'red' | 'indigo';
 const habitColorMap: Record<string, HabitColor> = {
   pushups: 'orange', meditation: 'blue', kinesiology: 'green', piano: 'purple',
   housework: 'red', projectwork: 'indigo', teeth_brushing: 'blue', medication: 'purple',
+  // Default colors for new templates/custom habits
+  study_generic: 'green', exercise_generic: 'orange', mindfulness_generic: 'blue',
+  creative_practice_generic: 'purple', daily_task_generic: 'red',
+  fixed_medication: 'purple', fixed_teeth_brushing: 'blue', custom_habit: 'indigo',
 };
 
 const Index = () => {
@@ -99,7 +113,7 @@ const Index = () => {
   const anchorHabits = useMemo(() => habitGroups.filter(h => h.category === 'anchor' && h.is_visible), [habitGroups]);
   const dailyHabits = useMemo(() => {
     return habitGroups
-      .filter(h => h.category === 'daily' && h.is_visible)
+      .filter(h => h.category !== 'anchor' && h.is_visible)
       .sort((a, b) => (a.allCompleted === b.allCompleted ? 0 : a.allCompleted ? 1 : -1)); // Completed habits last
   }, [habitGroups]);
 
@@ -128,7 +142,7 @@ const Index = () => {
   if (isError || !data) return null;
 
   const renderHabitItem = (habit: any) => {
-    const Icon = habitIconMap[habit.key] || Timer;
+    const Icon = habitIconMap[habit.key] || Target; // Use Target as a fallback
     const color = habitColorMap[habit.key] || 'blue';
     const isGrowth = !habit.is_fixed && !habit.is_trial_mode;
     const isTrial = habit.is_trial_mode;
@@ -180,7 +194,7 @@ const Index = () => {
                         habit.allCompleted 
                           ? "bg-green-100 text-green-700 border-green-200" 
                           : habit.isWithinWindow 
-                            ? "bg-primary text-primary-foreground border-transparent" // Changed text-white to text-primary-foreground
+                            ? "bg-primary text-primary-foreground border-transparent"
                             : "bg-muted text-muted-foreground border-transparent"
                       )}>
                         {habit.allCompleted ? "Goal Met" : (habit.isWithinWindow ? "Ready Now" : "Restricted")}

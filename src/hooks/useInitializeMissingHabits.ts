@@ -16,7 +16,11 @@ const initializeSelectedHabits = async (userId: string, selectedHabitKeys: strin
     .map(habitConfig => ({
       user_id: userId,
       habit_key: habitConfig.id,
-      long_term_goal: habitConfig.targetGoal * (habitConfig.type === 'time' ? 365 : 1), // Example: 1 year goal
+      name: habitConfig.name, // Added name
+      unit: habitConfig.unit, // Added unit
+      xp_per_unit: habitConfig.xpPerUnit, // Added xp_per_unit
+      energy_cost_per_unit: habitConfig.energyCostPerUnit, // Added energy_cost_per_unit
+      long_term_goal: habitConfig.targetGoal * (habitConfig.type === 'time' ? 365 * 60 : 365), // Example: 1 year goal in seconds or reps
       target_completion_date: oneYearDateString,
       current_daily_goal: habitConfig.targetGoal,
       momentum_level: habitConfig.momentum,

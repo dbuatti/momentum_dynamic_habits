@@ -3,7 +3,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { startOfDay, differenceInDays, startOfWeek, endOfWeek, subWeeks, addMonths, subDays, formatDistanceToNowStrict, isWithinInterval, parse } from 'date-fns';
 import { initialHabits } from '@/lib/habit-data';
-// Removed: import { useInitializeMissingHabits } from './useInitializeMissingHabits';
 import { useEffect, useRef } from 'react';
 
 const fetchDashboardData = async (userId: string) => {
@@ -40,6 +39,7 @@ const fetchDashboardData = async (userId: string) => {
 
   if (habitsError || completedTodayError) throw new Error('Failed to fetch essential data');
 
+  // Use a map for initialHabits for quick lookup, but prioritize DB values
   const initialHabitsMap = new Map(initialHabits.map(h => [h.id, h]));
   const weeklyCompletionMap = new Map<string, number>();
   
@@ -52,16 +52,23 @@ const fetchDashboardData = async (userId: string) => {
   const dailyProgressMap = new Map<string, number>();
   (completedToday || []).forEach((task: any) => {
     const key = task.original_source;
-    const habitConfig = initialHabitsMap.get(key);
+    const habitConfig = initialHabitsMap.get(key); // Fallback to initial config if needed
+    
+    // Determine unit and xp_per_unit from user_habits table first, then fallback to initialHabits
+    const userHabit = habits?.find(h => h.habit_key === key);
+    const unit = userHabit?.unit || habitConfig?.unit || 'min';
+    const xpPerUnit = userHabit?.xp_per_unit || habitConfig?.xpPerUnit || 1;
+
     let progress = 0;
-    if (habitConfig?.type === 'time' && habitConfig?.unit === 'min') progress = (task.duration_used || 0) / 60;
-    else if (habitConfig?.type === 'count') progress = (task.xp_earned || 0) / (habitConfig.xpPerUnit || 1);
-    else progress = 1;
+    if (unit === 'min') progress = (task.duration_used || 0) / 60;
+    else if (unit === 'reps' || unit === 'dose') progress = (task.xp_earned || 0) / xpPerUnit;
+    else progress = 1; // Fallback for unknown units
+
     dailyProgressMap.set(key, (dailyProgressMap.get(key) || 0) + progress);
   });
 
   const processedHabits = (habits || [])
-    .filter(h => h.is_visible) // Filter by is_visible from DB
+    .filter(h => h.is_visible)
     .map(h => {
     const initialHabit = initialHabitsMap.get(h.habit_key);
     const dailyProgress = dailyProgressMap.get(h.habit_key) || 0;
@@ -81,22 +88,22 @@ const fetchDashboardData = async (userId: string) => {
       .filter(k => k.startsWith(`${h.habit_key}_`)).length;
 
     // Growth Metrics
-    const plateauRequired = h.plateau_days_required; // Use habit-specific value
+    const plateauRequired = h.plateau_days_required;
     const daysInPlateau = differenceInDays(new Date(), new Date(h.last_plateau_start_date));
     const daysRemainingInPlateau = Math.max(0, plateauRequired - h.completions_in_plateau);
 
     return {
       key: h.habit_key,
-      name: initialHabit?.name || h.habit_key.charAt(0).toUpperCase() + h.habit_key.slice(1),
+      name: h.name || initialHabit?.name || h.habit_key.charAt(0).toUpperCase() + h.habit_key.slice(1), // Use name from DB
       dailyGoal, 
       dailyProgress, 
       isComplete: dailyProgress >= dailyGoal,
       momentum: h.momentum_level, 
       longTermGoal: h.long_term_goal,
-      lifetimeProgress: initialHabit?.type === 'time' && initialHabit?.unit === 'min' ? Math.round((h.lifetime_progress || 0) / 60) : (h.lifetime_progress || 0),
-      unit: initialHabit?.unit || '',
-      xpPerUnit: initialHabit?.xpPerUnit || 0, 
-      energyCostPerUnit: initialHabit?.energyCostPerUnit || 0,
+      lifetimeProgress: h.unit === 'min' ? Math.round((h.lifetime_progress || 0) / 60) : (h.lifetime_progress || 0), // Use unit from DB
+      unit: h.unit || '', // Use unit from DB
+      xpPerUnit: h.xp_per_unit || 0, // Use xp_per_unit from DB
+      energyCostPerUnit: h.energy_cost_per_unit || 0, // Use energy_cost_per_unit from DB
       is_frozen: h.is_frozen, 
       is_fixed: h.is_fixed,
       category: h.category || 'daily',
@@ -104,8 +111,8 @@ const fetchDashboardData = async (userId: string) => {
       frequency_per_week: h.frequency_per_week,
       weekly_completions: weeklyCompletions,
       weekly_goal: dailyGoal * h.frequency_per_week,
-      is_visible: h.is_visible, // Directly use is_visible from DB
-      isScheduledForToday: isScheduledForToday, // Keep for other logic if needed
+      is_visible: h.is_visible,
+      isScheduledForToday: isScheduledForToday,
       isWithinWindow,
       window_start: h.window_start,
       window_end: h.window_end,
@@ -115,7 +122,7 @@ const fetchDashboardData = async (userId: string) => {
       chunk_duration: h.chunk_duration,
       growth_stats: {
         completions: h.completions_in_plateau,
-        required: plateauRequired, // Use habit-specific value
+        required: plateauRequired,
         daysRemaining: daysRemainingInPlateau,
         phase: h.growth_phase
       }
@@ -125,7 +132,11 @@ const fetchDashboardData = async (userId: string) => {
   const calculateTotals = (tasks: any[]) => {
     const totals = { pushups: 0, meditation: 0 };
     tasks.forEach(t => {
-      if (t.original_source === 'pushups') totals.pushups += (t.xp_earned || 0);
+      const userHabit = habits?.find(h => h.habit_key === t.original_source);
+      const unit = userHabit?.unit || initialHabitsMap.get(t.original_source)?.unit || 'min';
+      const xpPerUnit = userHabit?.xp_per_unit || initialHabitsMap.get(t.original_source)?.xpPerUnit || 1;
+
+      if (t.original_source === 'pushups') totals.pushups += (t.xp_earned || 0) / xpPerUnit; // Convert XP back to reps
       if (t.original_source === 'meditation') totals.meditation += (t.duration_used || 0) / 60;
     });
     return totals;
@@ -158,16 +169,6 @@ const fetchDashboardData = async (userId: string) => {
 export const useDashboardData = () => {
   const { session } = useSession();
   const userId = session?.user?.id;
-  // Removed: const { mutate: initializeMissingHabits } = useInitializeMissingHabits();
-  // Removed: const hasInitialized = useRef(false);
-  
-  // Removed:
-  // useEffect(() => {
-  //   if (userId && !hasInitialized.current) {
-  //     initializeMissingHabits();
-  //     hasInitialized.current = true;
-  //   }
-  // }, [userId, initializeMissingHabits]);
 
   return useQuery({
     queryKey: ['dashboardData', userId],

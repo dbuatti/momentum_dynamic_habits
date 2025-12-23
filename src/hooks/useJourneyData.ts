@@ -2,8 +2,6 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { differenceInDays } from 'date-fns';
-// Removed: import { useInitializeMissingHabits } from './useInitializeMissingHabits';
-import { useEffect, useRef } from 'react';
 import { initialHabits } from '@/lib/habit-data';
 
 const fetchJourneyData = async (userId: string) => {
@@ -28,19 +26,21 @@ const fetchJourneyData = async (userId: string) => {
   const initialHabitsMap = new Map(initialHabits.map(h => [h.id, h]));
   
   const processedHabits = (habits || [])
-    .filter(h => h.is_visible) // Filter by is_visible
+    .filter(h => h.is_visible)
     .map(h => {
     const initialHabit = initialHabitsMap.get(h.habit_key);
     const rawLifetimeProgress = h.lifetime_progress || 0;
-    const uiLifetimeProgress = initialHabit?.type === 'time' && initialHabit?.unit === 'min' ? 
+    
+    // Use unit from DB for conversion
+    const uiLifetimeProgress = h.unit === 'min' ? 
       Math.round(rawLifetimeProgress / 60) : rawLifetimeProgress;
       
     return {
       ...h,
       lifetime_progress: uiLifetimeProgress,
       raw_lifetime_progress: rawLifetimeProgress,
-      unit: initialHabit?.unit || '',
-      category: h.category || 'daily', // Added category
+      unit: h.unit || '', // Use unit from DB
+      category: h.category || 'daily',
     };
   });
 
@@ -62,17 +62,6 @@ const fetchJourneyData = async (userId: string) => {
 export const useJourneyData = () => {
   const { session } = useSession();
   const userId = session?.user?.id;
-  // Removed: const { mutate: initializeMissingHabits } = useInitializeMissingHabits();
-
-  // Removed: const hasInitialized = useRef(false);
-  
-  // Removed:
-  // useEffect(() => {
-  //   if (userId && !hasInitialized.current) {
-  //     initializeMissingHabits();
-  //     hasInitialized.current = true;
-  //   }
-  // }, [userId, initializeMissingHabits]);
 
   return useQuery({
     queryKey: ['journeyData', userId],

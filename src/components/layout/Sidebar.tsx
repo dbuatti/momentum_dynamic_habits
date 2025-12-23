@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Home, Dumbbell, Wind, BookOpen, Music, Trophy, Settings, Menu, LogOut, BarChart, Code, Moon, Sun, Calendar, Target, Sparkles, Pill, HelpCircle } from 'lucide-react';
+import { Home, Dumbbell, Wind, BookOpen, Music, Trophy, Settings, Menu, LogOut, BarChart, Code, Moon, Sun, Calendar, Target, Sparkles, Pill, HelpCircle, PlusCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useSession } from '@/contexts/SessionContext';
@@ -67,7 +67,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick }) => {
     piano: Music,
     housework: Home,
     projectwork: Code,
-    'teeth_brushing': Sparkles, // Use 'teeth_brushing' for route consistency
+    'teeth_brushing': Sparkles,
     medication: Pill,
   };
 
@@ -75,14 +75,13 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick }) => {
   const visibleHabits = React.useMemo(() => {
     if (isDashboardLoading || !dashboardData?.habits) return [];
     
-    const userHabitKeys = new Set(dashboardData.habits.map(h => h.key));
-    
-    return initialHabits
-      .filter(h => userHabitKeys.has(h.id)) // Only include habits the user has
+    // Use the habit name and key from dashboardData directly
+    return dashboardData.habits
+      .filter(h => h.is_visible)
       .map(h => ({
-        to: h.route,
-        icon: habitIconMap[h.id] || Target, // Fallback icon
-        label: h.name,
+        to: `/log/${h.key}`, // Use h.key for the route
+        icon: habitIconMap[h.key] || Target, // Fallback icon
+        label: h.name, // Use h.name for the label
       }));
   }, [dashboardData?.habits, isDashboardLoading]);
 
@@ -92,10 +91,13 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick }) => {
     { to: "/history", icon: BarChart, label: "History" },
     {
       label: "Habits",
-      items: visibleHabits, // Use the filtered visible habits here
+      items: [
+        ...visibleHabits,
+        { to: "/create-habit", icon: PlusCircle, label: "Create New Habit" }, // New "Create New Habit" link
+      ],
     },
     { to: "/settings", icon: Settings, label: "Settings" },
-    { to: "/help", icon: HelpCircle, label: "Help" }, // New Help link
+    { to: "/help", icon: HelpCircle, label: "Help" },
   ];
 
   const displayName = dashboardData?.firstName && dashboardData?.lastName 

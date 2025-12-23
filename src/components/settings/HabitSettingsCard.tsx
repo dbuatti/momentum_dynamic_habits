@@ -15,7 +15,8 @@ import {
 } from 'lucide-react';
 import { UserHabitRecord } from '@/types/habit';
 import { useUpdateHabitVisibility } from '@/hooks/useUpdateHabitVisibility';
-import { initialHabits } from '@/lib/habit-data';
+import { initialHabits } from '@/lib/habit-data'; // Keep for fallback if needed
+import { habitIcons, habitCategories, habitUnits, habitModes } from '@/lib/habit-templates'; // Import new template data
 
 interface HabitSettingsCardProps {
   habit: UserHabitRecord;
@@ -26,15 +27,21 @@ interface HabitSettingsCardProps {
 
 const days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
-const habitIconMap: { [key: string]: React.ElementType } = {
-  pushups: Dumbbell,
-  meditation: Wind,
-  kinesiology: BookOpen,
-  piano: Music,
-  housework: Home,
-  projectwork: Code,
-  teeth_brushing: Sparkles,
-  medication: Pill,
+// Map habit keys to Lucide icons (prioritize dynamic icon if available, else fallback)
+const getHabitIcon = (habitKey: string) => {
+  const foundIcon = habitIcons.find(i => i.value === habitKey); // Check if habitKey itself is an icon name
+  if (foundIcon) return foundIcon.icon;
+
+  // Fallback to initialHabits if needed, or a generic icon
+  const initialHabitConfig = initialHabits.find(h => h.id === habitKey);
+  if (initialHabitConfig) {
+    const initialHabitIconMap: { [key: string]: React.ElementType } = {
+      pushups: Dumbbell, meditation: Wind, kinesiology: BookOpen, piano: Music,
+      housework: Home, projectwork: Code, teeth_brushing: Sparkles, medication: Pill,
+    };
+    return initialHabitIconMap[habitKey] || Target;
+  }
+  return Target; // Default fallback
 };
 
 export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
@@ -43,14 +50,11 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
   onToggleDay,
   isActiveHabit,
 }) => {
-  const Icon = habitIconMap[habit.habit_key] || Timer;
+  const Icon = getHabitIcon(habit.habit_key) || Target; // Use habit.habit_key to get icon
   const { mutate: updateHabitVisibility } = useUpdateHabitVisibility();
 
-  const initialHabitConfig = useMemo(() => 
-    initialHabits.find(h => h.id === habit.habit_key), 
-    [habit.habit_key]
-  );
-  const habitUnit = initialHabitConfig?.unit || '';
+  // Use habit.unit directly from the UserHabitRecord
+  const habitUnit = habit.unit || '';
 
   const calculatedParts = Math.ceil(habit.current_daily_goal / (habit.chunk_duration || 1));
 
@@ -73,7 +77,7 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
           </div>
           <div className="flex-grow">
             <h4 className="font-black text-lg tracking-tight group-hover:text-primary transition-colors capitalize">
-              {habit.habit_key.replace('_', ' ')}
+              {habit.name || habit.habit_key.replace('_', ' ')} {/* Use habit.name */}
             </h4>
             <div className="flex items-center gap-2 mt-0.5">
                <span className={cn(
@@ -130,28 +134,26 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
             <div className="space-y-3">
               <Label className="text-[10px] font-black uppercase tracking-widest opacity-60 ml-1">Operating Mode</Label>
               <div className="flex flex-col gap-2">
-                {[
-                  { id: 'trial', label: 'Trial Phase', icon: Anchor, active: habit.is_trial_mode, desc: 'Focus on entry-level consistency. No growth pressure.' },
-                  { id: 'growth', label: 'Growth Mode', icon: Zap, active: !habit.is_trial_mode && !habit.is_fixed, desc: 'Adaptive scaling based on your weekly momentum.' },
-                  { id: 'fixed', label: 'Fixed (Maintenance)', icon: ShieldCheck, active: habit.is_fixed, desc: 'Stable maintenance. Goals stay exactly where they are.' }
-                ].map((mode) => (
+                {habitModes.map((mode) => (
                   <button
-                    key={mode.id}
+                    key={mode.value}
                     onClick={() => onUpdateHabitField(habit.id, { 
-                      is_trial_mode: mode.id === 'trial', 
-                      is_fixed: mode.id === 'fixed' 
+                      is_trial_mode: mode.value === 'Trial', 
+                      is_fixed: mode.value === 'Fixed' 
                     })}
                     className={cn(
                       "flex items-start gap-4 p-4 rounded-2xl border-2 text-left transition-all",
-                      mode.active ? "border-primary bg-primary/[0.02] shadow-sm" : "border-transparent bg-muted/30 opacity-60 hover:opacity-100"
+                      (habit.is_trial_mode && mode.value === 'Trial') || (habit.is_fixed && mode.value === 'Fixed') || (!habit.is_trial_mode && !habit.is_fixed && mode.value === 'Growth')
+                        ? "border-primary bg-primary/[0.02] shadow-sm"
+                        : "border-transparent bg-muted/30 opacity-60 hover:opacity-100"
                     )}
                   >
-                    <div className={cn("p-2 rounded-lg", mode.active ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground")}>
+                    <div className={cn("p-2 rounded-lg", (habit.is_trial_mode && mode.value === 'Trial') || (habit.is_fixed && mode.value === 'Fixed') || (!habit.is_trial_mode && !habit.is_fixed && mode.value === 'Growth') ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground")}>
                         <mode.icon className="w-5 h-5" />
                     </div>
                     <div>
                       <p className="text-xs font-black uppercase leading-none">{mode.label}</p>
-                      <p className="text-[10px] text-muted-foreground mt-1.5 leading-relaxed">{mode.desc}</p>
+                      <p className="text-[10px] text-muted-foreground mt-1.5 leading-relaxed">{mode.description}</p>
                     </div>
                   </button>
                 ))}

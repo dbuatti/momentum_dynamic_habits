@@ -1,6 +1,6 @@
 export type HabitType = 'count' | 'time';
 export type MomentumLevel = 'Struggling' | 'Building' | 'Strong' | 'Crushing';
-export type HabitCategory = 'anchor' | 'daily';
+export type HabitCategory = 'anchor' | 'daily' | 'cognitive' | 'physical' | 'wellness' | 'daily_task'; // Added new categories
 export type GrowthPhase = 'frequency' | 'duration';
 
 export interface Habit {
@@ -21,6 +21,10 @@ export interface UserHabitRecord {
   id: string;
   user_id: string;
   habit_key: string;
+  name: string; // Added name
+  unit: string; // Added unit
+  xp_per_unit: number; // Added xp_per_unit
+  energy_cost_per_unit: number; // Added energy_cost_per_unit
   current_daily_goal: number;
   long_term_goal: number;
   momentum_level: MomentumLevel;
@@ -45,7 +49,7 @@ export interface UserHabitRecord {
   enable_chunks: boolean;
   num_chunks: number;
   chunk_duration: number;
-  is_visible: boolean; // Added is_visible
+  is_visible: boolean;
 }
 
 export interface PianoHabit extends Habit {
