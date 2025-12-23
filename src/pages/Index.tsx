@@ -177,8 +177,11 @@ const Index = () => {
                     <div className="flex flex-wrap items-center gap-2 mt-1">
                       <span className={cn(
                         "text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border",
-                        habit.allCompleted ? "bg-green-100 text-green-700 border-green-200" :
-                        habit.isWithinWindow ? "bg-primary text-white border-transparent" : "bg-muted text-muted-foreground border-transparent"
+                        habit.allCompleted 
+                          ? "bg-green-100 text-green-700 border-green-200" 
+                          : habit.isWithinWindow 
+                            ? "bg-primary text-primary-foreground border-transparent" // Changed text-white to text-primary-foreground
+                            : "bg-muted text-muted-foreground border-transparent"
                       )}>
                         {habit.allCompleted ? "Goal Met" : (habit.isWithinWindow ? "Ready Now" : "Restricted")}
                       </span>
