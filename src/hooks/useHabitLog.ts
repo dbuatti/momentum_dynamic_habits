@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useSession } from '@/contexts/SessionContext'; // Corrected import syntax
+import { useSession } from '@/contexts/SessionContext';
 import { useNavigate } from 'react-router-dom';
 import { showSuccess, showError } from '@/utils/toast';
 import { initialHabits } from '@/lib/habit-data';
@@ -41,7 +41,7 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
   let lifetimeProgressIncrementValue = value; // This will be in reps or minutes, used for lifetime progress
   let durationUsedForDB = null; // This will be in seconds for time-based habits
 
-  if (userHabitData.unit === 'min') { // Corrected typo: userHababitData -> userHabitData
+  if (userHabitData.unit === 'min') {
     durationUsedForDB = value * 60; // Convert minutes to seconds for DB storage
     lifetimeProgressIncrementValue = value * 60; // Convert minutes to seconds for lifetime progress
   } else {
@@ -86,17 +86,17 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
   const isGoalMetAfterLog = totalDailyProgressAfterLog >= userHabitData.current_daily_goal;
 
   // Adaptive logic
-  const isFixedGoalHabit = userHabitData.is_fixed; // Use is_fixed from userHabitData
+  const isFixedGoalHabit = userHabitData.is_fixed;
   let newDailyGoal = userHabitData.current_daily_goal;
   let newFrequency = userHabitData.frequency_per_week;
   let newGrowthPhase = userHabitData.growth_phase;
-  
+  let newIsTrialMode = userHabitData.is_trial_mode; // Track if trial mode changes
+
   const todayDate = new Date();
   const todayDateString = todayDate.toISOString().split('T')[0];
   
   // Use habit-specific plateau_days_required
   const plateauRequired = userHabitData.plateau_days_required; 
-  const daysInPlateau = differenceInDays(todayDate, new Date(userHabitData.last_plateau_start_date));
   
   let newCompletionsInPlateau = userHabitData.completions_in_plateau;
   let newLastPlateauStartDate = userHabitData.last_plateau_start_date;
@@ -139,23 +139,32 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
     newLastPlateauStartDate = todayDateString;
   }
 
+  // Check for Trial -> Growth transition
+  if (userHabitData.is_trial_mode && newCompletionsInPlateau >= plateauRequired) {
+    newIsTrialMode = false; // Transition out of trial mode
+    showSuccess(`Congratulations! Your ${userHabitData.name} habit has transitioned from Trial Mode to Adaptive Growth!`);
+  }
+
   // Only apply growth logic if not trial and not fixed/frozen
-  if (!userHabitData.is_trial_mode && !isFixedGoalHabit && !userHabitData.is_frozen) { 
+  if (!newIsTrialMode && !isFixedGoalHabit && !userHabitData.is_frozen) { 
     if (newCompletionsInPlateau >= plateauRequired) { // Check against newCompletionsInPlateau
       // Growth logic
       if (userHabitData.growth_phase === 'frequency' && userHabitData.frequency_per_week < 7) {
         newFrequency = userHabitData.frequency_per_week + 1;
         newGrowthPhase = 'duration';
-        showSuccess(`Dynamic Growth: Frequency increased to ${newFrequency}x per week!`);
+        showSuccess(`Dynamic Growth: Frequency for ${userHabitData.name} increased to ${newFrequency}x per week!`);
       } else if (userHabitData.growth_phase === 'duration') {
-        if (userHabitData.unit === 'min') newDailyGoal = userHabitData.current_daily_goal + 5;
-        else newDailyGoal = userHabitData.current_daily_goal + 1;
-        
+        // Neurodivergent mode specific increments
+        const increment = profileData.neurodivergent_mode ? 5 : 10; // 5 min for ND, 10 for standard
+        if (userHabitData.unit === 'min') newDailyGoal = userHabitData.current_daily_goal + increment;
+        else newDailyGoal = userHabitData.current_daily_goal + 1; // Reps/doses increment by 1
+
         if (!userHabitData.max_goal_cap || newDailyGoal <= userHabitData.max_goal_cap) {
           newGrowthPhase = userHabitData.frequency_per_week < 7 ? 'frequency' : 'duration';
-          showSuccess(`Dynamic Growth: Duration increased to ${newDailyGoal} ${userHabitData.unit}!`);
+          showSuccess(`Dynamic Growth: Daily goal for ${userHabitData.name} increased to ${newDailyGoal} ${userHabitData.unit}!`);
         } else {
           newDailyGoal = userHabitData.max_goal_cap;
+          showSuccess(`Dynamic Growth: Daily goal for ${userHabitData.name} reached its cap at ${newDailyGoal} ${userHabitData.unit}!`);
         }
       }
 
@@ -166,15 +175,17 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
         current_daily_goal: newDailyGoal,
         frequency_per_week: newFrequency,
         growth_phase: newGrowthPhase,
+        is_trial_mode: newIsTrialMode, // Update trial mode status
       }).eq('id', userHabitData.id);
     }
+  } else {
+    // If not in growth mode (e.g., trial, fixed, or frozen), just update plateau progress
+    await supabase.from('user_habits').update({
+      completions_in_plateau: newCompletionsInPlateau,
+      last_plateau_start_date: newLastPlateauStartDate,
+      is_trial_mode: newIsTrialMode, // Update trial mode status
+    }).eq('id', userHabitData.id);
   }
-
-  // Update user_habits with new plateau progress
-  await supabase.from('user_habits').update({
-    completions_in_plateau: newCompletionsInPlateau,
-    last_plateau_start_date: newLastPlateauStartDate,
-  }).eq('id', userHabitData.id);
 
   const newXp = (profileData.xp || 0) + xpEarned;
   await supabase.from('profiles').update({
@@ -216,13 +227,13 @@ const unlogHabit = async ({ userId, habitKey, taskName }: { userId: string, habi
   // Fetch user_habit data to get dynamic properties
   const { data: userHabitDataResult, error: userHabitFetchError } = await supabase
     .from('user_habits')
-    .select('unit, xp_per_unit')
+    .select('id, unit, xp_per_unit, current_daily_goal, completions_in_plateau, last_plateau_start_date')
     .eq('user_id', userId)
     .eq('habit_key', habitKey)
     .single();
 
   if (!userHabitDataResult || userHabitFetchError) throw userHabitFetchError || new Error(`Habit data not found for key: ${habitKey}`);
-  const userHabitData: Pick<UserHabitRecord, 'unit' | 'xp_per_unit'> = userHabitDataResult;
+  const userHabitData: Pick<UserHabitRecord, 'id' | 'unit' | 'xp_per_unit' | 'current_daily_goal' | 'completions_in_plateau' | 'last_plateau_start_date'> = userHabitDataResult;
 
   let lifetimeProgressDecrementValue;
   if (userHabitData.unit === 'min') {
@@ -250,31 +261,21 @@ const unlogHabit = async ({ userId, habitKey, taskName }: { userId: string, habi
   }
 
   // Decrement completions_in_plateau if unlogging causes goal to be unmet for today
-  const { data: userHabitDataForPlateau, error: userHabitPlateauFetchError } = await supabase
-    .from('user_habits')
-    .select('id, current_daily_goal, completions_in_plateau, last_plateau_start_date, unit, xp_per_unit')
-    .eq('user_id', userId)
-    .eq('habit_key', habitKey)
-    .single();
+  const { data: completedTodayAfterUnlog } = await supabase.rpc('get_completed_tasks_today', { 
+    p_user_id: userId, p_timezone: timezone 
+  });
+  let totalDailyProgressAfterUnlog = 0;
+  (completedTodayAfterUnlog || []).filter((t: any) => t.original_source === habitKey && t.id !== task.id).forEach((t: any) => {
+    if (userHabitData.unit === 'min') totalDailyProgressAfterUnlog += (t.duration_used || 0) / 60;
+    else if (userHabitData.unit === 'reps' || userHabitData.unit === 'dose') totalDailyProgressAfterUnlog += (t.xp_earned || 0) / (userHabitData.xp_per_unit || 1);
+    else totalDailyProgressAfterUnlog += 1;
+  });
+  const isGoalMetAfterUnlog = totalDailyProgressAfterUnlog >= userHabitData.current_daily_goal;
 
-  if (userHabitDataForPlateau && !userHabitPlateauFetchError) {
-    const userHabit: UserHabitRecord = userHabitDataForPlateau as UserHabitRecord;
-    const { data: completedTodayAfterUnlog } = await supabase.rpc('get_completed_tasks_today', { 
-      p_user_id: userId, p_timezone: timezone 
-    });
-    let totalDailyProgressAfterUnlog = 0;
-    (completedTodayAfterUnlog || []).filter((t: any) => t.original_source === habitKey && t.id !== task.id).forEach((t: any) => {
-      if (userHabit.unit === 'min') totalDailyProgressAfterUnlog += (t.duration_used || 0) / 60;
-      else if (userHabit.unit === 'reps' || userHabit.unit === 'dose') totalDailyProgressAfterUnlog += (t.xp_earned || 0) / (userHabit.xp_per_unit || 1);
-      else totalDailyProgressAfterUnlog += 1;
-    });
-    const isGoalMetAfterUnlog = totalDailyProgressAfterUnlog >= userHabit.current_daily_goal;
-
-    if (!isGoalMetAfterUnlog && userHabit.completions_in_plateau > 0) {
-      await supabase.from('user_habits').update({
-        completions_in_plateau: userHabit.completions_in_plateau - 1,
-      }).eq('id', userHabit.id);
-    }
+  if (!isGoalMetAfterUnlog && userHabitData.completions_in_plateau > 0) {
+    await supabase.from('user_habits').update({
+      completions_in_plateau: userHabitData.completions_in_plateau - 1,
+    }).eq('id', userHabitData.id);
   }
 
   const { error: deleteError } = await supabase.from('completedtasks').delete().eq('id', task.id);
