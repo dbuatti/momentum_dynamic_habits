@@ -9,7 +9,7 @@ import { showError, showSuccess } from '@/utils/toast';
 import { Dumbbell, Wind, BookOpen, Music, Home, Code, Target, Clock, User, Sparkles, Pill, Brain, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Switch } from '@/components/ui/switch';
-import { useUpdateHabitVisibility } from '@/hooks/useUpdateHabitVisibility'; // Import new hook
+import { useInitializeMissingHabits } from '@/hooks/useInitializeMissingHabits'; // Import the modified hook
 import { initialHabits } from '@/lib/habit-data'; // Import initialHabits
 
 const commonTimezones = [
@@ -61,7 +61,8 @@ export const OnboardingFlow = ({ onComplete }: { onComplete: () => void }) => {
   const [endTime, setEndTime] = useState('17:00');
   const [selectedHabits, setSelectedHabits] = useState<string[]>([]);
   const { mutate: updateProfile } = useUpdateProfile();
-  const { mutate: updateHabitVisibility } = useUpdateHabitVisibility(); // Use new hook
+  const { mutate: initializeHabits } = useInitializeMissingHabits(); // Use the modified hook
+  // Removed: const { mutate: updateHabitVisibility } = useUpdateHabitVisibility(); // Use new hook
 
   const handleNext = () => {
     if (step < 4) setStep(step + 1);
@@ -89,13 +90,16 @@ export const OnboardingFlow = ({ onComplete }: { onComplete: () => void }) => {
         default_auto_schedule_end_time: endTime,
       });
 
-      // Update visibility for all habits based on selection
-      for (const habit of initialHabits) {
-        await updateHabitVisibility({
-          habitKey: habit.id,
-          isVisible: selectedHabits.includes(habit.id),
-        });
-      }
+      // Call the modified initializeHabits with selectedHabits
+      await initializeHabits(selectedHabits);
+
+      // Removed: Update visibility for all habits based on selection
+      // for (const habit of initialHabits) {
+      //   await updateHabitVisibility({
+      //     habitKey: habit.id,
+      //     isVisible: selectedHabits.includes(habit.id),
+      //   });
+      // }
 
       showSuccess('Welcome! Your profile has been set up.');
       onComplete();

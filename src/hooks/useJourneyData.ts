@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { differenceInDays } from 'date-fns';
-import { useInitializeMissingHabits } from './useInitializeMissingHabits';
+// Removed: import { useInitializeMissingHabits } from './useInitializeMissingHabits';
 import { useEffect, useRef } from 'react';
 import { initialHabits } from '@/lib/habit-data';
 
@@ -62,16 +62,17 @@ const fetchJourneyData = async (userId: string) => {
 export const useJourneyData = () => {
   const { session } = useSession();
   const userId = session?.user?.id;
-  const { mutate: initializeMissingHabits } = useInitializeMissingHabits();
+  // Removed: const { mutate: initializeMissingHabits } = useInitializeMissingHabits();
 
-  const hasInitialized = useRef(false);
+  // Removed: const hasInitialized = useRef(false);
   
-  useEffect(() => {
-    if (userId && !hasInitialized.current) {
-      initializeMissingHabits();
-      hasInitialized.current = true;
-    }
-  }, [userId, initializeMissingHabits]);
+  // Removed:
+  // useEffect(() => {
+  //   if (userId && !hasInitialized.current) {
+  //     initializeMissingHabits();
+  //     hasInitialized.current = true;
+  //   }
+  // }, [userId, initializeMissingHabits]);
 
   return useQuery({
     queryKey: ['journeyData', userId],

@@ -5,39 +5,42 @@ import { showError } from '@/utils/toast';
 import { initialHabits } from '@/lib/habit-data';
 import { UserHabitRecord } from '@/types/habit';
 
-const initializeMissingHabits = async (userId: string) => {
+// Modified to accept selectedHabitKeys
+const initializeSelectedHabits = async (userId: string, selectedHabitKeys: string[]) => {
   const today = new Date();
   const oneYearFromNow = new Date(today.setFullYear(today.getFullYear() + 1));
   const oneYearDateString = oneYearFromNow.toISOString().split('T')[0];
   
-  const habitsToUpsert: Partial<UserHabitRecord>[] = initialHabits.map(habitConfig => ({
-    user_id: userId,
-    habit_key: habitConfig.id,
-    long_term_goal: habitConfig.targetGoal * (habitConfig.type === 'time' ? 365 : 1), // Example: 1 year goal
-    target_completion_date: oneYearDateString,
-    current_daily_goal: habitConfig.targetGoal,
-    momentum_level: habitConfig.momentum,
-    lifetime_progress: 0, // Always start at 0
-    last_goal_increase_date: today.toISOString().split('T')[0],
-    is_frozen: false,
-    max_goal_cap: null,
-    last_plateau_start_date: today.toISOString().split('T')[0],
-    plateau_days_required: 7, // Default plateau days
-    completions_in_plateau: 0,
-    is_fixed: ['teeth_brushing', 'medication'].includes(habitConfig.id), // Fixed for specific habits
-    category: habitConfig.category,
-    is_trial_mode: !['teeth_brushing', 'medication'].includes(habitConfig.id), // Trial mode for non-fixed habits
-    frequency_per_week: 7, // Default to daily
-    growth_phase: 'duration', // Default growth phase
-    window_start: null,
-    window_end: null,
-    days_of_week: [0, 1, 2, 3, 4, 5, 6], // Default to all days
-    auto_chunking: true,
-    enable_chunks: false,
-    num_chunks: 1,
-    chunk_duration: habitConfig.targetGoal, // Default to full goal as one chunk
-    is_visible: true, // Default to visible
-  }));
+  const habitsToUpsert: Partial<UserHabitRecord>[] = initialHabits
+    .filter(habitConfig => selectedHabitKeys.includes(habitConfig.id)) // Filter based on selected keys
+    .map(habitConfig => ({
+      user_id: userId,
+      habit_key: habitConfig.id,
+      long_term_goal: habitConfig.targetGoal * (habitConfig.type === 'time' ? 365 : 1), // Example: 1 year goal
+      target_completion_date: oneYearDateString,
+      current_daily_goal: habitConfig.targetGoal,
+      momentum_level: habitConfig.momentum,
+      lifetime_progress: 0, // Always start at 0
+      last_goal_increase_date: today.toISOString().split('T')[0],
+      is_frozen: false,
+      max_goal_cap: null,
+      last_plateau_start_date: today.toISOString().split('T')[0],
+      plateau_days_required: 7, // Default plateau days
+      completions_in_plateau: 0,
+      is_fixed: ['teeth_brushing', 'medication'].includes(habitConfig.id), // Fixed for specific habits
+      category: habitConfig.category,
+      is_trial_mode: !['teeth_brushing', 'medication'].includes(habitConfig.id), // Trial mode for non-fixed habits
+      frequency_per_week: 7, // Default to daily
+      growth_phase: 'duration', // Default growth phase
+      window_start: null,
+      window_end: null,
+      days_of_week: [0, 1, 2, 3, 4, 5, 6], // Default to all days
+      auto_chunking: true,
+      enable_chunks: false,
+      num_chunks: 1,
+      chunk_duration: habitConfig.targetGoal, // Default to full goal as one chunk
+      is_visible: true, // Always visible if selected during onboarding
+    }));
 
   if (habitsToUpsert.length > 0) {
     const { error: upsertError } = await supabase
@@ -55,9 +58,9 @@ export const useInitializeMissingHabits = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: () => {
+    mutationFn: (selectedHabitKeys: string[]) => { // Changed mutationFn signature
       if (!session?.user?.id) throw new Error('User not authenticated');
-      return initializeMissingHabits(session.user.id);
+      return initializeSelectedHabits(session.user.id, selectedHabitKeys); // Pass selected keys
     },
     onSuccess: (data) => {
       if (data.initialized) {

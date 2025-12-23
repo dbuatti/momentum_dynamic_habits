@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { startOfDay, differenceInDays, startOfWeek, endOfWeek, subWeeks, addMonths, subDays, formatDistanceToNowStrict, isWithinInterval, parse } from 'date-fns';
 import { initialHabits } from '@/lib/habit-data';
-import { useInitializeMissingHabits } from './useInitializeMissingHabits';
+// Removed: import { useInitializeMissingHabits } from './useInitializeMissingHabits';
 import { useEffect, useRef } from 'react';
 
 const fetchDashboardData = async (userId: string) => {
@@ -158,15 +158,16 @@ const fetchDashboardData = async (userId: string) => {
 export const useDashboardData = () => {
   const { session } = useSession();
   const userId = session?.user?.id;
-  const { mutate: initializeMissingHabits } = useInitializeMissingHabits();
-  const hasInitialized = useRef(false);
+  // Removed: const { mutate: initializeMissingHabits } = useInitializeMissingHabits();
+  // Removed: const hasInitialized = useRef(false);
   
-  useEffect(() => {
-    if (userId && !hasInitialized.current) {
-      initializeMissingHabits();
-      hasInitialized.current = true;
-    }
-  }, [userId, initializeMissingHabits]);
+  // Removed:
+  // useEffect(() => {
+  //   if (userId && !hasInitialized.current) {
+  //     initializeMissingHabits();
+  //     hasInitialized.current = true;
+  //   }
+  // }, [userId, initializeMissingHabits]);
 
   return useQuery({
     queryKey: ['dashboardData', userId],
