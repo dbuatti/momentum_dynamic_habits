@@ -75,7 +75,7 @@ const Index = () => {
           isCompleted,
           scheduledTime: dbCapsule?.scheduled_time,
         };
-      }).filter(Boolean); // Filter out any null/undefined capsules
+      });
 
       return {
         ...habit,
@@ -163,12 +163,12 @@ const Index = () => {
     const isTrial = habit.is_trial_mode;
     
     const accentColor = {
-        orange: 'text-habit-orange-foreground bg-habit-orange border-habit-orange',
-        blue: 'text-habit-blue-foreground bg-habit-blue border-habit-blue',
-        green: 'text-habit-green-foreground bg-habit-green border-habit-green-border',
-        purple: 'text-habit-purple-foreground bg-habit-purple border-habit-purple-border',
-        red: 'text-habit-red-foreground bg-habit-red border-habit-red-border',
-        indigo: 'text-habit-indigo-foreground bg-habit-indigo border-habit-indigo-border',
+        orange: 'text-orange-950 bg-orange-50 border-orange-200',
+        blue: 'text-blue-950 bg-blue-50 border-blue-200',
+        green: 'text-green-950 bg-green-50 border-green-200',
+        purple: 'text-purple-950 bg-purple-50 border-purple-200',
+        red: 'text-red-950 bg-red-50 border-red-200',
+        indigo: 'text-indigo-950 bg-indigo-50 border-indigo-200',
     }[color];
 
     const nextCapsule = habit.capsules.find((c: any) => !c.isCompleted);
@@ -200,7 +200,7 @@ const Index = () => {
                     "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border border-black/5",
                     habit.allCompleted ? "bg-white" : "bg-white/90"
                   )}>
-                    <Icon className={cn("w-6 h-6", habit.allCompleted ? "text-muted-foreground" : accentColor.split(' ')[0])} />
+                    <Icon className="w-6 h-6" />
                   </div>
                   <div className="min-w-0 flex-grow pr-2">
                     <h3 className="font-black text-lg flex items-center gap-2 leading-tight truncate">

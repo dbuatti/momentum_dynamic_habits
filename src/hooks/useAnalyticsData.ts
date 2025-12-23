@@ -201,8 +201,7 @@ const fetchAnalyticsData = async (userId: string): Promise<AnalyticsData> => {
     });
     
     // Apply carryover to the daily goal for display and chunking
-    // For fixed habits, adjustedDailyGoal should always be current_daily_goal
-    const adjustedDailyGoal = habit.is_fixed ? habit.current_daily_goal : habit.current_daily_goal + (habit.carryover_value || 0);
+    const adjustedDailyGoal = habit.current_daily_goal + (habit.carryover_value || 0);
     const isComplete = dailyProgress >= adjustedDailyGoal;
 
 

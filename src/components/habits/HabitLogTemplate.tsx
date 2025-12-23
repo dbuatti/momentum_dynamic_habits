@@ -57,12 +57,12 @@ const HabitLogTemplate: React.FC<HabitLogTemplateProps> = ({
   } = habit;
 
   const colorMap = {
-    orange: { bg: 'bg-habit-orange', border: 'border-habit-orange', text: 'text-habit-orange-foreground', iconBg: 'bg-white/90' },
-    blue: { bg: 'bg-habit-blue', border: 'border-habit-blue', text: 'text-habit-blue-foreground', iconBg: 'bg-white/90' },
-    green: { bg: 'bg-habit-green', border: 'border-habit-green-border', text: 'text-habit-green-foreground', iconBg: 'bg-white/90' },
-    purple: { bg: 'bg-habit-purple', border: 'border-habit-purple-border', text: 'text-habit-purple-foreground', iconBg: 'bg-white/90' },
-    red: { bg: 'bg-habit-red', border: 'border-habit-red-border', text: 'text-habit-red-foreground', iconBg: 'bg-white/90' },
-    indigo: { bg: 'bg-habit-indigo', border: 'border-habit-indigo-border', text: 'text-habit-indigo-foreground', iconBg: 'bg-white/90' },
+    orange: { bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-700', iconBg: 'bg-orange-100' },
+    blue: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', iconBg: 'bg-blue-100' },
+    green: { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-700', iconBg: 'bg-green-100' },
+    purple: { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700', iconBg: 'bg-purple-100' },
+    red: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', iconBg: 'bg-red-100' },
+    indigo: { bg: 'bg-indigo-50', border: 'border-indigo-200', text: 'text-indigo-700', iconBg: 'bg-indigo-100' },
   };
   const colors = colorMap[habitColor];
 

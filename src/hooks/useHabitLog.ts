@@ -1,5 +1,3 @@
-"use client";
-
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
@@ -88,8 +86,7 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
   
   // Calculate surplus for carryover
   const surplus = totalDailyProgressAfterLog - userHabitData.current_daily_goal;
-  // For fixed habits, carryover should always be 0.
-  const newCarryoverValue = userHabitData.is_fixed ? 0 : Math.max(0, surplus); // Carryover cannot be negative
+  const newCarryoverValue = Math.max(0, surplus); // Carryover cannot be negative
 
   // Update carryover_value in user_habits
   await supabase.from('user_habits').update({
@@ -240,13 +237,13 @@ const unlogHabit = async ({ userId, habitKey, taskName }: { userId: string, habi
   // Fetch user_habit data to get dynamic properties, including carryover_value
   const { data: userHabitDataResult, error: userHabitFetchError } = await supabase
     .from('user_habits')
-    .select('id, unit, xp_per_unit, current_daily_goal, completions_in_plateau, last_plateau_start_date, carryover_value, is_fixed')
+    .select('id, unit, xp_per_unit, current_daily_goal, completions_in_plateau, last_plateau_start_date, carryover_value')
     .eq('user_id', userId)
     .eq('habit_key', habitKey)
     .single();
 
   if (!userHabitDataResult || userHabitFetchError) throw userHabitFetchError || new Error(`Habit data not found for key: ${habitKey}`);
-  const userHabitData: Pick<UserHabitRecord, 'id' | 'unit' | 'xp_per_unit' | 'current_daily_goal' | 'completions_in_plateau' | 'last_plateau_start_date' | 'carryover_value' | 'is_fixed'> = userHabitDataResult;
+  const userHabitData: Pick<UserHabitRecord, 'id' | 'unit' | 'xp_per_unit' | 'current_daily_goal' | 'completions_in_plateau' | 'last_plateau_start_date' | 'carryover_value'> = userHabitDataResult;
 
   let lifetimeProgressDecrementValue;
   if (userHabitData.unit === 'min') {
@@ -285,8 +282,7 @@ const unlogHabit = async ({ userId, habitKey, taskName }: { userId: string, habi
   });
 
   const surplusAfterUnlog = totalDailyProgressAfterUnlog - userHabitData.current_daily_goal;
-  // For fixed habits, carryover should always be 0.
-  const newCarryoverValueAfterUnlog = userHabitData.is_fixed ? 0 : Math.max(0, surplusAfterUnlog);
+  const newCarryoverValueAfterUnlog = Math.max(0, surplusAfterUnlog);
 
   await supabase.from('user_habits').update({
     carryover_value: newCarryoverValueAfterUnlog,
