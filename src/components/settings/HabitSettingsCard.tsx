@@ -15,10 +15,10 @@ import {
 } from 'lucide-react';
 import { UserHabitRecord } from '@/types/habit';
 import { useUpdateHabitVisibility } from '@/hooks/useUpdateHabitVisibility';
-import { habitIcons, habitModes } from '@/lib/habit-templates'; // Removed initialHabits import
+import { habitIcons, habitModes } from '@/lib/habit-templates';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useJourneyData } from '@/hooks/useJourneyData';
-import { habitIconMap } from '@/lib/habit-utils'; // Import from centralized utility
+import { habitIconMap } from '@/lib/habit-utils';
 
 interface HabitSettingsCardProps {
   habit: UserHabitRecord;
@@ -31,7 +31,7 @@ const days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const timeOptions = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0') + ':00');
 
 const getHabitIcon = (habitKey: string) => {
-  return habitIconMap[habitKey] || habitIconMap.custom_habit; // Use centralized map with fallback
+  return habitIconMap[habitKey] || habitIconMap.custom_habit;
 };
 
 export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
@@ -46,10 +46,14 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
 
   const habitUnit = habit.unit || '';
 
-  // Use allHabits for dependency selection
   const otherHabits = useMemo(() => {
     return (journeyData?.allHabits || []).filter(h => h.id !== habit.id);
   }, [journeyData?.allHabits, habit.id]);
+
+  const selectedDependentHabit = useMemo(() => {
+    if (!habit.dependent_on_habit_id) return null;
+    return otherHabits.find(h => h.id === habit.dependent_on_habit_id);
+  }, [habit.dependent_on_habit_id, otherHabits]);
 
   return (
     <AccordionItem 
@@ -91,7 +95,7 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
           {habit.dependent_on_habit_id && (
             <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2 ml-[72px]">
               <LinkIcon className="w-3.5 h-3.5" />
-              <span>Depends on: {otherHabits.find(h => h.id === habit.dependent_on_habit_id)?.name || 'Unknown Habit'}</span>
+              <span>Depends on: {selectedDependentHabit?.name || 'Unknown Habit'}</span>
             </div>
           )}
         </div>
@@ -283,13 +287,15 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
                   onValueChange={(value) => onUpdateHabitField(habit.id, { dependent_on_habit_id: value === 'none' ? null : value })}
                 >
                   <SelectTrigger className="h-11 rounded-xl font-bold text-base">
-                    <SelectValue placeholder="No dependency" />
+                    <SelectValue placeholder="No dependency">
+                      {selectedDependentHabit ? selectedDependentHabit.name : "No dependency"}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">No dependency</SelectItem>
                     {otherHabits.map(otherHabit => (
                       <SelectItem key={otherHabit.id} value={otherHabit.id}>
-                        {otherHabit.name}
+                        {otherHabit.name || otherHabit.habit_key.replace(/_/g, ' ')}
                       </SelectItem>
                     ))}
                   </SelectContent>

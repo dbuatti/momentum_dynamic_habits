@@ -15,7 +15,7 @@ import {
   Target, Anchor, Zap, ShieldCheck, Brain, Clock, Layers,
   Dumbbell, Wind, BookOpen, Music, Home, Code, Sparkles, Pill,
   Plus, Loader2, Check, Info, Eye, EyeOff, ArrowRight, FlaskConical,
-  Calendar, Timer // Added Calendar and Timer imports
+  Calendar, Timer
 } from 'lucide-react';
 import { habitTemplates, habitCategories, habitUnits, habitModes, habitIcons, HabitTemplate } from '@/lib/habit-templates';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -26,7 +26,7 @@ import { useNavigate } from 'react-router-dom';
 import { UserHabitRecord, HabitCategory as HabitCategoryType } from '@/types/habit';
 import { useJourneyData } from '@/hooks/useJourneyData';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { habitIconMap } from '@/lib/habit-utils'; // Import from centralized utility
+import { habitIconMap } from '@/lib/habit-utils';
 
 interface CreateHabitParams {
   name: string;
@@ -123,7 +123,7 @@ const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: s
 const timeOptions = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0') + ':00');
 
 const getHabitIconComponent = (iconName: string) => {
-  return habitIcons.find(i => i.value === iconName)?.icon || habitIconMap.custom_habit; // Use centralized map with fallback
+  return habitIcons.find(i => i.value === iconName)?.icon || habitIconMap.custom_habit;
 };
 
 const CreateHabit = () => {
@@ -223,8 +223,8 @@ const CreateHabit = () => {
     },
   });
 
-  const handleSubmit = (e?: React.FormEvent) => { // Made event optional
-    e?.preventDefault(); // Conditionally prevent default
+  const handleSubmit = (e?: React.FormEvent) => {
+    e?.preventDefault();
 
     if (!habitName.trim() || !habitKey.trim() || dailyGoal <= 0 || frequency <= 0 || xpPerUnit <= 0 || energyCostPerUnit < 0) {
       showError('Please fill in all required fields with valid values.');
@@ -262,17 +262,17 @@ const CreateHabit = () => {
       showError('Please select a habit template.');
       return;
     }
-    if (step === 9 && (!habitName.trim() || !habitKey.trim())) { // Corrected step number
+    if (step === 9 && (!habitName.trim() || !habitKey.trim())) {
       showError('Please provide a habit name and key.');
       return;
     }
     if (step < 9) setStep(step + 1);
-    else handleSubmit(); // Trigger final submission without an event
+    else handleSubmit();
   };
 
   const handleGuidedBack = () => {
     if (step > 1) setStep(step - 1);
-    else setFlowType('entry'); // Go back to entry screen from first step
+    else setFlowType('entry');
   };
 
   const renderGuidedStep = () => {
@@ -647,6 +647,11 @@ const CreateHabit = () => {
 
   const renderCustomForm = () => {
     const IconComponent = getHabitIconComponent(selectedIconName);
+    const selectedDependentHabit = useMemo(() => {
+      if (!dependentOnHabitId) return null;
+      return otherHabits.find(h => h.id === dependentOnHabitId);
+    }, [dependentOnHabitId, otherHabits]);
+
     return (
       <form onSubmit={handleSubmit} className="space-y-8">
         <Card className="rounded-3xl shadow-sm border-0">
@@ -891,13 +896,15 @@ const CreateHabit = () => {
                   onValueChange={(value) => setDependentOnHabitId(value === 'none' ? null : value)}
                 >
                   <SelectTrigger className="h-11 rounded-xl font-bold text-base">
-                    <SelectValue placeholder="No dependency" />
+                    <SelectValue placeholder="No dependency">
+                      {selectedDependentHabit ? selectedDependentHabit.name : "No dependency"}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">No dependency</SelectItem>
                     {otherHabits.map(otherHabit => (
                       <SelectItem key={otherHabit.id} value={otherHabit.id}>
-                        {otherHabit.name}
+                        {otherHabit.name || otherHabit.habit_key.replace(/_/g, ' ')}
                       </SelectItem>
                     ))}
                   </SelectContent>
