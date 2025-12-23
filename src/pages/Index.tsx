@@ -239,7 +239,7 @@ const Index = () => {
                   )}
                 </div>
                 {/* Daily Progress below name */}
-                <p className="text-sm font-bold text-foreground mt-2">
+                <p className={cn("text-sm font-bold mt-2", habit.allCompleted ? "text-muted-foreground" : "text-foreground")}>
                   Progress: {Math.round(habit.dailyProgress)}/{Math.round(habit.adjustedDailyGoal)} {habit.unit}
                 </p>
               </div>
@@ -272,7 +272,7 @@ const Index = () => {
                   </p>
                   <div className="flex items-center gap-2">
                       <Target className="w-3.5 h-3.5 opacity-40" />
-                      <p className="text-sm font-black">
+                      <p className="text-sm font-black text-foreground">
                         {Math.round(habit.dailyGoal)} {habit.unit}
                         {habit.carryoverValue > 0 && (
                           <span className="ml-1 text-[10px] font-bold text-success"> (+{Math.round(habit.carryoverValue)} carryover)</span>
@@ -284,7 +284,7 @@ const Index = () => {
                   <p className="text-[9px] font-black uppercase opacity-50 tracking-widest">Weekly Goal</p>
                   <div className="flex items-center gap-2">
                       <TrendingUp className="w-3.5 h-3.5 opacity-40" />
-                      <p className="text-sm font-black">{Math.round(habit.weekly_goal)} {habit.unit}</p>
+                      <p className="text-sm font-black text-foreground">{Math.round(habit.weekly_goal)} {habit.unit}</p>
                   </div>
               </div>
           </div>
@@ -297,7 +297,8 @@ const Index = () => {
             />
           </div>
           {/* Daily Progress Bar */}
-          <div className="w-full mt-2">
+          <div className="w-full mt-4"> {/* Added mt-4 for spacing */}
+            <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">Daily Progress</p>
             <Progress
               value={(habit.dailyProgress / habit.adjustedDailyGoal) * 100}
               className="h-1.5 [&>div]:bg-primary"
