@@ -11,7 +11,7 @@ interface OnboardingHabitParams {
   focusAreas: string[];
   isLowPressure: boolean;
   sessionDuration: 'short' | 'medium' | 'long';
-  weeklyFrequency: number;
+  weeklyFrequency: number; // Added weeklyFrequency
   allowChunks: boolean;
   neurodivergentMode: boolean;
 }
@@ -23,7 +23,7 @@ const initializeSelectedHabits = async (userId: string, params: OnboardingHabitP
     focusAreas,
     isLowPressure,
     sessionDuration,
-    weeklyFrequency,
+    weeklyFrequency, // Use weeklyFrequency
     allowChunks,
     neurodivergentMode,
   } = params;
@@ -132,7 +132,7 @@ const initializeSelectedHabits = async (userId: string, params: OnboardingHabitP
       is_fixed: isFixed,
       category: category as HabitCategory,
       is_trial_mode: isTrial,
-      frequency_per_week: weeklyFrequency,
+      frequency_per_week: weeklyFrequency, // Use weeklyFrequency from params
       growth_phase: 'duration',
       window_start: null,
       window_end: null,

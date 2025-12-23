@@ -577,7 +577,7 @@ const HabitWizard = () => {
       <PageHeader title={isTemplateCreationMode ? "Contribute New Template" : "Habit Wizard"} />
 
       {/* Single clean card with fixed layout */}
-      <Card className="w-full max-w-2xl mx-auto shadow-2xl rounded-3xl overflow-hidden border-0 bg-card">
+      <Card className="w-full max-w-4xl mx-auto shadow-2xl rounded-3xl overflow-hidden border-0 bg-card">
         {/* Header with progress - always present and fixed height */}
         {!isTemplateCreationMode && (
           <CardHeader className="pb-6 pt-8 px-10 bg-gradient-to-b from-primary/5 to-transparent">
