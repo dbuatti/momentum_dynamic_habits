@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -244,7 +244,7 @@ const OnboardingFlow = ({ onComplete }: { onComplete: () => void }) => {
               <h2 className="text-2xl font-bold mb-2">Focus Areas</h2>
               <p className="text-muted-foreground">Which areas do you want to focus on?</p>
             </div>
-            <div className="grid grid-cols-2 gap-3 max-h-[300px] overflow-y-auto pr-2">
+            <div className="grid grid-cols-2 gap-3">
               {habitCategories.filter(cat => cat.value !== 'anchor').map((cat) => {
                 const Icon = cat.icon;
                 const isSelected = selectedFocusAreas.includes(cat.value);
@@ -379,7 +379,7 @@ const OnboardingFlow = ({ onComplete }: { onComplete: () => void }) => {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-background">
-      <Card className="w-full max-w-md shadow-xl rounded-3xl overflow-hidden border-0">
+      <Card className="w-full shadow-xl rounded-3xl overflow-hidden border-0">
         <CardHeader className="pb-0">
           <div className="flex justify-between items-center mb-4">
             <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Step {step} of 6</div>

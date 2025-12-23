@@ -69,7 +69,7 @@ const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: s
   let numChunks = 1;
   let chunkDuration = current_daily_goal;
   if (auto_chunking && unit === 'min' && current_daily_goal > (neurodivergentMode ? 5 : 10)) {
-    const targetChunkSize = neurodivergentMode ? 5 : 10; // 5 min chunks for ND, 10 for standard
+    const targetChunkSize = neurodivergentMode ? 5 : 10; // 5 min for ND, 10 for standard
     numChunks = Math.max(1, Math.ceil(current_daily_goal / targetChunkSize));
     chunkDuration = Number((current_daily_goal / numChunks).toFixed(1));
   } else if (auto_chunking && unit === 'reps' && current_daily_goal > (neurodivergentMode ? 10 : 20)) {
@@ -280,7 +280,7 @@ const CreateHabit = () => {
     const progress = (step / 9) * 100;
 
     return (
-      <Card className="w-full max-w-md shadow-xl rounded-3xl overflow-hidden border-0">
+      <Card className="w-full shadow-xl rounded-3xl overflow-hidden border-0">
         <CardHeader className="pb-0">
           <div className="flex justify-between items-center mb-4">
             <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Step {step} of 9</div>
@@ -298,7 +298,7 @@ const CreateHabit = () => {
                 <h2 className="text-2xl font-bold mb-2">Choose a Starting Point</h2>
                 <p className="text-muted-foreground">Select a template or start from scratch.</p>
               </div>
-              <div className="grid grid-cols-2 gap-3 max-h-[300px] overflow-y-auto pr-2">
+              <div className="grid grid-cols-2 gap-3">
                 {habitTemplates.map((template) => {
                   const TemplateIcon = template.icon;
                   const isSelected = selectedTemplateId === template.id;
@@ -332,7 +332,7 @@ const CreateHabit = () => {
                 <h2 className="text-2xl font-bold mb-2">Habit Focus</h2>
                 <p className="text-muted-foreground">What area of your life is this habit for?</p>
               </div>
-              <div className="grid grid-cols-2 gap-3 max-h-[300px] overflow-y-auto pr-2">
+              <div className="grid grid-cols-2 gap-3">
                 {habitCategories.filter(cat => cat.value !== 'anchor').map((cat) => {
                   const Icon = cat.icon;
                   const isSelected = category === cat.value;
