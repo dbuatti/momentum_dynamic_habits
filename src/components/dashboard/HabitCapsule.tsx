@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Check, Clock, Smile, Meh, Frown, Undo2, Play, Pause, Square, Edit2, Zap, X } from 'lucide-react';
+import { Check, Clock, Smile, Meh, Frown, Undo2, Play, Pause, Square, Edit2, Zap } from 'lucide-react'; // Removed X icon
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
@@ -171,8 +171,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     }
   };
 
-  const handleCancelTimer = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleCancelTimer = () => { // Removed event parameter as it's now triggered by card click
     stopInterval();
     localStorage.removeItem(storageKey);
     window.dispatchEvent(new CustomEvent('habit-timer-update', { detail: null }));
@@ -285,7 +284,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
             : cn(colors.bg, colors.border, "shadow-sm hover:shadow-md"),
           isTiming && "ring-4 ring-primary/20 shadow-xl scale-[1.01]"
         )}
-        onClick={(!isCompleted && !isTiming && !showMoodPicker) ? (isTimeBased ? handleStartTimer : handleQuickComplete) : undefined}
+        onClick={isTiming ? handleCancelTimer : (!isCompleted && !showMoodPicker) ? (isTimeBased ? handleStartTimer : handleQuickComplete) : undefined}
       >
         <AnimatePresence>
           {(!isCompleted && (isTiming || initialValue > 0)) && (
@@ -393,13 +392,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                     <Square className="w-4 h-4 mr-2 fill-current" />
                     Done
                   </Button>
-                  <Button 
-                    size="icon" 
-                    className="h-12 w-12 rounded-full bg-destructive/10 text-destructive hover:bg-destructive/20 shadow-md border-0"
-                    onClick={handleCancelTimer}
-                  >
-                    <X className="w-6 h-6" />
-                  </Button>
+                  {/* Removed the explicit X button here */}
                 </div>
               </div>
             </div>
