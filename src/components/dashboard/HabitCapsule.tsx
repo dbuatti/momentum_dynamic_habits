@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Check, Clock, Smile, Meh, Frown, Undo2, Play, Pause, Square, RotateCcw, Plus, Minus, Lock, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { playStartSound, playEndSound, playGoalSound } from '@/utils/audio';
+import { useFeedback } from '@/hooks/useFeedback';
 import { Input } from '@/components/ui/input';
 import { MeasurementType } from '@/types/habit';
 
@@ -55,12 +55,11 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   const [completedTaskIdState, setCompletedTaskIdState] = useState<string | null>(initialCompletedTaskId || null);
   const [manualValue, setManualValue] = useState<number>(value);
   
+  const { triggerFeedback } = useFeedback();
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const storageKey = `timer_${habitKey}_${label}_${new Date().toISOString().split('T')[0]}`;
 
-  // Capping guardrail: Only Fixed habits are disabled once complete.
   const isLoggingDisabled = isFixed && isHabitComplete && !isCompleted;
-  // Bonus Mode: Habit is complete, but not fixed, so we can log more.
   const isBonusMode = !isFixed && isHabitComplete && !isCompleted;
 
   useEffect(() => {
@@ -90,9 +89,9 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   useEffect(() => {
     if (isTiming && timeLeft === 0) {
       handleFinishTiming(undefined, true);
-      playGoalSound();
+      triggerFeedback('goal_reached');
     }
-  }, [timeLeft, isTiming]);
+  }, [timeLeft, isTiming, triggerFeedback]);
 
   useEffect(() => {
     if (measurementType !== 'timer') return;
@@ -131,7 +130,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   const handleStartTimer = (e: React.MouseEvent) => {
     if (isLoggingDisabled) return;
     e.stopPropagation();
-    playStartSound();
+    triggerFeedback('start');
     setIsTiming(true);
     setIsPaused(false);
     if (timeLeft <= 0) setTimeLeft(value * 60);
@@ -140,8 +139,8 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
 
   const handlePauseTimer = (e: React.MouseEvent) => {
     e.stopPropagation();
+    triggerFeedback('pause');
     if (isPaused) {
-      playStartSound();
       setIsPaused(false);
       startInterval();
     } else {
@@ -158,7 +157,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
       setShowMoodPicker(true);
       return;
     }
-    playEndSound();
+    triggerFeedback('completion');
     localStorage.removeItem(storageKey);
     onLogProgress(totalSessionMinutes, true, mood);
     setIsTiming(false);
@@ -172,7 +171,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
       setShowMoodPicker(true);
       return;
     }
-    playEndSound();
+    triggerFeedback('completion');
     onLogProgress(manualValue, true, mood);
     setShowMoodPicker(false);
   };
@@ -183,7 +182,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
       setShowMoodPicker(true);
       return;
     }
-    playEndSound();
+    triggerFeedback('completion');
     onLogProgress(value, true, mood);
     setShowMoodPicker(false);
   };

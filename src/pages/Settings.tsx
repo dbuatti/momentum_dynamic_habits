@@ -19,7 +19,8 @@ import {
   Brain, LogOut, Anchor, Target, Sparkles, 
   Settings2, Shield, ShieldCheck, Calendar, 
   Clock, Dumbbell, Wind, BookOpen, Music, 
-  Home, Code, Pill, Timer, BarChart3, Layers, Zap, Info, Eye, EyeOff, Plus
+  Home, Code, Pill, Timer, BarChart3, Layers, Zap, Info, Eye, EyeOff, Plus,
+  Volume2, Smartphone
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { 
@@ -31,12 +32,14 @@ import {
 import { useUpdateHabitVisibility } from '@/hooks/useUpdateHabitVisibility';
 import { HabitSettingsCard } from '@/components/settings/HabitSettingsCard';
 import { NewHabitModal } from '@/components/habits/NewHabitModal';
-import { ResetEverythingCard } from '@/components/settings/ResetEverythingCard'; // Updated import
-import { ResetExperienceCard } from '@/components/settings/ResetExperienceCard'; // New import
+import { ResetEverythingCard } from '@/components/settings/ResetEverythingCard';
+import { ResetExperienceCard } from '@/components/settings/ResetExperienceCard';
+import { useDashboardData } from '@/hooks/useDashboardData';
 
 const Settings = () => {
   const { session, signOut } = useSession();
   const { data, isLoading } = useJourneyData();
+  const { data: dashboardData } = useDashboardData();
   const queryClient = useQueryClient();
   const { mutate: updateProfile } = useUpdateProfile();
   
@@ -45,6 +48,10 @@ const Settings = () => {
 
   const habits = useMemo(() => data?.habits || [], [data]);
   const profile = useMemo(() => data?.profile, [data]);
+
+  // Merge profile settings from dashboard data which has the latest fields
+  const enableSound = (dashboardData as any)?.enable_sound ?? true;
+  const enableHaptics = (dashboardData as any)?.enable_haptics ?? true;
 
   const anchors = useMemo(() => habits.filter(h => h.category === 'anchor'), [habits]);
   const daily = useMemo(() => habits.filter(h => h.category !== 'anchor'), [habits]);
@@ -94,6 +101,49 @@ const Settings = () => {
             </Button>
           </CardContent>
         </Card>
+
+        {/* Feedback Settings */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Card className="rounded-3xl shadow-sm border border-border bg-card">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="bg-primary/10 rounded-xl p-2.5">
+                    <Volume2 className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-black uppercase text-[10px] tracking-tight">Sound</p>
+                    <p className="text-[10px] text-muted-foreground">Chimes on completion.</p>
+                  </div>
+                </div>
+                <Switch 
+                  checked={enableSound} 
+                  onCheckedChange={(val) => updateProfile({ enable_sound: val })} 
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-3xl shadow-sm border border-border bg-card">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="bg-primary/10 rounded-xl p-2.5">
+                    <Smartphone className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-black uppercase text-[10px] tracking-tight">Haptics</p>
+                    <p className="text-[10px] text-muted-foreground">Tactile feedback.</p>
+                  </div>
+                </div>
+                <Switch 
+                  checked={enableHaptics} 
+                  onCheckedChange={(val) => updateProfile({ enable_haptics: val })} 
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Global neurodivergent toggle */}
         <Card className="rounded-3xl shadow-sm border-2 border-habit-purple-border/50 bg-habit-purple/50 dark:bg-habit-purple/10">
