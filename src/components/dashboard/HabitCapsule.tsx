@@ -179,11 +179,11 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   };
 
   // This function is now only called by the "Done" button, not by clicking the capsule itself.
-  const handleFinishTiming = (mood?: string) => {
+  const handleFinishTiming = (mood?: string, promptMood: boolean = false) => {
     stopInterval();
     const totalSessionMinutes = Math.max(1, Math.ceil((initialValue * 60 + elapsedSeconds) / 60));
     
-    if (showMood && mood === undefined) {
+    if (promptMood && showMood && mood === undefined) { // Only prompt if explicitly asked AND showMood is true
       setShowMoodPicker(true);
       return;
     }
@@ -275,7 +275,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
             : cn(colors.bg, colors.border, "shadow-sm hover:shadow-md"),
           isTiming && "ring-4 ring-primary/20 shadow-xl scale-[1.01]"
         )}
-        onClick={isTiming ? () => handleFinishTiming() : (!isCompleted && !showMoodPicker) ? (isTimeBased ? handleStartTimer : handleQuickComplete) : undefined}
+        onClick={isTiming ? () => handleFinishTiming(undefined, false) : (!isCompleted && !showMoodPicker) ? (isTimeBased ? handleStartTimer : handleQuickComplete) : undefined}
       >
         <AnimatePresence>
           {(!isCompleted && (isTiming || initialValue > 0)) && (
@@ -379,7 +379,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                   <Button 
                     size="lg" 
                     className="h-12 px-6 rounded-full font-black shadow-lg bg-primary text-primary-foreground hover:bg-primary/90 border border-primary-foreground/20"
-                    onClick={() => handleFinishTiming()}
+                    onClick={() => handleFinishTiming(undefined, true)}
                   >
                     <Square className="w-4 h-4 mr-2 fill-current" />
                     Done
@@ -402,16 +402,16 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
               <div className="py-4 px-4 flex items-center justify-center gap-6">
                 <span className="text-xs font-black uppercase tracking-wider opacity-60">Feeling?</span>
                 <div className="flex gap-4">
-                  <Button size="icon" variant="ghost" className="h-10 w-10 rounded-full hover:bg-destructive/10" onClick={() => handleFinishTiming('sad')}>
+                  <Button size="icon" variant="ghost" className="h-10 w-10 rounded-full hover:bg-destructive/10" onClick={() => handleFinishTiming('sad', false)}>
                     <Frown className="w-6 h-6 text-destructive" />
                   </Button>
-                  <Button size="icon" variant="ghost" className="h-10 w-10 rounded-full hover:bg-warning-background/10" onClick={() => handleFinishTiming('neutral')}>
+                  <Button size="icon" variant="ghost" className="h-10 w-10 rounded-full hover:bg-warning-background/10" onClick={() => handleFinishTiming('neutral', false)}>
                     <Meh className="w-6 h-6 text-warning" />
                   </Button>
-                  <Button size="icon" variant="ghost" className="h-10 w-10 rounded-full hover:bg-success-background/10" onClick={() => handleFinishTiming('happy')}>
+                  <Button size="icon" variant="ghost" className="h-10 w-10 rounded-full hover:bg-success-background/10" onClick={() => handleFinishTiming('happy', false)}>
                     <Smile className="w-6 h-6 text-success" />
                   </Button>
-                  <Button variant="ghost" size="sm" className="font-bold text-muted-foreground" onClick={() => handleFinishTiming()}>Skip</Button>
+                  <Button variant="ghost" size="sm" className="font-bold text-muted-foreground" onClick={() => handleFinishTiming(undefined, false)}>Skip</Button>
                 </div>
               </div>
             </motion.div>
