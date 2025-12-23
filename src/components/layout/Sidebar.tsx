@@ -77,14 +77,8 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick }) => {
     { to: "/", icon: Home, label: "Dashboard" },
     { to: "/journey", icon: Trophy, label: "Journey" },
     { to: "/history", icon: BarChart, label: "History" },
-    { to: "/analytics", icon: BarChart3, label: "Analytics" }, // New Analytics link
-    {
-      label: "Habits (Analytics)", // Changed label
-      items: [
-        ...visibleHabits,
-        { to: "/create-habit", icon: PlusCircle, label: "Create New Habit" },
-      ],
-    },
+    { to: "/analytics", icon: BarChart3, label: "Analytics" },
+    { to: "/create-habit", icon: PlusCircle, label: "Create New Habit" }, // Moved out of 'Habits (Analytics)'
     { to: "/settings", icon: Settings, label: "Settings" },
     { to: "/help", icon: HelpCircle, label: "Help" },
   ];
@@ -105,35 +99,15 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick }) => {
       </div>
       <ScrollArea className="flex-1 overflow-auto py-2">
         <nav className="grid items-start px-4 text-sm font-medium lg:px-6 gap-1">
-          {navItems.map((section, index) => (
-            <div key={index}>
-              {section.items ? (
-                <>
-                  <div className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider mt-2">
-                    {section.label}
-                  </div>
-                  {section.items.map((item) => (
-                    <NavLink 
-                      key={item.to} 
-                      to={item.to} 
-                      icon={item.icon} 
-                      label={item.label} 
-                      currentPath={location.pathname} 
-                      onClick={onLinkClick} 
-                    />
-                  ))}
-                </>
-              ) : (
-                <NavLink 
-                  key={section.to} 
-                  to={section.to} 
-                  icon={section.icon} 
-                  label={section.label} 
-                  currentPath={location.pathname} 
-                  onClick={onLinkClick} 
-                />
-              )}
-            </div>
+          {navItems.map((item, index) => (
+            <NavLink 
+              key={item.to} 
+              to={item.to} 
+              icon={item.icon} 
+              label={item.label} 
+              currentPath={location.pathname} 
+              onClick={onLinkClick} 
+            />
           ))}
         </nav>
       </ScrollArea>
