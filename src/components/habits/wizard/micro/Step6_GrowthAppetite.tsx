@@ -1,0 +1,56 @@
+"use client";
+
+import React from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
+import { ShieldCheck, Zap, X } from 'lucide-react';
+import { WizardHabitData } from '@/hooks/useUserHabitWizardTemp';
+
+interface Props {
+  wizardData: Partial<WizardHabitData>;
+  setWizardData: React.Dispatch<React.SetStateAction<Partial<WizardHabitData>>>;
+}
+
+export const Step6_GrowthAppetite: React.FC<Props> = ({ wizardData, setWizardData }) => {
+  const options = [
+    { id: 'auto', label: 'Automatically', icon: Zap, desc: 'Grow it for me' },
+    { id: 'suggest', label: 'Suggest changes', icon: ShieldCheck, desc: 'Ask me first' },
+    { id: 'steady', label: 'Keep it steady', icon: X, desc: 'No growth' },
+  ];
+
+  return (
+    <Card className="border-border">
+      <CardContent className="p-4 space-y-4">
+        <div className="flex items-center gap-2 mb-2">
+          <Zap className="w-5 h-5 text-primary" />
+          <h3 className="font-bold text-lg">Do you want this to grow over time?</h3>
+        </div>
+        <div className="space-y-2">
+          {options.map((opt) => {
+            const isSelected = wizardData.growth_appetite === opt.id;
+            const Icon = opt.icon;
+            return (
+              <Button
+                key={opt.id}
+                type="button"
+                variant="outline"
+                className={cn(
+                  "w-full justify-start gap-3",
+                  isSelected && "bg-primary text-primary-foreground border-primary hover:bg-primary/90"
+                )}
+                onClick={() => setWizardData(prev => ({ ...prev, growth_appetite: opt.id as any }))}
+              >
+                <Icon className="w-5 h-5" />
+                <div className="flex flex-col items-start">
+                  <span className="font-bold">{opt.label}</span>
+                  <span className="text-[10px] opacity-70">{opt.desc}</span>
+                </div>
+              </Button>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
+  );
+};

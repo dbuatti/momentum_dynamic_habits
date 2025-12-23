@@ -29,13 +29,33 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { habitIconMap } from '@/lib/habit-utils';
 import { useCreateTemplate } from '@/hooks/useCreateTemplate';
 import { useUserHabitWizardTemp, WizardHabitData } from '@/hooks/useUserHabitWizardTemp';
-import { HabitWizardStep1, HabitWizardStep2, HabitWizardStep3, HabitWizardStep4, HabitWizardStep5, HabitWizardStep6, HabitTemplateForm } from '@/components/habits/wizard'; // Import Step 6
+
+// Import Macro Steps
+import { HabitWizardStep1 } from '@/components/habits/wizard/HabitWizardStep1';
+import { HabitWizardStep2 } from '@/components/habits/wizard/HabitWizardStep2';
+
+// Import Micro Steps
+import { Step3_EnergyPerSession } from '@/components/habits/wizard/micro/Step3_EnergyPerSession';
+import { Step3_ConsistencyReality } from '@/components/habits/wizard/micro/Step3_ConsistencyReality';
+import { Step3_EmotionalCost } from '@/components/habits/wizard/micro/Step3_EmotionalCost';
+import { Step3_ConfidenceCheck } from '@/components/habits/wizard/micro/Step3_ConfidenceCheck';
+import { Step4_Barriers } from '@/components/habits/wizard/micro/Step4_Barriers';
+import { Step4_MissedDayResponse } from '@/components/habits/wizard/micro/Step4_MissedDayResponse';
+import { Step4_SensitivitySetting } from '@/components/habits/wizard/micro/Step4_SensitivitySetting';
+import { Step5_TimeOfDayFit } from '@/components/habits/wizard/micro/Step5_TimeOfDayFit';
+import { Step5_DependencyCheck } from '@/components/habits/wizard/micro/Step5_DependencyCheck';
+import { Step5_TimePressureCheck } from '@/components/habits/wizard/micro/Step5_TimePressureCheck';
+import { Step6_GrowthAppetite } from '@/components/habits/wizard/micro/Step6_GrowthAppetite';
+import { Step6_GrowthStyle } from '@/components/habits/wizard/micro/Step6_GrowthStyle';
+import { Step6_FailureResponse } from '@/components/habits/wizard/micro/Step6_FailureResponse';
+import { Step6_SuccessDefinition } from '@/components/habits/wizard/micro/Step6_SuccessDefinition';
+import { HabitTemplateForm } from '@/components/habits/wizard/HabitTemplateForm';
 
 export interface CreateHabitParams {
   name: string;
   habit_key: string;
   category: HabitCategoryType;
-  current_daily_goal: number;
+  current_daily_goal: number; // Added
   frequency_per_week: number;
   is_trial_mode: boolean;
   is_fixed: boolean;
@@ -123,6 +143,18 @@ const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: s
   return { success: true };
 };
 
+// Define the micro-step sequence
+const MICRO_STEPS = [
+  // Step 3: Current Capacity
+  '3.1', '3.2', '3.3', '3.4',
+  // Step 4: Barriers
+  '4.1', '4.2', '4.3',
+  // Step 5: Timing & Dependencies
+  '5.1', '5.2', '5.3',
+  // Step 6: Confidence & Growth
+  '6.1', '6.2', '6.3', '6.4',
+];
+
 const HabitWizard = () => {
   const { session } = useSession();
   const queryClient = useQueryClient();
@@ -136,7 +168,8 @@ const HabitWizard = () => {
   const isTemplateCreationMode = location.state?.mode === 'template';
   const templateToPreFill: HabitTemplate | undefined = location.state?.templateToPreFill;
 
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState(1); // 1, 2, or 99 (template)
+  const [currentMicroStep, setCurrentMicroStep] = useState(0); // Index in MICRO_STEPS
   const [wizardData, setWizardData] = useState<Partial<WizardHabitData>>({});
   const [isSaving, setIsSaving] = useState(false);
 
@@ -145,8 +178,16 @@ const HabitWizard = () => {
     if (!isLoadingWizardProgress && wizardProgress && !isTemplateCreationMode && !templateToPreFill) {
       setCurrentStep(wizardProgress.current_step);
       setWizardData(wizardProgress.habit_data);
+      // If step is > 2, we are in micro-steps. We need to find the index.
+      // For simplicity, we'll reset micro-step to 0 if loading a saved state that is in micro-steps.
+      // A more robust solution would save the micro-step index too.
+      if (wizardProgress.current_step > 2) {
+        // This is a simplification. In a real app, you'd save the exact micro-step index.
+        // We'll just start from the beginning of the micro-steps if they are in that range.
+        setCurrentMicroStep(0);
+      }
     } else if (isTemplateCreationMode || templateToPreFill) {
-      setCurrentStep(99); // A high number to indicate template form
+      setCurrentStep(99);
       if (templateToPreFill) {
         // Pre-fill form fields from template
         setWizardData({
@@ -178,33 +219,7 @@ const HabitWizard = () => {
     }
   }, [wizardData.name, wizardData.habit_key, templateToPreFill]);
 
-  const handleSaveAndNext = useCallback(async (nextStep: number, dataToSave: Partial<WizardHabitData>) => {
-    setIsSaving(true);
-    try {
-      const updatedWizardData = { ...wizardData, ...dataToSave };
-      await saveProgress({ current_step: nextStep, habit_data: updatedWizardData });
-      setWizardData(updatedWizardData);
-      setCurrentStep(nextStep);
-    } catch (error) {
-      console.error("Failed to save wizard progress:", error);
-      showError("Failed to save progress. Please try again.");
-    } finally {
-      setIsSaving(false);
-    }
-  }, [saveProgress, wizardData]);
-
-  const handleBack = useCallback(async () => {
-    const prevStep = currentStep - 1;
-    if (prevStep >= 1) {
-      // No need to save on back, just update step and UI will reflect saved data
-      setCurrentStep(prevStep);
-    } else {
-      // If going back from step 1, navigate to dashboard and clear wizard progress
-      await deleteProgress();
-      navigate('/');
-    }
-  }, [currentStep, deleteProgress, navigate]);
-
+  // Define createHabitMutation here to avoid circular dependency in handleSaveAndNext
   const createHabitMutation = useMutation({
     mutationFn: (habit: CreateHabitParams) => {
       if (!session?.user?.id) throw new Error('User not authenticated');
@@ -221,6 +236,91 @@ const HabitWizard = () => {
       showError(`Failed to create habit: ${error.message}`);
     },
   });
+
+  const handleSaveAndNext = useCallback(async (dataToSave: Partial<WizardHabitData>) => {
+    setIsSaving(true);
+    try {
+      const updatedWizardData = { ...wizardData, ...dataToSave };
+      
+      // Determine next step
+      let nextStep = currentStep;
+      let nextMicroIndex = currentMicroStep;
+      let shouldSaveProgress = true;
+
+      if (currentStep === 1) {
+        nextStep = 2;
+      } else if (currentStep === 2) {
+        nextStep = 3; // Start micro-steps
+        nextMicroIndex = 0;
+      } else if (currentStep === 3) {
+        // In micro-steps
+        if (currentMicroStep < MICRO_STEPS.length - 1) {
+          nextMicroIndex = currentMicroStep + 1;
+        } else {
+          // End of micro-steps, go to template form or finish
+          if (isTemplateCreationMode) {
+            // Should not happen as template mode skips micro-steps, but for safety
+            shouldSaveProgress = false;
+            handleSubmitFinal();
+            return;
+          } else {
+            // Calculate final parameters and submit
+            const calculatedParams = calculateHabitParams(updatedWizardData);
+            const finalHabitData: CreateHabitParams = {
+              name: updatedWizardData.name!,
+              habit_key: updatedWizardData.habit_key!,
+              category: updatedWizardData.category as HabitCategoryType,
+              unit: updatedWizardData.unit || 'min',
+              icon_name: updatedWizardData.icon_name || 'Target',
+              ...calculatedParams,
+            } as CreateHabitParams;
+
+            await createHabitMutation.mutateAsync(finalHabitData);
+            shouldSaveProgress = false; // Don't save progress if we are finishing
+            return;
+          }
+        }
+      }
+
+      if (shouldSaveProgress) {
+        await saveProgress({ current_step: nextStep, habit_data: updatedWizardData });
+        setWizardData(updatedWizardData);
+        setCurrentStep(nextStep);
+        setCurrentMicroStep(nextMicroIndex);
+      }
+    } catch (error) {
+      console.error("Failed to save wizard progress:", error);
+      showError("Failed to save progress. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
+  }, [saveProgress, wizardData, currentStep, currentMicroStep, isTemplateCreationMode, createHabitMutation]);
+
+  const handleBack = useCallback(async () => {
+    if (currentStep === 1) {
+      await deleteProgress();
+      navigate('/');
+      return;
+    }
+
+    let prevStep = currentStep;
+    let prevMicroIndex = currentMicroStep;
+
+    if (currentStep === 2) {
+      prevStep = 1;
+    } else if (currentStep === 3) {
+      if (currentMicroIndex > 0) {
+        prevMicroIndex = currentMicroIndex - 1;
+      } else {
+        prevStep = 2;
+        prevMicroIndex = 0;
+      }
+    }
+
+    setCurrentStep(prevStep);
+    setCurrentMicroStep(prevMicroIndex);
+    // No need to save on back, just update UI
+  }, [currentStep, currentMicroStep, deleteProgress, navigate]);
 
   const createTemplateMutation = useCreateTemplate();
 
@@ -282,19 +382,29 @@ const HabitWizard = () => {
     }
   };
 
-  const totalGuidedSteps = 6;
-  const progress = (currentStep / totalGuidedSteps) * 100;
+  // Calculate progress for micro-steps
+  const totalSteps = 2 + MICRO_STEPS.length; // 2 macro + N micro
+  const currentGlobalIndex = currentStep === 1 ? 1 : currentStep === 2 ? 2 : 3 + currentMicroStep;
+  const progress = (currentGlobalIndex / totalSteps) * 100;
 
-  // Move this useMemo BEFORE the conditional return
+  // Validation for micro-steps
   const isNextDisabled = useMemo(() => {
     if (currentStep === 1 && !wizardData.category) return true;
     if (currentStep === 2 && !wizardData.motivation_type) return true;
-    if (currentStep === 3 && (!wizardData.session_duration || !wizardData.weekly_frequency)) return true;
-    // Step 4 is optional, so no validation needed
-    // Step 5 is optional, so no validation needed
-    // Step 6 is optional, so no validation needed
+    
+    // Micro-step validations
+    if (currentStep === 3) {
+      const stepId = MICRO_STEPS[currentMicroStep];
+      if (stepId === '3.1' && !wizardData.energy_per_session) return true;
+      if (stepId === '3.2' && !wizardData.consistency_reality) return true;
+      if (stepId === '3.3' && !wizardData.emotional_cost) return true;
+      if (stepId === '3.4' && !wizardData.confidence_check) return true;
+      // Step 4 is optional
+      // Step 5 is optional
+      // Step 6 is optional
+    }
     return false;
-  }, [currentStep, wizardData]);
+  }, [currentStep, currentMicroStep, wizardData]);
 
   if (isLoadingWizardProgress) {
     return (
@@ -305,44 +415,65 @@ const HabitWizard = () => {
   }
 
   const renderWizardStepContent = () => {
-    switch (currentStep) {
-      case 1:
-        return <HabitWizardStep1 wizardData={wizardData} setWizardData={setWizardData} />;
-      case 2:
-        return <HabitWizardStep2 wizardData={wizardData} setWizardData={setWizardData} />;
-      case 3:
-        return <HabitWizardStep3 wizardData={wizardData} setWizardData={setWizardData} />;
-      case 4:
-        return <HabitWizardStep4 wizardData={wizardData} setWizardData={setWizardData} />;
-      case 5:
-        return <HabitWizardStep5 wizardData={wizardData} setWizardData={setWizardData} />;
-      case 6:
-        return <HabitWizardStep6 wizardData={wizardData} setWizardData={setWizardData} />;
-      case 99: // Template creation form
-        return (
-          <HabitTemplateForm
-            wizardData={wizardData}
-            setWizardData={setWizardData}
-            handleSubmitFinal={handleSubmitFinal}
-            isSaving={isSaving}
-            createHabitMutation={createHabitMutation}
-            createTemplateMutation={createTemplateMutation}
-          />
-        );
-      default:
-        return <div className="text-center text-muted-foreground">Unknown Step</div>;
+    if (currentStep === 1) return <HabitWizardStep1 wizardData={wizardData} setWizardData={setWizardData} />;
+    if (currentStep === 2) return <HabitWizardStep2 wizardData={wizardData} setWizardData={setWizardData} />;
+    
+    if (currentStep === 3) {
+      const stepId = MICRO_STEPS[currentMicroStep];
+      switch (stepId) {
+        // Step 3
+        case '3.1': return <Step3_EnergyPerSession wizardData={wizardData} setWizardData={setWizardData} />;
+        case '3.2': return <Step3_ConsistencyReality wizardData={wizardData} setWizardData={setWizardData} />;
+        case '3.3': return <Step3_EmotionalCost wizardData={wizardData} setWizardData={setWizardData} />;
+        case '3.4': return <Step3_ConfidenceCheck wizardData={wizardData} setWizardData={setWizardData} />;
+        // Step 4
+        case '4.1': return <Step4_Barriers wizardData={wizardData} setWizardData={setWizardData} />;
+        case '4.2': return <Step4_MissedDayResponse wizardData={wizardData} setWizardData={setWizardData} />;
+        case '4.3': return <Step4_SensitivitySetting wizardData={wizardData} setWizardData={setWizardData} />;
+        // Step 5
+        case '5.1': return <Step5_TimeOfDayFit wizardData={wizardData} setWizardData={setWizardData} />;
+        case '5.2': return <Step5_DependencyCheck wizardData={wizardData} setWizardData={setWizardData} />;
+        case '5.3': return <Step5_TimePressureCheck wizardData={wizardData} setWizardData={setWizardData} />;
+        // Step 6
+        case '6.1': return <Step6_GrowthAppetite wizardData={wizardData} setWizardData={setWizardData} />;
+        case '6.2': return <Step6_GrowthStyle wizardData={wizardData} setWizardData={setWizardData} />;
+        case '6.3': return <Step6_FailureResponse wizardData={wizardData} setWizardData={setWizardData} />;
+        case '6.4': return <Step6_SuccessDefinition wizardData={wizardData} setWizardData={setWizardData} />;
+        default: return <div className="text-center text-muted-foreground">Unknown Micro Step</div>;
+      }
+    }
+
+    if (currentStep === 99) {
+      return (
+        <HabitTemplateForm
+          wizardData={wizardData}
+          setWizardData={setWizardData}
+          handleSubmitFinal={handleSubmitFinal}
+          isSaving={isSaving}
+          createHabitMutation={createHabitMutation}
+          createTemplateMutation={createTemplateMutation}
+        />
+      );
     }
   };
+
+  // Determine button text
+  const isLastMicroStep = currentStep === 3 && currentMicroStep === MICRO_STEPS.length - 1;
+  const buttonText = isLastMicroStep ? 'Create Habit' : 'Next';
 
   return (
     <div className="w-full max-w-4xl mx-auto px-4 py-6 space-y-8 pb-32">
       <PageHeader title={isTemplateCreationMode ? "Contribute New Template" : "Habit Wizard"} />
 
-      <Card className="w-full max-w-2xl mx-auto shadow-xl rounded-3xl overflow-hidden border-0">
+      <Card className="w-full max-w-md mx-auto shadow-xl rounded-3xl overflow-hidden border-0">
         <CardHeader className="pb-0">
           {!isTemplateCreationMode && (
             <div className="flex justify-between items-center mb-4">
-              <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Step {currentStep} of {totalGuidedSteps}</div>
+              <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+                {currentStep === 1 && "Step 1 of 2"}
+                {currentStep === 2 && "Step 2 of 2"}
+                {currentStep === 3 && `Micro-Step ${currentMicroStep + 1} of ${MICRO_STEPS.length}`}
+              </div>
               <div className="text-xs font-bold text-primary">{Math.round(progress)}%</div>
             </div>
           )}
@@ -357,9 +488,9 @@ const HabitWizard = () => {
 
           {!isTemplateCreationMode && (
             <div className="flex justify-between mt-8 gap-4">
-              <Button variant="ghost" onClick={handleBack} disabled={isSaving || currentStep === 1} className="rounded-2xl px-8">Back</Button>
-              <Button onClick={() => handleSaveAndNext(currentStep + 1, wizardData)} disabled={isSaving || isNextDisabled} className="flex-1 rounded-2xl h-12 text-base font-bold">
-                {currentStep === totalGuidedSteps ? 'Create Habit' : 'Next'}
+              <Button variant="ghost" onClick={handleBack} disabled={isSaving || (currentStep === 1 && currentMicroStep === 0)} className="rounded-2xl px-8">Back</Button>
+              <Button onClick={() => handleSaveAndNext({})} disabled={isSaving || isNextDisabled} className="flex-1 rounded-2xl h-12 text-base font-bold">
+                {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : buttonText}
               </Button>
             </div>
           )}

@@ -7,11 +7,40 @@ import { showError } from '@/utils/toast';
 
 // Define the structure for the wizard's habit data
 export interface WizardHabitData {
+  // Core Info
   name: string;
   habit_key: string;
   category: string;
   unit: 'min' | 'reps' | 'dose';
   icon_name: string;
+  short_description: string;
+  
+  // Step 1 & 2 (Macro)
+  motivation_type: 'stress_reduction' | 'skill_development' | 'health_improvement' | 'routine_building' | null;
+
+  // Step 3: Current Capacity (Micro)
+  energy_per_session: 'very_little' | 'a_bit' | 'moderate' | 'plenty' | null;
+  consistency_reality: '1-2_days' | '3-4_days' | 'most_days' | 'daily' | null;
+  emotional_cost: 'light' | 'some_resistance' | 'heavy' | null;
+  confidence_check: number | null; // 1-10
+
+  // Step 4: Barriers (Micro)
+  barriers: string[]; // ['forgetting', 'time_pressure', 'overwhelm', 'perfectionism', 'mood', 'boredom']
+  missed_day_response: 'keep_going' | 'discouraged' | 'stop_completely' | null;
+  sensitivity_setting: 'gentle' | 'neutral' | 'direct' | null;
+
+  // Step 5: Timing & Dependencies (Micro)
+  time_of_day_fit: 'morning' | 'afternoon' | 'evening' | 'flexible' | null;
+  dependency_check: 'after_waking' | 'after_work' | 'after_another_habit' | 'none' | null;
+  time_pressure_check: 'always' | 'only_if_time' | 'decide_later' | null;
+
+  // Step 6: Confidence & Growth (Micro)
+  growth_appetite: 'auto' | 'suggest' | 'steady' | null;
+  growth_style: 'duration' | 'frequency' | 'both' | null;
+  failure_response: 'reduce' | 'pause' | 'ask' | null;
+  success_definition: 'sometimes' | 'most_weeks' | 'automatic' | null;
+
+  // Calculated/Inferred Fields (for final habit creation)
   daily_goal: number;
   frequency_per_week: number;
   is_trial_mode: boolean;
@@ -24,29 +53,14 @@ export interface WizardHabitData {
   plateau_days_required: number;
   window_start: string | null;
   window_end: string | null;
-  short_description: string;
-  // Step 3 fields
-  session_duration: number; // Minutes per session
-  weekly_frequency: number; // Days per week (redundant with frequency_per_week but clearer for user)
-  barriers: string[]; // e.g., ['time', 'energy', 'focus']
-  confidence_level: number; // 1-10
-  motivation_type: 'stress_reduction' | 'skill_development' | 'health_improvement' | 'routine_building' | null;
-  // Step 5 fields
-  timing_preference?: string; // 'morning', 'midday', etc.
+  carryover_enabled: boolean;
+  
+  // Additional fields for micro-step flow
+  timing_preference?: string;
   flexibility?: 'strict' | 'flexible' | 'none';
   sequence_bias?: 'early' | 'after_core' | 'energy_based';
   soft_lock?: boolean;
-  carryover_enabled?: boolean;
   safety_net_choice?: 'none' | 'rollover' | 'gentle';
-  // Step 6 fields
-  confidence?: {
-    baseline?: 'low' | 'medium' | 'high';
-    growth_appetite?: 'fixed' | 'suggested' | 'auto';
-    growth_style?: string[]; // ['frequency', 'duration', 'hybrid', 'flexible']
-    failure_protection?: string[]; // ['pause', 'reduce', 'pressure', 'ask']
-    abandon_reasons?: string[]; // ['overwhelm', 'shame', 'chaos', 'purpose', 'interest']
-    success_definition?: 'sometimes' | 'mostly' | 'automatic' | 'unknown';
-  };
 }
 
 export interface UserHabitWizardTemp {
