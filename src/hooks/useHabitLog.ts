@@ -298,11 +298,13 @@ const unlogHabit = async ({ userId, completedTaskId }: { userId: string, complet
   console.log(`[XP Debug]   xp_earned to revert: ${task.xp_earned}`);
   console.log(`[XP Debug]   lifetimeProgressDecrementValue: ${lifetimeProgressDecrementValue}`);
 
+  // 1. Decrement lifetime progress
   await supabase.rpc('increment_lifetime_progress', {
     p_user_id: userId, p_habit_key: task.original_source, p_increment_value: -Math.round(lifetimeProgressDecrementValue),
   });
   console.log(`[useHabitLog:unlogHabit] Lifetime progress decremented for ${task.original_source}.`);
 
+  // 2. Update profile XP and tasks_completed_today
   if (profileData) {
     const newXp = Math.max(0, (profileData.xp || 0) - (task.xp_earned || 0));
     await supabase.from('profiles').update({
@@ -313,44 +315,43 @@ const unlogHabit = async ({ userId, completedTaskId }: { userId: string, complet
     console.log(`[useHabitLog:unlogHabit] User profile ${userId} XP and tasks completed today updated.`);
   }
 
-  // Recalculate carryover_value after unlogging
-  const { data: completedTodayAfterUnlog } = await supabase.rpc('get_completed_tasks_today', { 
-    p_user_id: userId, p_timezone: timezone 
-  });
-  let totalDailyProgressAfterUnlog = 0;
-  (completedTodayAfterUnlog || []).filter((t: any) => t.original_source === task.original_source && t.id !== task.id).forEach((t: any) => {
-    if (userHabitData.unit === 'min') totalDailyProgressAfterUnlog += (t.duration_used || 0) / 60;
-    else if (userHabitData.unit === 'reps' || userHabitData.unit === 'dose') totalDailyProgressAfterUnlog += (t.xp_earned || 0) / (userHabitData.xp_per_unit ?? 1); // Safely use xp_per_unit
-    else totalDailyProgressAfterUnlog += 1;
-  });
-  console.log(`[useHabitLog:unlogHabit] Total daily progress after unlog for ${task.original_source}: ${totalDailyProgressAfterUnlog}`);
-
-  const surplusAfterUnlog = totalDailyProgressAfterUnlog - userHabitData.current_daily_goal;
-  const newCarryoverValueAfterUnlog = Math.max(0, surplusAfterUnlog);
-  console.log(`[useHabitLog:unlogHabit] Calculated surplus after unlog: ${surplusAfterUnlog}, newCarryoverValueAfterUnlog: ${newCarryoverValueAfterUnlog}`);
-
-  await supabase.from('user_habits').update({
-    carryover_value: newCarryoverValueAfterUnlog,
-  }).eq('id', userHabitData.id);
-  console.log(`[useHabitLog:unlogHabit] Updated carryover_value for ${task.original_source} to ${newCarryoverValueAfterUnlog}.`);
-
-  // Decrement completions_in_plateau if unlogging causes goal to be unmet for today
-  const isGoalMetAfterUnlog = totalDailyProgressAfterUnlog >= userHabitData.current_daily_goal;
-  console.log(`[useHabitLog:unlogHabit] Is goal met after unlog: ${isGoalMetAfterUnlog}, current completions_in_plateau: ${userHabitData.completions_in_plateau}`);
-
-  if (!isGoalMetAfterUnlog && userHabitData.completions_in_plateau > 0) {
-    await supabase.from('user_habits').update({
-      completions_in_plateau: Math.round(userHabitData.completions_in_plateau - 1), // Round here
-    }).eq('id', userHabitData.id);
-    console.log(`[useHabitLog:unlogHabit] Decremented completions_in_plateau for ${task.original_source}.`);
-  }
-
+  // 3. DELETE THE COMPLETED TASK FIRST
   const { error: deleteError } = await supabase.from('completedtasks').delete().eq('id', completedTaskId);
   if (deleteError) {
     console.error(`[useHabitLog:unlogHabit] Error deleting completed task ${completedTaskId}:`, deleteError);
     throw deleteError;
   }
   console.log(`[useHabitLog:unlogHabit] Completed task ${completedTaskId} deleted successfully.`);
+
+  // 4. Recalculate daily progress *after* deletion
+  const { data: completedTodayAfterUnlog } = await supabase.rpc('get_completed_tasks_today', { 
+    p_user_id: userId, p_timezone: timezone 
+  });
+  let totalDailyProgressAfterUnlog = 0;
+  (completedTodayAfterUnlog || []).filter((t: any) => t.original_source === task.original_source).forEach((t: any) => {
+    if (userHabitData.unit === 'min') totalDailyProgressAfterUnlog += (t.duration_used || 0) / 60;
+    else if (userHabitData.unit === 'reps' || userHabitData.unit === 'dose') totalDailyProgressAfterUnlog += (t.xp_earned || 0) / (userHabitData.xp_per_unit ?? 1);
+    else totalDailyProgressAfterUnlog += 1;
+  });
+  console.log(`[useHabitLog:unlogHabit] Total daily progress after unlog for ${task.original_source}: ${totalDailyProgressAfterUnlog}`);
+
+  // 5. Recalculate carryover_value and completions_in_plateau based on new totalDailyProgressAfterUnlog
+  const surplusAfterUnlog = totalDailyProgressAfterUnlog - userHabitData.current_daily_goal;
+  const newCarryoverValueAfterUnlog = Math.max(0, surplusAfterUnlog);
+  await supabase.from('user_habits').update({
+    carryover_value: newCarryoverValueAfterUnlog,
+  }).eq('id', userHabitData.id);
+  console.log(`[useHabitLog:unlogHabit] Updated carryover_value for ${task.original_source} to ${newCarryoverValueAfterUnlog}.`);
+
+  const isGoalMetAfterUnlog = totalDailyProgressAfterUnlog >= userHabitData.current_daily_goal;
+  console.log(`[useHabitLog:unlogHabit] Is goal met after unlog: ${isGoalMetAfterUnlog}, current completions_in_plateau: ${userHabitData.completions_in_plateau}`);
+
+  if (!isGoalMetAfterUnlog && userHabitData.completions_in_plateau > 0) {
+    await supabase.from('user_habits').update({
+      completions_in_plateau: Math.round(userHabitData.completions_in_plateau - 1),
+    }).eq('id', userHabitData.id);
+    console.log(`[useHabitLog:unlogHabit] Decremented completions_in_plateau for ${task.original_source}.`);
+  }
 
   return { success: true };
 };

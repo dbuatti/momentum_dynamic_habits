@@ -68,13 +68,16 @@ const Index = () => {
         const threshold = (i + 1) * chunkValue;
         const isCompleted = dbCapsule?.is_completed || progress >= (i === numChunks - 1 ? goal : threshold);
 
+        const calculatedInitialValue = Math.max(0, Math.min(chunkValue, progress - (i * chunkValue)));
+        console.log('[Index] Calculating capsule initialValue for', { habitKey: habit.key, index: i, progress, chunkValue, calculatedInitialValue });
+
         return {
           id: `${habit.key}-${i}`,
           habitKey: habit.key,
           index: i,
           label: habit.auto_chunking ? `Part ${i + 1}` : (habit.enable_chunks ? `Part ${i + 1}` : (habit.is_trial_mode ? 'Trial Session' : 'Daily Goal')),
           value: chunkValue,
-          initialValue: Math.max(0, Math.min(chunkValue, progress - (i * chunkValue))),
+          initialValue: calculatedInitialValue, // This is the key line
           unit: habit.unit,
           isCompleted,
           scheduledTime: dbCapsule?.scheduled_time,
