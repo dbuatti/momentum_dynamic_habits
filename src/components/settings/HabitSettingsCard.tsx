@@ -140,7 +140,14 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
                    />
                    <Select 
                      value={habitUnit} 
-                     onValueChange={(value) => onUpdateHabitField(habit.id, { unit: value })}
+                     onValueChange={async (newValue) => {
+                       const updates: Partial<UserHabitRecord> = { unit: newValue as 'min' | 'reps' | 'dose' };
+                       // If changing to 'dose' and current goal is not 1, suggest 1
+                       if (newValue === 'dose' && habit.current_daily_goal !== 1) {
+                         updates.current_daily_goal = 1;
+                       }
+                       await onUpdateHabitField(habit.id, updates);
+                     }}
                    >
                      <SelectTrigger className="h-11 w-[100px] rounded-xl font-bold text-base">
                        <SelectValue placeholder="Unit" />

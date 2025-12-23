@@ -236,7 +236,13 @@ export const EditHabitDetailsModal: React.FC<EditHabitDetailsModalProps> = ({
 
               <div className="space-y-2">
                 <Label htmlFor="unit">Unit</Label>
-                <Select value={unit} onValueChange={(value: 'min' | 'reps' | 'dose') => setUnit(value)}>
+                <Select value={unit} onValueChange={(value: 'min' | 'reps' | 'dose') => {
+                  setUnit(value);
+                  // If changing to 'dose' and current dailyGoal is not 1, suggest 1
+                  if (value === 'dose' && dailyGoal !== 1) {
+                    setDailyGoal(1);
+                  }
+                }}>
                   <SelectTrigger id="unit" className="h-12 rounded-xl">
                     <SelectValue placeholder="Select unit" />
                   </SelectTrigger>
