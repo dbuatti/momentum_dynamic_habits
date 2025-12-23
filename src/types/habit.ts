@@ -40,6 +40,7 @@ export interface UserHabitRecord {
   growth_phase: GrowthPhase;
   window_start: string | null;
   window_end: string | null;
+  days_of_week: number[];
 }
 
 export interface PianoHabit extends Habit {

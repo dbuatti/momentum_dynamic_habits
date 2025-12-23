@@ -2,7 +2,7 @@
 
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import HomeHeader from "@/components/HomeHeader";
-import { BookOpen, Dumbbell, Music, Wind, Home, Code, Sparkles, Pill, LayoutGrid, ListTodo, Zap, Lock, CheckCircle2, Timer, Sparkle, Target, Calendar, Anchor } from "lucide-react";
+import { BookOpen, Dumbbell, Music, Wind, Home, Code, Sparkles, Pill, LayoutGrid, ListTodo, Zap, Lock, CheckCircle2, Timer, Sparkle, Target, Calendar, Anchor, Clock } from "lucide-react";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { DashboardSkeleton } from "@/components/dashboard/DashboardSkeleton";
 import { HabitCapsule } from "@/components/dashboard/HabitCapsule";
@@ -49,7 +49,7 @@ const Index = () => {
     return data.habits.map(habit => {
       const goal = habit.dailyGoal;
       const progress = habit.dailyProgress;
-      const numCapsules = 1; // Simplified: one timer per session as requested
+      const numCapsules = 1; 
       const capsuleValue = goal;
 
       const capsules = Array.from({ length: numCapsules }).map((_, i) => {
@@ -80,17 +80,18 @@ const Index = () => {
     });
   }, [data?.habits, dbCapsules]);
 
+  // Use isVisible (day of week check) and optionally show only if WithinWindow for top section
   const anchorHabits = useMemo(() => habitGroups.filter(h => h.category === 'anchor' && h.isVisible), [habitGroups]);
   const dailyHabits = useMemo(() => {
     return habitGroups
-      .filter(h => h.category === 'daily')
+      .filter(h => h.category === 'daily' && h.isVisible)
       .sort((a, b) => (a.allCompleted === b.allCompleted ? 0 : a.allCompleted ? 1 : -1));
   }, [habitGroups]);
 
   useEffect(() => {
     if (habitGroups.length === 0) return;
     if (expandedItems.length === 0) {
-      setExpandedItems(habitGroups.filter(h => !h.allCompleted && h.isVisible).map(h => h.key));
+      setExpandedItems(habitGroups.filter(h => h.isVisible && !h.allCompleted && h.isWithinWindow).map(h => h.key));
     }
   }, [habitGroups]);
 
@@ -127,7 +128,8 @@ const Index = () => {
         value={habit.key}
         className={cn(
           "border-2 rounded-3xl shadow-sm overflow-hidden transition-all bg-card",
-          habit.allCompleted ? "opacity-60 grayscale-[0.2]" : accentColor
+          habit.allCompleted ? "opacity-60 grayscale-[0.2]" : accentColor,
+          !habit.isWithinWindow && !habit.allCompleted && "opacity-75"
         )}
       >
         <AccordionTrigger className="px-6 py-5 hover:no-underline">
@@ -141,9 +143,23 @@ const Index = () => {
                   {habit.name}
                   {habit.allCompleted && <CheckCircle2 className="w-5 h-5 text-green-500" />}
                 </h3>
-                <p className="text-sm opacity-70 font-bold">
-                  {habit.is_trial_mode ? `Trial: ${habit.weekly_completions}/${habit.frequency_per_week} weekly` : `${habit.dailyGoal} ${habit.unit} goal`}
-                </p>
+                <div className="flex items-center gap-2 mt-1">
+                  <p className="text-sm opacity-70 font-bold">
+                    {habit.is_trial_mode ? `Trial: ${habit.weekly_completions}/${habit.frequency_per_week} weekly` : `${habit.dailyGoal} ${habit.unit} goal`}
+                  </p>
+                  {!habit.allCompleted && (
+                    <span className={cn(
+                      "text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full flex items-center gap-1",
+                      habit.isWithinWindow ? "bg-green-500 text-white" : "bg-muted text-muted-foreground"
+                    )}>
+                      {habit.isWithinWindow ? (
+                        <>Available now</>
+                      ) : (
+                        <><Clock className="w-2.5 h-2.5" /> Later ({habit.window_start}-{habit.window_end})</>
+                      )}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -191,9 +207,11 @@ const Index = () => {
           {/* Anchor Practices Section */}
           {anchorHabits.length > 0 && (
             <div className="space-y-4">
-              <div className="flex items-center gap-2 px-1">
-                <Anchor className="w-5 h-5 text-primary" />
-                <h2 className="text-lg font-black uppercase tracking-widest text-primary/80">Anchor Practices</h2>
+              <div className="flex items-center justify-between px-1">
+                <div className="flex items-center gap-2">
+                  <Anchor className="w-5 h-5 text-primary" />
+                  <h2 className="text-lg font-black uppercase tracking-widest text-primary/80">Anchor Practices</h2>
+                </div>
               </div>
               <Accordion type="multiple" value={expandedItems} onValueChange={setExpandedItems} className="space-y-4">
                 {anchorHabits.map(renderHabitItem)}

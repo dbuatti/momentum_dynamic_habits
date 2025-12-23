@@ -13,9 +13,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
 import { SettingsSkeleton } from '@/components/dashboard/SettingsSkeleton';
 import { Switch } from '@/components/ui/switch';
-import { Brain, Zap, Lock, LogOut, Heart, Volume2, Play, Bell, Trophy, Anchor, Target, Clock } from 'lucide-react';
+import { Brain, Zap, Lock, LogOut, Heart, Volume2, Play, Bell, Trophy, Anchor, Target, Clock, Calendar } from 'lucide-react';
 import { playStartSound, playEndSound, playGoalSound } from '@/utils/audio';
 import { cn } from "@/lib/utils";
+
+const days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
 const Settings = () => {
   const { session, signOut } = useSession();
@@ -35,6 +37,16 @@ const Settings = () => {
       queryClient.invalidateQueries({ queryKey: ['journeyData'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardData'] });
     }
+  };
+
+  const toggleDay = (habitId: string, currentDays: number[], dayIndex: number) => {
+    let newDays;
+    if (currentDays.includes(dayIndex)) {
+      newDays = currentDays.filter(d => d !== dayIndex);
+    } else {
+      newDays = [...currentDays, dayIndex].sort();
+    }
+    updateHabitField(habitId, { days_of_week: newDays });
   };
 
   return (
@@ -108,6 +120,26 @@ const Settings = () => {
                 <div className="space-y-1.5">
                   <Label className="text-[10px] font-black uppercase opacity-60">Frequency (weekly)</Label>
                   <Input type="number" min="1" max="7" className="h-8 rounded-xl" defaultValue={habit.frequency_per_week} onBlur={(e) => updateHabitField(habit.id, { frequency_per_week: parseInt(e.target.value) })} />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase opacity-60">Scheduled Days</Label>
+                <div className="flex justify-between gap-1">
+                  {days.map((day, idx) => {
+                    const isSelected = habit.days_of_week?.includes(idx);
+                    return (
+                      <Button
+                        key={idx}
+                        size="sm"
+                        variant={isSelected ? "default" : "outline"}
+                        className={cn("h-8 w-8 rounded-lg p-0 text-[10px] font-black", isSelected ? "bg-primary" : "bg-white")}
+                        onClick={() => toggleDay(habit.id, habit.days_of_week || [], idx)}
+                      >
+                        {day}
+                      </Button>
+                    );
+                  })}
                 </div>
               </div>
 

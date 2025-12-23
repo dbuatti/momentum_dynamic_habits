@@ -16,6 +16,7 @@ const fetchDashboardData = async (userId: string) => {
   if (profileError) throw new Error('Failed to fetch Profile');
   const timezone = profile?.timezone || 'UTC';
   const today = new Date();
+  const currentDayOfWeek = today.getDay();
 
   const [
     { data: habits, error: habitsError },
@@ -64,14 +65,21 @@ const fetchDashboardData = async (userId: string) => {
     const dailyProgress = dailyProgressMap.get(h.habit_key) || 0;
     const dailyGoal = h.current_daily_goal;
     
-    // Check if within availability window
-    let isVisible = true;
+    // Check Day of Week
+    const isScheduledForToday = h.days_of_week ? h.days_of_week.includes(currentDayOfWeek) : true;
+
+    // Check Time Window
+    let isWithinWindow = true;
     if (h.window_start && h.window_end) {
       const now = new Date();
       const start = parse(h.window_start, 'HH:mm', now);
       const end = parse(h.window_end, 'HH:mm', now);
-      isVisible = isWithinInterval(now, { start, end });
+      isWithinWindow = isWithinInterval(now, { start, end });
     }
+
+    // Visibility: It's visible if it's scheduled for today. 
+    // It's "available" if isWithinWindow is true.
+    const isVisible = isScheduledForToday;
 
     // Weekly progress calculation
     const weeklyCompletions = Array.from(weeklyCompletionMap.keys())
@@ -91,6 +99,9 @@ const fetchDashboardData = async (userId: string) => {
       frequency_per_week: h.frequency_per_week,
       weekly_completions: weeklyCompletions,
       isVisible,
+      isWithinWindow,
+      window_start: h.window_start,
+      window_end: h.window_end,
     };
   });
 
