@@ -6,8 +6,8 @@
 const START_SOUND_URL = 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3'; 
 // Confirmed magical shimmer
 const END_SOUND_URL = 'https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3';   
-// Swapped to a standard Snappy Ding from the same source category
-const GOAL_SOUND_URL = 'https://assets.mixkit.co/active_storage/sfx/2566/2566-preview.mp3'; 
+// REPLACED with a short, clean 1-second 'Happy Ding'
+const GOAL_SOUND_URL = 'https://assets.mixkit.co/active_storage/sfx/1110/1110-preview.mp3'; 
 
 export const playStartSound = () => {
   console.log('🔊 Playing start chime');
@@ -26,13 +26,8 @@ export const playEndSound = () => {
 export const playGoalSound = () => {
   console.log('🔔 Playing target hit alert');
   const audio = new Audio(GOAL_SOUND_URL);
-  audio.volume = 1.0;
+  audio.volume = 0.8; // Reduced slightly from 1.0 to avoid distortion
   
-  // Provide haptic feedback if available
-  if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
-    window.navigator.vibrate([100, 50, 100]);
-  }
-
   // Explicitly load before playing to ensure buffer is ready
   audio.load();
   audio.play().catch(err => console.error('Audio goal failed:', err));
