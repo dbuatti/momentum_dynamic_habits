@@ -30,7 +30,7 @@ export interface WizardHabitData {
   sensitivity_setting: 'gentle' | 'neutral' | 'direct' | null;
 
   // Step 5: Timing & Dependencies (Micro)
-  time_of_day_fit: 'morning' | 'afternoon' | 'evening' | 'flexible' | null;
+  time_of_day_fit: 'morning' | 'midday' | 'afternoon' | 'evening' | 'anytime' | null; // Updated options
   dependency_check: 'after_waking' | 'after_work' | 'after_another_habit' | 'none' | null;
   time_pressure_check: 'always' | 'only_if_time' | 'decide_later' | null;
 
@@ -53,10 +53,10 @@ export interface WizardHabitData {
   plateau_days_required: number;
   window_start: string | null;
   window_end: string | null;
-  carryover_enabled: boolean;
+  carryover_enabled: boolean; // New field
   
-  // Additional fields for micro-step flow
-  timing_preference?: string;
+  // Additional fields for micro-step flow (these are temporary and not directly mapped to DB)
+  timing_preference?: string; // This is the ID from timeOfDayOptions, not window_start/end
   flexibility?: 'strict' | 'flexible' | 'none';
   sequence_bias?: 'early' | 'after_core' | 'energy_based';
   soft_lock?: boolean;

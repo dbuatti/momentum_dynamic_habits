@@ -27,6 +27,7 @@ import { UserHabitRecord, HabitCategory } from '@/types/habit';
 import { useJourneyData } from '@/hooks/useJourneyData';
 import { useCreateTemplate } from '@/hooks/useCreateTemplate';
 import { useUserHabitWizardTemp, WizardHabitData } from '@/hooks/useUserHabitWizardTemp';
+import { calculateHabitParams } from '@/utils/habit-wizard-utils'; // Import new utility
 
 // Macro Steps
 import { HabitWizardStep1 } from '@/components/habits/wizard/HabitWizardStep1';
@@ -48,6 +49,7 @@ import { Step6_GrowthStyle } from '@/components/habits/wizard/micro/Step6_Growth
 import { Step6_FailureResponse } from '@/components/habits/wizard/micro/Step6_FailureResponse';
 import { Step6_SuccessDefinition } from '@/components/habits/wizard/micro/Step6_SuccessDefinition';
 import { HabitTemplateForm } from '@/components/habits/wizard/HabitTemplateForm';
+import { HabitReviewStep } from '@/pages/HabitReview'; // Corrected import path to the page component
 
 export interface CreateHabitParams {
   name: string;
@@ -68,6 +70,7 @@ export interface CreateHabitParams {
   window_start: string | null;
   window_end: string | null;
   carryover_enabled: boolean;
+  short_description?: string; // For templates
 }
 
 const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: string; habit: CreateHabitParams; neurodivergentMode: boolean }) => {
@@ -140,70 +143,13 @@ const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: s
   return { success: true };
 };
 
-const MACRO_STEPS = [1, 2, 3, 4, 5, 6]; // Represents the main steps
+const MACRO_STEPS = [1, 2, 3, 4, 5, 6, 7]; // Added step 7 for review
 const MICRO_STEPS_MAP: { [key: number]: string[] } = {
   3: ['3.1', '3.2', '3.3', '3.4'],
   4: ['4.1', '4.2', '4.3'],
   5: ['5.1', '5.2', '5.3'],
   6: ['6.1', '6.2', '6.3', '6.4'],
-};
-
-const calculateHabitParams = (data: Partial<WizardHabitData>): Partial<CreateHabitParams> => {
-  let dailyGoal = 15;
-  let frequency = 3;
-
-  if (data.energy_per_session === 'very_little') dailyGoal = 5;
-  if (data.energy_per_session === 'a_bit') dailyGoal = 10;
-  if (data.energy_per_session === 'moderate') dailyGoal = 20;
-  if (data.energy_per_session === 'plenty') dailyGoal = 30;
-
-  if (data.consistency_reality === '1-2_days') frequency = 2;
-  if (data.consistency_reality === '3-4_days') frequency = 3;
-  if (data.consistency_reality === 'most_days') frequency = 5;
-  if (data.consistency_reality === 'daily') frequency = 7;
-
-  let isTrial = false;
-  let isFixed = false;
-  let plateauDays = 7;
-
-  const confidence = data.confidence_check || 5;
-  if (confidence < 4) plateauDays = 14;
-  else if (confidence > 7) plateauDays = 5;
-
-  if (data.emotional_cost === 'heavy') isTrial = true;
-
-  if (data.growth_appetite === 'steady') isFixed = true;
-
-  const autoChunking = data.energy_per_session === 'plenty' || data.energy_per_session === 'moderate';
-  const anchorPractice = data.motivation_type === 'routine_building' || data.motivation_type === 'stress_reduction';
-
-  let xpPerUnit = 30;
-  let energyCostPerUnit = 6;
-  if (data.unit === 'reps') { xpPerUnit = 1; energyCostPerUnit = 0.5; }
-  if (data.unit === 'dose') { xpPerUnit = 10; energyCostPerUnit = 0; }
-
-  let windowStart = null;
-  let windowEnd = null;
-  if (data.time_of_day_fit === 'morning') { windowStart = '06:00'; windowEnd = '10:00'; }
-  if (data.time_of_day_fit === 'afternoon') { windowStart = '10:00'; windowEnd = '14:00'; }
-  if (data.time_of_day_fit === 'evening') { windowStart = '18:00'; windowEnd = '22:00'; }
-
-  const carryoverEnabled = data.time_pressure_check === 'only_if_time' || data.time_pressure_check === 'decide_later';
-
-  return {
-    current_daily_goal: dailyGoal,
-    frequency_per_week: frequency,
-    is_trial_mode: isTrial,
-    is_fixed: isFixed,
-    anchor_practice: anchorPractice,
-    auto_chunking: autoChunking,
-    xp_per_unit: xpPerUnit,
-    energy_cost_per_unit: energyCostPerUnit,
-    plateau_days_required: plateauDays,
-    window_start: windowStart,
-    window_end: windowEnd,
-    carryover_enabled: carryoverEnabled,
-  };
+  7: ['review'], // Single micro-step for review
 };
 
 const HabitWizard = () => {
@@ -220,7 +166,7 @@ const HabitWizard = () => {
   const templateToPreFill: HabitTemplate | undefined = location.state?.templateToPreFill;
 
   const [currentStep, setCurrentStep] = useState(1);
-  const [currentMicroStepIndex, setCurrentMicroStepIndex] = useState(0); // Renamed for clarity
+  const [currentMicroStepIndex, setCurrentMicroStepIndex] = useState(0);
   const [wizardData, setWizardData] = useState<Partial<WizardHabitData>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [hasLoadedInitialProgress, setHasLoadedInitialProgress] = useState(false);
@@ -257,26 +203,17 @@ const HabitWizard = () => {
       return;
     }
 
+    const inferredParams = calculateHabitParams(wizardData, neurodivergentMode);
+
     const habitData: CreateHabitParams = {
       name: wizardData.name!,
       habit_key: wizardData.habit_key.toLowerCase().replace(/\s/g, '_'),
       category: wizardData.category as HabitCategory,
-      current_daily_goal: wizardData.daily_goal || 1,
-      frequency_per_week: wizardData.frequency_per_week || 1,
-      is_trial_mode: wizardData.is_trial_mode || false,
-      is_fixed: wizardData.is_fixed || false,
-      anchor_practice: wizardData.anchor_practice || false,
-      auto_chunking: wizardData.auto_chunking || false,
       unit: wizardData.unit || 'min',
-      xp_per_unit: wizardData.xp_per_unit || 0,
-      energy_cost_per_unit: wizardData.energy_cost_per_unit || 0,
       icon_name: wizardData.icon_name || 'Target',
-      dependent_on_habit_id: wizardData.dependent_on_habit_id || null,
-      plateau_days_required: wizardData.plateau_days_required || 7,
-      window_start: wizardData.window_start || null,
-      window_end: wizardData.window_end || null,
-      carryover_enabled: wizardData.carryover_enabled || false,
-    };
+      short_description: wizardData.short_description || '',
+      ...inferredParams,
+    } as CreateHabitParams;
 
     if (isTemplateCreationMode) {
       createTemplateMutation.mutate({
@@ -286,7 +223,7 @@ const HabitWizard = () => {
         default_frequency: habitData.frequency_per_week,
         default_duration: habitData.current_daily_goal,
         default_mode: habitData.is_fixed ? 'Fixed' : (habitData.is_trial_mode ? 'Trial' : 'Growth'),
-        default_chunks: 1,
+        default_chunks: 1, // Templates default to 1 chunk, auto-chunking handles more
         auto_chunking: habitData.auto_chunking,
         anchor_practice: habitData.anchor_practice,
         unit: habitData.unit,
@@ -294,7 +231,7 @@ const HabitWizard = () => {
         energy_cost_per_unit: habitData.energy_cost_per_unit,
         icon_name: habitData.icon_name,
         plateau_days_required: habitData.plateau_days_required,
-        short_description: wizardData.short_description || '',
+        short_description: habitData.short_description || '',
         is_public: true,
       });
     } else {
@@ -308,15 +245,10 @@ const HabitWizard = () => {
       setWizardData(wizardProgress.habit_data);
       // If loading from saved progress, ensure micro-step index is correctly set
       if (wizardProgress.current_step > 2) {
-        // This logic needs to be more robust if micro-steps are not sequential or can be skipped
-        // For now, assuming sequential progress within micro-steps
         const microStepsForCurrentMacro = MICRO_STEPS_MAP[wizardProgress.current_step];
         if (microStepsForCurrentMacro) {
-          // Find the last completed micro-step or default to 0
-          let lastCompletedMicroIndex = 0;
-          // This part is tricky as habit_data doesn't explicitly store micro-step completion
-          // We'd need to infer it from the presence of data fields
-          // For simplicity, let's just start at the beginning of the macro step for now
+          // For simplicity, when loading saved progress, we'll start at the first micro-step of the current macro step.
+          // A more advanced implementation might try to infer the exact micro-step.
           setCurrentMicroStepIndex(0); 
         }
       } else {
@@ -365,13 +297,7 @@ const HabitWizard = () => {
       let nextMicroStepIdx = currentMicroStepIndex;
       let shouldSaveProgress = true;
 
-      if (currentStep === 1) {
-        nextMacroStep = 2;
-        nextMicroStepIdx = 0;
-      } else if (currentStep === 2) {
-        nextMacroStep = 3;
-        nextMicroStepIdx = 0;
-      } else if (currentStep >= 3 && currentStep <= 6) { // Handle micro-steps within macro steps 3-6
+      if (currentStep >= 1 && currentStep <= 6) { // Handle micro-steps within macro steps 1-6
         const microStepsForCurrentMacro = MICRO_STEPS_MAP[currentStep];
         if (microStepsForCurrentMacro && nextMicroStepIdx < microStepsForCurrentMacro.length - 1) {
           nextMicroStepIdx++;
@@ -382,20 +308,22 @@ const HabitWizard = () => {
         }
       }
 
-      if (nextMacroStep > 6) { // All steps completed
+      if (nextMacroStep > MACRO_STEPS[MACRO_STEPS.length - 1]) { // All steps completed, including review
+        // This case should ideally not be reached if the final action is handled in HabitReviewStep
+        // But as a fallback, if somehow we pass the review step, finalize.
         if (isTemplateCreationMode) {
-          shouldSaveProgress = false; // Template creation handles its own save
+          shouldSaveProgress = false;
           handleSubmitFinal();
           return;
         } else {
-          const calculatedParams = calculateHabitParams(updatedWizardData);
+          const inferredParams = calculateHabitParams(updatedWizardData, neurodivergentMode);
           const finalHabitData: CreateHabitParams = {
             name: updatedWizardData.name!,
             habit_key: updatedWizardData.habit_key!,
             category: updatedWizardData.category as HabitCategory,
             unit: updatedWizardData.unit || 'min',
             icon_name: updatedWizardData.icon_name || 'Target',
-            ...calculatedParams,
+            ...inferredParams,
           } as CreateHabitParams;
 
           await createHabitMutation.mutateAsync(finalHabitData);
@@ -414,10 +342,10 @@ const HabitWizard = () => {
     } finally {
       setIsSaving(false);
     }
-  }, [wizardData, currentStep, currentMicroStepIndex, saveProgress, isTemplateCreationMode, createHabitMutation, handleSubmitFinal]);
+  }, [wizardData, currentStep, currentMicroStepIndex, saveProgress, isTemplateCreationMode, createHabitMutation, handleSubmitFinal, neurodivergentMode]);
 
   const handleBack = useCallback(async () => {
-    if (currentStep === 1) {
+    if (currentStep === 1 && currentMicroStepIndex === 0) {
       await deleteProgress();
       navigate('/');
       return;
@@ -426,9 +354,9 @@ const HabitWizard = () => {
     let prevMacroStep = currentStep;
     let prevMicroStepIdx = currentMicroStepIndex;
 
-    if (currentStep >= 3 && prevMicroStepIdx > 0) {
+    if (prevMicroStepIdx > 0) {
       prevMicroStepIdx--;
-    } else if (currentStep > 1) {
+    } else if (prevMacroStep > 1) {
       prevMacroStep--;
       // When going back to a macro step, set micro-step index to the last one of that macro step
       const microStepsForPrevMacro = MICRO_STEPS_MAP[prevMacroStep];
@@ -456,6 +384,32 @@ const HabitWizard = () => {
     }
   }, [deleteProgress]);
 
+  const handleSaveAndFinishLater = useCallback(async () => {
+    setIsSaving(true);
+    try {
+      await saveProgress({ current_step: currentStep, habit_data: wizardData });
+      showSuccess('Progress saved! You can continue later.');
+      navigate('/');
+    } catch (error) {
+      showError('Failed to save progress.');
+    } finally {
+      setIsSaving(false);
+    }
+  }, [currentStep, wizardData, saveProgress, navigate]);
+
+  const handleCancelWizard = useCallback(async () => {
+    setIsSaving(true); // Use isSaving to disable buttons during deletion
+    try {
+      await deleteProgress();
+      showSuccess('Wizard progress discarded.');
+      navigate('/');
+    } catch (error) {
+      showError('Failed to discard progress.');
+    } finally {
+      setIsSaving(false);
+    }
+  }, [deleteProgress, navigate]);
+
   const totalDisplaySteps = isTemplateCreationMode ? 1 : (
     MACRO_STEPS.reduce((acc, step) => acc + (MICRO_STEPS_MAP[step]?.length || 1), 0)
   );
@@ -473,7 +427,6 @@ const HabitWizard = () => {
     return count;
   }, [currentStep, currentMicroStepIndex, isTemplateCreationMode]);
 
-  // Define the 'progress' variable here
   const progress = (currentDisplayStep / totalDisplaySteps) * 100;
 
   const isNextDisabled = useMemo(() => {
@@ -482,7 +435,7 @@ const HabitWizard = () => {
 
     if (currentStep >= 3 && currentStep <= 6) {
       const microStepId = MICRO_STEPS_MAP[currentStep]?.[currentMicroStepIndex];
-      if (!microStepId) return true; // Should not happen if MICRO_STEPS_MAP is correctly defined
+      if (!microStepId) return true;
 
       switch (microStepId) {
         case '3.1': return !wizardData.energy_per_session;
@@ -501,6 +454,11 @@ const HabitWizard = () => {
         case '6.4': return !wizardData.success_definition;
         default: return true;
       }
+    }
+    // For the review step (Step 7), the "Create Habit" button is handled by HabitReviewStep itself
+    // and its disabled state is based on form validity.
+    if (currentStep === 7) {
+      return !wizardData.name?.trim() || !wizardData.habit_key?.trim() || !wizardData.category;
     }
     return false;
   }, [currentStep, currentMicroStepIndex, wizardData]);
@@ -538,6 +496,26 @@ const HabitWizard = () => {
       }
     }
 
+    if (currentStep === 7) { // New review step
+      const inferredParams = calculateHabitParams(wizardData, neurodivergentMode);
+      const fullWizardData = { ...wizardData, ...inferredParams };
+      return (
+        <HabitReviewStep
+          wizardData={fullWizardData}
+          onEditDetails={() => {
+            // Go back to the last micro-step of the previous macro step (Step 6)
+            setCurrentStep(6);
+            setCurrentMicroStepIndex(MICRO_STEPS_MAP[6].length - 1);
+          }}
+          onSaveAndFinishLater={handleSaveAndFinishLater}
+          onCreateHabit={handleSubmitFinal}
+          onCancel={handleCancelWizard}
+          isSaving={isSaving}
+          isCreating={createHabitMutation.isPending || createTemplateMutation.isPending}
+        />
+      );
+    }
+
     if (currentStep === 99) { // Template creation mode
       return (
         <HabitTemplateForm
@@ -553,8 +531,10 @@ const HabitWizard = () => {
     return null;
   };
 
-  const isLastMicroStep = currentStep >= 3 && currentStep <= 6 && currentMicroStepIndex === (MICRO_STEPS_MAP[currentStep]?.length || 0) - 1;
-  const buttonText = (currentStep === 6 && isLastMicroStep) || currentStep === 99 ? 'Create Habit' : 'Next';
+  const isLastMicroStep = currentStep >= 1 && currentStep <= 6 && currentMicroStepIndex === (MICRO_STEPS_MAP[currentStep]?.length || 0) - 1;
+  const isFinalStep = currentStep === MACRO_STEPS[MACRO_STEPS.length - 1]; // Check if it's the final macro step (review)
+
+  const buttonText = isFinalStep || currentStep === 99 ? 'Create Habit' : 'Next';
 
   return (
     <div className="w-full max-w-4xl mx-auto px-4 py-8">
@@ -588,7 +568,7 @@ const HabitWizard = () => {
           </CardContent>
 
           {/* Fixed button bar at the bottom - never moves */}
-          {!isTemplateCreationMode && (
+          {!isTemplateCreationMode && !isFinalStep && ( // Hide default buttons on final review step
             <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border/50 shadow-lg">
               <div className="max-w-2xl mx-auto px-10 py-6 flex justify-between items-center">
                 <Button
