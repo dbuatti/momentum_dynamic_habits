@@ -267,11 +267,11 @@ const Index = () => {
         <AccordionContent className="px-6 pb-6 pt-2 space-y-6">
           <div className="grid grid-cols-2 gap-4 border-t border-border pt-4">
               <div className="space-y-1">
-                  <p className="text-[9px] font-black uppercase opacity-50 tracking-widest">
+                  <p className="text-[9px] font-black uppercase opacity-50 tracking-widest text-muted-foreground">
                     {isTrial ? "Session Target" : "Daily Goal"}
                   </p>
                   <div className="flex items-center gap-2">
-                      <Target className="w-3.5 h-3.5 opacity-40" />
+                      <Target className="w-3.5 h-3.5 text-muted-foreground" />
                       <p className="text-sm font-black text-foreground">
                         {Math.round(habit.dailyGoal)} {habit.unit}
                         {habit.carryoverValue > 0 && (
@@ -281,9 +281,9 @@ const Index = () => {
                   </div>
               </div>
               <div className="space-y-1">
-                  <p className="text-[9px] font-black uppercase opacity-50 tracking-widest">Weekly Goal</p>
+                  <p className="text-[9px] font-black uppercase opacity-50 tracking-widest text-muted-foreground">Weekly Goal</p>
                   <div className="flex items-center gap-2">
-                      <TrendingUp className="w-3.5 h-3.5 opacity-40" />
+                      <TrendingUp className="w-3.5 h-3.5 text-muted-foreground" />
                       <p className="text-sm font-black text-foreground">{Math.round(habit.weekly_goal)} {habit.unit}</p>
                   </div>
               </div>
@@ -297,7 +297,7 @@ const Index = () => {
             />
           </div>
           {/* Daily Progress Bar */}
-          <div className="w-full mt-4"> {/* Added mt-4 for spacing */}
+          <div className="w-full mt-4">
             <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">Daily Progress</p>
             <Progress
               value={(habit.dailyProgress / habit.adjustedDailyGoal) * 100}
@@ -314,12 +314,13 @@ const Index = () => {
               unit={habit.unit} 
               completionsInPlateau={habit.growth_stats.completions}
               plateauDaysRequired={habit.growth_stats.required}
+              className="mt-6"
             />
           )}
 
           {/* Adaptive Insights (Growth mode only) */}
           {isGrowth && !habit.allCompleted && (
-            <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10 flex items-start gap-3">
+            <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10 flex items-start gap-3 mt-6">
                 <div className="bg-primary/10 p-2 rounded-xl">
                     <ShieldCheck className="w-4 h-4 text-primary" />
                 </div>

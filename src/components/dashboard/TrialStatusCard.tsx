@@ -36,8 +36,8 @@ export const TrialStatusCard: React.FC<TrialStatusCardProps> = ({
             <Anchor className="w-5 h-5" />
           </div>
           <div className="space-y-1">
-            <h4 className="font-black text-sm uppercase tracking-wider">Trial Mode Active</h4>
-            <p className="text-xs font-bold opacity-80">
+            <h4 className="font-black text-sm uppercase tracking-wider text-foreground">Trial Mode Active</h4>
+            <p className="text-xs font-bold text-muted-foreground">
               Low-pressure anchoring phase.
             </p>
           </div>
@@ -47,36 +47,36 @@ export const TrialStatusCard: React.FC<TrialStatusCardProps> = ({
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4 text-info-foreground" />
-              <span className="text-xs font-black uppercase opacity-60">Weekly Commitment</span>
+              <span className="text-xs font-black uppercase text-muted-foreground">Weekly Commitment</span>
             </div>
-            <span className="text-sm font-black">{sessionsPerWeek} session/week</span>
+            <span className="text-sm font-black text-foreground">{sessionsPerWeek} session/week</span>
           </div>
           
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-info-foreground" />
-              <span className="text-xs font-black uppercase opacity-60">Session Goal</span>
+              <span className="text-xs font-black uppercase text-muted-foreground">Session Goal</span>
             </div>
-            <span className="text-sm font-black">{duration} {unit}</span>
+            <span className="text-sm font-black text-foreground">{duration} {unit}</span>
           </div>
 
           <div className="pt-3 border-t border-info-border/50 space-y-2">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-info-foreground" />
-                <span className="text-xs font-black uppercase opacity-60">Trial Completion</span>
+                <span className="text-xs font-black uppercase text-muted-foreground">Trial Completion</span>
               </div>
-              <span className="text-sm font-black">
+              <span className="text-sm font-black text-foreground">
                 {completionsInPlateau}/{plateauDaysRequired} days
               </span>
             </div>
             <Progress value={progressToTrialCompletion} className="h-2 [&>div]:bg-info-foreground" />
             {isTrialComplete ? (
-              <p className="text-[10px] font-bold leading-tight mt-2">
+              <p className="text-[10px] font-bold leading-tight mt-2 text-foreground">
                 Trial complete! You're ready for Adaptive Growth.
               </p>
             ) : (
-              <p className="text-[10px] font-bold leading-tight mt-2">
+              <p className="text-[10px] font-bold leading-tight mt-2 text-foreground">
                 Complete {plateauDaysRequired - completionsInPlateau} more days to transition to Adaptive Growth.
               </p>
             )}
@@ -85,7 +85,7 @@ export const TrialStatusCard: React.FC<TrialStatusCardProps> = ({
 
         <div className="flex items-start gap-2 px-1">
           <Info className="w-3.5 h-3.5 text-info-foreground mt-0.5 shrink-0" />
-          <p className="text-[10px] font-bold leading-tight">
+          <p className="text-[10px] font-bold leading-tight text-muted-foreground">
             Focus on just showing up. Growth only happens after this feels "boring" and routine.
           </p>
         </div>
