@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    --background: 220 13% 97%;
+    --background: 220 13% 98%;
     --foreground: 222.2 84% 4.9%;
 
     --card: 0 0% 100%;
@@ -19,8 +19,8 @@
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 210 40% 97%;
+    --muted-foreground: 215 16% 35%;
 
     --accent: 210 40% 96.1%;
     --accent-foreground: 222.2 47.4% 11.2%;
@@ -56,12 +56,12 @@
     --habit-purple: 250 100% 97%;
     --habit-purple-foreground: 250 50% 50%;
     --habit-purple-border: 250 70% 85%;
-    --habit-orange: 25 95% 95%; /* Lighter default for background */
-    --habit-orange-foreground: 25 95% 40%; /* Darker for text */
-    --habit-orange-border: 25 95% 80%; /* Medium for border */
-    --habit-blue: 220 80% 95%; /* Lighter default for background */
-    --habit-blue-foreground: 220 80% 40%; /* Darker for text */
-    --habit-blue-border: 220 80% 80%; /* Medium for border */
+    --habit-orange: 25 95% 95%;
+    --habit-orange-foreground: 25 95% 40%;
+    --habit-orange-border: 25 95% 80%;
+    --habit-blue: 220 80% 95%;
+    --habit-blue-foreground: 220 80% 40%;
+    --habit-blue-border: 220 80% 80%;
     
     --habit-red: 0 90% 95%;
     --habit-red-foreground: 0 70% 40%;

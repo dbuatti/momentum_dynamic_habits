@@ -1,4 +1,4 @@
-import { Dumbbell, Wind, BookOpen, Music, Home, Code, Sparkles, Pill, Target } from 'lucide-react';
+import { Dumbbell, Wind, BookOpen, Music, Home, Code, Sparkles, Pill, Target, Heart, Zap, Anchor, ShieldCheck, FlaskConical, Calendar, Clock, Layers, Settings, Brain, TrendingUp, Smile, Lightbulb } from 'lucide-react';
 import React from 'react';
 
 export const habitIconMap: Record<string, React.ElementType> = {
@@ -22,9 +22,20 @@ export const habitIconMap: Record<string, React.ElementType> = {
 
 export type HabitColor = 'orange' | 'blue' | 'green' | 'purple' | 'red' | 'indigo';
 export const habitColorMap: Record<string, HabitColor> = {
-  pushups: 'orange', meditation: 'blue', kinesiology: 'green', piano: 'purple',
-  housework: 'red', projectwork: 'indigo', teeth_brushing: 'blue', medication: 'purple',
-  study_generic: 'green', exercise_generic: 'orange', mindfulness_generic: 'blue',
-  creative_practice_generic: 'purple', daily_task_generic: 'red',
-  fixed_medication: 'purple', fixed_teeth_brushing: 'blue', custom_habit: 'indigo',
+  pushups: 'orange',
+  meditation: 'blue',
+  kinesiology: 'green',
+  piano: 'purple',
+  housework: 'red',
+  projectwork: 'indigo',
+  teeth_brushing: 'blue',
+  medication: 'purple',
+  study_generic: 'green',
+  exercise_generic: 'orange',
+  mindfulness_generic: 'blue',
+  creative_practice_generic: 'purple',
+  daily_task_generic: 'red',
+  fixed_medication: 'purple',
+  fixed_teeth_brushing: 'blue',
+  custom_habit: 'indigo',
 };
