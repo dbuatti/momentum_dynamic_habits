@@ -51,7 +51,8 @@ export interface UserHabitRecord {
   num_chunks: number;
   chunk_duration: number;
   is_visible: boolean;
-  dependent_on_habit_id: string | null; // Changed from dependent_on_habit_key to dependent_on_habit_id
+  dependent_on_habit_id: string | null;
+  anchor_practice: boolean; // New: indicates if this is an anchor practice
 }
 
 export interface PianoHabit extends Habit {

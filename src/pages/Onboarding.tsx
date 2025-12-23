@@ -8,11 +8,11 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useUpdateProfile } from '@/hooks/useUpdateProfile';
 import { showError, showSuccess } from '@/utils/toast';
-import { Dumbbell, Wind, BookOpen, Music, Home, Code, Target, Clock, User, Sparkles, Pill, Brain, Zap, Layers, CheckCircle2, Info, Anchor } from 'lucide-react';
+import { Dumbbell, Wind, BookOpen, Music, Home, Code, Target, Clock, User, Sparkles, Pill, Brain, Zap, Layers, CheckCircle2, Info, Anchor, FlaskConical, Timer } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Switch } from '@/components/ui/switch';
 import { useInitializeMissingHabits } from '@/hooks/useInitializeMissingHabits';
-import { habitTemplates, habitCategories, habitUnits } from '@/lib/habit-templates'; // Import habitTemplates and categories
+import { habitTemplates, habitCategories, habitUnits, habitModes } from '@/lib/habit-templates';
 import { Slider } from '@/components/ui/slider';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -23,45 +23,6 @@ const commonTimezones = [
 ];
 
 const timeOptions = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0') + ':00');
-
-// Helper maps for icons and colors (ensure these are defined or imported)
-const habitIconMap: Record<string, React.ElementType> = {
-  pushups: Dumbbell,
-  meditation: Wind,
-  kinesiology: BookOpen,
-  piano: Music,
-  housework: Home,
-  projectwork: Code,
-  teeth_brushing: Sparkles,
-  medication: Pill,
-  study_generic: BookOpen,
-  exercise_generic: Dumbbell,
-  mindfulness_generic: Wind,
-  creative_practice_generic: Music,
-  daily_task_generic: Home,
-  fixed_medication: Pill,
-  fixed_teeth_brushing: Sparkles,
-  custom_habit: Target,
-};
-
-const habitColorMap: Record<string, string> = {
-  pushups: 'bg-habit-orange',
-  meditation: 'bg-habit-blue',
-  kinesiology: 'bg-habit-green',
-  piano: 'bg-habit-purple',
-  housework: 'bg-habit-red',
-  projectwork: 'bg-habit-indigo',
-  teeth_brushing: 'bg-blue-500',
-  medication: 'bg-purple-500',
-  study_generic: 'bg-habit-green',
-  exercise_generic: 'bg-habit-orange',
-  mindfulness_generic: 'bg-habit-blue',
-  creative_practice_generic: 'bg-habit-purple',
-  daily_task_generic: 'bg-habit-red',
-  fixed_medication: 'bg-purple-500',
-  fixed_teeth_brushing: 'bg-blue-500',
-  custom_habit: 'bg-habit-indigo',
-};
 
 const OnboardingFlow = ({ onComplete }: { onComplete: () => void }) => {
   const [step, setStep] = useState(1);
@@ -283,7 +244,7 @@ const OnboardingFlow = ({ onComplete }: { onComplete: () => void }) => {
               <p className="text-muted-foreground">Which areas do you want to focus on?</p>
             </div>
             <div className="grid grid-cols-2 gap-3 max-h-[300px] overflow-y-auto pr-2">
-              {habitCategories.filter(cat => cat.value !== 'anchor').map((cat) => { // Exclude 'anchor' as it's handled by isFoundationalRoutine
+              {habitCategories.filter(cat => cat.value !== 'anchor').map((cat) => {
                 const Icon = cat.icon;
                 const isSelected = selectedFocusAreas.includes(cat.value);
                 return (
@@ -315,7 +276,7 @@ const OnboardingFlow = ({ onComplete }: { onComplete: () => void }) => {
               <div className="p-4 bg-muted/50 rounded-2xl border border-primary/10 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-green-500" />
+                    <FlaskConical className="w-5 h-5 text-green-500" />
                     <Label className="font-bold">Low-Pressure Start?</Label>
                     <TooltipProvider>
                       <Tooltip>
@@ -411,7 +372,7 @@ const OnboardingFlow = ({ onComplete }: { onComplete: () => void }) => {
 
   const isNextDisabled = useMemo(() => {
     if (step === 1 && (!firstName.trim() || !lastName.trim())) return true;
-    if (step === 4 && selectedFocusAreas.length === 0 && !isFoundationalRoutine) return true; // Allow skipping if foundational is true
+    if (step === 4 && selectedFocusAreas.length === 0 && !isFoundationalRoutine) return true;
     return false;
   }, [step, firstName, lastName, selectedFocusAreas, isFoundationalRoutine]);
 

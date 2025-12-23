@@ -27,7 +27,7 @@ const fetchDashboardData = async (userId: string) => {
     { data: bestTime, error: bestTimeError },
     { data: randomTip, error: randomTipError },
   ] = await Promise.all([
-    supabase.from('user_habits').select('*, dependent_on_habit_id').eq('user_id', userId), // Fetch dependent_on_habit_id
+    supabase.from('user_habits').select('*, dependent_on_habit_id, anchor_practice').eq('user_id', userId), // Fetch dependent_on_habit_id and anchor_practice
     supabase.rpc('get_completed_tasks_today', { p_user_id: userId, p_timezone: timezone }),
     supabase.from('completedtasks').select('original_source, duration_used, xp_earned, completed_at').eq('user_id', userId).gte('completed_at', startOfWeek(today).toISOString()).lte('completed_at', endOfWeek(today).toISOString()),
     supabase.from('completedtasks').select('original_source, duration_used, xp_earned').eq('user_id', userId).gte('completed_at', startOfWeek(subWeeks(today, 1)).toISOString()).lte('completed_at', endOfWeek(subWeeks(today, 1)).toISOString()),
@@ -137,6 +137,7 @@ const fetchDashboardData = async (userId: string) => {
       },
       dependent_on_habit_id: h.dependent_on_habit_id, // Include dependency ID
       isLockedByDependency: isLockedByDependency, // New: indicates if this habit is locked
+      anchor_practice: h.anchor_practice, // Include anchor_practice
     };
   });
 

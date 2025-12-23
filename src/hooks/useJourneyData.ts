@@ -3,11 +3,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { differenceInDays } from 'date-fns';
 import { initialHabits } from '@/lib/habit-data';
-import { UserHabitRecord } from '@/types/habit'; // Import UserHabitRecord
+import { UserHabitRecord } from '@/types/habit';
 
 const fetchJourneyData = async (userId: string) => {
   const profilePromise = supabase.from('profiles').select('journey_start_date, daily_streak, timezone, default_auto_schedule_start_time, default_auto_schedule_end_time, first_name, last_name, neurodivergent_mode').eq('id', userId).single();
-  const habitsPromise = supabase.from('user_habits').select('*, dependent_on_habit_id').eq('user_id', userId); // Fetch all user habits
+  const habitsPromise = supabase.from('user_habits').select('*, dependent_on_habit_id, anchor_practice').eq('user_id', userId); // Fetch all user habits including anchor_practice
 
   const allBadgesPromise = supabase.from('badges').select('id, name, icon_name, requirement_type, requirement_value, habit_key');
   const achievedBadgesPromise = supabase.from('user_badges').select('badge_id').eq('user_id', userId);
@@ -15,7 +15,7 @@ const fetchJourneyData = async (userId: string) => {
 
   const [
     { data: profile, error: profileError },
-    { data: habits, error: habitsError }, // This will be all user habits from the DB
+    { data: habits, error: habitsError },
     { data: allBadges, error: allBadgesError },
     { data: achievedBadges, error: achievedBadgesError },
     { data: bestTime, error: bestTimeError },
@@ -41,20 +41,21 @@ const fetchJourneyData = async (userId: string) => {
       raw_lifetime_progress: rawLifetimeProgress, // Keep raw for calculations
       unit: h.unit || '', // Use unit from DB
       category: h.category || 'daily',
+      anchor_practice: h.anchor_practice, // Include anchor_practice
     };
   });
 
-  const visibleHabits = allUserHabits.filter(h => h.is_visible); // Filter for display on dashboard/journey
+  const visibleHabits = allUserHabits.filter(h => h.is_visible);
 
   const startDate = profile?.journey_start_date ? new Date(profile.journey_start_date) : null;
-  const meditationHabit = visibleHabits?.find(h => h.habit_key === 'meditation'); // Use visibleHabits here
+  const meditationHabit = visibleHabits?.find(h => h.habit_key === 'meditation');
   const totalJourneyDays = (meditationHabit && startDate) ? 
     differenceInDays(new Date(meditationHabit.target_completion_date), startDate) : 0;
 
   return {
     profile,
-    allHabits: allUserHabits, // Return all habits for dependency selection
-    habits: visibleHabits, // Keep `habits` for backward compatibility in components expecting only visible ones
+    allHabits: allUserHabits,
+    habits: visibleHabits,
     allBadges,
     achievedBadges,
     bestTime: bestTime || '—',

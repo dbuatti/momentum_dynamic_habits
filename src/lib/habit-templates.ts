@@ -1,5 +1,5 @@
 import { HabitCategory, GrowthPhase, HabitType, MomentumLevel } from '@/types/habit';
-import { Dumbbell, Wind, BookOpen, Music, Home, Code, Sparkles, Pill, Target, Heart, Zap, Anchor, ShieldCheck } from 'lucide-react'; // Added Anchor and ShieldCheck
+import { Dumbbell, Wind, BookOpen, Music, Home, Code, Sparkles, Pill, Target, Heart, Zap, Anchor, ShieldCheck, FlaskConical } from 'lucide-react'; // Added Anchor, ShieldCheck, FlaskConical
 
 export interface HabitTemplate {
   id: string;
@@ -10,12 +10,12 @@ export interface HabitTemplate {
   defaultMode: 'Trial' | 'Growth' | 'Fixed';
   defaultChunks: number;
   autoChunking: boolean;
-  anchorPractice: boolean;
-  unit: 'min' | 'reps' | 'dose'; // Added unit
-  xpPerUnit: number; // Added XP per unit
-  energyCostPerUnit: number; // Added energy cost per unit
-  icon: React.ElementType; // Added icon for display
-  plateauDaysRequired: number; // Added this property
+  anchorPractice: boolean; // New property
+  unit: 'min' | 'reps' | 'dose';
+  xpPerUnit: number;
+  energyCostPerUnit: number;
+  icon: React.ElementType;
+  plateauDaysRequired: number; // New property
 }
 
 export const habitTemplates: HabitTemplate[] = [
@@ -60,7 +60,7 @@ export const habitTemplates: HabitTemplate[] = [
     defaultMode: "Trial",
     defaultChunks: 1,
     autoChunking: true,
-    anchorPractice: false,
+    anchorPractice: true, // Often an anchor practice
     unit: "min",
     xpPerUnit: 30,
     energyCostPerUnit: 6,
@@ -108,7 +108,7 @@ export const habitTemplates: HabitTemplate[] = [
     defaultMode: "Fixed",
     defaultChunks: 1,
     autoChunking: false,
-    anchorPractice: false,
+    anchorPractice: true, // Often an anchor practice
     unit: "dose",
     xpPerUnit: 10,
     energyCostPerUnit: 0,
@@ -124,7 +124,7 @@ export const habitTemplates: HabitTemplate[] = [
     defaultMode: "Fixed",
     defaultChunks: 1,
     autoChunking: false,
-    anchorPractice: false,
+    anchorPractice: true, // Often an anchor practice
     unit: "min",
     xpPerUnit: 5,
     energyCostPerUnit: 0,
@@ -164,7 +164,7 @@ export const habitUnits: { value: 'min' | 'reps' | 'dose'; label: string }[] = [
 ];
 
 export const habitModes: { value: 'Trial' | 'Growth' | 'Fixed'; label: string; icon: React.ElementType; description: string }[] = [
-  { value: 'Trial', label: 'Trial Phase', icon: Anchor, description: 'Focus on entry-level consistency. No growth pressure.' },
+  { value: 'Trial', label: 'Trial Phase', icon: FlaskConical, description: 'Focus on entry-level consistency. No growth pressure.' },
   { value: 'Growth', label: 'Adaptive Growth', icon: Zap, description: 'Adaptive scaling based on your weekly momentum.' },
   { value: 'Fixed', label: 'Fixed (Maintenance)', icon: ShieldCheck, description: 'Stable maintenance. Goals stay exactly where they are.' },
 ];
@@ -181,4 +181,7 @@ export const habitIcons: { value: string; label: string; icon: React.ElementType
   { value: 'Target', label: 'Target', icon: Target },
   { value: 'Heart', label: 'Heart', icon: Heart },
   { value: 'Zap', label: 'Zap', icon: Zap },
+  { value: 'Anchor', label: 'Anchor', icon: Anchor },
+  { value: 'FlaskConical', label: 'Flask', icon: FlaskConical },
+  { value: 'ShieldCheck', label: 'Shield', icon: ShieldCheck },
 ];

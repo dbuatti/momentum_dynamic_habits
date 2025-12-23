@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { showError } from '@/utils/toast';
-import { habitTemplates } from '@/lib/habit-templates'; // Use habitTemplates for dynamic generation
+import { habitTemplates } from '@/lib/habit-templates';
 import { UserHabitRecord, HabitCategory } from '@/types/habit';
 
 interface OnboardingHabitParams {
@@ -13,7 +13,7 @@ interface OnboardingHabitParams {
   sessionDuration: 'short' | 'medium' | 'long';
   weeklyFrequency: number;
   allowChunks: boolean;
-  neurodivergentMode: boolean; // Added neurodivergentMode
+  neurodivergentMode: boolean;
 }
 
 const initializeSelectedHabits = async (userId: string, params: OnboardingHabitParams) => {
@@ -41,7 +41,6 @@ const initializeSelectedHabits = async (userId: string, params: OnboardingHabitP
   // Filter templates based on focus areas and foundational preference
   let availableTemplates = habitTemplates.filter(template => {
     if (template.id === 'custom_habit') return false; // Exclude custom habit template from auto-generation
-    if (template.defaultMode === 'Fixed') return false; // Exclude fixed habits from dynamic generation for now
 
     // If foundational routine is selected, prioritize anchor practices
     if (isFoundational) {
@@ -54,8 +53,8 @@ const initializeSelectedHabits = async (userId: string, params: OnboardingHabitP
   // If no templates match focus areas, or if foundational is selected but no anchor templates,
   // fallback to a general set of templates.
   if (availableTemplates.length === 0) {
-    availableTemplates = habitTemplates.filter(template => 
-      template.id !== 'custom_habit' && template.defaultMode !== 'Fixed' && 
+    availableTemplates = habitTemplates.filter(template =>
+      template.id !== 'custom_habit' &&
       ['daily', 'cognitive', 'physical', 'wellness'].includes(template.category)
     );
   }
@@ -71,27 +70,33 @@ const initializeSelectedHabits = async (userId: string, params: OnboardingHabitP
     const isTrial = isLowPressure || template.defaultMode === 'Trial';
     const category = isFoundational ? 'anchor' : template.category; // Override category if foundational
 
-    // Adjust plateau days for neurodivergent mode in trial
-    const plateauDays = (neurodivergentMode && isTrial) ? 14 : (template.plateauDaysRequired || 7);
+    // Adjust plateau days for neurodivergent mode in trial/growth
+    let plateauDays = template.plateauDaysRequired;
+    if (isTrial) {
+      plateauDays = neurodivergentMode ? 14 : 7;
+    } else if (!isFixed) { // For adaptive growth mode
+      plateauDays = neurodivergentMode ? 10 : 5;
+    }
 
     // Calculate daily goal based on template's unit and user's duration preference
     let currentDailyGoal = template.defaultDuration;
     if (template.unit === 'min') {
       currentDailyGoal = baseDuration;
     } else if (template.unit === 'reps' || template.unit === 'dose') {
-      // For count-based habits, use template's default goal, or a small default if not set
-      currentDailyGoal = template.defaultDuration || 1; 
+      currentDailyGoal = template.defaultDuration || 1;
     }
 
     // Calculate chunking
     let numChunks = 1;
     let chunkDuration = currentDailyGoal;
-    if (allowChunks && template.autoChunking && template.unit === 'min' && currentDailyGoal > (neurodivergentMode ? 5 : 10)) {
-      const targetChunkSize = neurodivergentMode ? 5 : 10; // 5 min chunks for ND, 10 for standard
+    const shouldAutoChunk = allowChunks && template.autoChunking;
+
+    if (shouldAutoChunk && template.unit === 'min' && currentDailyGoal > (neurodivergentMode ? 5 : 10)) {
+      const targetChunkSize = neurodivergentMode ? 5 : 10;
       numChunks = Math.max(1, Math.ceil(currentDailyGoal / targetChunkSize));
       chunkDuration = Number((currentDailyGoal / numChunks).toFixed(1));
-    } else if (allowChunks && template.autoChunking && template.unit === 'reps' && currentDailyGoal > (neurodivergentMode ? 10 : 20)) {
-      const targetChunkSize = neurodivergentMode ? 10 : 20; // 10 reps for ND, 20 for standard
+    } else if (shouldAutoChunk && template.unit === 'reps' && currentDailyGoal > (neurodivergentMode ? 10 : 20)) {
+      const targetChunkSize = neurodivergentMode ? 10 : 20;
       numChunks = Math.max(1, Math.ceil(currentDailyGoal / targetChunkSize));
       chunkDuration = Number((currentDailyGoal / numChunks).toFixed(1));
     }
@@ -104,7 +109,7 @@ const initializeSelectedHabits = async (userId: string, params: OnboardingHabitP
       xp_per_unit: template.xpPerUnit,
       energy_cost_per_unit: template.energyCostPerUnit,
       current_daily_goal: currentDailyGoal,
-      long_term_goal: currentDailyGoal * (template.unit === 'min' ? 365 * 60 : 365), // Example: 1 year goal in seconds or reps
+      long_term_goal: currentDailyGoal * (template.unit === 'min' ? 365 * 60 : 365),
       target_completion_date: oneYearDateString,
       momentum_level: 'Building',
       lifetime_progress: 0,
@@ -121,17 +126,18 @@ const initializeSelectedHabits = async (userId: string, params: OnboardingHabitP
       growth_phase: 'duration',
       window_start: null,
       window_end: null,
-      days_of_week: [0, 1, 2, 3, 4, 5, 6], // Default to all days
-      auto_chunking: allowChunks && template.autoChunking,
-      enable_chunks: allowChunks && template.autoChunking,
+      days_of_week: [0, 1, 2, 3, 4, 5, 6],
+      auto_chunking: shouldAutoChunk,
+      enable_chunks: shouldAutoChunk,
       num_chunks: numChunks,
       chunk_duration: chunkDuration,
       is_visible: true,
+      anchor_practice: template.anchorPractice, // Set anchor_practice from template
     };
   });
 
   // Also include fixed habits like 'teeth_brushing' and 'medication' if they are not already selected
-  const fixedHabitsToAdd = habitTemplates.filter(template => 
+  const fixedHabitsToAdd = habitTemplates.filter(template =>
     template.defaultMode === 'Fixed' && !selectedTemplates.some(st => st.id === template.id)
   ).map(template => ({
     user_id: userId,
@@ -153,7 +159,7 @@ const initializeSelectedHabits = async (userId: string, params: OnboardingHabitP
     completions_in_plateau: 0,
     is_fixed: true,
     category: template.category as HabitCategory,
-    is_trial_mode: false, // Fixed habits are not in trial mode
+    is_trial_mode: false,
     frequency_per_week: template.defaultFrequency,
     growth_phase: 'duration',
     window_start: null,
@@ -164,6 +170,7 @@ const initializeSelectedHabits = async (userId: string, params: OnboardingHabitP
     num_chunks: 1,
     chunk_duration: template.defaultDuration,
     is_visible: true,
+    anchor_practice: template.anchorPractice,
   }));
 
   const finalHabitsToUpsert = [...habitsToUpsert, ...fixedHabitsToAdd];
@@ -184,9 +191,9 @@ export const useInitializeMissingHabits = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (params: OnboardingHabitParams) => { // Changed mutationFn signature
+    mutationFn: (params: OnboardingHabitParams) => {
       if (!session?.user?.id) throw new Error('User not authenticated');
-      return initializeSelectedHabits(session.user.id, params); // Pass all onboarding params
+      return initializeSelectedHabits(session.user.id, params);
     },
     onSuccess: (data) => {
       if (data.initialized) {

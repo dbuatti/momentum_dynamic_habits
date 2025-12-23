@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 import { 
   Anchor, Target, Sparkles, ShieldCheck, Calendar, 
   Clock, Dumbbell, Wind, BookOpen, Music, 
-  Home, Code, Pill, Timer, BarChart3, Layers, Zap, Info, Eye, EyeOff, Link as LinkIcon
+  Home, Code, Pill, Timer, BarChart3, Layers, Zap, Info, Eye, EyeOff, Link as LinkIcon, FlaskConical
 } from 'lucide-react';
 import { UserHabitRecord } from '@/types/habit';
 import { useUpdateHabitVisibility } from '@/hooks/useUpdateHabitVisibility';
@@ -28,11 +28,13 @@ interface HabitSettingsCardProps {
 }
 
 const days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+const timeOptions = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0') + ':00');
 
 const getHabitIcon = (habitKey: string) => {
   const foundIcon = habitIcons.find(i => i.value === habitKey);
   if (foundIcon) return foundIcon.icon;
 
+  // Fallback to initialHabits if habitKey is not directly an icon name
   const initialHabitConfig = initialHabits.find(h => h.id === habitKey);
   if (initialHabitConfig) {
     const initialHabitIconMap: { [key: string]: React.ElementType } = {
@@ -200,24 +202,46 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
                     <Clock className="w-3.5 h-3.5 text-primary" />
                     <Label className="text-[10px] font-black uppercase opacity-60">Window Start</Label>
                  </div>
-                 <Input type="time" className="rounded-xl h-11 font-bold" defaultValue={habit.window_start || ''} onBlur={(e) => onUpdateHabitField(habit.id, { window_start: e.target.value })} />
+                 <Select value={habit.window_start || ''} onValueChange={(value) => onUpdateHabitField(habit.id, { window_start: value || null })}>
+                    <SelectTrigger id="windowStart" className="h-12 rounded-xl"><SelectValue placeholder="Anytime" /></SelectTrigger>
+                    <SelectContent>{timeOptions.map((time) => <SelectItem key={time} value={time}>{time}</SelectItem>)}</SelectContent>
+                  </Select>
                </div>
                <div className="space-y-2">
                  <div className="flex items-center gap-2 ml-1">
                     <Clock className="w-3.5 h-3.5 text-primary" />
                     <Label className="text-[10px] font-black uppercase opacity-60">Window End</Label>
                  </div>
-                 <Input type="time" className="rounded-xl h-11 font-bold" defaultValue={habit.window_end || ''} onBlur={(e) => onUpdateHabitField(habit.id, { window_end: e.target.value })} />
+                 <Select value={habit.window_end || ''} onValueChange={(value) => onUpdateHabitField(habit.id, { window_end: value || null })}>
+                    <SelectTrigger id="windowEnd" className="h-12 rounded-xl"><SelectValue placeholder="Anytime" /></SelectTrigger>
+                    <SelectContent>{timeOptions.map((time) => <SelectItem key={time} value={time}>{time}</SelectItem>)}</SelectContent>
+                  </Select>
                </div>
             </div>
           </TabsContent>
 
           {/* LOGIC TAB: Visibility, Plateau, Chunking */}
           <TabsContent value="advanced" className="space-y-4 focus-visible:outline-none">
+             <div className="flex items-center justify-between p-4 rounded-2xl bg-primary/5 border border-primary/10">
+                <div className="flex gap-4">
+                  <div className="bg-primary/20 p-2 rounded-xl">
+                    <Anchor className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-black uppercase">Anchor Practice</p>
+                    <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">Prioritize this habit on your dashboard.</p>
+                  </div>
+                </div>
+                <Switch 
+                  checked={habit.anchor_practice} 
+                  onCheckedChange={(v) => onUpdateHabitField(habit.id, { anchor_practice: v })} 
+                />
+             </div>
+
              <div className="flex items-center justify-between p-4 rounded-2xl bg-blue-500/5 border border-blue-500/10">
                 <div className="flex gap-4">
                   <div className="bg-blue-500/20 p-2 rounded-xl">
-                    <Sparkles className="w-5 h-5 text-blue-600" />
+                    <Layers className="w-5 h-5 text-blue-600" />
                   </div>
                   <div>
                     <p className="text-xs font-black uppercase">Adaptive Auto-Chunking</p>
@@ -226,7 +250,7 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
                 </div>
                 <Switch 
                   checked={habit.auto_chunking} 
-                  onCheckedChange={(v) => onUpdateHabitField(habit.id, { auto_chunking: v })} 
+                  onCheckedChange={(v) => onUpdateHabitField(habit.id, { auto_chunking: v, enable_chunks: v })} 
                 />
              </div>
              

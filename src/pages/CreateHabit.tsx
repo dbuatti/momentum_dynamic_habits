@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,8 @@ import { cn } from '@/lib/utils';
 import {
   Target, Anchor, Zap, ShieldCheck, Brain, Clock, Layers,
   Dumbbell, Wind, BookOpen, Music, Home, Code, Sparkles, Pill,
-  Plus, Loader2, Check, Info, Eye, EyeOff
+  Plus, Loader2, Check, Info, Eye, EyeOff, ArrowRight, FlaskConical,
+  Calendar, Timer // Added Calendar and Timer imports
 } from 'lucide-react';
 import { habitTemplates, habitCategories, habitUnits, habitModes, habitIcons, HabitTemplate } from '@/lib/habit-templates';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -24,6 +25,7 @@ import { showError, showSuccess } from '@/utils/toast';
 import { useNavigate } from 'react-router-dom';
 import { UserHabitRecord, HabitCategory as HabitCategoryType } from '@/types/habit';
 import { useJourneyData } from '@/hooks/useJourneyData';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface CreateHabitParams {
   name: string;
@@ -35,20 +37,45 @@ interface CreateHabitParams {
   is_fixed: boolean;
   anchor_practice: boolean;
   auto_chunking: boolean;
-  unit: string;
+  unit: 'min' | 'reps' | 'dose';
   xp_per_unit: number;
   energy_cost_per_unit: number;
   icon_name: string;
-  default_chunks: number;
   dependent_on_habit_id: string | null;
+  plateau_days_required: number;
+  window_start: string | null;
+  window_end: string | null;
 }
 
-const createNewHabit = async ({ userId, habit }: { userId: string; habit: CreateHabitParams }) => {
+const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: string; habit: CreateHabitParams; neurodivergentMode: boolean }) => {
   const today = new Date();
   const oneYearFromNow = new Date(today.setFullYear(today.getFullYear() + 1));
   const oneYearDateString = oneYearFromNow.toISOString().split('T')[0];
 
-  const { name, habit_key, category, current_daily_goal, frequency_per_week, is_trial_mode, is_fixed, anchor_practice, auto_chunking, unit, xp_per_unit, energy_cost_per_unit, icon_name, default_chunks, dependent_on_habit_id } = habit;
+  const { name, habit_key, category, current_daily_goal, frequency_per_week, is_trial_mode, is_fixed, anchor_practice, auto_chunking, unit, xp_per_unit, energy_cost_per_unit, icon_name, dependent_on_habit_id, window_start, window_end } = habit;
+
+  // Determine plateau days based on mode and neurodivergent setting
+  let calculatedPlateauDays = habit.plateau_days_required;
+  if (is_trial_mode) {
+    calculatedPlateauDays = neurodivergentMode ? 14 : 7; // Longer trial for ND
+  } else if (is_fixed) {
+    calculatedPlateauDays = 7; // Fixed habits still have a plateau for consistency tracking
+  } else {
+    calculatedPlateauDays = neurodivergentMode ? 10 : 5; // Longer growth plateau for ND
+  }
+
+  // Calculate chunking parameters
+  let numChunks = 1;
+  let chunkDuration = current_daily_goal;
+  if (auto_chunking && unit === 'min' && current_daily_goal > (neurodivergentMode ? 5 : 10)) {
+    const targetChunkSize = neurodivergentMode ? 5 : 10; // 5 min chunks for ND, 10 for standard
+    numChunks = Math.max(1, Math.ceil(current_daily_goal / targetChunkSize));
+    chunkDuration = Number((current_daily_goal / numChunks).toFixed(1));
+  } else if (auto_chunking && unit === 'reps' && current_daily_goal > (neurodivergentMode ? 10 : 20)) {
+    const targetChunkSize = neurodivergentMode ? 10 : 20; // 10 reps for ND, 20 for standard
+    numChunks = Math.max(1, Math.ceil(current_daily_goal / targetChunkSize));
+    chunkDuration = Number((current_daily_goal / numChunks).toFixed(1));
+  }
 
   const habitToInsert: Partial<UserHabitRecord> = {
     user_id: userId,
@@ -58,7 +85,7 @@ const createNewHabit = async ({ userId, habit }: { userId: string; habit: Create
     xp_per_unit: xp_per_unit,
     energy_cost_per_unit: energy_cost_per_unit,
     current_daily_goal: current_daily_goal,
-    long_term_goal: current_daily_goal * (unit === 'min' ? 365 * 60 : 365),
+    long_term_goal: current_daily_goal * (unit === 'min' ? 365 * 60 : 365), // Example: 1 year goal in seconds or reps
     target_completion_date: oneYearDateString,
     momentum_level: 'Building',
     lifetime_progress: 0,
@@ -66,22 +93,23 @@ const createNewHabit = async ({ userId, habit }: { userId: string; habit: Create
     is_frozen: false,
     max_goal_cap: null,
     last_plateau_start_date: today.toISOString().split('T')[0],
-    plateau_days_required: is_trial_mode ? (category === 'cognitive' || category === 'wellness' ? 14 : 7) : 7,
+    plateau_days_required: calculatedPlateauDays,
     completions_in_plateau: 0,
     is_fixed: is_fixed,
-    category: anchor_practice ? 'anchor' : category,
+    category: category,
     is_trial_mode: is_trial_mode,
-    frequency_per_week: frequency_per_week, // Corrected to use habit.frequency_per_week
+    frequency_per_week: frequency_per_week,
     growth_phase: 'duration',
-    window_start: null,
-    window_end: null,
-    days_of_week: [0, 1, 2, 3, 4, 5, 6],
+    window_start: window_start,
+    window_end: window_end,
+    days_of_week: [0, 1, 2, 3, 4, 5, 6], // Default to all days
     auto_chunking: auto_chunking,
-    enable_chunks: auto_chunking,
-    num_chunks: auto_chunking ? default_chunks : 1,
-    chunk_duration: auto_chunking ? (current_daily_goal / default_chunks) : current_daily_goal,
+    enable_chunks: auto_chunking, // enable_chunks follows auto_chunking for new habits
+    num_chunks: numChunks,
+    chunk_duration: chunkDuration,
     is_visible: true,
     dependent_on_habit_id: dependent_on_habit_id,
+    anchor_practice: anchor_practice,
   };
 
   const { error } = await supabase.from('user_habits').insert(habitToInsert);
@@ -90,11 +118,23 @@ const createNewHabit = async ({ userId, habit }: { userId: string; habit: Create
   return { success: true };
 };
 
+const timeOptions = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0') + ':00');
+
+const getHabitIcon = (iconName: string) => {
+  return habitIcons.find(i => i.value === iconName)?.icon || Target;
+};
+
 const CreateHabit = () => {
   const { session } = useSession();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { data: journeyData } = useJourneyData();
+  const neurodivergentMode = journeyData?.profile?.neurodivergent_mode || false;
 
+  const [flowType, setFlowType] = useState<'entry' | 'guided' | 'custom'>('entry');
+  const [step, setStep] = useState(1); // For guided flow
+
+  // Habit state for both flows
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [habitName, setHabitName] = useState('');
   const [habitKey, setHabitKey] = useState('');
@@ -105,17 +145,19 @@ const CreateHabit = () => {
   const [isFixed, setIsFixed] = useState(false);
   const [isAnchorPractice, setIsAnchorPractice] = useState(false);
   const [autoChunking, setAutoChunking] = useState(true);
-  const [unit, setUnit] = useState<string>('min');
+  const [unit, setUnit] = useState<'min' | 'reps' | 'dose'>('min');
   const [xpPerUnit, setXpPerUnit] = useState(30);
   const [energyCostPerUnit, setEnergyCostPerUnit] = useState(6);
   const [selectedIconName, setSelectedIconName] = useState<string>('Target');
   const [dependentOnHabitId, setDependentOnHabitId] = useState<string | null>(null);
+  const [plateauDaysRequired, setPlateauDaysRequired] = useState(7);
+  const [windowStart, setWindowStart] = useState<string | null>(null);
+  const [windowEnd, setWindowEnd] = useState<string | null>(null);
+  const [notes, setNotes] = useState(''); // For custom flow description
 
-  const { data: journeyData } = useJourneyData();
-  // Use allHabits for dependency selection, as a new habit cannot depend on itself yet
   const otherHabits = useMemo(() => {
-    return journeyData?.allHabits || [];
-  }, [journeyData?.allHabits]);
+    return (journeyData?.allHabits || []).filter(h => h.id !== habitKey); // Filter out the habit being created
+  }, [journeyData?.allHabits, habitKey]);
 
   const selectedTemplate = useMemo(() => {
     if (selectedTemplateId === 'custom_habit') {
@@ -139,7 +181,7 @@ const CreateHabit = () => {
     return habitTemplates.find(t => t.id === selectedTemplateId);
   }, [selectedTemplateId]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (selectedTemplate) {
       setHabitName(selectedTemplate.name);
       setHabitKey(selectedTemplate.id === 'custom_habit' ? '' : selectedTemplate.id);
@@ -155,14 +197,18 @@ const CreateHabit = () => {
       setEnergyCostPerUnit(selectedTemplate.energyCostPerUnit);
       const iconEntry = habitIcons.find(entry => entry.icon === selectedTemplate.icon);
       setSelectedIconName(iconEntry?.value || 'Target');
+      setPlateauDaysRequired(selectedTemplate.plateauDaysRequired);
       setDependentOnHabitId(null);
+      setWindowStart(null);
+      setWindowEnd(null);
+      setNotes('');
     }
   }, [selectedTemplate]);
 
   const createHabitMutation = useMutation({
     mutationFn: (habit: CreateHabitParams) => {
       if (!session?.user?.id) throw new Error('User not authenticated');
-      return createNewHabit({ userId: session.user.id, habit });
+      return createNewHabit({ userId: session.user.id, habit, neurodivergentMode });
     },
     onSuccess: () => {
       showSuccess('Habit created successfully!');
@@ -175,23 +221,23 @@ const CreateHabit = () => {
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = (e?: React.FormEvent) => { // Made event optional
+    e?.preventDefault(); // Conditionally prevent default
 
     if (!habitName.trim() || !habitKey.trim() || dailyGoal <= 0 || frequency <= 0 || xpPerUnit <= 0 || energyCostPerUnit < 0) {
       showError('Please fill in all required fields with valid values.');
       return;
     }
 
-    if (!selectedTemplate) {
-      showError('Please select a habit template.');
+    if (!selectedTemplateId) {
+      showError('Please select a habit template or choose custom.');
       return;
     }
 
     createHabitMutation.mutate({
       name: habitName,
       habit_key: habitKey.toLowerCase().replace(/\s/g, '_'),
-      category: isAnchorPractice ? 'anchor' : category,
+      category: category,
       current_daily_goal: dailyGoal,
       frequency_per_week: frequency,
       is_trial_mode: isTrialMode,
@@ -202,53 +248,405 @@ const CreateHabit = () => {
       xp_per_unit: xpPerUnit,
       energy_cost_per_unit: energyCostPerUnit,
       icon_name: selectedIconName,
-      default_chunks: selectedTemplate.defaultChunks,
       dependent_on_habit_id: dependentOnHabitId,
+      plateau_days_required: plateauDaysRequired,
+      window_start: windowStart,
+      window_end: windowEnd,
     });
   };
 
-  const IconComponent = habitIcons.find(i => i.value === selectedIconName)?.icon || Target;
+  const handleGuidedNext = () => {
+    if (step === 1 && !selectedTemplateId) {
+      showError('Please select a habit template.');
+      return;
+    }
+    if (step === 9 && (!habitName.trim() || !habitKey.trim())) { // Corrected step number
+      showError('Please provide a habit name and key.');
+      return;
+    }
+    if (step < 9) setStep(step + 1);
+    else handleSubmit(); // Trigger final submission without an event
+  };
 
-  return (
-    <div className="w-full max-w-2xl mx-auto px-4 py-6 space-y-8 pb-32">
-      <PageHeader title="Create New Habit" backLink="/" />
+  const handleGuidedBack = () => {
+    if (step > 1) setStep(step - 1);
+    else setFlowType('entry'); // Go back to entry screen from first step
+  };
 
-      <form onSubmit={handleSubmit} className="space-y-8">
-        {/* Template Selection */}
-        <Card className="rounded-3xl shadow-sm border-0">
-          <CardHeader className="p-6 pb-4">
-            <CardTitle className="flex items-center gap-3 text-lg font-bold">
-              <Layers className="w-5 h-5 text-primary" />
-              Choose a Template
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-6 pt-0">
-            <div className="grid grid-cols-2 gap-3">
-              {habitTemplates.map((template) => {
-                const TemplateIcon = template.icon;
-                const isSelected = selectedTemplateId === template.id;
-                return (
-                  <Button
-                    key={template.id}
-                    type="button"
-                    variant="outline"
-                    className={cn(
-                      "h-auto p-4 rounded-2xl flex flex-col items-center justify-center text-center space-y-2 transition-all",
-                      isSelected ? "border-primary ring-2 ring-primary/20 bg-primary/5" : "border-border hover:bg-muted/50"
-                    )}
-                    onClick={() => setSelectedTemplateId(template.id)}
-                  >
-                    <TemplateIcon className="w-6 h-6 text-primary" />
-                    <span className="text-sm font-semibold">{template.name}</span>
-                    <span className="text-xs text-muted-foreground">{template.defaultDuration} {template.unit} • {template.defaultFrequency}x/week</span>
-                  </Button>
-                );
-              })}
+  const renderGuidedStep = () => {
+    const IconComponent = getHabitIcon(selectedIconName);
+    const progress = (step / 9) * 100;
+
+    return (
+      <Card className="w-full max-w-md shadow-xl rounded-3xl overflow-hidden border-0">
+        <CardHeader className="pb-0">
+          <div className="flex justify-between items-center mb-4">
+            <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Step {step} of 9</div>
+            <div className="text-xs font-bold text-primary">{Math.round(progress)}%</div>
+          </div>
+          <div className="w-full bg-secondary rounded-full h-1.5"><div className="bg-primary h-1.5 rounded-full transition-all duration-300" style={{ width: `${progress}%` }}></div></div>
+        </CardHeader>
+        <CardContent className="py-8">
+          {step === 1 && (
+            <div className="space-y-6">
+              <div className="text-center">
+                <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                  <Layers className="w-8 h-8 text-primary" />
+                </div>
+                <h2 className="text-2xl font-bold mb-2">Choose a Starting Point</h2>
+                <p className="text-muted-foreground">Select a template or start from scratch.</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3 max-h-[300px] overflow-y-auto pr-2">
+                {habitTemplates.map((template) => {
+                  const TemplateIcon = template.icon;
+                  const isSelected = selectedTemplateId === template.id;
+                  return (
+                    <Button
+                      key={template.id}
+                      type="button"
+                      variant="outline"
+                      className={cn(
+                        "h-auto p-4 rounded-2xl flex flex-col items-center justify-center text-center space-y-2 transition-all",
+                        isSelected ? "border-primary ring-2 ring-primary/20 bg-primary/5" : "border-border hover:bg-muted/50"
+                      )}
+                      onClick={() => setSelectedTemplateId(template.id)}
+                    >
+                      <TemplateIcon className="w-6 h-6 text-primary" />
+                      <span className="text-sm font-semibold">{template.name}</span>
+                      <span className="text-xs text-muted-foreground">{template.defaultDuration} {template.unit} • {template.defaultFrequency}x/week</span>
+                    </Button>
+                  );
+                })}
+              </div>
             </div>
-          </CardContent>
-        </Card>
+          )}
 
-        {/* Habit Details */}
+          {step === 2 && selectedTemplate && (
+            <div className="space-y-6">
+              <div className="text-center">
+                <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                  <Target className="w-8 h-8 text-primary" />
+                </div>
+                <h2 className="text-2xl font-bold mb-2">Habit Focus</h2>
+                <p className="text-muted-foreground">What area of your life is this habit for?</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3 max-h-[300px] overflow-y-auto pr-2">
+                {habitCategories.filter(cat => cat.value !== 'anchor').map((cat) => {
+                  const Icon = cat.icon;
+                  const isSelected = category === cat.value;
+                  return (
+                    <div key={cat.value} className={cn(
+                      "border rounded-xl p-3 cursor-pointer transition-all",
+                      isSelected ? 'border-primary ring-2 ring-primary/20 bg-primary/5' : 'border-border hover:bg-muted/50'
+                    )} onClick={() => setCategory(cat.value)}>
+                      <div className="flex flex-col items-center space-y-1">
+                        <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-primary/10 text-primary"><Icon className="w-5 h-5" /></div>
+                        <span className="text-xs font-bold text-center leading-tight">{cat.label}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {step === 3 && (
+            <div className="space-y-6">
+              <div className="text-center">
+                <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                  <Anchor className="w-8 h-8 text-primary" />
+                </div>
+                <h2 className="text-2xl font-bold mb-2">Priority & Importance</h2>
+                <p className="text-muted-foreground">How important is this habit to your daily routine?</p>
+              </div>
+              <div className="space-y-4">
+                <button
+                  type="button"
+                  onClick={() => setIsAnchorPractice(true)}
+                  className={cn(
+                    "flex items-start gap-4 p-4 rounded-2xl border-2 text-left w-full transition-all",
+                    isAnchorPractice ? "border-primary bg-primary/[0.02] shadow-sm" : "border-transparent bg-muted/30 opacity-60 hover:opacity-100"
+                  )}
+                >
+                  <div className={cn("p-2 rounded-lg", isAnchorPractice ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground")}>
+                    <Anchor className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-black uppercase leading-none">Core / Anchor (Recommended)</p>
+                    <p className="text-[10px] text-muted-foreground mt-1.5 leading-relaxed">Essential, non-negotiable habits that keep you grounded.</p>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsAnchorPractice(false)}
+                  className={cn(
+                    "flex items-start gap-4 p-4 rounded-2xl border-2 text-left w-full transition-all",
+                    !isAnchorPractice ? "border-primary bg-primary/[0.02] shadow-sm" : "border-transparent bg-muted/30 opacity-60 hover:opacity-100"
+                  )}
+                >
+                  <div className={cn("p-2 rounded-lg", !isAnchorPractice ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground")}>
+                    <Zap className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-black uppercase leading-none">Supporting / Experimental</p>
+                    <p className="text-[10px] text-muted-foreground mt-1.5 leading-relaxed">Nice-to-have habits or new experiments.</p>
+                  </div>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {step === 4 && (
+            <div className="space-y-6">
+              <div className="text-center">
+                <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                  <Calendar className="w-8 h-8 text-primary" />
+                </div>
+                <h2 className="text-2xl font-bold mb-2">Frequency</h2>
+                <p className="text-muted-foreground">How often do you want to do this habit per week?</p>
+              </div>
+              <div className="space-y-4">
+                <Slider
+                  min={1}
+                  max={7}
+                  step={1}
+                  value={[frequency]}
+                  onValueChange={(val) => setFrequency(val[0])}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-sm text-muted-foreground">
+                  <span>1x/week</span>
+                  <span className="font-bold text-foreground">{frequency} times per week</span>
+                  <span>7x/week</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {step === 5 && (
+            <div className="space-y-6">
+              <div className="text-center">
+                <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                  <Timer className="w-8 h-8 text-primary" />
+                </div>
+                <h2 className="text-2xl font-bold mb-2">Duration</h2>
+                <p className="text-muted-foreground">How long do you want each session to last?</p>
+              </div>
+              <div className="space-y-3">
+                <Label htmlFor="dailyGoal">Daily Goal ({unit})</Label>
+                <Input
+                  id="dailyGoal"
+                  type="number"
+                  value={dailyGoal}
+                  onChange={(e) => setDailyGoal(Number(e.target.value))}
+                  className="h-12 rounded-xl"
+                  min={1}
+                  required
+                />
+              </div>
+              <div className="space-y-3">
+                <Label htmlFor="unit">Unit</Label>
+                <Select value={unit} onValueChange={(value: 'min' | 'reps' | 'dose') => setUnit(value)}>
+                  <SelectTrigger id="unit" className="h-12 rounded-xl">
+                    <SelectValue placeholder="Select unit" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {habitUnits.map((u) => (
+                      <SelectItem key={u.value} value={u.value}>
+                        {u.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+
+          {step === 6 && (
+            <div className="space-y-6">
+              <div className="text-center">
+                <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                  <FlaskConical className="w-8 h-8 text-primary" />
+                </div>
+                <h2 className="text-2xl font-bold mb-2">Mode Selection</h2>
+                <p className="text-muted-foreground">Start with a low-pressure trial or jump into growth?</p>
+              </div>
+              <div className="space-y-4">
+                {habitModes.map((mode) => (
+                  <button
+                    key={mode.value}
+                    type="button"
+                    onClick={() => {
+                      setIsTrialMode(mode.value === 'Trial');
+                      setIsFixed(mode.value === 'Fixed');
+                    }}
+                    className={cn(
+                      "flex items-start gap-4 p-4 rounded-2xl border-2 text-left w-full transition-all",
+                      (isTrialMode && mode.value === 'Trial') || (isFixed && mode.value === 'Fixed') || (!isTrialMode && !isFixed && mode.value === 'Growth')
+                        ? "border-primary bg-primary/[0.02] shadow-sm"
+                        : "border-transparent bg-muted/30 opacity-60 hover:opacity-100"
+                    )}
+                  >
+                    <div className={cn("p-2 rounded-lg", (isTrialMode && mode.value === 'Trial') || (isFixed && mode.value === 'Fixed') || (!isTrialMode && !isFixed && mode.value === 'Growth') ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground")}>
+                      <mode.icon className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-black uppercase leading-none">{mode.label}</p>
+                      <p className="text-[10px] text-muted-foreground mt-1.5 leading-relaxed">{mode.description}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {step === 7 && (
+            <div className="space-y-6">
+              <div className="text-center">
+                <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                  <Layers className="w-8 h-8 text-primary" />
+                </div>
+                <h2 className="text-2xl font-bold mb-2">Chunking Preferences</h2>
+                <p className="text-muted-foreground">Do you want your session broken into smaller chunks?</p>
+              </div>
+              <div className="p-4 bg-muted/50 rounded-2xl border border-primary/10 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Layers className="w-5 h-5 text-blue-500" />
+                    <Label className="font-bold">Adaptive Auto-Chunking</Label>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="w-4 h-4 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p className="text-xs">Automatically breaks longer sessions into smaller, more manageable "capsules" to reduce overwhelm.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                  <Switch checked={autoChunking} onCheckedChange={setAutoChunking} />
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  If enabled, longer sessions will be automatically broken into smaller parts.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {step === 8 && (
+            <div className="space-y-6">
+              <div className="text-center">
+                <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                  <Clock className="w-8 h-8 text-primary" />
+                </div>
+                <h2 className="text-2xl font-bold mb-2">Time Windows</h2>
+                <p className="text-muted-foreground">When do you usually want to complete this habit?</p>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-3">
+                  <Label htmlFor="windowStart">Window Start</Label>
+                  <Select value={windowStart || ''} onValueChange={setWindowStart}>
+                    <SelectTrigger id="windowStart" className="h-12 rounded-xl"><SelectValue placeholder="Anytime" /></SelectTrigger>
+                    <SelectContent>{timeOptions.map((time) => <SelectItem key={time} value={time}>{time}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-3">
+                  <Label htmlFor="windowEnd">Window End</Label>
+                  <Select value={windowEnd || ''} onValueChange={setWindowEnd}>
+                    <SelectTrigger id="windowEnd" className="h-12 rounded-xl"><SelectValue placeholder="Anytime" /></SelectTrigger>
+                    <SelectContent>{timeOptions.map((time) => <SelectItem key={time} value={time}>{time}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {step === 9 && (
+            <div className="space-y-6">
+              <div className="text-center">
+                <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                  <IconComponent className="w-8 h-8 text-primary" />
+                </div>
+                <h2 className="text-2xl font-bold mb-2">Custom Naming & Icon</h2>
+                <p className="text-muted-foreground">Give your habit a unique name and choose an icon.</p>
+              </div>
+              <div className="space-y-4">
+                <div className="space-y-3">
+                  <Label htmlFor="habitName">Habit Name</Label>
+                  <Input
+                    id="habitName"
+                    value={habitName}
+                    onChange={(e) => {
+                      setHabitName(e.target.value);
+                      setHabitKey(e.target.value.toLowerCase().replace(/\s/g, '_'));
+                    }}
+                    placeholder="e.g., Daily Reading, Morning Run"
+                    className="h-12 rounded-xl"
+                    required
+                  />
+                </div>
+                <div className="space-y-3">
+                  <Label htmlFor="habitKey">Unique Habit Key (auto-generated)</Label>
+                  <Input
+                    id="habitKey"
+                    value={habitKey}
+                    readOnly
+                    className="h-12 rounded-xl bg-muted/50"
+                  />
+                </div>
+                <div className="space-y-3">
+                  <Label htmlFor="icon">Icon</Label>
+                  <Select value={selectedIconName} onValueChange={setSelectedIconName}>
+                    <SelectTrigger id="icon" className="h-12 rounded-xl">
+                      <SelectValue>
+                        <div className="flex items-center gap-2">
+                          <IconComponent className="w-4 h-4" />
+                          {habitIcons.find(i => i.value === selectedIconName)?.label}
+                        </div>
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {habitIcons.map((icon) => (
+                        <SelectItem key={icon.value} value={icon.value}>
+                          <div className="flex items-center gap-2">
+                            <icon.icon className="w-4 h-4" />
+                            {icon.label}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-3">
+                  <Label htmlFor="notes">Optional Notes/Description</Label>
+                  <Textarea
+                    id="notes"
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Add any specific details or reminders for this habit."
+                    className="rounded-xl"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="flex justify-between mt-8 gap-4">
+            <Button variant="ghost" onClick={handleGuidedBack} disabled={createHabitMutation.isPending} className="rounded-2xl px-8">Back</Button>
+            <Button onClick={handleGuidedNext} disabled={createHabitMutation.isPending} className="flex-1 rounded-2xl h-12 text-base font-bold">
+              {step === 9 ? 'Create Habit' : 'Next'}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  const renderCustomForm = () => {
+    const IconComponent = getHabitIcon(selectedIconName);
+    return (
+      <form onSubmit={handleSubmit} className="space-y-8">
         <Card className="rounded-3xl shadow-sm border-0">
           <CardHeader className="p-6 pb-4">
             <CardTitle className="flex items-center gap-3 text-lg font-bold">
@@ -300,7 +698,7 @@ const CreateHabit = () => {
               </div>
               <div className="space-y-3">
                 <Label htmlFor="unit">Unit</Label>
-                <Select value={unit} onValueChange={setUnit}>
+                <Select value={unit} onValueChange={(value: 'min' | 'reps' | 'dose') => setUnit(value)}>
                   <SelectTrigger id="unit" className="h-12 rounded-xl">
                     <SelectValue placeholder="Select unit" />
                   </SelectTrigger>
@@ -340,7 +738,6 @@ const CreateHabit = () => {
           </CardContent>
         </Card>
 
-        {/* Goal & Frequency */}
         <Card className="rounded-3xl shadow-sm border-0">
           <CardHeader className="p-6 pb-4">
             <CardTitle className="flex items-center gap-3 text-lg font-bold">
@@ -378,10 +775,31 @@ const CreateHabit = () => {
                 <span>7x</span>
               </div>
             </div>
+            <div className="grid grid-cols-2 gap-4">
+               <div className="space-y-2">
+                 <div className="flex items-center gap-2 ml-1">
+                    <Clock className="w-3.5 h-3.5 text-primary" />
+                    <Label className="text-[10px] font-black uppercase opacity-60">Window Start</Label>
+                 </div>
+                 <Select value={windowStart || ''} onValueChange={setWindowStart}>
+                    <SelectTrigger id="windowStart" className="h-12 rounded-xl"><SelectValue placeholder="Anytime" /></SelectTrigger>
+                    <SelectContent>{timeOptions.map((time) => <SelectItem key={time} value={time}>{time}</SelectItem>)}</SelectContent>
+                  </Select>
+               </div>
+               <div className="space-y-2">
+                 <div className="flex items-center gap-2 ml-1">
+                    <Clock className="w-3.5 h-3.5 text-primary" />
+                    <Label className="text-[10px] font-black uppercase opacity-60">Window End</Label>
+                 </div>
+                 <Select value={windowEnd || ''} onValueChange={setWindowEnd}>
+                    <SelectTrigger id="windowEnd" className="h-12 rounded-xl"><SelectValue placeholder="Anytime" /></SelectTrigger>
+                    <SelectContent>{timeOptions.map((time) => <SelectItem key={time} value={time}>{time}</SelectItem>)}</SelectContent>
+                  </Select>
+               </div>
+            </div>
           </CardContent>
         </Card>
 
-        {/* Growth Logic */}
         <Card className="rounded-3xl shadow-sm border-0">
           <CardHeader className="p-6 pb-4">
             <CardTitle className="flex items-center gap-3 text-lg font-bold">
@@ -446,10 +864,28 @@ const CreateHabit = () => {
               <Switch checked={autoChunking} onCheckedChange={setAutoChunking} />
             </div>
 
-            <div className="space-y-3">
+            <div className="p-4 rounded-2xl bg-muted/30 border border-black/5 space-y-3">
+                <div className="flex items-center gap-2">
+                    <Info className="w-4 h-4 text-muted-foreground" />
+                    <Label className="text-[10px] font-black uppercase opacity-60">Growth Threshold</Label>
+                </div>
+                <div className="flex items-center gap-4">
+                    <Input
+                        type="number"
+                        className="h-10 w-20 rounded-xl font-bold"
+                        value={plateauDaysRequired}
+                        onChange={(e) => setPlateauDaysRequired(parseInt(e.target.value))}
+                    />
+                    <p className="text-[10px] text-muted-foreground leading-snug">
+                        Days of 100% consistency required before the system suggests a goal increase.
+                    </p>
+                </div>
+             </div>
+
+             <div className="space-y-3">
                 <Label className="text-[10px] font-black uppercase tracking-widest opacity-60 ml-1">Dependent On</Label>
-                <Select 
-                  value={dependentOnHabitId || 'none'} 
+                <Select
+                  value={dependentOnHabitId || 'none'}
                   onValueChange={(value) => setDependentOnHabitId(value === 'none' ? null : value)}
                 >
                   <SelectTrigger className="h-11 rounded-xl font-bold text-base">
@@ -471,7 +907,6 @@ const CreateHabit = () => {
           </CardContent>
         </Card>
 
-        {/* Advanced Settings (XP & Energy) */}
         <Card className="rounded-3xl shadow-sm border-0">
           <CardHeader className="p-6 pb-4">
             <CardTitle className="flex items-center gap-3 text-lg font-bold">
@@ -525,6 +960,43 @@ const CreateHabit = () => {
           )}
         </Button>
       </form>
+    );
+  };
+
+  return (
+    <div className="w-full max-w-2xl mx-auto px-4 py-6 space-y-8 pb-32">
+      <PageHeader title="Create New Habit" backLink="/" />
+
+      {flowType === 'entry' && (
+        <div className="space-y-6 text-center">
+          <div className="mx-auto w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mb-6">
+            <Target className="w-12 h-12 text-primary" />
+          </div>
+          <h2 className="text-3xl font-bold mb-4">How do you want to create your habit?</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Button
+              className="h-32 rounded-3xl text-xl font-bold flex flex-col items-center justify-center space-y-2 bg-primary hover:bg-primary/90"
+              onClick={() => setFlowType('guided')}
+            >
+              <Zap className="w-8 h-8" />
+              <span>Guided Wizard</span>
+              <span className="text-sm font-normal opacity-80">Step-by-step assistance</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="h-32 rounded-3xl text-xl font-bold flex flex-col items-center justify-center space-y-2 border-2 border-muted-foreground/20 hover:bg-muted/20"
+              onClick={() => setFlowType('custom')}
+            >
+              <Brain className="w-8 h-8" />
+              <span>Custom Habit</span>
+              <span className="text-sm font-normal opacity-80">Define all parameters manually</span>
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {flowType === 'guided' && renderGuidedStep()}
+      {flowType === 'custom' && renderCustomForm()}
     </div>
   );
 };
