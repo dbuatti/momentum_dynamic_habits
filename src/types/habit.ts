@@ -1,82 +1,82 @@
-// Assuming this is your habit types file. Adjust path if different.
-import { Database } from './supabase'; // Adjust path if different
+export type HabitType = 'count' | 'time';
+export type MomentumLevel = 'Struggling' | 'Building' | 'Strong' | 'Crushing';
+export type HabitCategory = 'anchor' | 'daily' | 'cognitive' | 'physical' | 'wellness' | 'daily_task'; // Added new categories
+export type GrowthPhase = 'frequency' | 'duration';
 
-export type Habit = Database['public']['Tables']['habits']['Row'];
-export type HabitLog = Database['public']['Tables']['habit_logs']['Row'];
-export type CompletedTask = Database['public']['Tables']['completed_tasks']['Row'];
-export type UserProfile = Database['public']['Tables']['profiles']['Row'];
-export type HabitCapsuleDB = Database['public']['Tables']['habit_capsules']['Row'];
-export type Badge = Database['public']['Tables']['badges']['Row'];
-export type AchievedBadge = Database['public']['Tables']['achieved_badges']['Row'];
-export type JourneyDay = Database['public']['Tables']['journey_days']['Row'];
-export type UserTip = Database['public']['Tables']['user_tips']['Row'];
-
-export interface ProcessedUserHabit extends Habit {
-  dailyProgress: number;
-  adjustedDailyGoal: number;
-  isComplete: boolean;
-  isLockedByDependency: boolean;
-  raw_lifetime_progress: number; // Raw value for lifetime progress, e.g., seconds for time-based habits
-  lifetime_progress: number; // UI-friendly value for lifetime progress, e.g., minutes for time-based habits
-  isScheduledForToday: boolean; // Added this property
-  isWithinWindow: boolean; // Added this property
-  unit: 'min' | 'reps' | 'dose'; // Stricter typing for unit
-}
-
-export interface HabitLogEntry {
+export interface Habit {
   id: string;
-  habit_id: string;
-  value: number;
-  logged_at: string;
-  note?: string;
+  name: string;
+  type: HabitType;
+  category: HabitCategory;
+  targetGoal: number; 
+  unit: string; 
+  currentProgress: number;
+  momentum: MomentumLevel;
+  route: string;
+  xpPerUnit: number;
+  energyCostPerUnit: number;
 }
 
-export interface DailySummary {
-  date: string;
-  total_completed_tasks: number;
-  total_xp_earned: number;
+export interface UserHabitRecord {
+  id: string;
+  user_id: string;
+  habit_key: string;
+  name: string; // Added name
+  unit: string; // Added unit
+  xp_per_unit: number; // Added xp_per_unit
+  energy_cost_per_unit: number; // Added energy_cost_per_unit
+  current_daily_goal: number;
+  long_term_goal: number;
+  momentum_level: MomentumLevel;
+  lifetime_progress: number;
+  raw_lifetime_progress: number; // Added raw_lifetime_progress
+  target_completion_date: string;
+  updated_at: string;
+  last_goal_increase_date: string | null;
+  is_frozen: boolean;
+  max_goal_cap: number | null;
+  last_plateau_start_date: string;
+  plateau_days_required: number;
+  completions_in_plateau: number;
+  is_fixed: boolean;
+  category: HabitCategory;
+  is_trial_mode: boolean;
+  frequency_per_week: number;
+  growth_phase: GrowthPhase;
+  window_start: string | null;
+  window_end: string | null;
+  days_of_week: number[];
+  auto_chunking: boolean;
+  enable_chunks: boolean;
+  num_chunks: number;
+  chunk_duration: number;
+  is_visible: boolean;
+  dependent_on_habit_id: string | null;
+  anchor_practice: boolean; // New: indicates if this is an anchor practice
+  carryover_value: number; // New: carryover from previous day's surplus
 }
 
-export interface WeeklySummary {
-  [key: string]: DailySummary; // Key is date string (YYYY-MM-DD)
+export interface ProcessedUserHabit extends UserHabitRecord {
+  key: string; // habit_key is renamed to key in processed data
+  dailyGoal: number; // Base daily goal from DB
+  adjustedDailyGoal: number; // dailyGoal + carryover
+  dailyProgress: number; // Current progress today
+  isComplete: boolean; // Is daily goal met
+  weekly_completions: number; // Number of times completed this week
+  weekly_goal: number; // Target weekly goal
+  xpPerUnit: number; // Renamed from xp_per_unit
+  energyCostPerUnit: number; // Renamed from energy_cost_per_unit
+  growth_stats: {
+    completions: number;
+    required: number;
+    daysRemaining: number;
+    phase: 'frequency' | 'duration';
+  };
+  isLockedByDependency: boolean;
+  carryoverValue: number; // Renamed from carryover_value
 }
 
-export interface HabitPatterns {
-  streak: number;
-  bestTime: string;
-  consistencyScore: number;
-}
-
-export interface DashboardData {
-  daysActive: number;
-  totalJourneyDays: number;
-  habits: ProcessedUserHabit[];
-  neurodivergentMode: boolean;
-  weeklySummary: WeeklySummary;
-  patterns: HabitPatterns;
-  lastActiveText: string;
-  firstName: string;
-  lastName: string;
-  xp: number;
-  level: number;
-  tip: UserTip | null;
-  averageDailyTasks: number;
-}
-
-export interface JourneyData {
-  allBadges: Badge[];
-  achievedBadges: AchievedBadge[];
-  journeyDays: JourneyDay[];
-}
-
-export interface LogHabitParams {
-  habitKey: string;
-  value: number;
-  taskName: string;
-  note?: string;
-}
-
-export interface UnlogHabitParams {
-  habitKey: string;
-  taskName: string;
+export interface PianoHabit extends Habit {
+  targetSongs: string[];
+  songsCompletedToday: string[];
 }

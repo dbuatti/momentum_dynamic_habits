@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress'; // Imported Progress
 import { CheckCircle2, Target, Timer, PlusCircle, Loader2 } from 'lucide-react';
 import { ProcessedUserHabit } from '@/types/habit';
 import { HabitCapsule } from './HabitCapsule';
@@ -23,7 +22,7 @@ interface TodayProgressCardProps {
 
 export const TodayProgressCard: React.FC<TodayProgressCardProps> = ({ habits, neurodivergentMode, isLoading }) => {
   const { dbCapsules, isLoading: isLoadingCapsules, completeCapsule, uncompleteCapsule, resetCapsulesForToday } = useCapsules();
-  const { logHabit, unlogHabit, isLoggingHabit } = useHabitLog(); // Destructured unlogHabit
+  const { mutate: logHabit, isPending: isLoggingHabit } = useHabitLog();
 
   const [activeTimer, setActiveTimer] = useState<{ label: string; elapsed: number; isPaused: boolean; habitKey: string; habitName: string; goalValue: number } | null>(null);
   const [showRestTimer, setShowRestTimer] = useState(false);
@@ -74,7 +73,7 @@ export const TodayProgressCard: React.FC<TodayProgressCardProps> = ({ habits, ne
 
   // Calculate overall daily progress
   const { completed: totalCompletedCapsules, total: totalPossibleCapsules } = useMemo(() => {
-    return calculateDailyParts(habitsWithCapsules, neurodiverdivergentMode);
+    return calculateDailyParts(habitsWithCapsules, neurodivergentMode);
   }, [habitsWithCapsules, neurodivergentMode]);
 
   // Update global tab/floating timer
@@ -95,7 +94,7 @@ export const TodayProgressCard: React.FC<TodayProgressCardProps> = ({ habits, ne
       await completeCapsule.mutateAsync({ habitKey, index: capsuleIndex, value: capsuleValue, mood });
       
       // Log to completedtasks table as well
-      await logHabit.mutateAsync({ // Corrected to use .mutateAsync
+      await logHabit({
         habitKey,
         value: unit === 'min' ? capsuleValue : Math.round(capsuleValue), // Log minutes or reps/doses
         taskName: `${habitName} (Part ${capsuleIndex + 1})`,
@@ -109,7 +108,7 @@ export const TodayProgressCard: React.FC<TodayProgressCardProps> = ({ habits, ne
         setRestTimerDuration(neurodivergentMode ? 30 : 60); // Shorter rest for ND mode
         setShowRestTimer(true);
       }
-    } catch (error: any) { // Added any type for error
+    } catch (error) {
       showError(`Failed to complete capsule: ${error.message}`);
     }
   };
@@ -118,12 +117,12 @@ export const TodayProgressCard: React.FC<TodayProgressCardProps> = ({ habits, ne
     try {
       await uncompleteCapsule.mutateAsync({ habitKey, index: capsuleIndex });
       // Also unlog from completedtasks
-      await unlogHabit.mutateAsync({ // Corrected to use unlogHabit.mutateAsync
+      await logHabit.unlog({
         habitKey,
         taskName: `${habitName} (Part ${capsuleIndex + 1})`,
       });
       showSuccess(`Capsule ${capsuleIndex + 1} of ${habitName} uncompleted.`);
-    } catch (error: any) { // Added any type for error
+    } catch (error) {
       showError(`Failed to uncomplete capsule: ${error.message}`);
     }
   };
@@ -151,17 +150,17 @@ export const TodayProgressCard: React.FC<TodayProgressCardProps> = ({ habits, ne
 
   const handleRestComplete = () => {
     setShowRestTimer(false);
-    handleStopTimer(); // Corrected call
+    onStopTimer(); // Ensure any active timer is stopped
   };
 
   const handleRestCancel = () => {
     setShowRestTimer(false);
-    handleStopTimer(); // Corrected call
+    onStopTimer(); // Ensure any active timer is stopped
   };
 
   const handleSkipRest = () => {
     setShowRestTimer(false);
-    handleStopTimer(); // Corrected call
+    onStopTimer(); // Ensure any active timer is stopped
   };
 
   if (isLoading || isLoadingCapsules) {

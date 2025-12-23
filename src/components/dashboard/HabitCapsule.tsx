@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Timer, Check, X, Play, Pause, SkipForward, Smile, Meh, Frown, Square } from 'lucide-react'; // Imported Square
+import { Timer, Check, X, Play, Pause, SkipForward, Smile, Meh, Frown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useHabitLog } from '@/hooks/useHabitLog';
 import { useCapsules } from '@/hooks/useCapsules';
