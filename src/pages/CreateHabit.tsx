@@ -332,10 +332,10 @@ const CreateHabit = () => {
                       <div className="flex items-center gap-2">
                         <icon.icon className="w-4 h-4" />
                         {icon.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
               </Select>
             </div>
           </CardContent>
