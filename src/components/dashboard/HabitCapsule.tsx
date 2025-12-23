@@ -317,12 +317,12 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
               )}
             </div>
           ) : (
-            <div className="space-y-5 py-2 text-white">
+            <div className={cn("space-y-5 py-2", colors.text)}>
               <div className="flex justify-between items-start">
                 <div className="pl-1">
-                  <p className="text-[10px] font-black uppercase tracking-widest opacity-80">Active {label}</p>
-                  <p className="text-4xl font-black tabular-nums mt-1 text-white">{formatTime(initialValue * 60 + elapsedSeconds)}</p>
-                  <p className="text-[10px] opacity-80 mt-1 font-bold">
+                  <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Active {label}</p>
+                  <p className="text-4xl font-black tabular-nums mt-1">{formatTime(initialValue * 60 + elapsedSeconds)}</p>
+                  <p className="text-[10px] opacity-60 mt-1 font-bold">
                     Goal: {value} min {initialValue > 0 && `(incl. ${initialValue}m surplus)`}
                   </p>
                 </div>
@@ -330,7 +330,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                 <div className="flex gap-2">
                   <Button 
                     size="icon" 
-                    className="h-12 w-12 rounded-full bg-white text-black hover:bg-white/90 shadow-md border-0"
+                    className="h-12 w-12 rounded-full bg-white/90 text-black hover:bg-white shadow-md border-0"
                     onClick={handlePauseTimer}
                   >
                     {isPaused ? <Play className="w-6 h-6 ml-0.5 fill-current" /> : <Pause className="w-6 h-6 fill-current" />}
