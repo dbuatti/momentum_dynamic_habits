@@ -26,7 +26,8 @@ export const WizardStepper: React.FC<WizardStepperProps> = ({
         const stepNumber = index + 1;
         const isActive = stepNumber === currentMacroStep;
         const isCompleted = isStepCompleted(stepNumber);
-        const isClickable = stepNumber <= currentMacroStep; // Only allow clicking on current or previous steps
+        // All steps are now clickable
+        const isClickable = true; 
 
         return (
           <Button
@@ -40,11 +41,10 @@ export const WizardStepper: React.FC<WizardStepperProps> = ({
                 ? "bg-primary text-primary-foreground shadow-md"
                 : isCompleted
                   ? "bg-secondary text-muted-foreground hover:bg-secondary/80"
-                  : "text-muted-foreground opacity-60 cursor-not-allowed",
-              !isClickable && "pointer-events-none"
+                  : "text-muted-foreground opacity-60 hover:bg-secondary/50", // Styling for future steps
             )}
-            onClick={() => isClickable && onStepClick(stepNumber)}
-            disabled={!isClickable}
+            onClick={() => onStepClick(stepNumber)}
+            // No longer disabling based on isClickable, as all are clickable
           >
             {isCompleted && !isActive ? (
               <Check className="w-3 h-3" />

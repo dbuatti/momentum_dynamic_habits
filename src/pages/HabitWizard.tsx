@@ -415,11 +415,10 @@ const HabitWizard = () => {
   }, [deleteProgress, navigate]);
 
   const handleMacroStepClick = useCallback((stepNumber: number) => {
-    if (stepNumber <= currentStep) { // Allow navigating back to any previous macro step
-      setCurrentStep(stepNumber);
-      setCurrentMicroStepIndex(0); // Start from the first micro-step of the chosen macro step
-    }
-  }, [currentStep]);
+    // Allow navigating to any macro step, forward or backward
+    setCurrentStep(stepNumber);
+    setCurrentMicroStepIndex(0); // Always start from the first micro-step of the chosen macro step
+  }, []);
 
   const isMacroStepCompleted = useCallback((stepNumber: number) => {
     return currentStep > stepNumber;
