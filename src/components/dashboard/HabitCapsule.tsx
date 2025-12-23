@@ -3,12 +3,13 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Check, Clock, Smile, Meh, Frown, Undo2, Play, Pause, Square, RotateCcw, Plus, Minus, Lock, Sparkles } from 'lucide-react';
+import { Check, Clock, Smile, Meh, Frown, Undo2, Play, Pause, Square, RotateCcw, Plus, Minus, Lock, Sparkles, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useFeedback } from '@/hooks/useFeedback';
 import { Input } from '@/components/ui/input';
 import { MeasurementType } from '@/types/habit';
+import confetti from 'canvas-confetti';
 
 interface HabitCapsuleProps {
   id: string;
@@ -54,6 +55,13 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   const [isPaused, setIsPaused] = useState(false);
   const [completedTaskIdState, setCompletedTaskIdState] = useState<string | null>(initialCompletedTaskId || null);
   const [manualValue, setManualValue] = useState<number>(value);
+  const [showSavedFeedback, setShowSavedFeedback] = useState(false);
+  const [hasCollapsedBefore, setHasCollapsedBefore] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('has_used_collapse_gesture') === 'true';
+    }
+    return false;
+  });
   
   const { triggerFeedback } = useFeedback();
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -62,7 +70,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   const isLoggingDisabled = isFixed && isHabitComplete && !isCompleted;
   const isBonusMode = !isFixed && isHabitComplete && !isCompleted;
 
-  // Defensive Unit Fallback for rendering
   const displayUnit = unit || (measurementType === 'timer' ? 'min' : (measurementType === 'binary' ? 'dose' : 'reps'));
 
   useEffect(() => {
@@ -176,7 +183,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     e.stopPropagation();
     triggerFeedback('pause');
     setTimeLeft(value * 60);
-    // Reset back to starting position without pausing if it was timing
   };
 
   const handleFinishTiming = (mood?: string, promptMood: boolean = false) => {
@@ -188,11 +194,47 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
       return;
     }
     triggerFeedback('completion');
+    
+    // Trigger celebratory confetti for full completion
+    if (timeLeft === 0) {
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#6366f1', '#a855f7', '#22c55e']
+      });
+    }
+
     localStorage.removeItem(storageKey);
     onLogProgress(totalSessionMinutes, true, mood);
     setIsTiming(false);
     setTimeLeft(value * 60);
     setShowMoodPicker(false);
+  };
+
+  const handleCollapse = (e: React.MouseEvent) => {
+    if (!isTiming || isCompleted) return;
+    
+    stopInterval();
+    
+    const elapsedSeconds = (value * 60) - timeLeft;
+    const elapsedMinutes = Number((elapsedSeconds / 60).toFixed(2));
+
+    if (elapsedSeconds > 2) {
+      onLogProgress(elapsedMinutes, false);
+      setShowSavedFeedback(true);
+      setTimeout(() => setShowSavedFeedback(false), 2000);
+    }
+
+    if (!hasCollapsedBefore) {
+      setHasCollapsedBefore(true);
+      localStorage.setItem('has_used_collapse_gesture', 'true');
+    }
+
+    setIsTiming(false);
+    setIsPaused(false);
+    localStorage.removeItem(storageKey);
+    triggerFeedback('pause');
   };
 
   const handleLogManual = (mood?: string, promptMood: boolean = false) => {
@@ -237,31 +279,67 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     : 0;
 
   return (
-    <motion.div layout className="relative">
+    <motion.div 
+      layout 
+      className="relative"
+      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+    >
       <Card
+        onClick={handleCollapse}
         className={cn(
-          'relative overflow-hidden transition-all duration-500 border-2 rounded-[28px] shadow-lg',
-          isCompleted ? 'bg-muted/40 border-muted opacity-70' : cn('bg-card/80 backdrop-blur-sm', colors.border),
-          isTiming && 'ring-4 ring-primary/30 shadow-2xl scale-[1.01]',
+          'relative overflow-hidden transition-all duration-700 border-2 rounded-[28px] shadow-lg',
+          isCompleted ? 'bg-muted/40 border-muted opacity-70 scale-95' : cn('bg-card/80 backdrop-blur-sm', colors.border),
+          isTiming && 'ring-8 ring-primary/5 shadow-2xl scale-[1.02] cursor-pointer',
           isLoggingDisabled && 'opacity-40 grayscale-[0.5]',
           isBonusMode && 'border-dashed border-success/50'
         )}
       >
+        {/* Success Shimmer Feedback */}
+        <AnimatePresence>
+          {showSavedFeedback && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 z-50 bg-success/20 backdrop-blur-sm flex items-center justify-center pointer-events-none"
+            >
+               <motion.div 
+                initial={{ scale: 0.8, y: 10 }}
+                animate={{ scale: 1, y: 0 }}
+                className="flex items-center gap-2 bg-success text-success-foreground px-4 py-2 rounded-full shadow-lg"
+               >
+                 <Sparkles className="w-4 h-4" />
+                 <span className="text-xs font-black uppercase tracking-widest">Progress Counted</span>
+               </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Breathing Active Glow */}
+        {isTiming && !isPaused && (
+          <motion.div
+            animate={{ opacity: [0.1, 0.3, 0.1] }}
+            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            className={cn("absolute inset-0 pointer-events-none z-0 bg-gradient-to-br", colors.light, "to-transparent")}
+          />
+        )}
+
         <AnimatePresence>
           {!isCompleted && measurementType === 'timer' && isTiming && (
             <motion.div
               className="absolute inset-x-0 bottom-0 z-0 pointer-events-none"
               initial={{ height: '0%' }}
               animate={{ height: `${progressPercent}%` }}
+              transition={{ duration: 0.8 }}
             >
-              <div className={cn('absolute inset-0 bg-gradient-to-t', colors.light, colors.mid, colors.dark)} />
+              <div className={cn('absolute inset-0 bg-gradient-to-t opacity-30', colors.light, colors.mid, colors.dark)} />
             </motion.div>
           )}
         </AnimatePresence>
 
         <div className="relative z-10 p-5">
           {isCompleted ? (
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center justify-between gap-4" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center gap-4 min-w-0">
                 <div className="w-12 h-12 rounded-2xl bg-card/80 flex items-center justify-center shrink-0 border border-border/50">
                   <Check className="w-7 h-7 text-success" />
@@ -289,35 +367,58 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
             </div>
           ) : measurementType === 'timer' ? (
             isTiming ? (
-              <div className={cn('flex flex-col sm:flex-row justify-between items-center gap-4', colors.text)}>
-                <div className="pl-1">
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-xs font-black uppercase opacity-60 tracking-widest leading-none">Remaining:</span>
-                    <p className="text-4xl font-black tabular-nums leading-none">{formatTimeDisplay(timeLeft)}</p>
-                  </div>
+              <div className={cn('flex flex-col gap-6', colors.text)}>
+                <div className="flex flex-col sm:flex-row justify-between items-center gap-6">
+                    <div className="pl-1" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex flex-col items-center sm:items-start">
+                        <span className="text-[10px] font-black uppercase opacity-60 tracking-[0.2em] mb-1">Time Remaining</span>
+                        <p className="text-5xl font-black tabular-nums tracking-tighter leading-none">{formatTimeDisplay(timeLeft)}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4" onClick={(e) => e.stopPropagation()}>
+                      <Button 
+                        size="icon" 
+                        variant="ghost" 
+                        className="h-14 w-14 rounded-full bg-card/90 shadow-xl border border-border/30 hover:scale-105 active:scale-95 transition-all" 
+                        onClick={handleResetTimer}
+                        title="Reset Timer"
+                      >
+                        <RotateCcw className="w-6 h-6 opacity-60" />
+                      </Button>
+                      <Button 
+                        size="icon" 
+                        variant="ghost" 
+                        className="h-14 w-14 rounded-full bg-card/90 shadow-xl border border-border/30 hover:scale-105 active:scale-95 transition-all" 
+                        onClick={handlePauseTimer}
+                      >
+                        {isPaused ? <Play className="w-7 h-7 ml-1 fill-current" /> : <Pause className="w-7 h-7 fill-current" />}
+                      </Button>
+                      <Button 
+                        size="lg" 
+                        className="h-14 px-8 rounded-full font-black shadow-2xl bg-primary text-primary-foreground hover:scale-105 active:scale-95 transition-all" 
+                        onClick={() => handleFinishTiming(undefined, true)}
+                      >
+                        <Square className="w-4 h-4 mr-2 fill-current" /> Finish Early
+                      </Button>
+                    </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <Button 
-                    size="icon" 
-                    variant="ghost" 
-                    className="h-12 w-12 rounded-full bg-card/90 shadow-md border border-border/30" 
-                    onClick={handleResetTimer}
-                    title="Reset Timer"
-                  >
-                    <RotateCcw className="w-5 h-5" />
-                  </Button>
-                  <Button size="icon" variant="ghost" className="h-12 w-12 rounded-full bg-card/90 shadow-md border border-border/30" onClick={handlePauseTimer}>
-                    {isPaused ? <Play className="w-6 h-6 ml-0.5 fill-current" /> : <Pause className="w-6 h-6 fill-current" />}
-                  </Button>
-                  <Button size="lg" className="h-12 px-6 rounded-full font-black shadow-lg bg-primary text-primary-foreground" onClick={() => handleFinishTiming(undefined, true)}>
-                    <Square className="w-4 h-4 mr-2 fill-current" /> Finish Early
-                  </Button>
-                </div>
+                {!hasCollapsedBefore && (
+                   <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 0.4, y: 0 }}
+                    className="flex flex-col items-center gap-2 mt-2 pointer-events-none"
+                   >
+                     <ChevronDown className="w-4 h-4 animate-bounce" />
+                     <p className="text-[9px] font-black uppercase tracking-[0.2em] text-center">
+                       Tap background to save & step away
+                     </p>
+                   </motion.div>
+                )}
               </div>
             ) : (
-              <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center justify-between gap-4" onClick={(e) => e.stopPropagation()}>
                 <div className="flex items-center gap-4">
-                  <Button size="icon" variant="ghost" className="w-12 h-12 rounded-2xl bg-card/95 border border-border/50" onClick={handleStartTimer}>
+                  <Button size="icon" variant="ghost" className="w-12 h-12 rounded-2xl bg-card/95 border border-border/50 hover:scale-105 transition-transform" onClick={handleStartTimer}>
                     <Play className={cn('w-6 h-6 ml-0.5 fill-current', colors.text)} />
                   </Button>
                   <div>
@@ -338,7 +439,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
               </div>
             )
           ) : measurementType === 'unit' ? (
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center justify-between">
                 <div>
                   <p className={cn('font-bold text-lg leading-tight', colors.text)}>
@@ -375,7 +476,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
               </Button>
             </div>
           ) : (
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
               <div>
                 <p className={cn('font-bold text-lg leading-tight', colors.text)}>
                   {isBonusMode ? 'Log More?' : label}
@@ -405,15 +506,16 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 10 }}
+              onClick={(e) => e.stopPropagation()}
               className="absolute inset-0 z-50 bg-card/95 backdrop-blur-md flex flex-col items-center justify-center p-4 gap-4"
             >
               <p className="text-sm font-black uppercase tracking-widest opacity-60">Success! How was it?</p>
               <div className="flex gap-4">
-                <Button variant="ghost" className="h-14 w-14 rounded-full" onClick={() => (measurementType === 'unit' ? handleLogManual('sad', false) : measurementType === 'binary' ? handleLogBinary('sad', false) : handleFinishTiming('sad', false))}><Frown className="w-8 h-8 text-red-500" /></Button>
-                <Button variant="ghost" className="h-14 w-14 rounded-full" onClick={() => (measurementType === 'unit' ? handleLogManual('neutral', false) : measurementType === 'binary' ? handleLogBinary('neutral', false) : handleFinishTiming('neutral', false))}><Meh className="w-8 h-8 text-yellow-500" /></Button>
-                <Button variant="ghost" className="h-14 w-14 rounded-full" onClick={() => (measurementType === 'unit' ? handleLogManual('happy', false) : measurementType === 'binary' ? handleLogBinary('happy', false) : handleFinishTiming('happy', false))}><Smile className="w-8 h-8 text-green-500" /></Button>
+                <Button variant="ghost" className="h-14 w-14 rounded-full hover:scale-110 transition-transform" onClick={() => (measurementType === 'unit' ? handleLogManual('sad', false) : measurementType === 'binary' ? handleLogBinary('sad', false) : handleFinishTiming('sad', false))}><Frown className="w-8 h-8 text-red-500" /></Button>
+                <Button variant="ghost" className="h-14 w-14 rounded-full hover:scale-110 transition-transform" onClick={() => (measurementType === 'unit' ? handleLogManual('neutral', false) : measurementType === 'binary' ? handleLogBinary('neutral', false) : handleFinishTiming('neutral', false))}><Meh className="w-8 h-8 text-yellow-500" /></Button>
+                <Button variant="ghost" className="h-14 w-14 rounded-full hover:scale-110 transition-transform" onClick={() => (measurementType === 'unit' ? handleLogManual('happy', false) : measurementType === 'binary' ? handleLogBinary('happy', false) : handleFinishTiming('happy', false))}><Smile className="w-8 h-8 text-green-500" /></Button>
               </div>
-              <Button variant="link" size="sm" onClick={() => (measurementType === 'unit' ? handleLogManual(undefined, false) : measurementType === 'binary' ? handleLogBinary(undefined, false) : handleFinishTiming(undefined, false))} className="text-muted-foreground">Skip</Button>
+              <Button variant="link" size="sm" onClick={() => (measurementType === 'unit' ? handleLogManual(undefined, false) : measurementType === 'binary' ? handleLogBinary(undefined, false) : handleFinishTiming(undefined, false))} className="text-muted-foreground uppercase font-black text-[10px] tracking-widest">Skip Reflection</Button>
             </motion.div>
           )}
         </AnimatePresence>
