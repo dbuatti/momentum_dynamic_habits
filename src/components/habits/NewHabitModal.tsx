@@ -89,7 +89,7 @@ const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: s
     energy_cost_per_unit: energy_cost_per_unit,
     current_daily_goal: current_daily_goal,
     long_term_goal: current_daily_goal * (unit === 'min' ? 365 * 60 : 365),
-    target_completion_date: oneYearFromNow.toISOString().split('T')[0],
+    target_completion_date: oneYearDateString,
     momentum_level: 'Building',
     lifetime_progress: 0,
     last_goal_increase_date: today.toISOString().split('T')[0],
@@ -116,7 +116,8 @@ const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: s
     carryover_value: carryover_enabled ? 1 : 0,
   };
 
-  const { error } = await supabase.from('user_habits').upsert(habitToInsert, { onConflict: 'user_id, habit_key' });
+  // Remove the onConflict option. The client handles upserts based on primary key or unique constraints.
+  const { error } = await supabase.from('user_habits').upsert(habitToInsert);
 
   if (error) throw error;
   return { success: true };

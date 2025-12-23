@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-// import { PageHeader } from '@/components/layout/PageHeader'; // Removed
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, RotateCcw } from 'lucide-react';
@@ -48,10 +47,9 @@ import { Step6_GrowthAppetite } from '@/components/habits/wizard/micro/Step6_Gro
 import { Step6_GrowthStyle } from '@/components/habits/wizard/micro/Step6_GrowthStyle';
 import { Step6_FailureResponse } from '@/components/habits/wizard/micro/Step6_FailureResponse';
 import { Step6_SuccessDefinition } from '@/components/habits/wizard/micro/Step6_SuccessDefinition';
-// import { HabitTemplateForm } from '@/components/habits/wizard/HabitTemplateForm'; // Removed
 import { HabitReviewStep } from '@/pages/HabitReview';
 import { WizardStepper } from '@/components/habits/wizard/WizardStepper';
-import { EditHabitDetailsModal } from '@/components/habits/wizard/EditHabitDetailsModal'; // Import the new modal
+import { EditHabitDetailsModal } from '@/components/habits/wizard/EditHabitDetailsModal';
 
 export interface CreateHabitParams {
   name: string;
@@ -139,7 +137,8 @@ const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: s
     carryover_value: carryover_enabled ? 1 : 0,
   };
 
-  const { error } = await supabase.from('user_habits').upsert(habitToInsert, { onConflict: 'user_id, habit_key' });
+  // Remove the onConflict option. The client handles upserts based on primary key or unique constraints.
+  const { error } = await supabase.from('user_habits').upsert(habitToInsert);
 
   if (error) throw error;
   return { success: true };

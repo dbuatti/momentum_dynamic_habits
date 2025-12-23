@@ -190,9 +190,10 @@ const initializeSelectedHabits = async (userId: string, params: OnboardingHabitP
   const finalHabitsToUpsert = [...habitsToUpsert, ...fixedHabitsToAdd];
 
   if (finalHabitsToUpsert.length > 0) {
+    // Remove the onConflict option. The client handles upserts based on primary key or unique constraints.
     const { error: upsertError } = await supabase
       .from('user_habits')
-      .upsert(finalHabitsToUpsert, { onConflict: 'user_id, habit_key' }); // Removed ignoreDuplicates: true
+      .upsert(finalHabitsToUpsert);
     if (upsertError) throw upsertError;
   }
 
