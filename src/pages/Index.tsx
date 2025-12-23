@@ -162,13 +162,14 @@ const Index = () => {
     const isGrowth = !habit.is_fixed && !habit.is_trial_mode;
     const isTrial = habit.is_trial_mode;
     
-    const accentColor = {
-        orange: 'text-orange-950 bg-orange-50 border-orange-200',
-        blue: 'text-blue-950 bg-blue-50 border-blue-200',
-        green: 'text-green-950 bg-green-50 border-green-200',
-        purple: 'text-purple-950 bg-purple-50 border-purple-200',
-        red: 'text-red-950 bg-red-50 border-red-200',
-        indigo: 'text-indigo-950 bg-indigo-50 border-indigo-200',
+    // Use the custom habit- colors defined in globals.css and tailwind.config.ts
+    const accentColorClasses = {
+        orange: 'bg-habit-orange border-habit-orange-border text-habit-orange-foreground',
+        blue: 'bg-habit-blue border-habit-blue-border text-habit-blue-foreground',
+        green: 'bg-habit-green border-habit-green-border text-habit-green-foreground',
+        purple: 'bg-habit-purple border-habit-purple-border text-habit-purple-foreground',
+        red: 'bg-habit-red border-habit-red-border text-habit-red-foreground',
+        indigo: 'bg-habit-indigo border-habit-indigo-border text-habit-indigo-foreground',
     }[color];
 
     const nextCapsule = habit.capsules.find((c: any) => !c.isCompleted);
@@ -187,7 +188,7 @@ const Index = () => {
         value={habit.key}
         className={cn(
           "border-2 rounded-[32px] shadow-sm overflow-hidden transition-all duration-300",
-          habit.allCompleted ? "opacity-50 grayscale-[0.3] border-muted bg-muted/5" : cn(accentColor, "shadow-md"),
+          habit.allCompleted ? "opacity-50 grayscale-[0.3] border-muted bg-muted/5" : cn(accentColorClasses, "shadow-md"),
           !habit.isWithinWindow && !habit.allCompleted && "opacity-75",
           isLocked && "opacity-40 grayscale-[0.5] pointer-events-none" // Apply styles for locked habits
         )}

@@ -22,11 +22,11 @@ export const TemplateDetailModal: React.FC<TemplateDetailModalProps> = ({ templa
   const ModeIcon = habitModes.find(mode => mode.value === template.defaultMode)?.icon || Info;
 
   const categoryColorMap: Record<string, string> = {
-    cognitive: 'bg-blue-100 text-blue-700 border-blue-200',
-    physical: 'bg-green-100 text-green-700 border-green-200',
-    wellness: 'bg-purple-100 text-purple-700 border-purple-200',
-    daily: 'bg-orange-100 text-orange-700 border-orange-200',
-    anchor: 'bg-indigo-100 text-indigo-700 border-indigo-200',
+    cognitive: 'bg-habit-blue text-habit-blue-foreground border-habit-blue-border',
+    physical: 'bg-habit-green text-habit-green-foreground border-habit-green-border',
+    wellness: 'bg-habit-purple text-habit-purple-foreground border-habit-purple-border',
+    daily: 'bg-habit-orange text-habit-orange-foreground border-habit-orange-border',
+    anchor: 'bg-habit-indigo text-habit-indigo-foreground border-habit-indigo-border',
   };
   const categoryClasses = categoryColorMap[template.category] || 'bg-gray-100 text-gray-700 border-gray-200';
 
@@ -57,7 +57,7 @@ export const TemplateDetailModal: React.FC<TemplateDetailModalProps> = ({ templa
               {habitCategories.find(cat => cat.value === template.category)?.label || template.category}
             </span>
             {template.anchorPractice && (
-              <span className="px-3 py-1 rounded-full text-xs font-bold border bg-indigo-50 text-indigo-600 border-indigo-200">
+              <span className="px-3 py-1 rounded-full text-xs font-bold border bg-habit-indigo text-habit-indigo-foreground border-habit-indigo-border">
                 <Anchor className="w-3 h-3 inline-block mr-1" />
                 Anchor Practice
               </span>

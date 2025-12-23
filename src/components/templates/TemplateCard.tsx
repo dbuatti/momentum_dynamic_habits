@@ -19,11 +19,11 @@ export const TemplateCard: React.FC<TemplateCardProps> = ({ template, onUseTempl
   const IconComponent = habitIcons.find(icon => icon.value === template.icon_name)?.icon || Target;
 
   const categoryColorMap: Record<string, string> = {
-    cognitive: 'bg-blue-100 text-blue-700 border-blue-200',
-    physical: 'bg-green-100 text-green-700 border-green-200',
-    wellness: 'bg-purple-100 text-purple-700 border-purple-200',
-    daily: 'bg-orange-100 text-orange-700 border-orange-200',
-    anchor: 'bg-indigo-100 text-indigo-700 border-indigo-200',
+    cognitive: 'bg-habit-blue text-habit-blue-foreground border-habit-blue-border',
+    physical: 'bg-habit-green text-habit-green-foreground border-habit-green-border',
+    wellness: 'bg-habit-purple text-habit-purple-foreground border-habit-purple-border',
+    daily: 'bg-habit-orange text-habit-orange-foreground border-habit-orange-border',
+    anchor: 'bg-habit-indigo text-habit-indigo-foreground border-habit-indigo-border',
   };
 
   const categoryClasses = categoryColorMap[template.category] || 'bg-gray-100 text-gray-700 border-gray-200';
@@ -44,7 +44,7 @@ export const TemplateCard: React.FC<TemplateCardProps> = ({ template, onUseTempl
                   {habitCategories.find(cat => cat.value === template.category)?.label || template.category}
                 </span>
                 {template.anchorPractice && (
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-bold border bg-indigo-50 text-indigo-600 border-indigo-200">
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-bold border bg-habit-indigo text-habit-indigo-foreground border-habit-indigo-border">
                     <Anchor className="w-3 h-3 inline-block mr-1" />
                     Anchor
                   </span>

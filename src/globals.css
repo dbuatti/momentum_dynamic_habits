@@ -56,8 +56,12 @@
     --habit-purple: 250 100% 97%;
     --habit-purple-foreground: 250 50% 50%;
     --habit-purple-border: 250 70% 85%;
-    --habit-orange: 25 95% 60%;
-    --habit-blue: 220 80% 65%;
+    --habit-orange: 25 95% 95%; /* Lighter default for background */
+    --habit-orange-foreground: 25 95% 40%; /* Darker for text */
+    --habit-orange-border: 25 95% 80%; /* Medium for border */
+    --habit-blue: 220 80% 95%; /* Lighter default for background */
+    --habit-blue-foreground: 220 80% 40%; /* Darker for text */
+    --habit-blue-border: 220 80% 80%; /* Medium for border */
     
     --habit-red: 0 90% 95%;
     --habit-red-foreground: 0 70% 40%;

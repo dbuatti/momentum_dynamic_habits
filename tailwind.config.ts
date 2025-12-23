@@ -74,9 +74,13 @@ export default {
         },
         'habit-orange': {
           DEFAULT: 'hsl(var(--habit-orange))',
+          foreground: 'hsl(var(--habit-orange-foreground))',
+          border: 'hsl(var(--habit-orange-border))',
         },
         'habit-blue': {
           DEFAULT: 'hsl(var(--habit-blue))',
+          foreground: 'hsl(var(--habit-blue-foreground))',
+          border: 'hsl(var(--habit-blue-border))',
         },
         'habit-red': {
           DEFAULT: 'hsl(var(--habit-red))',

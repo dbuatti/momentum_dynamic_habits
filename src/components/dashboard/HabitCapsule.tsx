@@ -229,16 +229,39 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   const currentTotalMinutes = isTimeBased ? initialValue + (elapsedSeconds / 60) : initialValue;
   const progressPercent = Math.min(100, (currentTotalMinutes / value) * 100);
 
-  const colorMap = {
-    orange: { light: 'from-orange-300', dark: 'to-orange-600', wave: '#fb923c', bg: 'bg-orange-50', border: 'border-orange-100', text: 'text-orange-900', iconBg: 'bg-orange-200' },
-    blue: { light: 'from-blue-300', dark: 'to-blue-600', wave: '#60a5fa', bg: 'bg-blue-50', border: 'border-blue-100', text: 'text-blue-900', iconBg: 'bg-blue-200' },
-    green: { light: 'from-green-300', dark: 'to-green-600', wave: '#4ade80', bg: 'bg-green-50', border: 'border-green-100', text: 'text-green-900', iconBg: 'bg-green-200' },
-    purple: { light: 'from-purple-300', dark: 'to-purple-600', wave: '#a78bfa', bg: 'bg-purple-50', border: 'border-purple-100', text: 'text-purple-900', iconBg: 'bg-purple-200' },
-    red: { light: 'from-red-300', dark: 'to-red-600', wave: '#f87171', bg: 'bg-red-50', border: 'border-red-100', text: 'text-red-900', iconBg: 'bg-red-200' },
-    indigo: { light: 'from-indigo-300', dark: 'to-indigo-600', wave: '#6366f1', bg: 'bg-indigo-50', border: 'border-indigo-100', text: 'text-indigo-900', iconBg: 'bg-indigo-200' },
-  };
-
-  const colors = colorMap[color];
+  // Use the custom habit- colors defined in globals.css and tailwind.config.ts
+  const colors = {
+    orange: { 
+      light: 'from-orange-300', dark: 'to-orange-600', wave: '#fb923c', 
+      bg: 'bg-habit-orange', border: 'border-habit-orange-border', 
+      text: 'text-habit-orange-foreground', iconBg: 'bg-habit-orange/20' 
+    },
+    blue: { 
+      light: 'from-blue-300', dark: 'to-blue-600', wave: '#60a5fa', 
+      bg: 'bg-habit-blue', border: 'border-habit-blue-border', 
+      text: 'text-habit-blue-foreground', iconBg: 'bg-habit-blue/20' 
+    },
+    green: { 
+      light: 'from-green-300', dark: 'to-green-600', wave: '#4ade80', 
+      bg: 'bg-habit-green', border: 'border-habit-green-border', 
+      text: 'text-habit-green-foreground', iconBg: 'bg-habit-green/20' 
+    },
+    purple: { 
+      light: 'from-purple-300', dark: 'to-purple-600', wave: '#a78bfa', 
+      bg: 'bg-habit-purple', border: 'border-habit-purple-border', 
+      text: 'text-habit-purple-foreground', iconBg: 'bg-habit-purple/20' 
+    },
+    red: { 
+      light: 'from-red-300', dark: 'to-red-600', wave: '#f87171', 
+      bg: 'bg-habit-red', border: 'border-habit-red-border', 
+      text: 'text-habit-red-foreground', iconBg: 'bg-habit-red/20' 
+    },
+    indigo: { 
+      light: 'from-indigo-300', dark: 'to-indigo-600', wave: '#6366f1', 
+      bg: 'bg-habit-indigo', border: 'border-habit-indigo-border', 
+      text: 'text-habit-indigo-foreground', iconBg: 'bg-habit-indigo/20' 
+    },
+  }[color];
 
   return (
     <motion.div layout className="relative">
@@ -270,7 +293,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-4 min-w-0">
                 <div className={cn(
-                  "w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 shadow-sm transition-all duration-300",
+                  "w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border border-black/5",
                   colors.iconBg
                 )}>
                   {isCompleted ? (
