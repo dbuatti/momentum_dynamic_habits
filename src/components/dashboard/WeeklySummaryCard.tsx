@@ -35,7 +35,7 @@ export const WeeklySummaryCard: React.FC<WeeklySummaryCardProps> = ({ summary })
     <Card className="rounded-2xl shadow-sm border-0">
       <CardHeader className="p-5 pb-3">
         <CardTitle className="font-semibold flex items-center">
-          <Flame className="w-4 h-4 mr-2 text-orange-500" />
+          <Flame className="w-4 h-4 mr-2 text-warning" />
           This Week
         </CardTitle>
       </CardHeader>
@@ -46,7 +46,7 @@ export const WeeklySummaryCard: React.FC<WeeklySummaryCardProps> = ({ summary })
             <p className="text-3xl font-bold mt-1">{summary.pushups.current}</p>
             <div className={cn(
               "flex items-center text-sm font-medium mt-1",
-              isPushupImproving ? "text-green-600" : "text-red-600"
+              isPushupImproving ? "text-success-foreground" : "text-destructive-foreground"
             )}>
               <TrendingUp className="w-4 h-4 mr-1" />
               <span>{pushupChange}% vs last week</span>
@@ -57,7 +57,7 @@ export const WeeklySummaryCard: React.FC<WeeklySummaryCardProps> = ({ summary })
             <p className="text-3xl font-bold mt-1">{Math.round(summary.meditation.current)}m</p>
             <div className={cn(
               "flex items-center text-sm font-medium mt-1",
-              isMeditationImproving ? "text-green-600" : "text-red-600"
+              isMeditationImproving ? "text-success-foreground" : "text-destructive-foreground"
             )}>
               <TrendingUp className="w-4 h-4 mr-1" />
               <span>{meditationChange}% vs last week</span>
@@ -66,13 +66,13 @@ export const WeeklySummaryCard: React.FC<WeeklySummaryCardProps> = ({ summary })
         </div>
         
         <div className="pt-3 border-t">
-          <div className="flex space-x-1.5 text-green-500 mb-2">
+          <div className="flex space-x-1.5 text-success mb-2">
             {[...Array(7)].map((_, i) => (
               <div 
                 key={i} 
                 className={cn(
                   "w-3 h-3 rounded-full", 
-                  i < summary.activeDays ? "bg-current" : "bg-gray-200"
+                  i < summary.activeDays ? "bg-current" : "bg-secondary"
                 )}
               ></div>
             ))}
@@ -82,7 +82,7 @@ export const WeeklySummaryCard: React.FC<WeeklySummaryCardProps> = ({ summary })
           </p>
           <p className={cn(
             "text-sm mt-1",
-            isActiveWeek ? "text-green-600 font-medium" : "text-muted-foreground"
+            isActiveWeek ? "text-success-foreground font-medium" : "text-muted-foreground"
           )}>
             {isActiveWeek ? "🔥 Incredible consistency this week!" : "Keep going to build momentum!"}
           </p>

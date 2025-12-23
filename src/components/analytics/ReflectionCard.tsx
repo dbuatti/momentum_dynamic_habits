@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Lightbulb, Loader2, CheckCircle2, MessageSquare } from 'lucide-react';
 import { useCreateReflection } from '@/hooks/useCreateReflection';
 import { format, isSameDay } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface ReflectionCardProps {
   prompt: string;
@@ -37,26 +38,26 @@ export const ReflectionCard: React.FC<ReflectionCardProps> = ({
   };
 
   return (
-    <Card className="rounded-2xl shadow-sm border-0 bg-purple-50/50 border-purple-100">
+    <Card className="rounded-2xl shadow-sm border-0 bg-habit-purple/50 border-habit-purple-border">
       <CardHeader className="p-5 pb-3">
-        <CardTitle className="font-semibold text-lg flex items-center text-purple-700">
+        <CardTitle className="font-semibold text-lg flex items-center text-habit-purple-foreground">
           <Lightbulb className="w-5 h-5 mr-2" />
           Weekly Reflection
         </CardTitle>
       </CardHeader>
       <CardContent className="p-5 pt-0 space-y-4">
-        <p className="text-sm text-purple-800 font-medium leading-relaxed">
+        <p className="text-sm text-habit-purple-foreground font-medium leading-relaxed">
           {prompt}
         </p>
         <Textarea
           placeholder="Write your thoughts here..."
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          className="min-h-[100px] rounded-xl border-purple-200 focus-visible:ring-purple-500"
+          className="min-h-[100px] rounded-xl border-habit-purple-border focus-visible:ring-habit-purple-foreground"
           disabled={isPending}
         />
         <Button
-          className="w-full bg-purple-600 hover:bg-purple-700 text-white rounded-xl"
+          className="w-full bg-habit-purple-foreground hover:bg-habit-purple-foreground/90 text-habit-purple rounded-xl"
           onClick={handleSubmit}
           disabled={isPending || notes.trim().length === 0}
         >
@@ -70,7 +71,7 @@ export const ReflectionCard: React.FC<ReflectionCardProps> = ({
           )}
         </Button>
         {isXpAwardedToday && (
-          <div className="flex items-center justify-center text-green-600 text-sm font-medium mt-3">
+          <div className="flex items-center justify-center text-success-foreground text-sm font-medium mt-3">
             <CheckCircle2 className="w-4 h-4 mr-2" />
             XP bonus already awarded for today's reflection!
           </div>

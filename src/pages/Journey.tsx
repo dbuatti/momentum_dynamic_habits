@@ -8,6 +8,7 @@ import { format, differenceInDays, startOfDay } from 'date-fns';
 import { Progress } from '@/components/ui/progress';
 import { JourneySkeleton } from '@/components/dashboard/JourneySkeleton';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { cn } from '@/lib/utils';
 
 // Icon map for badges, matching NextBadgeCard and Settings
 const iconMap: { [key: string]: React.ElementType } = {
@@ -149,8 +150,8 @@ const Journey = () => {
           <p className="text-muted-foreground">
             Based on your activity, your most productive time is:
           </p>
-          <div className="p-4 bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 rounded-md">
-            <p className="font-semibold text-yellow-800 dark:text-yellow-300 flex items-center">
+          <div className="p-4 bg-warning-background dark:bg-warning-background/30 border border-warning-border rounded-md">
+            <p className="font-semibold text-warning-foreground flex items-center">
               <Zap className="w-4 h-4 mr-2" />
               {bestTime !== '—' 
                 ? `You're a ${bestTime} person! Try scheduling your most important tasks then.` 
@@ -172,8 +173,8 @@ const Journey = () => {
           {nextBadgeData ? (
             <>
               <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center border border-yellow-300">
-                  <NextBadgeIcon className="w-6 h-6 text-yellow-500" />
+                <div className="w-12 h-12 rounded-full bg-warning-background dark:bg-warning-background/30 flex items-center justify-center border border-warning-border">
+                  <NextBadgeIcon className="w-6 h-6 text-warning" />
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Next Badge</p>
@@ -183,10 +184,10 @@ const Journey = () => {
               <div className="flex items-center space-x-2">
                 <Progress 
                   value={nextBadgeProgress.progressValue} 
-                  className="h-2 flex-grow [&>div]:bg-yellow-500" 
+                  className="h-2 flex-grow [&>div]:bg-warning" 
                 />
                 <p className="text-sm text-muted-foreground whitespace-nowrap">
-                  <span className="font-semibold text-yellow-600">{nextBadgeProgress.value}</span> {nextBadgeProgress.unit}
+                  <span className="font-semibold text-warning-foreground">{nextBadgeProgress.value}</span> {nextBadgeProgress.unit}
                 </p>
               </div>
             </>

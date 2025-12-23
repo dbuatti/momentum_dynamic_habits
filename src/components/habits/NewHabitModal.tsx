@@ -414,7 +414,7 @@ export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, t
                 />
                 <div className="flex justify-between text-xs text-muted-foreground">
                   <span>1x</span>
-                  <span className="font-bold text-foreground">{frequency} times/week</span>
+                  <span className="font-bold text-foreground">{frequency} times per week</span>
                   <span>7x</span>
                 </div>
               </div>
@@ -516,10 +516,10 @@ export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, t
                 <Switch checked={isAnchorPractice} onCheckedChange={setIsAnchorPractice} />
               </div>
 
-              <div className="flex items-center justify-between p-4 rounded-2xl bg-blue-500/5 border border-blue-500/10">
+              <div className="flex items-center justify-between p-4 rounded-2xl bg-info-background/50 border border-info-border/50">
                 <div className="flex gap-3">
-                  <div className="bg-blue-500/20 p-2 rounded-xl">
-                    <Layers className="w-4 h-4 text-blue-600" />
+                  <div className="bg-info-background/50 p-2 rounded-xl">
+                    <Layers className="w-4 h-4 text-info" />
                   </div>
                   <div>
                     <p className="text-xs font-black uppercase">Auto-Chunking</p>
@@ -530,7 +530,7 @@ export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, t
               </div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-muted/30 border border-black/5 space-y-3">
+            <div className="p-4 rounded-2xl bg-muted/30 border border-border space-y-3">
               <div className="flex items-center gap-2">
                 <Info className="w-4 h-4 text-muted-foreground" />
                 <Label className="text-[10px] font-black uppercase opacity-60">Growth Threshold</Label>

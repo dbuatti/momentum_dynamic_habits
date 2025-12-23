@@ -282,10 +282,10 @@ export const HabitTemplateForm: React.FC<HabitTemplateFormProps> = ({
             />
           </div>
 
-          <div className="flex items-center justify-between p-4 rounded-2xl bg-blue-500/5 border border-blue-500/10">
+          <div className="flex items-center justify-between p-4 rounded-2xl bg-info-background/50 border border-info-border/50">
             <div className="flex gap-4">
-              <div className="bg-blue-500/20 p-2 rounded-xl">
-                <Layers className="w-5 h-5 text-blue-600" />
+              <div className="bg-info-background/50 p-2 rounded-xl">
+                <Layers className="w-5 h-5 text-info" />
               </div>
               <div>
                 <p className="text-xs font-black uppercase">Adaptive Auto-Chunking</p>
@@ -298,7 +298,7 @@ export const HabitTemplateForm: React.FC<HabitTemplateFormProps> = ({
             />
           </div>
 
-          <div className="p-4 rounded-2xl bg-muted/30 border border-black/5 space-y-3">
+          <div className="p-4 rounded-2xl bg-muted/30 border border-border space-y-3">
             <div className="flex items-center gap-2">
               <Info className="w-4 h-4 text-muted-foreground" />
               <Label className="text-[10px] font-black uppercase opacity-60">Growth Threshold</Label>

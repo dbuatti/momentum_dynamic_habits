@@ -112,7 +112,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick }) => {
           ))}
         </nav>
       </ScrollArea>
-      <div className="mt-auto p-4 border-t">
+      <div className="mt-auto p-4 border-t border-sidebar-border">
         {session?.user && (
           <div className="flex items-center gap-3 mb-4">
             <Avatar className="h-10 w-10">

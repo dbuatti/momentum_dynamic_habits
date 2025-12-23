@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Timer, Square, Play, Pause, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { cn } from '@/lib/utils';
 
 export const FloatingTimer = () => {
   const [activeTimer, setActiveTimer] = useState<{ label: string; elapsed: number; isPaused: boolean; habitKey: string } | null>(null);
@@ -39,7 +40,7 @@ export const FloatingTimer = () => {
         exit={{ opacity: 0, x: 50 }}
         className="fixed bottom-24 right-6 z-[110]"
       >
-        <div className="bg-slate-900/95 backdrop-blur-md border border-white/10 rounded-2xl p-3 shadow-2xl flex items-center gap-4 text-white min-w-[200px]">
+        <div className="bg-card/95 backdrop-blur-md border border-border rounded-2xl p-3 shadow-2xl flex items-center gap-4 text-foreground min-w-[200px]">
           <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center border border-primary/30">
             <Timer className="w-5 h-5 text-primary animate-pulse" />
           </div>
@@ -56,7 +57,7 @@ export const FloatingTimer = () => {
           <Button 
             size="icon" 
             variant="ghost" 
-            className="rounded-full hover:bg-white/10 h-8 w-8"
+            className="rounded-full hover:bg-secondary h-8 w-8"
             onClick={() => navigate('/')}
           >
             <ExternalLink className="w-4 h-4 opacity-50" />

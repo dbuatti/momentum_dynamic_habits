@@ -122,7 +122,7 @@ const OnboardingFlow = ({ onComplete }: { onComplete: () => void }) => {
               <div className="p-4 bg-muted/50 rounded-2xl border border-primary/10 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Brain className="w-5 h-5 text-purple-500" />
+                    <Brain className="w-5 h-5 text-habit-purple-foreground" />
                     <Label className="font-bold">Neurodivergent Mode</Label>
                     <TooltipProvider>
                       <Tooltip>
@@ -212,7 +212,7 @@ const OnboardingFlow = ({ onComplete }: { onComplete: () => void }) => {
               <div className="p-4 bg-muted/50 rounded-2xl border border-primary/10 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Anchor className="w-5 h-5 text-blue-500" />
+                    <Anchor className="w-5 h-5 text-info" />
                     <Label className="font-bold">Foundational Routine?</Label>
                     <TooltipProvider>
                       <Tooltip>
@@ -277,7 +277,7 @@ const OnboardingFlow = ({ onComplete }: { onComplete: () => void }) => {
               <div className="p-4 bg-muted/50 rounded-2xl border border-primary/10 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <FlaskConical className="w-5 h-5 text-green-500" />
+                    <FlaskConical className="w-5 h-5 text-success" />
                     <Label className="font-bold">Low-Pressure Start?</Label>
                     <TooltipProvider>
                       <Tooltip>
@@ -331,7 +331,7 @@ const OnboardingFlow = ({ onComplete }: { onComplete: () => void }) => {
               <div className="p-4 bg-muted/50 rounded-2xl border border-primary/10 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Layers className="w-5 h-5 text-blue-500" />
+                    <Layers className="w-5 h-5 text-info" />
                     <Label className="font-bold">Comfort with Chunks?</Label>
                     <TooltipProvider>
                       <Tooltip>

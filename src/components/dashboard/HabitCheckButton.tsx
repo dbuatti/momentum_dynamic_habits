@@ -35,7 +35,7 @@ export const HabitCheckButton: React.FC<HabitCheckButtonProps> = ({
 
   if (isComplete) {
     return (
-      <div className="flex items-center text-green-600 bg-green-50 px-3 py-1.5 rounded-full">
+      <div className="flex items-center text-success-foreground bg-success-background px-3 py-1.5 rounded-full">
         <Check className="w-4 h-4 mr-1" />
         <span className="text-xs font-medium">Completed</span>
       </div>

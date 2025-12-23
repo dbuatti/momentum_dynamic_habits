@@ -53,13 +53,13 @@ export const HabitPerformanceOverview: React.FC<HabitPerformanceOverviewProps> =
             let statusColorClass = "";
             if (isFixed) {
               statusText = "Fixed Goal";
-              statusColorClass = "bg-gray-100 text-gray-700 border-gray-200";
+              statusColorClass = "bg-secondary text-secondary-foreground border-border";
             } else if (isTrial) {
               statusText = `Trial: ${habit.completions_in_plateau}/${habit.plateau_days_required} days`;
-              statusColorClass = "bg-blue-100 text-blue-700 border-blue-200";
+              statusColorClass = "bg-info-background text-info-foreground border-info-border";
             } else if (isGrowth) {
               statusText = `Growth: ${habit.completions_in_plateau}/${habit.plateau_days_required} days`;
-              statusColorClass = "bg-purple-100 text-purple-700 border-purple-200";
+              statusColorClass = "bg-habit-purple/20 text-habit-purple-foreground border-habit-purple-border";
             }
 
             return (

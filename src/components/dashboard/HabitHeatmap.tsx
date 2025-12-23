@@ -92,11 +92,11 @@ const HabitHeatmap: React.FC<HabitHeatmapProps> = ({ completions, habitName, tim
   const maxCount = Math.max(...completions.map(c => c.count), 1);
   
   const getIntensityClass = (count: number) => {
-    if (count === 0) return 'bg-gray-100 dark:bg-gray-800';
-    if (count >= maxCount * 0.75) return 'bg-green-500';
-    if (count >= maxCount * 0.5) return 'bg-green-400';
-    if (count >= maxCount * 0.25) return 'bg-green-300';
-    return 'bg-green-200';
+    if (count === 0) return 'bg-secondary dark:bg-muted';
+    if (count >= maxCount * 0.75) return 'bg-success';
+    if (count >= maxCount * 0.5) return 'bg-success/80';
+    if (count >= maxCount * 0.25) return 'bg-success/60';
+    return 'bg-success/40';
   };
 
   return (
@@ -149,11 +149,11 @@ const HabitHeatmap: React.FC<HabitHeatmapProps> = ({ completions, habitName, tim
           <div className="flex items-center space-x-2">
             <span className="text-xs text-muted-foreground">Less</span>
             <div className="flex space-x-1">
-              <div className="w-3 h-3 bg-gray-100 dark:bg-gray-800 border border-border rounded-sm"></div>
-              <div className="w-3 h-3 bg-green-200 rounded-sm"></div>
-              <div className="w-3 h-3 bg-green-300 rounded-sm"></div>
-              <div className="w-3 h-3 bg-green-400 rounded-sm"></div>
-              <div className="w-3 h-3 bg-green-500 rounded-sm"></div>
+              <div className="w-3 h-3 bg-secondary dark:bg-muted border border-border rounded-sm"></div>
+              <div className="w-3 h-3 bg-success/40 rounded-sm"></div>
+              <div className="w-3 h-3 bg-success/60 rounded-sm"></div>
+              <div className="w-3 h-3 bg-success/80 rounded-sm"></div>
+              <div className="w-3 h-3 bg-success rounded-sm"></div>
             </div>
             <span className="text-xs text-muted-foreground">More</span>
           </div>

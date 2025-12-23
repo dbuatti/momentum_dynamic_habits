@@ -24,7 +24,7 @@ const PatternItem = ({
   highlight?: boolean
 }) => (
   <div className={cn(
-    "bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 transition-all hover:shadow-sm",
+    "bg-secondary dark:bg-secondary/50 rounded-xl p-4 transition-all hover:shadow-sm",
     highlight && "ring-1 ring-primary/20 bg-primary/5"
   )}>
     <div className="flex items-center space-x-2 text-muted-foreground">

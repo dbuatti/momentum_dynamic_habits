@@ -97,9 +97,9 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
               <div className="flex items-center gap-2 mt-0.5">
                  <span className={cn(
                    "text-[9px] font-black uppercase px-2 py-0.5 rounded-full border",
-                   habit.is_fixed ? "bg-blue-50 text-blue-600 border-blue-200" : 
-                   habit.is_trial_mode ? "bg-amber-50 text-amber-600 border-amber-200" : 
-                   "bg-green-50 text-green-600 border-green-200"
+                   habit.is_fixed ? "bg-info-background text-info-foreground border-info-border" : 
+                   habit.is_trial_mode ? "bg-warning-background text-warning-foreground border-warning-border" : 
+                   "bg-success-background text-success-foreground border-success-border"
                  )}>
                    {habit.is_fixed ? 'Fixed' : (habit.is_trial_mode ? 'Trial' : 'Growth')}
                  </span>
@@ -188,7 +188,7 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
           <TabsContent value="schedule" className="space-y-6 focus-visible:outline-none">
             <div className="space-y-4">
               <Label className="text-[10px] font-black uppercase tracking-widest opacity-60 ml-1">Active Days</Label>
-              <div className="flex justify-between bg-muted/30 p-2 rounded-2xl border border-black/5">
+              <div className="flex justify-between bg-muted/30 p-2 rounded-2xl border border-border">
                 {days.map((day, idx) => (
                   <Button
                     key={idx}
@@ -247,10 +247,10 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
                 />
              </div>
 
-             <div className="flex items-center justify-between p-4 rounded-2xl bg-blue-500/5 border border-blue-500/10">
+             <div className="flex items-center justify-between p-4 rounded-2xl bg-info-background/50 border border-info-border/50">
                 <div className="flex gap-4">
-                  <div className="bg-blue-500/20 p-2 rounded-xl">
-                    <Layers className="w-5 h-5 text-blue-600" />
+                  <div className="bg-info-background/50 p-2 rounded-xl">
+                    <Layers className="w-5 h-5 text-info" />
                   </div>
                   <div>
                     <p className="text-xs font-black uppercase">Adaptive Auto-Chunking</p>
@@ -279,7 +279,7 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
                 />
              </div>
 
-             <div className="p-4 rounded-2xl bg-muted/30 border border-black/5 space-y-3">
+             <div className="p-4 rounded-2xl bg-muted/30 border border-border space-y-3">
                 <div className="flex items-center gap-2">
                     <Info className="w-4 h-4 text-muted-foreground" />
                     <Label className="text-[10px] font-black uppercase opacity-60">Growth Threshold</Label>

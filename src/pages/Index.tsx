@@ -201,21 +201,21 @@ const Index = () => {
           <div className="flex flex-col w-full text-left gap-2">
             <div className="flex items-center gap-5 text-left w-full">
               <div className={cn(
-                "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border border-black/5",
-                habit.allCompleted ? "bg-white" : "bg-white/90"
+                "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border border-border",
+                habit.allCompleted ? "bg-card" : "bg-card/90"
               )}>
                 <Icon className="w-6 h-6" />
               </div>
               <div className="min-w-0 flex-grow pr-2">
                 <h3 className="font-black text-lg flex items-center gap-2 leading-tight truncate">
                   {habit.name}
-                  {habit.allCompleted && <CheckCircle2 className="w-5 h-5 text-green-600" />}
+                  {habit.allCompleted && <CheckCircle2 className="w-5 h-5 text-success" />}
                 </h3>
                 <div className="flex flex-wrap items-center gap-2 mt-1">
                   <span className={cn(
                     "text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border",
                     habit.allCompleted 
-                      ? "bg-green-100 text-green-700 border-green-200" 
+                      ? "bg-success-background text-success-foreground border-success-border" 
                       : habit.isWithinWindow 
                         ? "bg-primary text-primary-foreground border-transparent"
                         : "bg-muted text-muted-foreground border-transparent"
@@ -223,17 +223,17 @@ const Index = () => {
                     {habit.allCompleted ? "Goal Met" : (habit.isWithinWindow ? "Ready Now" : "Restricted")}
                   </span>
                   {isTrial && (
-                    <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-700 border border-blue-200">
+                    <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-info-background text-info-foreground border border-info-border">
                       Trial Mode
                     </span>
                   )}
                   {isGrowth && (
-                    <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-700 border border-purple-200">
+                    <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-habit-purple/20 text-habit-purple-foreground border border-habit-purple-border">
                       Growth Mode
                     </span>
                   )}
                   {habit.is_fixed && (
-                    <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-gray-100 text-gray-700 border border-gray-200">
+                    <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-secondary text-secondary-foreground border border-border">
                       Fixed Mode
                     </span>
                   )}
@@ -263,7 +263,7 @@ const Index = () => {
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-4 border-t border-black/5 pt-4">
+            <div className="grid grid-cols-2 gap-4 border-t border-border pt-4">
                 <div className="space-y-1">
                     <p className="text-[9px] font-black uppercase opacity-50 tracking-widest">
                       {isTrial ? "Session Target" : "Daily Goal"}
@@ -273,7 +273,7 @@ const Index = () => {
                         <p className="text-sm font-black">
                           {Math.round(habit.dailyGoal)} {habit.unit}
                           {habit.carryoverValue > 0 && (
-                            <span className="ml-1 text-[10px] font-bold text-green-600"> (+{Math.round(habit.carryoverValue)} carryover)</span>
+                            <span className="ml-1 text-[10px] font-bold text-success"> (+{Math.round(habit.carryoverValue)} carryover)</span>
                           )}
                         </p>
                     </div>
@@ -411,10 +411,10 @@ const Index = () => {
           {/* Anchor Section */}
           {anchorHabits.length > 0 && (
             <div className="space-y-4">
-              <div className="sticky top-[60px] z-20 bg-background/95 backdrop-blur-sm py-3 flex items-center gap-3 border-b border-black/5">
+              <div className="sticky top-[60px] z-20 bg-background/95 backdrop-blur-sm py-3 flex items-center gap-3 border-b border-border">
                 <Anchor className="w-5 h-5 text-primary" />
                 <h2 className="text-xs font-black uppercase tracking-[0.2em] text-primary/80">Anchor Practices</h2>
-                <div className="ml-auto h-px flex-grow bg-black/5" />
+                <div className="ml-auto h-px flex-grow bg-border" />
               </div>
               <Accordion type="multiple" value={expandedItems} onValueChange={setExpandedItems} className="space-y-4">
                 {anchorHabits.map(renderHabitItem)}
@@ -424,10 +424,10 @@ const Index = () => {
 
           {/* Daily Momentum Section */}
           <div className="space-y-4">
-            <div className="sticky top-[60px] z-20 bg-background/95 backdrop-blur-sm py-3 flex items-center gap-3 border-b border-black/5">
-              <Zap className="w-5 h-5 text-orange-500" />
+            <div className="sticky top-[60px] z-20 bg-background/95 backdrop-blur-sm py-3 flex items-center gap-3 border-b border-border">
+              <Zap className="w-5 h-5 text-warning" />
               <h2 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Daily Momentum</h2>
-              <div className="ml-auto h-px flex-grow bg-black/5" />
+              <div className="ml-auto h-px flex-grow bg-border" />
             </div>
             <Accordion type="multiple" value={expandedItems} onValueChange={setExpandedItems} className="space-y-4">
               {dailyHabits.map(renderHabitItem)}

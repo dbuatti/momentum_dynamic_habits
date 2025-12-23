@@ -193,7 +193,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
         particleCount: 100,
         spread: 70,
         origin: { y: 0.6 },
-        colors: ['#fb923c', '#60a5fa', '#4ade80', '#a78bfa', '#f87171', '#a78bfa']
+        colors: ['hsl(var(--habit-orange))', 'hsl(var(--habit-blue))', 'hsl(var(--habit-green))', 'hsl(var(--habit-purple))', 'hsl(var(--habit-red))', 'hsl(var(--habit-indigo))']
       });
     }
 
@@ -232,32 +232,32 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   // Use the custom habit- colors defined in globals.css and tailwind.config.ts
   const colors = {
     orange: { 
-      light: 'from-orange-300', dark: 'to-orange-600', wave: '#fb923c', 
+      light: 'from-habit-orange/50', dark: 'to-habit-orange', wave: 'hsl(var(--habit-orange))', 
       bg: 'bg-habit-orange', border: 'border-habit-orange-border', 
       text: 'text-habit-orange-foreground', iconBg: 'bg-habit-orange/20' 
     },
     blue: { 
-      light: 'from-blue-300', dark: 'to-blue-600', wave: '#60a5fa', 
+      light: 'from-habit-blue/50', dark: 'to-habit-blue', wave: 'hsl(var(--habit-blue))', 
       bg: 'bg-habit-blue', border: 'border-habit-blue-border', 
       text: 'text-habit-blue-foreground', iconBg: 'bg-habit-blue/20' 
     },
     green: { 
-      light: 'from-green-300', dark: 'to-green-600', wave: '#4ade80', 
+      light: 'from-habit-green/50', dark: 'to-habit-green', wave: 'hsl(var(--habit-green))', 
       bg: 'bg-habit-green', border: 'border-habit-green-border', 
       text: 'text-habit-green-foreground', iconBg: 'bg-habit-green/20' 
     },
     purple: { 
-      light: 'from-purple-300', dark: 'to-purple-600', wave: '#a78bfa', 
+      light: 'from-habit-purple/50', dark: 'to-habit-purple', wave: 'hsl(var(--habit-purple))', 
       bg: 'bg-habit-purple', border: 'border-habit-purple-border', 
       text: 'text-habit-purple-foreground', iconBg: 'bg-habit-purple/20' 
     },
     red: { 
-      light: 'from-red-300', dark: 'to-red-600', wave: '#f87171', 
+      light: 'from-habit-red/50', dark: 'to-habit-red', wave: 'hsl(var(--habit-red))', 
       bg: 'bg-habit-red', border: 'border-habit-red-border', 
       text: 'text-habit-red-foreground', iconBg: 'bg-habit-red/20' 
     },
     indigo: { 
-      light: 'from-indigo-300', dark: 'to-indigo-600', wave: '#6366f1', 
+      light: 'from-habit-indigo/50', dark: 'to-habit-indigo', wave: 'hsl(var(--habit-indigo))', 
       bg: 'bg-habit-indigo', border: 'border-habit-indigo-border', 
       text: 'text-habit-indigo-foreground', iconBg: 'bg-habit-indigo/20' 
     },
@@ -293,11 +293,11 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-4 min-w-0">
                 <div className={cn(
-                  "w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border border-black/5",
+                  "w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border border-border",
                   colors.iconBg
                 )}>
                   {isCompleted ? (
-                    <Check className="w-6 h-6 text-green-600" />
+                    <Check className="w-6 h-6 text-success" />
                   ) : (
                     isTimeBased ? (
                       <Play className={cn("w-5 h-5 ml-0.5 fill-current", colors.text)} />
@@ -317,7 +317,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                   <div className="flex items-center gap-2 mt-1">
                     <span className={cn("text-xs font-bold", isCompleted ? "opacity-40" : "opacity-60")}>{value} {unit}</span>
                     {scheduledTime && (
-                      <span className="flex items-center gap-1 text-[10px] font-bold opacity-70 bg-black/5 dark:bg-white/10 px-2 py-0.5 rounded-full">
+                      <span className="flex items-center gap-1 text-[10px] font-bold opacity-70 bg-secondary px-2 py-0.5 rounded-full">
                         <Clock className="w-3 h-3" />
                         {scheduledTime}
                       </span>
@@ -330,7 +330,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-9 px-3 rounded-xl text-xs font-bold text-muted-foreground hover:bg-black/5"
+                  className="h-9 px-3 rounded-xl text-xs font-bold text-muted-foreground hover:bg-secondary"
                   onClick={(e) => {
                     e.stopPropagation();
                     onUncomplete();
@@ -345,7 +345,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                     <Button 
                       size="icon" 
                       variant="ghost" 
-                      className="h-10 w-10 rounded-full hover:bg-black/5" 
+                      className="h-10 w-10 rounded-full hover:bg-secondary" 
                       onClick={handleQuickComplete}
                     >
                       <Edit2 className="w-4 h-4 opacity-40" />
@@ -368,14 +368,14 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                 <div className="flex gap-2">
                   <Button 
                     size="icon" 
-                    className="h-12 w-12 rounded-full bg-white/90 text-black hover:bg-white shadow-md border-0"
+                    className="h-12 w-12 rounded-full bg-card text-foreground hover:bg-secondary shadow-md border-0"
                     onClick={handlePauseTimer}
                   >
                     {isPaused ? <Play className="w-6 h-6 ml-0.5 fill-current" /> : <Pause className="w-6 h-6 fill-current" />}
                   </Button>
                   <Button 
                     size="lg" 
-                    className="h-12 px-6 rounded-full font-black shadow-lg bg-black text-white hover:bg-black/90 border border-white/20"
+                    className="h-12 px-6 rounded-full font-black shadow-lg bg-primary text-primary-foreground hover:bg-primary/90 border border-primary-foreground/20"
                     onClick={() => handleFinishTiming()}
                   >
                     <Square className="w-4 h-4 mr-2 fill-current" />
@@ -393,20 +393,20 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="bg-white/95 backdrop-blur border-t"
+              className="bg-card/95 backdrop-blur border-t border-border"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="py-4 px-4 flex items-center justify-center gap-6">
                 <span className="text-xs font-black uppercase tracking-wider opacity-60">Feeling?</span>
                 <div className="flex gap-4">
-                  <Button size="icon" variant="ghost" className="h-10 w-10 rounded-full hover:bg-red-50" onClick={() => handleFinishTiming('sad')}>
-                    <Frown className="w-6 h-6 text-red-500" />
+                  <Button size="icon" variant="ghost" className="h-10 w-10 rounded-full hover:bg-destructive/10" onClick={() => handleFinishTiming('sad')}>
+                    <Frown className="w-6 h-6 text-destructive" />
                   </Button>
-                  <Button size="icon" variant="ghost" className="h-10 w-10 rounded-full hover:bg-yellow-50" onClick={() => handleFinishTiming('neutral')}>
-                    <Meh className="w-6 h-6 text-yellow-500" />
+                  <Button size="icon" variant="ghost" className="h-10 w-10 rounded-full hover:bg-warning-background/10" onClick={() => handleFinishTiming('neutral')}>
+                    <Meh className="w-6 h-6 text-warning" />
                   </Button>
-                  <Button size="icon" variant="ghost" className="h-10 w-10 rounded-full hover:bg-green-50" onClick={() => handleFinishTiming('happy')}>
-                    <Smile className="w-6 h-6 text-green-500" />
+                  <Button size="icon" variant="ghost" className="h-10 w-10 rounded-full hover:bg-success-background/10" onClick={() => handleFinishTiming('happy')}>
+                    <Smile className="w-6 h-6 text-success" />
                   </Button>
                   <Button variant="ghost" size="sm" className="font-bold text-muted-foreground" onClick={() => handleFinishTiming()}>Skip</Button>
                 </div>

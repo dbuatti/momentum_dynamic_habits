@@ -124,7 +124,7 @@ const History = () => {
                         <div className="flex items-center justify-between py-2">
                           <div className="flex items-center space-x-3">
                             {Icon && (
-                              <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                              <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
                                 <Icon className="w-5 h-5 text-muted-foreground" />
                               </div>
                             )}
@@ -142,7 +142,7 @@ const History = () => {
                               <p className="font-semibold">{Math.round((task.xp_earned || 0) / (userHabit?.xpPerUnit || 1))} {unit}</p>
                             )}
                             <div className="flex items-center text-xs text-muted-foreground mt-1">
-                              <Zap className="w-3 h-3 mr-1 text-yellow-500" />
+                              <Zap className="w-3 h-3 mr-1 text-warning" />
                               <span>{task.xp_earned} XP</span>
                             </div>
                           </div>

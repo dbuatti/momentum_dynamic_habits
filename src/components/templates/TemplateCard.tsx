@@ -26,7 +26,7 @@ export const TemplateCard: React.FC<TemplateCardProps> = ({ template, onUseTempl
     anchor: 'bg-habit-indigo text-habit-indigo-foreground border-habit-indigo-border',
   };
 
-  const categoryClasses = categoryColorMap[template.category] || 'bg-gray-100 text-gray-700 border-gray-200';
+  const categoryClasses = categoryColorMap[template.category] || 'bg-muted text-muted-foreground border-border';
 
   return (
     <Card className="rounded-2xl shadow-sm border-0 hover:shadow-md transition-all duration-200 group">

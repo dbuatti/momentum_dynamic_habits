@@ -50,25 +50,25 @@ export const GrowthInsightsCard: React.FC<GrowthInsightsCardProps> = ({ habits }
             return (
               <div key={habit.id} className={cn(
                 "p-4 rounded-xl border",
-                isReadyForGrowth ? "bg-green-50/50 border-green-200" : "bg-blue-50/50 border-blue-200"
+                isReadyForGrowth ? "bg-success-background/50 border-success-border" : "bg-info-background/50 border-info-border"
               )}>
                 <div className="flex items-center space-x-3">
                   <div className={cn(
                     "w-8 h-8 rounded-full flex items-center justify-center",
-                    isReadyForGrowth ? "bg-green-500 text-white" : "bg-blue-500 text-white"
+                    isReadyForGrowth ? "bg-success text-success-foreground" : "bg-info text-info-foreground"
                   )}>
                     {isReadyForGrowth ? <CheckCircle2 className="w-4 h-4" /> : <Info className="w-4 h-4" />}
                   </div>
                   <div>
                     <p className="font-semibold">{habit.name}</p>
                     {isReadyForGrowth ? (
-                      <p className="text-sm text-green-700">Ready for Adaptive Growth!</p>
+                      <p className="text-sm text-success-foreground">Ready for Adaptive Growth!</p>
                     ) : isTrial ? (
-                      <p className="text-sm text-blue-700">
+                      <p className="text-sm text-info-foreground">
                         {daysRemaining} more days of consistency to transition from Trial Mode.
                       </p>
                     ) : (
-                      <p className="text-sm text-purple-700">
+                      <p className="text-sm text-habit-purple-foreground">
                         Adaptive Growth: {daysRemaining} consistent days until next goal increase.
                       </p>
                     )}

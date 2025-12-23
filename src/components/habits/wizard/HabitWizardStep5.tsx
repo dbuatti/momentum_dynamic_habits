@@ -168,7 +168,7 @@ export const HabitWizardStep5: React.FC<HabitWizardStep5Props> = ({ wizardData, 
                 )}
                 onClick={() => handleFlexibilitySelect(option.id)}
               >
-                <div className={cn("w-4 h-4 rounded-full border border-current", wizardData.flexibility === option.id ? "bg-white" : "opacity-30")} />
+                <div className={cn("w-4 h-4 rounded-full border border-current", wizardData.flexibility === option.id ? "bg-primary-foreground" : "opacity-30")} />
                 {option.label}
               </Button>
             ))}
@@ -244,7 +244,7 @@ export const HabitWizardStep5: React.FC<HabitWizardStep5Props> = ({ wizardData, 
                 )}
                 onClick={() => handleSequenceBias(option.id)}
               >
-                <div className={cn("w-4 h-4 rounded-full border border-current", wizardData.sequence_bias === option.id ? "bg-white" : "opacity-30")} />
+                <div className={cn("w-4 h-4 rounded-full border border-current", wizardData.sequence_bias === option.id ? "bg-primary-foreground" : "opacity-30")} />
                 {option.label}
               </Button>
             ))}
@@ -276,7 +276,7 @@ export const HabitWizardStep5: React.FC<HabitWizardStep5Props> = ({ wizardData, 
                 )}
                 onClick={() => handleSafetyNet(option.id)}
               >
-                <div className={cn("w-4 h-4 rounded-full border border-current", wizardData.safety_net_choice === option.id ? "bg-white" : "opacity-30")} />
+                <div className={cn("w-4 h-4 rounded-full border border-current", wizardData.safety_net_choice === option.id ? "bg-primary-foreground" : "opacity-30")} />
                 {option.label}
               </Button>
             ))}
@@ -285,7 +285,7 @@ export const HabitWizardStep5: React.FC<HabitWizardStep5Props> = ({ wizardData, 
       </Card>
 
       {/* Summary / Auto-Generated Settings */}
-      <Card className="bg-muted/30 border-dashed">
+      <Card className="bg-muted/30 border-dashed border-border">
         <CardContent className="p-4 space-y-2 text-sm">
           <p className="font-bold text-foreground">Based on your answers:</p>
           <ul className="space-y-1 text-muted-foreground">

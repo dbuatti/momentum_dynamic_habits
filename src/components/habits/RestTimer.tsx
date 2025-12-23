@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Timer, X, Play, Pause, RotateCcw } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface RestTimerProps {
   duration?: number; // seconds
@@ -37,10 +38,10 @@ const RestTimer: React.FC<RestTimerProps> = ({ duration = 60, onComplete, onCanc
 
   return (
     <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-card border-2 border-orange-200 rounded-3xl p-8 w-full max-w-sm shadow-xl text-center space-y-6 animate-in zoom-in-95">
+      <div className="bg-card border-2 border-warning-border rounded-3xl p-8 w-full max-w-sm shadow-xl text-center space-y-6 animate-in zoom-in-95">
         <div className="flex justify-between items-center">
-          <div className="bg-orange-100 p-2 rounded-full">
-            <Timer className="w-5 h-5 text-orange-500" />
+          <div className="bg-warning-background p-2 rounded-full">
+            <Timer className="w-5 h-5 text-warning" />
           </div>
           <Button variant="ghost" size="icon" onClick={onCancel} className="rounded-full">
             <X className="w-5 h-5" />
@@ -52,7 +53,7 @@ const RestTimer: React.FC<RestTimerProps> = ({ duration = 60, onComplete, onCanc
           <p className="text-muted-foreground text-sm">Breathe deep and recover for your next set.</p>
         </div>
 
-        <div className="text-6xl font-black text-orange-500 tabular-nums">
+        <div className="text-6xl font-black text-warning tabular-nums">
           {formatTime(timeLeft)}
         </div>
 

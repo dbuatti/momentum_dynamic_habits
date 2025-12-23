@@ -32,25 +32,25 @@ export const QuickLogButton: React.FC<QuickLogButtonProps> = ({
   
   // Determine the color to use for the border
   const borderColor = habitKey ? habitColorMap[habitKey] : variant;
-  const borderClass = `border-4 border-${borderColor}-500`;
+  const borderClass = `border-4 border-${borderColor}-border`; // Use theme-aware border
 
   const variantClasses = {
-    green: 'bg-habit-green border-habit-green-border text-habit-green-foreground hover:bg-habit-green/90',
-    purple: 'bg-habit-purple border-habit-purple-border text-habit-purple-foreground hover:bg-habit-purple/90',
-    orange: 'bg-habit-orange border-habit-orange-border text-habit-orange-foreground hover:bg-habit-orange/90',
-    blue: 'bg-habit-blue border-habit-blue-border text-habit-blue-foreground hover:bg-habit-blue/90',
-    red: 'bg-habit-red border-habit-red-border text-habit-red-foreground hover:bg-habit-red/90',
-    indigo: 'bg-habit-indigo border-habit-indigo-border text-habit-indigo-foreground hover:bg-habit-indigo/90',
+    green: 'bg-habit-green text-habit-green-foreground hover:bg-habit-green/90',
+    purple: 'bg-habit-purple text-habit-purple-foreground hover:bg-habit-purple/90',
+    orange: 'bg-habit-orange text-habit-orange-foreground hover:bg-habit-orange/90',
+    blue: 'bg-habit-blue text-habit-blue-foreground hover:bg-habit-blue/90',
+    red: 'bg-habit-red text-habit-red-foreground hover:bg-habit-red/90',
+    indigo: 'bg-habit-indigo text-habit-indigo-foreground hover:bg-habit-indigo/90',
   };
 
   let currentClasses = variantClasses[variant];
 
   if (isComplete) {
-    // If complete, use the green completed style (which includes its own border)
-    currentClasses = completedColorClass || currentClasses;
+    // If complete, use the success style
+    currentClasses = cn("bg-success-background text-success-foreground border-success-border");
   } else {
     // If incomplete, override the border to be red and slightly thicker/more prominent
-    currentClasses = cn(currentClasses, "border-4 border-red-500");
+    currentClasses = cn(currentClasses, "border-4 border-destructive");
   }
 
   return (
@@ -59,8 +59,8 @@ export const QuickLogButton: React.FC<QuickLogButtonProps> = ({
         <CardContent className="p-0">
           <div className="flex justify-between items-start">
             {isComplete ? (
-              <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm">
-                <Check className="w-5 h-5 text-green-600" />
+              <div className="w-8 h-8 rounded-full bg-card flex items-center justify-center shadow-sm">
+                <Check className="w-5 h-5 text-success" />
               </div>
             ) : (
               <div className="w-8 h-8 flex items-center justify-center">

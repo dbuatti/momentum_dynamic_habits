@@ -195,7 +195,7 @@ export const HabitWizardStep4: React.FC<HabitWizardStep4Props> = ({ wizardData, 
         </Card>
       )}
 
-      <div className="bg-muted/30 p-4 rounded-xl border border-dashed">
+      <div className="bg-muted/30 p-4 rounded-xl border border-dashed border-border">
         <p className="text-sm text-muted-foreground italic text-center">
           "None of this is a problem — it just helps us build something that actually fits your life."
         </p>

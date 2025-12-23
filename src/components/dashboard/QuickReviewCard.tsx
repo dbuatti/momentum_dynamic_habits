@@ -26,7 +26,7 @@ export const QuickReviewCard: React.FC<QuickReviewCardProps> = ({ question, answ
         </div>
       </CardHeader>
       <CardContent className="p-5 pt-0">
-        <div className="bg-white dark:bg-card rounded-xl p-6 text-center min-h-[140px] flex items-center justify-center mb-5 shadow-inner">
+        <div className="bg-card rounded-xl p-6 text-center min-h-[140px] flex items-center justify-center mb-5 shadow-inner">
           <p className="text-lg font-medium">{showAnswer ? answer : question}</p>
         </div>
         <div className="flex justify-between items-center">

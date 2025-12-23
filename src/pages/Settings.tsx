@@ -94,12 +94,12 @@ const Settings = () => {
         </Card>
 
         {/* Global neurodivergent toggle */}
-        <Card className="rounded-3xl shadow-sm border-2 border-purple-100 bg-purple-50/50 dark:bg-purple-950/10">
+        <Card className="rounded-3xl shadow-sm border-2 border-habit-purple-border/50 bg-habit-purple/50 dark:bg-habit-purple/10">
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="bg-purple-500 rounded-xl p-2.5">
-                  <Brain className="w-6 h-6 text-white" />
+                <div className="bg-habit-purple-foreground rounded-xl p-2.5">
+                  <Brain className="w-6 h-6 text-habit-purple" />
                 </div>
                 <div>
                   <p className="font-black uppercase tracking-tight">Neurodivergent Mode</p>

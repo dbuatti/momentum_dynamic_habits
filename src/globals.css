@@ -28,26 +28,30 @@
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --success: 145 63.8% 42.8%;
+    --success-foreground: 210 40% 98%;
+    --success-background: 145 63.8% 90%;
+    --success-border: 145 63.8% 70%;
+
+    --info: 220 80% 50%;
+    --info-foreground: 210 40% 98%;
+    --info-background: 220 80% 90%;
+    --info-border: 220 80% 70%;
+
+    --warning: 40 95% 50%;
+    --warning-foreground: 222.2 84% 4.9%;
+    --warning-background: 40 95% 90%;
+    --warning-border: 40 95% 70%;
 
     --radius: 0.5rem;
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
 
     --habit-green: 145 73% 94%;
@@ -70,6 +74,22 @@
     --habit-indigo: 240 70% 95%;
     --habit-indigo-foreground: 240 50% 40%;
     --habit-indigo-border: 240 60% 85%;
+
+    /* Landing Page Specific Colors (Always Dark) */
+    --landing-background: 220 13% 5%; /* A deep slate */
+    --landing-foreground: 210 40% 98%; /* White */
+    --landing-muted-foreground: 215 16% 65%; /* Light slate gray */
+    --landing-primary: 240 5.9% 10%; /* Dark primary */
+    --landing-primary-foreground: 210 40% 98%; /* White */
+    --landing-accent: 240 3.7% 15.9%; /* Darker accent */
+    --landing-accent-foreground: 210 40% 98%; /* White */
+    --landing-border: 217.2 32.6% 17.5%; /* Dark border */
+    --landing-indigo: 240 70% 50%; /* Indigo for highlights */
+    --landing-purple: 250 100% 40%; /* Purple for highlights */
+    --landing-green: 145 63.8% 42.8%; /* Green for highlights */
+    --landing-orange: 25 95% 40%; /* Orange for highlights */
+    --landing-yellow: 40 95% 50%; /* Yellow for highlights */
+    --landing-red: 0 84.2% 60.2%; /* Red for highlights */
   }
 
   .dark {
@@ -97,9 +117,21 @@
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --success: 145 63.8% 42.8%;
+    --success-foreground: 210 40% 98%;
+    --success-background: 145 63.8% 20%;
+    --success-border: 145 63.8% 30%;
+
+    --info: 220 80% 50%;
+    --info-foreground: 210 40% 98%;
+    --info-background: 220 80% 20%;
+    --info-border: 220 80% 30%;
+
+    --warning: 40 95% 50%;
+    --warning-foreground: 222.2 84% 4.9%;
+    --warning-background: 40 95% 20%;
+    --warning-border: 40 95% 30%;
+
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -108,6 +140,20 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  /* Landing Page specific theme override */
+  .landing-page-theme {
+    --background: var(--landing-background);
+    --foreground: var(--landing-foreground);
+    --muted-foreground: var(--landing-muted-foreground);
+    --primary: var(--landing-primary);
+    --primary-foreground: var(--landing-primary-foreground);
+    --accent: var(--landing-accent);
+    --accent-foreground: var(--landing-accent-foreground);
+    --border: var(--landing-border);
+    --card: var(--landing-background); /* Cards on landing page also use landing background */
+    --card-foreground: var(--landing-foreground);
   }
 }
 

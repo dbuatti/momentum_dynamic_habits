@@ -64,7 +64,7 @@ const Analytics = () => {
 
   if (isLoading || isDashboardDataLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
       </div>
     );
@@ -72,10 +72,10 @@ const Analytics = () => {
 
   if (isError || !analyticsData || !dashboardData) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center text-center p-4 bg-white">
+      <div className="min-h-screen flex flex-col items-center justify-center text-center p-4 bg-background">
         <AlertCircle className="w-12 h-12 text-destructive mb-4" />
-        <h2 className="text-2xl font-black text-slate-900 mb-2">Sync Error</h2>
-        <p className="text-slate-500 font-medium">We couldn't retrieve your growth data.</p>
+        <h2 className="text-2xl font-black text-foreground mb-2">Sync Error</h2>
+        <p className="text-lg text-muted-foreground font-medium">We couldn't retrieve your growth data.</p>
         <Link to="/"><Button variant="outline" className="mt-6 rounded-xl">Return to Dashboard</Button></Link>
       </div>
     );
@@ -90,17 +90,17 @@ const Analytics = () => {
       <PageHeader title="Growth Analytics" backLink="/" />
 
       {/* Filter Toolbar */}
-      <section className="bg-slate-50 p-2 rounded-2xl border border-slate-100 flex flex-wrap items-center justify-between gap-3">
+      <section className="bg-secondary p-2 rounded-2xl border border-border flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2 pl-2">
-          <Filter className="w-4 h-4 text-slate-400" />
-          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Filter By</span>
+          <Filter className="w-4 h-4 text-muted-foreground" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Filter By</span>
         </div>
         <div className="flex items-center gap-3">
           <Select value={habitFilter} onValueChange={setHabitFilter}>
-            <SelectTrigger className="w-[140px] h-10 rounded-xl bg-white border-slate-200 font-bold text-xs">
+            <SelectTrigger className="w-[140px] h-10 rounded-xl bg-card border-border font-bold text-xs">
               <SelectValue placeholder="All Habits" />
             </SelectTrigger>
-            <SelectContent className="rounded-xl border-slate-200">
+            <SelectContent className="rounded-xl border-border">
               <SelectItem value="all">All Practices</SelectItem>
               {analyticsData.habits.map(h => (
                 <SelectItem key={h.habit.habit_key} value={h.habit.habit_key}> {/* Fixed: Use habit_key */}
@@ -111,10 +111,10 @@ const Analytics = () => {
           </Select>
 
           <Select value={timeframeFilter} onValueChange={setTimeframeFilter}>
-            <SelectTrigger className="w-[140px] h-10 rounded-xl bg-white border-slate-200 font-bold text-xs">
+            <SelectTrigger className="w-[140px] h-10 rounded-xl bg-card border-border font-bold text-xs">
               <SelectValue placeholder="Timeframe" />
             </SelectTrigger>
-            <SelectContent className="rounded-xl border-slate-200">
+            <SelectContent className="rounded-xl border-border">
               <SelectItem value="4_weeks">Last 4 Weeks</SelectItem>
               <SelectItem value="8_weeks">Last 8 Weeks</SelectItem>
               <SelectItem value="12_weeks">Last 12 Weeks</SelectItem>
@@ -126,34 +126,34 @@ const Analytics = () => {
       {/* High-Level KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
-          { label: 'Days Active', val: overallWeeklySummary.activeDays, icon: Calendar, color: 'text-indigo-600' },
-          { label: 'Current Streak', val: overallWeeklySummary.streak, icon: Zap, color: 'text-orange-500' },
-          { label: 'Consistency', val: `${overallWeeklySummary.consistency}%`, icon: TrendingUp, color: 'text-emerald-600' }
+          { label: 'Days Active', val: overallWeeklySummary.activeDays, icon: Calendar, color: 'text-info' },
+          { label: 'Current Streak', val: overallWeeklySummary.streak, icon: Zap, color: 'text-warning' },
+          { label: 'Consistency', val: `${overallWeeklySummary.consistency}%`, icon: TrendingUp, color: 'text-success' }
         ].map((stat) => (
-          <Card key={stat.label} className="border-0 shadow-xl shadow-slate-200/50 rounded-3xl">
+          <Card key={stat.label} className="border-0 shadow-xl shadow-background/50 rounded-3xl">
             <CardContent className="p-6 flex flex-col items-center text-center">
-              <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-slate-50", stat.color)}>
+              <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-secondary", stat.color)}>
                 <stat.icon className="w-5 h-5" />
               </div>
-              <p className="text-2xl font-black text-slate-900 tabular-nums">{stat.val}</p>
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">{stat.label}</p>
+              <p className="text-2xl font-black text-foreground tabular-nums">{stat.val}</p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mt-1">{stat.label}</p>
             </CardContent>
           </Card>
         ))}
       </div>
 
       {/* Focus Pattern Card */}
-      <Card className="border-0 shadow-xl shadow-slate-200/50 rounded-[2rem] bg-slate-900 text-white overflow-hidden">
+      <Card className="border-0 shadow-xl shadow-background/50 rounded-[2rem] bg-primary text-primary-foreground overflow-hidden">
         <CardContent className="p-8 flex items-center justify-between">
           <div className="space-y-2">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400">Peak Performance Window</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-info">Peak Performance Window</p>
             <h3 className="text-2xl font-black italic uppercase tracking-tight">
               {patterns.bestTime !== '—' ? patterns.bestTime : 'Calculating...'}
             </h3>
-            <p className="text-xs font-medium text-slate-400">This is when your brain is most primed for deep work.</p>
+            <p className="text-xs font-medium text-primary-foreground/70">This is when your brain is most primed for deep work.</p>
           </div>
-          <div className="bg-white/10 p-4 rounded-3xl backdrop-blur-md">
-            <Clock className="w-8 h-8 text-white" />
+          <div className="bg-primary-foreground/10 p-4 rounded-3xl backdrop-blur-md">
+            <Clock className="w-8 h-8 text-primary-foreground" />
           </div>
         </CardContent>
       </Card>
@@ -161,10 +161,10 @@ const Analytics = () => {
       {/* Consistency Visualization */}
       <div className="space-y-4">
         <div className="flex items-center gap-2 ml-1">
-          <Layers className="w-4 h-4 text-slate-400" />
-          <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Momentum Heatmap</h2>
+          <Layers className="w-4 h-4 text-muted-foreground" />
+          <h2 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Momentum Heatmap</h2>
         </div>
-        <Card className="border-0 shadow-xl shadow-slate-200/50 rounded-[2rem] p-6">
+        <Card className="border-0 shadow-xl shadow-background/50 rounded-[2rem] p-6">
           <HabitHeatmap 
             completions={habitCompletions} 
             habitName={habitFilter === 'all' ? 'Overall Consistency' : 'Practice Consistency'} 

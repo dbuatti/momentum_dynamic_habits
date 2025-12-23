@@ -9,7 +9,7 @@ import {
   Trophy, Star, TrendingUp, Info, CheckCircle2, Calendar, Dumbbell, Wind, BookOpen, Music, Home, Code, Sparkles, Pill,
   Edit2, Settings
 } from 'lucide-react';
-import { Switch } from '@/components/ui/switch'; // Corrected import for Switch
+import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 
@@ -43,11 +43,11 @@ const HelpPage = () => {
           </p>
           <div className="grid grid-cols-2 gap-4 pt-2">
             <div className="flex items-center gap-2">
-              <Anchor className="w-5 h-5 text-blue-500" />
+              <Anchor className="w-5 h-5 text-info" />
               <span className="font-semibold text-sm">Anchor Practices</span>
             </div>
             <div className="flex items-center gap-2">
-              <Zap className="w-5 h-5 text-orange-500" />
+              <Zap className="w-5 h-5 text-warning" />
               <span className="font-semibold text-sm">Daily Momentum</span>
             </div>
           </div>
@@ -69,8 +69,8 @@ const HelpPage = () => {
 
           <div className="space-y-4">
             {/* Trial Mode */}
-            <div className="flex items-start gap-4 p-4 rounded-2xl bg-blue-50/50 border border-blue-100">
-              <div className="p-2 rounded-lg bg-blue-100 text-blue-600 shrink-0">
+            <div className="flex items-start gap-4 p-4 rounded-2xl bg-info-background/50 border border-info-border/50">
+              <div className="p-2 rounded-lg bg-info-background text-info shrink-0">
                 <Anchor className="w-5 h-5" />
               </div>
               <div>
@@ -82,8 +82,8 @@ const HelpPage = () => {
             </div>
 
             {/* Adaptive Growth Mode */}
-            <div className="flex items-start gap-4 p-4 rounded-2xl bg-orange-50/50 border border-orange-100">
-              <div className="p-2 rounded-lg bg-orange-100 text-orange-600 shrink-0">
+            <div className="flex items-start gap-4 p-4 rounded-2xl bg-warning-background/50 border border-warning-border/50">
+              <div className="p-2 rounded-lg bg-warning-background text-warning shrink-0">
                 <Zap className="w-5 h-5" />
               </div>
               <div>
@@ -95,8 +95,8 @@ const HelpPage = () => {
             </div>
 
             {/* Fixed (Maintenance) Mode */}
-            <div className="flex items-start gap-4 p-4 rounded-2xl bg-green-50/50 border border-green-100">
-              <div className="p-2 rounded-lg bg-green-100 text-green-600 shrink-0">
+            <div className="flex items-start gap-4 p-4 rounded-2xl bg-success-background/50 border border-success-border/50">
+              <div className="p-2 rounded-lg bg-success-background text-success shrink-0">
                 <ShieldCheck className="w-5 h-5" />
               </div>
               <div>
@@ -165,8 +165,8 @@ const HelpPage = () => {
           </p>
 
           <div className="space-y-4">
-            <div className="flex items-start gap-4 p-4 rounded-2xl bg-yellow-50/50 border border-yellow-100">
-              <div className="p-2 rounded-lg bg-yellow-100 text-yellow-600 shrink-0">
+            <div className="flex items-start gap-4 p-4 rounded-2xl bg-warning-background/50 border border-warning-border/50">
+              <div className="p-2 rounded-lg bg-warning-background text-warning shrink-0">
                 <Star className="w-5 h-5" />
               </div>
               <div>
@@ -175,14 +175,14 @@ const HelpPage = () => {
                   Every completed habit session earns you XP. Accumulate enough XP to level up, unlocking new insights and celebrating your journey. Your current level and XP progress are visible on the dashboard.
                 </p>
                 <div className="mt-3">
-                  <Progress value={75} className="h-2 [&>div]:bg-yellow-500" />
+                  <Progress value={75} className="h-2 [&>div]:bg-warning" />
                   <p className="text-xs text-muted-foreground mt-1">Example: 75% to next level</p>
                 </div>
               </div>
             </div>
 
-            <div className="flex items-start gap-4 p-4 rounded-2xl bg-red-50/50 border border-red-100">
-              <div className="p-2 rounded-lg bg-red-100 text-red-600 shrink-0">
+            <div className="flex items-start gap-4 p-4 rounded-2xl bg-destructive/5 border border-destructive/10">
+              <div className="p-2 rounded-lg bg-destructive/10 text-destructive shrink-0">
                 <TrendingUp className="w-5 h-5" />
               </div>
               <div>
@@ -210,8 +210,8 @@ const HelpPage = () => {
           </p>
 
           <div className="space-y-4">
-            <div className="flex items-start gap-4 p-4 rounded-2xl bg-purple-50/50 border border-purple-100">
-              <div className="p-2 rounded-lg bg-purple-100 text-purple-600 shrink-0">
+            <div className="flex items-start gap-4 p-4 rounded-2xl bg-habit-purple/50 border border-habit-purple-border/50">
+              <div className="p-2 rounded-lg bg-habit-purple-border/50 text-habit-purple-foreground shrink-0">
                 <Brain className="w-5 h-5" />
               </div>
               <div>

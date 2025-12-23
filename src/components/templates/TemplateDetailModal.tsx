@@ -28,7 +28,7 @@ export const TemplateDetailModal: React.FC<TemplateDetailModalProps> = ({ templa
     daily: 'bg-habit-orange text-habit-orange-foreground border-habit-orange-border',
     anchor: 'bg-habit-indigo text-habit-indigo-foreground border-habit-indigo-border',
   };
-  const categoryClasses = categoryColorMap[template.category] || 'bg-gray-100 text-gray-700 border-gray-200';
+  const categoryClasses = categoryColorMap[template.category] || 'bg-muted text-muted-foreground border-border';
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>

@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import { BarChart, Zap, Calendar, Target } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
 interface FooterStatsProps {
   streak: number;
@@ -38,7 +39,7 @@ export const FooterStats: React.FC<FooterStatsProps> = ({
           <div className="flex justify-center space-x-10 text-muted-foreground">
             <div className="text-center">
               <p className="font-bold text-xl text-foreground flex items-center justify-center">
-                <Zap className="w-4 h-4 mr-1 text-yellow-500" />
+                <Zap className="w-4 h-4 mr-1 text-warning" />
                 {streak}
               </p>
               <p className="text-xs">streak</p>
@@ -49,7 +50,7 @@ export const FooterStats: React.FC<FooterStatsProps> = ({
             </div>
             <div className="text-center">
               <p className="font-bold text-xl text-foreground flex items-center justify-center">
-                <Calendar className="w-4 h-4 mr-1 text-blue-500" />
+                <Calendar className="w-4 h-4 mr-1 text-info" />
                 {daysActive}
               </p>
               <p className="text-xs">days active</p>
@@ -67,7 +68,6 @@ export const FooterStats: React.FC<FooterStatsProps> = ({
             <p className="text-sm text-muted-foreground">TOTAL MEDITATION</p>
           </div>
         </div>
-      </div>
-    </CardContent>
+      </CardContent>
   </Card>
 );
