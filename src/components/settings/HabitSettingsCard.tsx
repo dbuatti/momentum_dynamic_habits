@@ -11,7 +11,8 @@ import { cn } from "@/lib/utils";
 import { 
   Anchor, Target, Sparkles, ShieldCheck, Calendar, 
   Clock, Dumbbell, Wind, BookOpen, Music, 
-  Home, Code, Pill, Timer, BarChart3, Layers, Zap, Info, Eye, EyeOff, Link as LinkIcon, FlaskConical
+  Home, Code, Pill, Timer, BarChart3, Layers, Zap, Info, Eye, EyeOff, Link as LinkIcon, FlaskConical,
+  Trash2 // Added Trash2 icon
 } from 'lucide-react';
 import { UserHabitRecord } from '@/types/habit';
 import { useUpdateHabitVisibility } from '@/hooks/useUpdateHabitVisibility';
@@ -19,6 +20,18 @@ import { habitIcons, habitModes, habitUnits } from '@/lib/habit-templates'; // I
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useJourneyData } from '@/hooks/useJourneyData';
 import { habitIconMap } from '@/lib/habit-utils';
+import { useDeleteHabit } from '@/hooks/useDeleteHabit'; // Import useDeleteHabit
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface HabitSettingsCardProps {
   habit: UserHabitRecord;
@@ -43,6 +56,7 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
   const Icon = getHabitIcon(habit.habit_key);
   const { mutate: updateHabitVisibility } = useUpdateHabitVisibility();
   const { data: journeyData } = useJourneyData();
+  const { mutate: deleteHabit, isPending: isDeletingHabit } = useDeleteHabit(); // Use deleteHabit hook
 
   const habitUnit = habit.unit || '';
 
@@ -62,6 +76,10 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
   useEffect(() => {
     setEditedHabitName(habit.name || habit.habit_key.replace(/_/g, ' '));
   }, [habit.name, habit.habit_key]);
+
+  const handleDeleteHabit = () => {
+    deleteHabit({ habitId: habit.id, habitKey: habit.habit_key });
+  };
 
   return (
     <AccordionItem 
@@ -250,7 +268,7 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
             </div>
           </TabsContent>
 
-          {/* LOGIC TAB: Visibility, Plateau, Chunking */}
+          {/* LOGIC TAB: Visibility, Plateau, Chunking, Danger Zone */}
           <TabsContent value="advanced" className="space-y-4 focus-visible:outline-none">
              <div className="flex items-center justify-between p-4 rounded-2xl bg-primary/5 border border-primary/10">
                 <div className="flex gap-4">
@@ -341,6 +359,43 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
                 <p className="text-[10px] text-muted-foreground leading-snug">
                   This habit will be marked as "locked" until the dependent habit is completed for the day.
                 </p>
+             </div>
+
+             {/* Danger Zone */}
+             <div className="p-4 rounded-2xl bg-destructive/5 border border-destructive/10 space-y-3 mt-8">
+                <div className="flex items-center gap-2">
+                    <Trash2 className="w-5 h-5 text-destructive" />
+                    <Label className="text-sm font-black uppercase text-destructive">Danger Zone</Label>
+                </div>
+                <p className="text-xs text-muted-foreground leading-snug">
+                    Permanently delete this habit and all its associated progress. This action cannot be undone.
+                </p>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" className="w-full rounded-xl h-10" disabled={isDeletingHabit}>
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      {isDeletingHabit ? 'Deleting...' : 'Delete Habit'}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent className="rounded-2xl">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete your "{habit.name}" habit and all its associated data.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
+                      <AlertDialogAction 
+                        onClick={handleDeleteHabit} 
+                        className="rounded-xl bg-destructive hover:bg-destructive/90"
+                        disabled={isDeletingHabit}
+                      >
+                        {isDeletingHabit ? 'Deleting...' : 'Delete'}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
              </div>
           </TabsContent>
         </Tabs>
