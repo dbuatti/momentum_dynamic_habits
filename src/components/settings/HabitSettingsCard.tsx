@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -55,6 +55,14 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
     return otherHabits.find(h => h.id === habit.dependent_on_habit_id);
   }, [habit.dependent_on_habit_id, otherHabits]);
 
+  // State for editable habit name
+  const [editedHabitName, setEditedHabitName] = useState(habit.name || habit.habit_key.replace(/_/g, ' '));
+
+  // Effect to update editedHabitName if habit.name changes from outside (e.g., initial load or external update)
+  useEffect(() => {
+    setEditedHabitName(habit.name || habit.habit_key.replace(/_/g, ' '));
+  }, [habit.name, habit.habit_key]);
+
   return (
     <AccordionItem 
       key={habit.id} 
@@ -74,9 +82,18 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
               <Icon className="w-6 h-6" />
             </div>
             <div className="flex-grow">
-              <h4 className="font-black text-lg tracking-tight group-hover:text-primary transition-colors capitalize">
-                {habit.name || habit.habit_key.replace('_', ' ')}
-              </h4>
+              {/* Replaced h4 with Input */}
+              <Input
+                value={editedHabitName}
+                onChange={(e) => setEditedHabitName(e.target.value)}
+                onBlur={() => {
+                  if (editedHabitName.trim() !== (habit.name || habit.habit_key.replace(/_/g, ' ')).trim()) {
+                    onUpdateHabitField(habit.id, { name: editedHabitName.trim() });
+                  }
+                }}
+                onClick={(e) => e.stopPropagation()} // Prevent accordion from toggling when clicking input
+                className="h-10 rounded-xl font-bold text-base bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-0 py-0"
+              />
               <div className="flex items-center gap-2 mt-0.5">
                  <span className={cn(
                    "text-[9px] font-black uppercase px-2 py-0.5 rounded-full border",
