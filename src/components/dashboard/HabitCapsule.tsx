@@ -52,9 +52,9 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   const storageKey = `timer_${habitKey}_${label}_${new Date().toISOString().split('T')[0]}`;
 
   const formatTime = (totalSeconds: number) => {
-    const rounded = Math.round(totalSeconds);
-    const mins = Math.floor(rounded / 60);
-    const secs = rounded % 60;
+    const roundedTotalSeconds = Math.round(totalSeconds); // Round the total seconds first
+    const mins = Math.floor(roundedTotalSeconds / 60);
+    const secs = roundedTotalSeconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
@@ -182,6 +182,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     startTimeRef.current = null;
     localStorage.removeItem(storageKey);
     window.dispatchEvent(new CustomEvent('habit-timer-update', { detail: null }));
+    onLogProgress(0, false); // Notify parent to reset progress
   };
 
   const handleFinishTiming = (mood?: string, promptMood: boolean = false) => {
@@ -237,8 +238,8 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
 
   const colors = {
     orange: { 
-      light: 'from-habit-orange/40', 
-      mid: 'to-habit-orange/70', 
+      light: 'from-habit-orange/60', // Adjusted opacity
+      mid: 'via-habit-orange/80',    // Adjusted opacity
       dark: 'to-habit-orange', 
       wave: 'hsl(var(--habit-orange))', 
       bg: 'bg-habit-orange', 
@@ -247,8 +248,8 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
       iconBg: 'bg-habit-orange/20' 
     },
     blue: { 
-      light: 'from-habit-blue/40', 
-      mid: 'to-habit-blue/70', 
+      light: 'from-habit-blue/60', 
+      mid: 'via-habit-blue/80', 
       dark: 'to-habit-blue', 
       wave: 'hsl(var(--habit-blue))', 
       bg: 'bg-habit-blue', 
@@ -257,8 +258,8 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
       iconBg: 'bg-habit-blue/20' 
     },
     green: { 
-      light: 'from-habit-green/40', 
-      mid: 'to-habit-green/70', 
+      light: 'from-habit-green/60', 
+      mid: 'via-habit-green/80', 
       dark: 'to-habit-green', 
       wave: 'hsl(var(--habit-green))', 
       bg: 'bg-habit-green', 
@@ -267,8 +268,8 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
       iconBg: 'bg-habit-green/20' 
     },
     purple: { 
-      light: 'from-habit-purple/40', 
-      mid: 'to-habit-purple/70', 
+      light: 'from-habit-purple/60', 
+      mid: 'via-habit-purple/80', 
       dark: 'to-habit-purple', 
       wave: 'hsl(var(--habit-purple))', 
       bg: 'bg-habit-purple', 
@@ -277,8 +278,8 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
       iconBg: 'bg-habit-purple/20' 
     },
     red: { 
-      light: 'from-habit-red/40', 
-      mid: 'to-habit-red/70', 
+      light: 'from-habit-red/60', 
+      mid: 'via-habit-red/80', 
       dark: 'to-habit-red', 
       wave: 'hsl(var(--habit-red))', 
       bg: 'bg-habit-red', 
@@ -287,8 +288,8 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
       iconBg: 'bg-habit-red/20' 
     },
     indigo: { 
-      light: 'from-habit-indigo/40', 
-      mid: 'to-habit-indigo/70', 
+      light: 'from-habit-indigo/60', 
+      mid: 'via-habit-indigo/80', 
       dark: 'to-habit-indigo', 
       wave: 'hsl(var(--habit-indigo))', 
       bg: 'bg-habit-indigo', 
@@ -327,30 +328,33 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
       >
         {/* Enhanced liquid fill with multi-stop gradient + subtle wave effect */}
         <AnimatePresence>
-          {(!isCompleted && (isTiming || initialValue > 0)) && (
+          {(!isCompleted && (isTiming || initialValue > 0 || elapsedSeconds > 0)) && (
             <motion.div 
               className="absolute inset-x-0 bottom-0 z-0 pointer-events-none"
               initial={{ height: "0%" }}
               animate={{ height: `${progressPercent}%` }}
               transition={{ type: "spring", stiffness: 80, damping: 20 }}
             >
-              <div className={cn("absolute inset-0 bg-gradient-to-t", colors.light, colors.mid, colors.dark)} />
-              <div className="absolute inset-0 bg-gradient-to-t from-transparent via-white/20 to-transparent opacity-60" />
+              <div className={cn("absolute inset-0 bg-gradient-to-t", colors.light, colors.mid, colors.dark, "shadow-inner-lg")} /> {/* Added shadow-inner-lg */}
               <div className="absolute inset-0 overflow-hidden">
-                <div className="absolute bottom-0 w-full h-12 opacity-40">
-                  <motion.div
-                    className={cn("absolute inset-x-0 h-16 bg-gradient-to-r from-transparent via-white/30 to-transparent")}
-                    animate={{ x: ["-100%", "100%"] }}
-                    transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-                    style={{ transform: "translateY(4px) rotate(2deg)" }}
-                  />
-                  <motion.div
-                    className={cn("absolute inset-x-0 h-16 bg-gradient-to-r from-transparent via-white/20 to-transparent")}
-                    animate={{ x: ["100%", "-100%"] }}
-                    transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
-                    style={{ transform: "translateY(-2px) rotate(-1deg)" }}
-                  />
-                </div>
+                <motion.div
+                  className={cn("absolute inset-x-0 h-16 opacity-40")}
+                  animate={{ y: ["0%", "-50%", "0%"], x: ["-10%", "10%", "-10%"] }} // More organic wave motion
+                  transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+                  style={{ 
+                    background: `linear-gradient(to right, transparent, ${colors.wave}33, transparent)`, // Use wave color with opacity
+                    transform: "translateY(4px) rotate(2deg)" 
+                  }}
+                />
+                <motion.div
+                  className={cn("absolute inset-x-0 h-16 opacity-30")}
+                  animate={{ y: ["-50%", "0%", "-50%"], x: ["10%", "-10%", "10%"] }} // More organic wave motion
+                  transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+                  style={{ 
+                    background: `linear-gradient(to right, transparent, ${colors.wave}22, transparent)`, // Use wave color with opacity
+                    transform: "translateY(-2px) rotate(-1deg)" 
+                  }}
+                />
               </div>
             </motion.div>
           )}
