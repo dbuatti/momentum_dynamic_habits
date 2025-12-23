@@ -6,25 +6,38 @@ import { useSession } from '@/contexts/SessionContext';
 import { useEffect } from 'react';
 import { Loader2, Target } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { useOnboardingCheck } from '@/hooks/useOnboardingCheck'; // Import useOnboardingCheck
 
 const Login = () => {
-  const { session, loading } = useSession();
+  const { session, loading: isSessionLoading } = useSession();
+  const { isOnboarded, isLoading: isOnboardingCheckLoading } = useOnboardingCheck();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!loading && session) {
-      console.log('Login useEffect - Session found, navigating to /');
-      // After login, check if onboarding is needed
-      navigate('/onboarding', { replace: true });
+    if (!isSessionLoading && !isOnboardingCheckLoading) {
+      if (session) {
+        if (isOnboarded) {
+          console.log('Login useEffect - Session found and onboarded, navigating to /');
+          navigate('/', { replace: true });
+        } else {
+          console.log('Login useEffect - Session found but not onboarded, navigating to /onboarding');
+          navigate('/onboarding', { replace: true });
+        }
+      } else {
+        // If not authenticated, ensure we are on the landing page or login page
+        // If they somehow land on /login directly without a session, they should see the login form.
+        // The AppRoutes handles redirecting from other protected routes to /landing.
+        console.log('Login useEffect - No session, staying on login page.');
+      }
       if (window.location.hash) {
         window.history.replaceState({}, document.title, window.location.pathname);
       }
     }
-  }, [session, loading, navigate]);
+  }, [session, isSessionLoading, isOnboarded, isOnboardingCheckLoading, navigate]);
 
   const redirectToUrl = window.location.origin;
 
-  if (loading) {
+  if (isSessionLoading || isOnboardingCheckLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
@@ -46,15 +59,15 @@ const Login = () => {
             Build better habits with personalized guidance
           </p>
         </div>
-        
+
         <Card className="p-8 rounded-2xl shadow-lg">
           <CardHeader className="p-0 mb-6">
             <h3 className="text-xl font-semibold text-center">Sign in to your account</h3>
           </CardHeader>
           <CardContent className="p-0">
-            <Auth 
-              supabaseClient={supabase} 
-              appearance={{ 
+            <Auth
+              supabaseClient={supabase}
+              appearance={{
                 theme: ThemeSupa,
                 style: {
                   button: {
@@ -66,14 +79,14 @@ const Login = () => {
                     padding: '0.75rem 1rem',
                   }
                 }
-              }} 
+              }}
               providers={['google']}
               theme="light"
               redirectTo={redirectToUrl}
             />
           </CardContent>
         </Card>
-        
+
         <p className="text-center text-xs text-muted-foreground">
           By signing in, you agree to our Terms of Service and Privacy Policy
         </p>
