@@ -50,6 +50,7 @@ import { Step6_FailureResponse } from '@/components/habits/wizard/micro/Step6_Fa
 import { Step6_SuccessDefinition } from '@/components/habits/wizard/micro/Step6_SuccessDefinition';
 import { HabitTemplateForm } from '@/components/habits/wizard/HabitTemplateForm';
 import { HabitReviewStep } from '@/pages/HabitReview'; // Corrected import path to the page component
+import { WizardStepper } from '@/components/habits/wizard/WizardStepper'; // Import new stepper component
 
 export interface CreateHabitParams {
   name: string;
@@ -144,6 +145,15 @@ const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: s
 };
 
 const MACRO_STEPS = [1, 2, 3, 4, 5, 6, 7]; // Added step 7 for review
+const MACRO_STEP_LABELS = [
+  "Category",
+  "Motivation",
+  "Capacity",
+  "Barriers",
+  "Timing",
+  "Growth",
+  "Review",
+];
 const MICRO_STEPS_MAP: { [key: number]: string[] } = {
   3: ['3.1', '3.2', '3.3', '3.4'],
   4: ['4.1', '4.2', '4.3'],
@@ -243,17 +253,7 @@ const HabitWizard = () => {
     if (!isLoadingWizardProgress && wizardProgress && !hasLoadedInitialProgress && !isTemplateCreationMode && !templateToPreFill) {
       setCurrentStep(wizardProgress.current_step);
       setWizardData(wizardProgress.habit_data);
-      // If loading from saved progress, ensure micro-step index is correctly set
-      if (wizardProgress.current_step > 2) {
-        const microStepsForCurrentMacro = MICRO_STEPS_MAP[wizardProgress.current_step];
-        if (microStepsForCurrentMacro) {
-          // For simplicity, when loading saved progress, we'll start at the first micro-step of the current macro step.
-          // A more advanced implementation might try to infer the exact micro-step.
-          setCurrentMicroStepIndex(0); 
-        }
-      } else {
-        setCurrentMicroStepIndex(0);
-      }
+      setCurrentMicroStepIndex(0); // Reset micro-step index when loading a macro step
       setHasLoadedInitialProgress(true);
     } else if (!isLoadingWizardProgress && (isTemplateCreationMode || templateToPreFill) && !hasLoadedInitialProgress) {
       setCurrentStep(99); // Special step for template form
@@ -410,6 +410,17 @@ const HabitWizard = () => {
     }
   }, [deleteProgress, navigate]);
 
+  const handleMacroStepClick = useCallback((stepNumber: number) => {
+    if (stepNumber <= currentStep) { // Allow navigating back to any previous macro step
+      setCurrentStep(stepNumber);
+      setCurrentMicroStepIndex(0); // Start from the first micro-step of the chosen macro step
+    }
+  }, [currentStep]);
+
+  const isMacroStepCompleted = useCallback((stepNumber: number) => {
+    return currentStep > stepNumber;
+  }, [currentStep]);
+
   const totalDisplaySteps = isTemplateCreationMode ? 1 : (
     MACRO_STEPS.reduce((acc, step) => acc + (MICRO_STEPS_MAP[step]?.length || 1), 0)
   );
@@ -545,7 +556,14 @@ const HabitWizard = () => {
         {/* Header with progress - always present and fixed height */}
         {!isTemplateCreationMode && (
           <CardHeader className="pb-6 pt-8 px-10 bg-gradient-to-b from-primary/5 to-transparent">
-            <div className="flex justify-between items-center mb-4">
+            <WizardStepper
+              currentMacroStep={currentStep}
+              totalMacroSteps={MACRO_STEPS.length}
+              onStepClick={handleMacroStepClick}
+              isStepCompleted={isMacroStepCompleted}
+              stepLabels={MACRO_STEP_LABELS}
+            />
+            <div className="flex justify-between items-center mb-4 mt-6"> {/* Added mt-6 for spacing */}
               <div className="text-sm font-bold text-muted-foreground uppercase tracking-wider">
                 Step {currentDisplayStep} of {totalDisplaySteps}
               </div>
