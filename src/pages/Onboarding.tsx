@@ -4,7 +4,7 @@ import { OnboardingFlow } from '@/components/onboarding/OnboardingFlow';
 import { useSession } from '@/contexts/SessionContext';
 
 interface OnboardingProps {
-  onComplete: () => void;
+  onComplete: () => Promise<void>; // Changed to return a Promise
 }
 
 const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
@@ -18,8 +18,8 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
     }
   }, [session, navigate]);
 
-  const handleFlowComplete = () => {
-    onComplete();
+  const handleFlowComplete = async () => { // Made async
+    await onComplete(); // Await the onComplete prop
   };
 
   return (

@@ -60,8 +60,8 @@ export const OnboardingFlow = ({ onComplete }: { onComplete: () => void }) => {
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('17:00');
   const [selectedHabits, setSelectedHabits] = useState<string[]>([]);
-  const { mutate: updateProfile } = useUpdateProfile();
-  const { mutate: initializeHabits } = useInitializeMissingHabits(); // Use the modified hook
+  const { mutateAsync: updateProfile } = useUpdateProfile(); // Use mutateAsync
+  const { mutateAsync: initializeHabits } = useInitializeMissingHabits(); // Use mutateAsync
   // Removed: const { mutate: updateHabitVisibility } = useUpdateHabitVisibility(); // Use new hook
 
   const handleNext = () => {
@@ -102,7 +102,7 @@ export const OnboardingFlow = ({ onComplete }: { onComplete: () => void }) => {
       // }
 
       showSuccess('Welcome! Your profile has been set up.');
-      onComplete();
+      await onComplete(); // Await the onComplete prop
     } catch (error) {
       showError('Failed to complete onboarding. Please try again.');
     }

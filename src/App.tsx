@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom"; // Import useNavigate
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster"; // shadcn/ui toaster
 import { Toaster as SonnerToaster } from "sonner"; // sonner toaster
@@ -83,8 +83,8 @@ const OnboardingRoute = ({ children }: { children: React.ReactNode }) => { // FI
 const AppRoutes = () => {
   const { refetch: refetchOnboardingStatus } = useOnboardingCheck(); // Only need refetch here
 
-  const handleOnboardingComplete = () => {
-    refetchOnboardingStatus(); // Re-fetch onboarding status to update state
+  const handleOnboardingComplete = async () => { // Made async
+    await refetchOnboardingStatus(); // Await the refetch
   };
 
   return (
