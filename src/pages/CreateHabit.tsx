@@ -283,35 +283,35 @@ const CreateHabit = () => {
     }
   };
 
+  // Group templates by the requested categories
+  const groupedTemplates = useMemo(() => {
+    const groups: { [key: string]: { label: string; icon: React.ElementType; templates: HabitTemplate[] } } = {
+      'learning_growth': { label: 'Learning & Growth', icon: BookOpen, templates: [] },
+      'wellbeing_movement': { label: 'Wellbeing & Movement', icon: Wind, templates: [] },
+      'daily_essentials': { label: 'Daily Essentials', icon: Home, templates: [] },
+    };
+
+    habitTemplates.filter(t => t.id !== 'custom_habit').forEach(template => {
+      if (template.category === 'cognitive' && (template.id === 'study_generic' || template.id === 'creative_practice_generic')) {
+        groups['learning_growth'].templates.push(template);
+      } else if (template.category === 'physical' || template.category === 'wellness') {
+        if (template.id === 'exercise_generic' || template.id === 'mindfulness_generic') {
+          groups['wellbeing_movement'].templates.push(template);
+        }
+      } else if (template.category === 'daily' || template.defaultMode === 'Fixed') {
+        if (template.id === 'daily_task_generic' || template.id === 'fixed_medication' || template.id === 'fixed_teeth_brushing') {
+          groups['daily_essentials'].templates.push(template);
+        }
+      }
+    });
+    return groups;
+  }, []);
+
   const renderGuidedStep = () => {
     const IconComponent = getHabitIconComponent(selectedIconName);
     const totalGuidedSteps = 4; // Excluding initial mode selection
     const currentGuidedStep = step; // Step 1-4
     const progress = (currentGuidedStep / totalGuidedSteps) * 100;
-
-    // Group templates by the requested categories
-    const groupedTemplates = useMemo(() => {
-      const groups: { [key: string]: { label: string; icon: React.ElementType; templates: HabitTemplate[] } } = {
-        'learning_growth': { label: 'Learning & Growth', icon: BookOpen, templates: [] },
-        'wellbeing_movement': { label: 'Wellbeing & Movement', icon: Wind, templates: [] },
-        'daily_essentials': { label: 'Daily Essentials', icon: Home, templates: [] },
-      };
-
-      habitTemplates.filter(t => t.id !== 'custom_habit').forEach(template => {
-        if (template.category === 'cognitive' && (template.id === 'study_generic' || template.id === 'creative_practice_generic')) {
-          groups['learning_growth'].templates.push(template);
-        } else if (template.category === 'physical' || template.category === 'wellness') {
-          if (template.id === 'exercise_generic' || template.id === 'mindfulness_generic') {
-            groups['wellbeing_movement'].templates.push(template);
-          }
-        } else if (template.category === 'daily' || template.defaultMode === 'Fixed') {
-          if (template.id === 'daily_task_generic' || template.id === 'fixed_medication' || template.id === 'fixed_teeth_brushing') {
-            groups['daily_essentials'].templates.push(template);
-          }
-        }
-      });
-      return groups;
-    }, []);
 
     return (
       <Card className="w-full max-w-md shadow-xl rounded-3xl overflow-hidden border-0">
@@ -440,26 +440,26 @@ const CreateHabit = () => {
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 ml-1">
+                   <div className="space-y-2">
+                     <div className="flex items-center gap-2 ml-1">
                         <Clock className="w-3.5 h-3.5 text-primary" />
                         <Label className="text-[10px] font-black uppercase opacity-60">Window Start</Label>
-                    </div>
-                    <Select value={windowStart || ''} onValueChange={setWindowStart}>
+                     </div>
+                     <Select value={windowStart || ''} onValueChange={setWindowStart}>
                         <SelectTrigger id="windowStart" className="h-12 rounded-xl"><SelectValue placeholder="Anytime" /></SelectTrigger>
                         <SelectContent>{timeOptions.map((time) => <SelectItem key={time} value={time}>{time}</SelectItem>)}</SelectContent>
                       </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 ml-1">
+                   </div>
+                   <div className="space-y-2">
+                     <div className="flex items-center gap-2 ml-1">
                         <Clock className="w-3.5 h-3.5 text-primary" />
                         <Label className="text-[10px] font-black uppercase opacity-60">Window End</Label>
-                    </div>
-                    <Select value={windowEnd || ''} onValueChange={setWindowEnd}>
+                     </div>
+                     <Select value={windowEnd || ''} onValueChange={setWindowEnd}>
                         <SelectTrigger id="windowEnd" className="h-12 rounded-xl"><SelectValue placeholder="Anytime" /></SelectTrigger>
                         <SelectContent>{timeOptions.map((time) => <SelectItem key={time} value={time}>{time}</SelectItem>)}</SelectContent>
                       </Select>
-                  </div>
+                   </div>
                 </div>
               </div>
             </div>
