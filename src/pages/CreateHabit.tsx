@@ -22,13 +22,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { showError, showSuccess } from '@/utils/toast';
 import { useNavigate } from 'react-router-dom';
-import { UserHabitRecord, HabitCategory as HabitCategoryType } from '@/types/habit'; // Import HabitCategoryType
-import { useJourneyData } from '@/hooks/useJourneyData'; // Import useJourneyData
+import { UserHabitRecord, HabitCategory as HabitCategoryType } from '@/types/habit';
+import { useJourneyData } from '@/hooks/useJourneyData';
 
 interface CreateHabitParams {
   name: string;
   habit_key: string;
-  category: HabitCategoryType; // Use HabitCategoryType
+  category: HabitCategoryType;
   current_daily_goal: number;
   frequency_per_week: number;
   is_trial_mode: boolean;
@@ -38,9 +38,9 @@ interface CreateHabitParams {
   unit: string;
   xp_per_unit: number;
   energy_cost_per_unit: number;
-  icon_name: string; // New field for icon
-  default_chunks: number; // Added default_chunks
-  dependent_on_habit_id: string | null; // Added this line
+  icon_name: string;
+  default_chunks: number;
+  dependent_on_habit_id: string | null;
 }
 
 const createNewHabit = async ({ userId, habit }: { userId: string; habit: CreateHabitParams }) => {
@@ -48,7 +48,7 @@ const createNewHabit = async ({ userId, habit }: { userId: string; habit: Create
   const oneYearFromNow = new Date(today.setFullYear(today.getFullYear() + 1));
   const oneYearDateString = oneYearFromNow.toISOString().split('T')[0];
 
-  const { name, habit_key, category, current_daily_goal, frequency_per_week, is_trial_mode, is_fixed, anchor_practice, auto_chunking, unit, xp_per_unit, energy_cost_per_unit, icon_name, default_chunks, dependent_on_habit_id } = habit; // Destructure default_chunks and dependent_on_habit_id
+  const { name, habit_key, category, current_daily_goal, frequency_per_week, is_trial_mode, is_fixed, anchor_practice, auto_chunking, unit, xp_per_unit, energy_cost_per_unit, icon_name, default_chunks, dependent_on_habit_id } = habit;
 
   const habitToInsert: Partial<UserHabitRecord> = {
     user_id: userId,
@@ -58,7 +58,7 @@ const createNewHabit = async ({ userId, habit }: { userId: string; habit: Create
     xp_per_unit: xp_per_unit,
     energy_cost_per_unit: energy_cost_per_unit,
     current_daily_goal: current_daily_goal,
-    long_term_goal: current_daily_goal * (unit === 'min' ? 365 * 60 : 365), // Example: 1 year goal in seconds or reps
+    long_term_goal: current_daily_goal * (unit === 'min' ? 365 * 60 : 365),
     target_completion_date: oneYearDateString,
     momentum_level: 'Building',
     lifetime_progress: 0,
@@ -66,22 +66,22 @@ const createNewHabit = async ({ userId, habit }: { userId: string; habit: Create
     is_frozen: false,
     max_goal_cap: null,
     last_plateau_start_date: today.toISOString().split('T')[0],
-    plateau_days_required: is_trial_mode ? (category === 'cognitive' || category === 'wellness' ? 14 : 7) : 7, // Longer plateau for ND mode or specific categories
+    plateau_days_required: is_trial_mode ? (category === 'cognitive' || category === 'wellness' ? 14 : 7) : 7,
     completions_in_plateau: 0,
     is_fixed: is_fixed,
-    category: anchor_practice ? 'anchor' : category, // Override category if anchor practice
+    category: anchor_practice ? 'anchor' : category,
     is_trial_mode: is_trial_mode,
-    frequency_per_week: frequency_per_week,
+    frequency_per_week: frequency_per_week, // Corrected to use habit.frequency_per_week
     growth_phase: 'duration',
     window_start: null,
     window_end: null,
-    days_of_week: [0, 1, 2, 3, 4, 5, 6], // Default to all days
+    days_of_week: [0, 1, 2, 3, 4, 5, 6],
     auto_chunking: auto_chunking,
-    enable_chunks: auto_chunking, // Enable chunks if auto-chunking is on
-    num_chunks: auto_chunking ? default_chunks : 1, // Use default_chunks from params
-    chunk_duration: auto_chunking ? (current_daily_goal / default_chunks) : current_daily_goal, // Calculate chunk duration
+    enable_chunks: auto_chunking,
+    num_chunks: auto_chunking ? default_chunks : 1,
+    chunk_duration: auto_chunking ? (current_daily_goal / default_chunks) : current_daily_goal,
     is_visible: true,
-    dependent_on_habit_id: dependent_on_habit_id, // Added this line
+    dependent_on_habit_id: dependent_on_habit_id,
   };
 
   const { error } = await supabase.from('user_habits').insert(habitToInsert);
@@ -98,9 +98,9 @@ const CreateHabit = () => {
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [habitName, setHabitName] = useState('');
   const [habitKey, setHabitKey] = useState('');
-  const [category, setCategory] = useState<HabitCategoryType>('daily'); // Use HabitCategoryType
-  const [dailyGoal, setDailyGoal] = useState(15); // in minutes or reps
-  const [frequency, setFrequency] = useState(3); // per week
+  const [category, setCategory] = useState<HabitCategoryType>('daily');
+  const [dailyGoal, setDailyGoal] = useState(15);
+  const [frequency, setFrequency] = useState(3);
   const [isTrialMode, setIsTrialMode] = useState(true);
   const [isFixed, setIsFixed] = useState(false);
   const [isAnchorPractice, setIsAnchorPractice] = useState(false);
@@ -109,12 +109,13 @@ const CreateHabit = () => {
   const [xpPerUnit, setXpPerUnit] = useState(30);
   const [energyCostPerUnit, setEnergyCostPerUnit] = useState(6);
   const [selectedIconName, setSelectedIconName] = useState<string>('Target');
-  const [dependentOnHabitId, setDependentOnHabitId] = useState<string | null>(null); // New state for dependency
+  const [dependentOnHabitId, setDependentOnHabitId] = useState<string | null>(null);
 
-  const { data: journeyData } = useJourneyData(); // Fetch all habits for dependency selection
+  const { data: journeyData } = useJourneyData();
+  // Use allHabits for dependency selection, as a new habit cannot depend on itself yet
   const otherHabits = useMemo(() => {
-    return (journeyData?.habits || []).filter(h => h.is_visible); // All visible habits can be dependencies
-  }, [journeyData?.habits]);
+    return journeyData?.allHabits || [];
+  }, [journeyData?.allHabits]);
 
   const selectedTemplate = useMemo(() => {
     if (selectedTemplateId === 'custom_habit') {
@@ -132,13 +133,12 @@ const CreateHabit = () => {
         xpPerUnit: 30,
         energyCostPerUnit: 6,
         icon: Target,
-        plateauDaysRequired: 7, // Added this line
+        plateauDaysRequired: 7,
       } as HabitTemplate;
     }
     return habitTemplates.find(t => t.id === selectedTemplateId);
   }, [selectedTemplateId]);
 
-  // Initialize form fields when a template is selected
   React.useEffect(() => {
     if (selectedTemplate) {
       setHabitName(selectedTemplate.name);
@@ -153,10 +153,9 @@ const CreateHabit = () => {
       setUnit(selectedTemplate.unit);
       setXpPerUnit(selectedTemplate.xpPerUnit);
       setEnergyCostPerUnit(selectedTemplate.energyCostPerUnit);
-      // Correctly assign icon name by finding the value from habitIcons
       const iconEntry = habitIcons.find(entry => entry.icon === selectedTemplate.icon);
       setSelectedIconName(iconEntry?.value || 'Target');
-      setDependentOnHabitId(null); // Reset dependency when template changes
+      setDependentOnHabitId(null);
     }
   }, [selectedTemplate]);
 
@@ -191,7 +190,7 @@ const CreateHabit = () => {
 
     createHabitMutation.mutate({
       name: habitName,
-      habit_key: habitKey.toLowerCase().replace(/\s/g, '_'), // Ensure habit_key is lowercase and snake_case
+      habit_key: habitKey.toLowerCase().replace(/\s/g, '_'),
       category: isAnchorPractice ? 'anchor' : category,
       current_daily_goal: dailyGoal,
       frequency_per_week: frequency,
@@ -203,8 +202,8 @@ const CreateHabit = () => {
       xp_per_unit: xpPerUnit,
       energy_cost_per_unit: energyCostPerUnit,
       icon_name: selectedIconName,
-      default_chunks: selectedTemplate.defaultChunks, // Pass default_chunks from selectedTemplate
-      dependent_on_habit_id: dependentOnHabitId, // Pass the selected dependency ID
+      default_chunks: selectedTemplate.defaultChunks,
+      dependent_on_habit_id: dependentOnHabitId,
     });
   };
 

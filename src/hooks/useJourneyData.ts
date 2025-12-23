@@ -3,17 +3,19 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { differenceInDays } from 'date-fns';
 import { initialHabits } from '@/lib/habit-data';
+import { UserHabitRecord } from '@/types/habit'; // Import UserHabitRecord
 
 const fetchJourneyData = async (userId: string) => {
   const profilePromise = supabase.from('profiles').select('journey_start_date, daily_streak, timezone, default_auto_schedule_start_time, default_auto_schedule_end_time, first_name, last_name, neurodivergent_mode').eq('id', userId).single();
-  const habitsPromise = supabase.from('user_habits').select('*, dependent_on_habit_id').eq('user_id', userId); // Fetch dependent_on_habit_id
+  const habitsPromise = supabase.from('user_habits').select('*, dependent_on_habit_id').eq('user_id', userId); // Fetch all user habits
+
   const allBadgesPromise = supabase.from('badges').select('id, name, icon_name, requirement_type, requirement_value, habit_key');
   const achievedBadgesPromise = supabase.from('user_badges').select('badge_id').eq('user_id', userId);
   const bestTimePromise = supabase.rpc('get_best_time', { p_user_id: userId });
 
   const [
     { data: profile, error: profileError },
-    { data: habits, error: habitsError },
+    { data: habits, error: habitsError }, // This will be all user habits from the DB
     { data: allBadges, error: allBadgesError },
     { data: achievedBadges, error: achievedBadgesError },
     { data: bestTime, error: bestTimeError },
@@ -25,9 +27,7 @@ const fetchJourneyData = async (userId: string) => {
 
   const initialHabitsMap = new Map(initialHabits.map(h => [h.id, h]));
   
-  const processedHabits = (habits || [])
-    .filter(h => h.is_visible)
-    .map(h => {
+  const allUserHabits: UserHabitRecord[] = (habits || []).map(h => {
     const initialHabit = initialHabitsMap.get(h.habit_key);
     const rawLifetimeProgress = h.lifetime_progress || 0;
     
@@ -38,20 +38,23 @@ const fetchJourneyData = async (userId: string) => {
     return {
       ...h,
       lifetime_progress: uiLifetimeProgress,
-      raw_lifetime_progress: rawLifetimeProgress,
+      raw_lifetime_progress: rawLifetimeProgress, // Keep raw for calculations
       unit: h.unit || '', // Use unit from DB
       category: h.category || 'daily',
     };
   });
 
+  const visibleHabits = allUserHabits.filter(h => h.is_visible); // Filter for display on dashboard/journey
+
   const startDate = profile?.journey_start_date ? new Date(profile.journey_start_date) : null;
-  const meditationHabit = processedHabits?.find(h => h.habit_key === 'meditation');
+  const meditationHabit = visibleHabits?.find(h => h.habit_key === 'meditation'); // Use visibleHabits here
   const totalJourneyDays = (meditationHabit && startDate) ? 
     differenceInDays(new Date(meditationHabit.target_completion_date), startDate) : 0;
 
   return {
     profile,
-    habits: processedHabits,
+    allHabits: allUserHabits, // Return all habits for dependency selection
+    habits: visibleHabits, // Keep `habits` for backward compatibility in components expecting only visible ones
     allBadges,
     achievedBadges,
     bestTime: bestTime || '—',
@@ -67,5 +70,6 @@ export const useJourneyData = () => {
     queryKey: ['journeyData', userId],
     queryFn: () => fetchJourneyData(userId!),
     enabled: !!userId,
+    staleTime: 1000 * 60 * 5,
   });
 };

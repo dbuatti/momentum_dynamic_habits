@@ -29,6 +29,7 @@ export interface UserHabitRecord {
   long_term_goal: number;
   momentum_level: MomentumLevel;
   lifetime_progress: number;
+  raw_lifetime_progress: number; // Added raw_lifetime_progress
   target_completion_date: string;
   updated_at: string;
   last_goal_increase_date: string | null;

@@ -15,10 +15,10 @@ import {
 } from 'lucide-react';
 import { UserHabitRecord } from '@/types/habit';
 import { useUpdateHabitVisibility } from '@/hooks/useUpdateHabitVisibility';
-import { initialHabits } from '@/lib/habit-data'; // Keep for fallback if needed
-import { habitIcons, habitCategories, habitUnits, habitModes } from '@/lib/habit-templates'; // Import new template data
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'; // Import Select components
-import { useJourneyData } from '@/hooks/useJourneyData'; // Import useJourneyData to get other habits
+import { initialHabits } from '@/lib/habit-data';
+import { habitIcons, habitCategories, habitUnits, habitModes } from '@/lib/habit-templates';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useJourneyData } from '@/hooks/useJourneyData';
 
 interface HabitSettingsCardProps {
   habit: UserHabitRecord;
@@ -29,12 +29,10 @@ interface HabitSettingsCardProps {
 
 const days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
-// Map habit keys to Lucide icons (prioritize dynamic icon if available, else fallback)
 const getHabitIcon = (habitKey: string) => {
-  const foundIcon = habitIcons.find(i => i.value === habitKey); // Check if habitKey itself is an icon name
+  const foundIcon = habitIcons.find(i => i.value === habitKey);
   if (foundIcon) return foundIcon.icon;
 
-  // Fallback to initialHabits if needed, or a generic icon
   const initialHabitConfig = initialHabits.find(h => h.id === habitKey);
   if (initialHabitConfig) {
     const initialHabitIconMap: { [key: string]: React.ElementType } = {
@@ -43,7 +41,7 @@ const getHabitIcon = (habitKey: string) => {
     };
     return initialHabitIconMap[habitKey] || Target;
   }
-  return Target; // Default fallback
+  return Target;
 };
 
 export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
@@ -52,16 +50,16 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
   onToggleDay,
   isActiveHabit,
 }) => {
-  const Icon = getHabitIcon(habit.habit_key) || Target; // Use habit.habit_key to get icon
+  const Icon = getHabitIcon(habit.habit_key) || Target;
   const { mutate: updateHabitVisibility } = useUpdateHabitVisibility();
-  const { data: journeyData } = useJourneyData(); // Fetch all habits for dependency selection
+  const { data: journeyData } = useJourneyData();
 
-  // Use habit.unit directly from the UserHabitRecord
   const habitUnit = habit.unit || '';
 
+  // Use allHabits for dependency selection
   const otherHabits = useMemo(() => {
-    return (journeyData?.habits || []).filter(h => h.id !== habit.id && h.is_visible);
-  }, [journeyData?.habits, habit.id]);
+    return (journeyData?.allHabits || []).filter(h => h.id !== habit.id);
+  }, [journeyData?.allHabits, habit.id]);
 
   return (
     <AccordionItem 
@@ -73,7 +71,7 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
       )}
     >
       <AccordionTrigger className="px-6 py-5 hover:no-underline group">
-        <div className="flex flex-col w-full text-left gap-2"> {/* Changed to flex-col for better layout */}
+        <div className="flex flex-col w-full text-left gap-2">
           <div className="flex items-center gap-5 text-left w-full">
             <div className={cn(
               "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-all duration-300",
@@ -83,7 +81,7 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
             </div>
             <div className="flex-grow">
               <h4 className="font-black text-lg tracking-tight group-hover:text-primary transition-colors capitalize">
-                {habit.name || habit.habit_key.replace('_', ' ')} {/* Use habit.name */}
+                {habit.name || habit.habit_key.replace('_', ' ')}
               </h4>
               <div className="flex items-center gap-2 mt-0.5">
                  <span className={cn(
@@ -101,7 +99,7 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
             </div>
           </div>
           {habit.dependent_on_habit_id && (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2 ml-[72px]"> {/* Indent to align with habit name */}
+            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2 ml-[72px]">
               <LinkIcon className="w-3.5 h-3.5" />
               <span>Depends on: {otherHabits.find(h => h.id === habit.dependent_on_habit_id)?.name || 'Unknown Habit'}</span>
             </div>
@@ -150,6 +148,7 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
                 {habitModes.map((mode) => (
                   <button
                     key={mode.value}
+                    type="button"
                     onClick={() => onUpdateHabitField(habit.id, { 
                       is_trial_mode: mode.value === 'Trial', 
                       is_fixed: mode.value === 'Fixed' 
