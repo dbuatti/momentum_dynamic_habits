@@ -51,7 +51,6 @@ const TemplatesPage = () => {
 
   return (
     <div className="w-full max-w-7xl mx-auto px-4 py-8 pb-24">
-      <PageHeader title="Habit Templates" backLink="/" />
 
       {/* Hero Section */}
       <div className="text-center space-y-4 mb-10">
