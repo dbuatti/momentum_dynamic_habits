@@ -80,7 +80,6 @@ const Index = () => {
     });
   }, [data?.habits, dbCapsules]);
 
-  // Use isVisible (day of week check) and optionally show only if WithinWindow for top section
   const anchorHabits = useMemo(() => habitGroups.filter(h => h.category === 'anchor' && h.isVisible), [habitGroups]);
   const dailyHabits = useMemo(() => {
     return habitGroups
@@ -114,12 +113,12 @@ const Index = () => {
     const Icon = habitIconMap[habit.key] || Timer;
     const color = habitColorMap[habit.key] || 'blue';
     const accentColor = {
-        orange: 'text-orange-700 bg-orange-50 border-orange-100',
-        blue: 'text-blue-700 bg-blue-50 border-blue-100',
-        green: 'text-green-700 bg-green-50 border-green-100',
-        purple: 'text-purple-700 bg-purple-50 border-purple-100',
-        red: 'text-red-700 bg-red-50 border-red-100',
-        indigo: 'text-indigo-700 bg-indigo-50 border-indigo-100',
+        orange: 'text-orange-900 bg-orange-50 border-orange-200',
+        blue: 'text-blue-900 bg-blue-50 border-blue-200',
+        green: 'text-green-900 bg-green-50 border-green-200',
+        purple: 'text-purple-900 bg-purple-50 border-purple-200',
+        red: 'text-red-900 bg-red-50 border-red-200',
+        indigo: 'text-indigo-900 bg-indigo-50 border-indigo-200',
     }[color];
 
     return (
@@ -135,22 +134,22 @@ const Index = () => {
         <AccordionTrigger className="px-6 py-5 hover:no-underline">
           <div className="flex items-center justify-between w-full pr-4">
             <div className="flex items-center gap-4 text-left">
-              <div className="w-12 h-12 rounded-2xl bg-white/80 flex items-center justify-center relative shadow-sm">
+              <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center relative shadow-sm border border-black/5">
                 <Icon className="w-6 h-6" />
               </div>
               <div>
                 <h3 className="font-black text-lg flex items-center gap-2">
                   {habit.name}
-                  {habit.allCompleted && <CheckCircle2 className="w-5 h-5 text-green-500" />}
+                  {habit.allCompleted && <CheckCircle2 className="w-5 h-5 text-green-600" />}
                 </h3>
                 <div className="flex items-center gap-2 mt-1">
-                  <p className="text-sm opacity-70 font-bold">
+                  <p className="text-sm opacity-80 font-bold">
                     {habit.is_trial_mode ? `Trial: ${habit.weekly_completions}/${habit.frequency_per_week} weekly` : `${habit.dailyGoal} ${habit.unit} goal`}
                   </p>
                   {!habit.allCompleted && (
                     <span className={cn(
                       "text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full flex items-center gap-1",
-                      habit.isWithinWindow ? "bg-green-500 text-white" : "bg-muted text-muted-foreground"
+                      habit.isWithinWindow ? "bg-green-600 text-white shadow-sm" : "bg-muted text-muted-foreground"
                     )}>
                       {habit.isWithinWindow ? (
                         <>Available now</>
@@ -177,7 +176,7 @@ const Index = () => {
             />
           ))}
           {habit.is_trial_mode && (
-              <div className="mt-4 p-4 bg-white/40 rounded-2xl border border-white/60">
+              <div className="mt-4 p-4 bg-white/60 rounded-2xl border border-black/10">
                 <p className="text-[10px] font-black uppercase tracking-widest opacity-60 flex items-center gap-1.5">
                     <Target className="w-3 h-3" /> Entry Stabilization Phase
                 </p>
