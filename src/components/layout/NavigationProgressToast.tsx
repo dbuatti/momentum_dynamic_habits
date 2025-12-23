@@ -55,7 +55,7 @@ export const NavigationProgressToast = () => {
           exit={{ opacity: 0, y: 20, scale: 0.95 }}
           className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] w-[calc(100%-2rem)] max-w-sm"
         >
-          <div className="bg-card/95 backdrop-blur-md border border-border rounded-2xl p-4 shadow-2xl shadow-primary/20 text-foreground">
+          <div className="bg-secondary/95 backdrop-blur-md border border-border rounded-2xl p-4 shadow-lg shadow-foreground/10 text-foreground">
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center border border-primary/30">
@@ -68,7 +68,7 @@ export const NavigationProgressToast = () => {
               </div>
               <button 
                 onClick={() => setIsVisible(false)}
-                className="p-1 hover:bg-secondary rounded-full transition-colors"
+                className="p-1 hover:bg-background rounded-full transition-colors"
               >
                 <X className="w-4 h-4 opacity-50" />
               </button>
@@ -80,7 +80,7 @@ export const NavigationProgressToast = () => {
                   <span>Progress to Level {data.level + 1}</span>
                   <span>{Math.round(xpProgress)}%</span>
                 </div>
-                <Progress value={xpProgress} className="h-1 bg-secondary [&>div]:bg-primary" />
+                <Progress value={xpProgress} className="h-1 bg-background [&>div]:bg-primary" />
               </div>
 
               <div className="flex items-center justify-between gap-4 pt-1">
