@@ -167,7 +167,7 @@ const HabitLogTemplate: React.FC<HabitLogTemplateProps> = ({
                     <span className="text-[10px] font-black text-primary">{growth_stats.completions}/{growth_stats.required} days</span>
                   </div>
                   <Progress value={(growth_stats.completions / growth_stats.required) * 100} className="h-1 [&>div]:bg-primary" />
-                  <p className="text-[11px] font-medium opacity-60 mt-2 leading-tight">
+                  <p className="text-[11px] font-medium text-muted-foreground mt-2 leading-tight">
                     {growth_stats.daysRemaining} consistent days until dynamic goal increase ({growth_stats.phase === 'frequency' ? 'Frequency' : 'Duration'} phase).
                   </p>
                 </div>
