@@ -30,7 +30,7 @@ import {
 } from '@/components/ui/accordion';
 import { useUpdateHabitVisibility } from '@/hooks/useUpdateHabitVisibility';
 import { HabitSettingsCard } from '@/components/settings/HabitSettingsCard';
-import { NewHabitModal } from '@/components/habits/NewHabitModal'; // Import NewHabitModal
+import { NewHabitModal } from '@/components/habits/NewHabitModal';
 
 const Settings = () => {
   const { session, signOut } = useSession();
@@ -39,7 +39,7 @@ const Settings = () => {
   const { mutate: updateProfile } = useUpdateProfile();
   
   const [activeHabitId, setActiveHabitId] = useState<string | null>(null);
-  const [showNewHabitModal, setShowNewHabitModal] = useState(false); // State for modal
+  const [showNewHabitModal, setShowNewHabitModal] = useState(false);
 
   const habits = useMemo(() => data?.habits || [], [data]);
   const profile = useMemo(() => data?.profile, [data]);
@@ -115,16 +115,16 @@ const Settings = () => {
         </Card>
 
         {/* Create Custom Habit Button */}
-        <Card className="rounded-3xl shadow-sm border-2 border-primary/10 bg-primary/5">
+        <Card className="rounded-3xl shadow-sm border-2 border-primary bg-primary">
           <CardContent className="p-5">
             <Button 
-              className="w-full h-14 rounded-2xl font-bold bg-primary hover:bg-primary/90 text-white"
+              className="w-full h-14 rounded-2xl font-bold bg-white text-primary hover:bg-gray-100"
               onClick={() => setShowNewHabitModal(true)}
             >
               <Plus className="w-6 h-6 mr-2" />
               Create Custom Habit
             </Button>
-            <p className="text-xs text-muted-foreground mt-3 text-center">
+            <p className="text-xs text-primary-foreground/80 mt-3 text-center">
               Define a habit with full control over all parameters
             </p>
           </CardContent>
