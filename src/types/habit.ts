@@ -85,6 +85,9 @@ export interface ProcessedUserHabit extends UserHabitRecord {
   };
   isLockedByDependency: boolean;
   carryoverValue: number;
+  isWithinWindow: boolean;
+  isScheduledForToday: boolean;
+  capsuleTaskMapping: Record<number, string>;
 }
 
 export interface PianoHabit extends Habit {

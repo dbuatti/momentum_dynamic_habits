@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { Clock, User, Trophy, Zap, Settings } from 'lucide-react';
+import { Clock, User, Trophy, Zap, Settings, Star, CheckCircle2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { getXpForNextLevel, getXpForCurrentLevelStart } from '@/utils/leveling'; // Import leveling utils
+import { getXpForNextLevel, getXpForCurrentLevelStart } from '@/utils/leveling';
 
 interface HomeHeaderProps {
   dayCounter: number;
@@ -16,6 +16,8 @@ interface HomeHeaderProps {
   lastName: string | null;
   xp: number;
   level: number;
+  tasksCompletedToday?: number;
+  dailyChallengeTarget?: number;
 }
 
 const getGreeting = (firstName: string | null, lastName: string | null) => {
@@ -35,37 +37,33 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
   firstName, 
   lastName, 
   xp, 
-  level 
+  level,
+  tasksCompletedToday = 0,
+  dailyChallengeTarget = 3
 }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
   
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
-    }, 60000); // Update every minute
-    
+    }, 60000);
     return () => clearInterval(timer);
   }, []);
 
   const formattedTime = format(currentTime, 'HH:mm');
-  const displayName = [firstName, lastName].filter(Boolean).join(' ') || 'User';
   
-  // Calculate XP for level progression
   const xpForCurrentLevelStart = getXpForCurrentLevelStart(level);
   const xpForNextLevel = getXpForNextLevel(level);
-  
-  // Ensure XP progress is non-negative
   const xpProgressInCurrentLevel = Math.max(0, xp - xpForCurrentLevelStart);
   const xpNeededForNextLevel = xpForNextLevel - xpForCurrentLevelStart;
-  
-  const levelProgress = xpNeededForNextLevel > 0 
-    ? (xpProgressInCurrentLevel / xpNeededForNextLevel) * 100 
-    : 0;
+  const levelProgress = xpNeededForNextLevel > 0 ? (xpProgressInCurrentLevel / xpNeededForNextLevel) * 100 : 0;
+
+  const challengeProgress = Math.min(100, (tasksCompletedToday / dailyChallengeTarget) * 100);
+  const isChallengeComplete = tasksCompletedToday >= dailyChallengeTarget;
 
   return (
     <Card className="w-full mb-6 border-0 shadow-sm rounded-2xl overflow-hidden">
       <CardContent className="p-0">
-        {/* Header with gradient background */}
         <div className="bg-gradient-to-r from-primary/10 to-primary/5 p-5 relative">
           <Link to="/settings" className="absolute top-4 right-4 z-10">
             <Button variant="ghost" size="icon" className="rounded-full w-8 h-8 text-foreground/70 hover:text-foreground">
@@ -76,7 +74,6 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pr-10">
             <div className="flex items-center gap-3">
               <Avatar className="w-14 h-14 border-2 border-primary/20">
-                <AvatarImage src="" />
                 <AvatarFallback className="bg-primary text-primary-foreground">
                   <User className="w-6 h-6" />
                 </AvatarFallback>
@@ -103,26 +100,34 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
               <div className="bg-primary rounded-full w-14 h-14 flex items-center justify-center shadow-md mt-2 md:mt-0">
                 <span className="text-lg font-bold text-primary-foreground">{level}</span>
               </div>
-              <p className="text-sm text-muted-foreground mt-1 md:hidden">
-                Day {dayCounter} • {formattedTime}
-              </p>
             </div>
           </div>
-          <p className="text-sm text-muted-foreground mt-2 hidden md:block text-right">
-            Day {dayCounter} • {formattedTime}
-          </p>
         </div>
         
-        {/* Progress bar */}
-        <div className="px-5 pb-4">
-          <div className="flex justify-between text-xs text-muted-foreground mb-1">
-            <span>{xpProgressInCurrentLevel} XP</span>
-            <span>{xpNeededForNextLevel} XP to next level</span>
+        <div className="px-5 py-4 bg-card/50 border-t space-y-3">
+          <div className="space-y-1.5">
+            <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+               <div className="flex items-center gap-1">
+                 <Star className="w-3 h-3 text-warning fill-warning" />
+                 <span>Growth Level {level}</span>
+               </div>
+               <span>{Math.round(xpProgressInCurrentLevel)} / {xpNeededForNextLevel} XP</span>
+            </div>
+            <Progress value={levelProgress} className="h-1.5 [&>div]:bg-warning" />
           </div>
-          <Progress 
-            value={levelProgress} 
-            className="h-2 [&>div]:bg-primary" 
-          />
+
+          <div className="space-y-1.5">
+            <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+               <div className="flex items-center gap-1">
+                 <CheckCircle2 className={cn("w-3 h-3", isChallengeComplete ? "text-success" : "text-primary")} />
+                 <span>Daily Challenge</span>
+               </div>
+               <span className={cn(isChallengeComplete && "text-success")}>
+                 {tasksCompletedToday} / {dailyChallengeTarget} Tasks
+               </span>
+            </div>
+            <Progress value={challengeProgress} className={cn("h-1.5", isChallengeComplete ? "[&>div]:bg-success" : "[&>div]:bg-primary")} />
+          </div>
         </div>
       </CardContent>
     </Card>

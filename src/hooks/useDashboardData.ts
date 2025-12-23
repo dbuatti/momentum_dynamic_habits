@@ -8,7 +8,7 @@ import { ProcessedUserHabit } from '@/types/habit';
 const fetchDashboardData = async (userId: string) => {
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('journey_start_date, daily_streak, last_active_at, first_name, last_name, timezone, xp, level, tasks_completed_today, neurodivergent_mode, enable_sound, enable_haptics')
+    .select('journey_start_date, daily_streak, last_active_at, first_name, last_name, timezone, xp, level, tasks_completed_today, daily_challenge_target, neurodivergent_mode, enable_sound, enable_haptics')
     .eq('id', userId)
     .single();
 
@@ -48,14 +48,13 @@ const fetchDashboardData = async (userId: string) => {
   });
 
   const dailyProgressMap = new Map<string, number>();
-  const dailyCapsuleTasksMap = new Map<string, Record<number, string>>(); // Map habit key -> capsule index -> task ID
+  const dailyCapsuleTasksMap = new Map<string, Record<number, string>>(); 
   const completedHabitKeysToday = new Set<string>();
 
   (completedToday || []).forEach((task: any) => {
     const key = task.original_source;
     completedHabitKeysToday.add(key);
     
-    // Explicitly link task IDs to capsule indices if provided
     if (task.capsule_index !== null) {
       const habitMap = dailyCapsuleTasksMap.get(key) || {};
       habitMap[task.capsule_index] = task.id;
@@ -85,67 +84,58 @@ const fetchDashboardData = async (userId: string) => {
     let isWithinWindow = true;
     if (h.window_start && h.window_end) {
       const now = new Date();
-      const start = parse(h.window_start, 'HH:mm', now);
-      const end = parse(h.window_end, 'HH:mm', now);
-      isWithinWindow = isWithinInterval(now, { start, end });
+      try {
+        const start = parse(h.window_start, 'HH:mm', now);
+        const end = parse(h.window_end, 'HH:mm', now);
+        isWithinWindow = isWithinInterval(now, { start, end });
+      } catch (e) {
+        console.error("Window parsing error", e);
+      }
     }
 
     const weeklyCompletions = Array.from(weeklyCompletionMap.keys())
       .filter(k => k.startsWith(`${h.habit_key}_`)).length;
-
-    const plateauRequired = h.plateau_days_required;
-    const daysRemainingInPlateau = Math.max(0, plateauRequired - h.completions_in_plateau);
 
     const isDependent = !!h.dependent_on_habit_id;
     const dependentHabit = habits?.find(depH => depH.id === h.dependent_on_habit_id);
     const isDependencyMet = isDependent ? completedHabitKeysToday.has(dependentHabit?.habit_key || '') : true;
     const isLockedByDependency = isDependent && !isDependencyMet;
 
-    let dailyProgress = rawDailyProgress;
-    let adjustedDailyGoal = baseAdjustedDailyGoal;
     let isComplete = false;
-
     const mType = h.measurement_type || 'timer';
-    
-    // Defensive Unit Fallback
-    const fallbackUnit = mType === 'timer' ? 'min' : (mType === 'binary' ? 'dose' : 'reps');
-    const unit = h.unit || fallbackUnit;
+    const unit = h.unit || (mType === 'timer' ? 'min' : (mType === 'binary' ? 'dose' : 'reps'));
 
     if (mType === 'binary') {
       isComplete = completedHabitKeysToday.has(h.habit_key);
-      dailyProgress = isComplete ? 1 : 0;
-      adjustedDailyGoal = 1;
     } else {
       isComplete = rawDailyProgress >= (baseAdjustedDailyGoal - 0.01);
-      dailyProgress = rawDailyProgress; 
-      adjustedDailyGoal = baseAdjustedDailyGoal;
     }
 
     return {
       ...h,
       key: h.habit_key,
       name: h.name || h.habit_key.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase()),
-      unit, // Use the reinforced unit
+      unit,
       dailyGoal: mType === 'binary' ? 1 : h.current_daily_goal,
-      adjustedDailyGoal: adjustedDailyGoal,
+      adjustedDailyGoal: baseAdjustedDailyGoal,
       carryoverValue: mType === 'binary' ? 0 : (h.carryover_value || 0),
-      dailyProgress, 
+      dailyProgress: rawDailyProgress, 
       isComplete: isComplete,
       xpPerUnit: h.xp_per_unit || 0,
       energyCostPerUnit: h.energy_cost_per_unit || 0,
       weekly_completions: weeklyCompletions,
       weekly_goal: (mType === 'binary' ? 1 : h.current_daily_goal) * h.frequency_per_week,
-      isScheduledForToday: isScheduledForToday,
+      isScheduledForToday,
       isWithinWindow,
       measurement_type: mType, 
       growth_stats: {
         completions: h.completions_in_plateau,
-        required: plateauRequired,
-        daysRemaining: daysRemainingInPlateau,
+        required: h.plateau_days_required,
+        daysRemaining: Math.max(0, h.plateau_days_required - h.completions_in_plateau),
         phase: h.growth_phase
       },
-      isLockedByDependency: isLockedByDependency,
-      capsuleTaskMapping: capsuleTaskMapping, 
+      isLockedByDependency,
+      capsuleTaskMapping, 
     } as any;
   });
 
@@ -154,7 +144,6 @@ const fetchDashboardData = async (userId: string) => {
     tasks.forEach(t => {
       const userHabit = habits?.find(h => h.habit_key === t.original_source);
       const xpPerUnit = userHabit?.xp_per_unit || 1;
-
       if (t.original_source === 'pushups') totals.pushups += (t.xp_earned || 0) / xpPerUnit;
       if (t.original_source === 'meditation') totals.meditation += (t.duration_used || 0) / 60;
     });
@@ -170,12 +159,12 @@ const fetchDashboardData = async (userId: string) => {
 
   return {
     daysActive: totalDaysSinceStart,
-    totalJourneyDays: processedHabits[0]?.long_term_goal || 365,
     habits: processedHabits,
     neurodivergentMode: profile?.neurodivergent_mode || false,
     enable_sound: profile?.enable_sound ?? true,
     enable_haptics: profile?.enable_haptics ?? true,
-    tasks_completed_today: profile?.tasks_completed_today || 0, // Added missing field
+    tasks_completed_today: profile?.tasks_completed_today || 0,
+    daily_challenge_target: profile?.daily_challenge_target || 3,
     weeklySummary: { 
       activeDays: new Set((completedThisWeek || []).map(t => startOfDay(new Date(t.completed_at)).toISOString())).size,
       pushups: { current: currentWeekTotals.pushups, previous: previousWeekTotals.pushups },
@@ -183,8 +172,12 @@ const fetchDashboardData = async (userId: string) => {
     },
     patterns: { streak: profile?.daily_streak || 0, totalSessions: totalSessions || 0, consistency, bestTime: bestTime || '—' },
     lastActiveText: profile?.last_active_at ? formatDistanceToNowStrict(new Date(profile.last_active_at), { addSuffix: true }) : 'Never',
-    firstName: profile?.first_name || null, lastName: profile?.last_name || null,
-    tip: randomTip || null, xp: profile?.xp || 0, level: profile?.level || 1, averageDailyTasks: totalSessions && totalDaysSinceStart > 0 ? (totalSessions / totalDaysSinceStart).toFixed(1) : '0.0',
+    firstName: profile?.first_name || null, 
+    lastName: profile?.last_name || null,
+    tip: randomTip || null, 
+    xp: profile?.xp || 0, 
+    level: profile?.level || 1, 
+    averageDailyTasks: totalSessions && totalDaysSinceStart > 0 ? (totalSessions / totalDaysSinceStart).toFixed(1) : '0.0',
   };
 };
 

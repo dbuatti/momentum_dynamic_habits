@@ -5,7 +5,7 @@ import HomeHeader from "@/components/HomeHeader";
 import { 
   CheckCircle2, Target, Anchor, Zap, 
   Layers, PlusCircle, Lock, ChevronRight,
-  AlertCircle, Sparkles, TrendingUp // Added TrendingUp
+  AlertCircle, Sparkles, TrendingUp, Clock, Play
 } from "lucide-react";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { DashboardSkeleton } from "@/components/dashboard/DashboardSkeleton";
@@ -16,7 +16,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import { useOnboardingCheck } from "@/hooks/useOnboardingCheck";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card"; // Added Card and CardContent
+import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { TipCard } from "@/components/dashboard/TipCard";
 import { calculateDynamicChunks } from "@/utils/progress-utils";
@@ -29,7 +29,7 @@ import { habitIconMap, habitColorMap } from '@/lib/habit-utils';
 
 const Index = () => {
   const { data, isLoading, isError } = useDashboardData();
-  const { isLoading: isCapsulesLoading, logCapsuleProgress, uncompleteCapsule } = useCapsules(); // Fixed isCapsulesLoading
+  const { isLoading: isCapsulesLoading, logCapsuleProgress, uncompleteCapsule } = useCapsules();
   const { isLoading: isOnboardingLoading } = useOnboardingCheck();
   
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
@@ -88,41 +88,35 @@ const Index = () => {
         showExtraCapsule: isOverallComplete && !habit.is_fixed
       };
     }).sort((a, b) => {
-      // 1. Actionable state: Unlocked first
-      if (a.isLockedByDependency !== b.isLockedByDependency) {
-        return a.isLockedByDependency ? 1 : -1;
-      }
-      // 2. Incomplete habits first (Focus)
-      if (a.allCompleted !== b.allCompleted) {
-        return a.allCompleted ? 1 : -1;
-      }
-      // 3. Anchors have priority
+      if (a.isLockedByDependency !== b.isLockedByDependency) return a.isLockedByDependency ? 1 : -1;
+      if (a.allCompleted !== b.allCompleted) return a.allCompleted ? 1 : -1;
       if (a.category === 'anchor' && b.category !== 'anchor') return -1;
       if (a.category !== 'anchor' && b.category === 'anchor') return 1;
-      
-      // 4. Progress ratio (closer to finished = higher priority to nudge completion)
       const aProgressRatio = a.adjustedDailyGoal > 0 ? a.displayProgress / a.adjustedDailyGoal : 0;
       const bProgressRatio = b.adjustedDailyGoal > 0 ? b.displayProgress / b.adjustedDailyGoal : 0;
-      if (aProgressRatio !== bProgressRatio) {
-        return bProgressRatio - aProgressRatio; // Descending progress
-      }
+      if (aProgressRatio !== bProgressRatio) return bProgressRatio - aProgressRatio;
       return (a.name || '').localeCompare(b.name || '');
     });
   }, [data?.habits, data?.neurodivergentMode]);
+
+  // Nudge: Find the best incomplete habit to focus on right now
+  const suggestedAction = useMemo(() => {
+    if (!habitGroups.length) return null;
+    return habitGroups.find(h => !h.allCompleted && !h.isLockedByDependency && h.isWithinWindow) || 
+           habitGroups.find(h => !h.allCompleted && !h.isLockedByDependency);
+  }, [habitGroups]);
 
   const anchorHabits = useMemo(() => habitGroups.filter(h => h.category === 'anchor'), [habitGroups]);
   const dailyHabits = useMemo(() => habitGroups.filter(h => h.category !== 'anchor'), [habitGroups]);
 
   useEffect(() => {
     if (habitGroups.length === 0 || hasInitializedState) return;
-
     const initialExpanded = habitGroups.filter(h => {
       const stored = localStorage.getItem(`habitAccordionState:${h.key}`);
       if (stored === 'expanded') return true;
       if (stored === 'collapsed') return false;
       return !h.allCompleted && !h.isLockedByDependency && (h.category === 'anchor' || h.is_trial_mode);
     }).map(h => h.key);
-
     setExpandedItems(initialExpanded);
     setHasInitializedState(true);
   }, [habitGroups, hasInitializedState]);
@@ -137,22 +131,14 @@ const Index = () => {
 
   const handleCapsuleProgress = async (habit: any, capsule: any, actualValue: number, isComplete: boolean, mood?: string) => {
     await logCapsuleProgress.mutateAsync({ 
-      habitKey: habit.key, 
-      index: capsule.index, 
-      value: actualValue, 
-      mood, 
-      taskName: `${habit.name} session`,
-      isComplete: isComplete,
+      habitKey: habit.key, index: capsule.index, value: actualValue, mood, 
+      taskName: `${habit.name} session`, isComplete: isComplete,
     });
   };
 
   const handleCapsuleUncomplete = (habit: any, capsule: any) => {
     if (capsule.completedTaskId) {
-      uncompleteCapsule.mutate({ 
-        habitKey: habit.key, 
-        index: capsule.index, 
-        completedTaskId: capsule.completedTaskId 
-      });
+      uncompleteCapsule.mutate({ habitKey: habit.key, index: capsule.index, completedTaskId: capsule.completedTaskId });
     } else {
       showError("No specific log found for this part. You can still undo recent activity from the History page.");
     }
@@ -183,8 +169,6 @@ const Index = () => {
     const showOnlyNext = !showAllMomentum[habit.key] && habit.numChunks > 1;
     const isLocked = habit.isLockedByDependency;
     const dependentHabitName = data.habits.find(h => h.id === habit.dependent_on_habit_id)?.name || 'previous habit';
-    
-    // Quality of Life: Quick log for single-part habits
     const canQuickLog = !habit.allCompleted && !isLocked && habit.numChunks === 1 && habit.measurement_type !== 'timer';
 
     return (
@@ -213,17 +197,10 @@ const Index = () => {
                     {habit.name}
                     {habit.allCompleted && <CheckCircle2 className="w-5 h-5 text-success" />}
                   </h3>
-                  
-                  {/* Quick Action: Log single-part manual habits directly on header */}
                   {canQuickLog && (
                     <Button 
-                      size="sm" 
-                      variant="secondary"
-                      className="h-8 px-3 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm hover:scale-105 transition-transform"
-                      onClick={(e) => {
-                        e.stopPropagation(); // Don't open accordion
-                        handleCapsuleProgress(habit, habit.capsules[0], habit.capsules[0].value, true);
-                      }}
+                      size="sm" variant="secondary" className="h-8 px-3 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm hover:scale-105 transition-transform"
+                      onClick={(e) => { e.stopPropagation(); handleCapsuleProgress(habit, habit.capsules[0], habit.capsules[0].value, true); }}
                     >
                       Log {habit.capsules[0].value} {habit.unit}
                     </Button>
@@ -232,11 +209,7 @@ const Index = () => {
                 <div className="flex flex-wrap items-center gap-2 mt-1">
                   <span className={cn(
                     "text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border",
-                    habit.allCompleted 
-                      ? "bg-success text-success-foreground border-transparent"
-                      : habit.isWithinWindow 
-                        ? "bg-primary text-primary-foreground border-transparent"
-                        : "bg-muted text-muted-foreground border-transparent"
+                    habit.allCompleted ? "bg-success text-success-foreground border-transparent" : habit.isWithinWindow ? "bg-primary text-primary-foreground border-transparent" : "bg-muted text-muted-foreground border-transparent"
                   )}>
                     {habit.allCompleted ? "Goal Reached" : (habit.isWithinWindow ? "Ready Now" : "Restricted")}
                   </span>
@@ -246,7 +219,6 @@ const Index = () => {
                 </p>
               </div>
             </div>
-
             {isLocked && (
               <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2 ml-[72px]">
                 <Lock className="w-3.5 h-3.5" />
@@ -258,16 +230,12 @@ const Index = () => {
         <AccordionContent className="px-6 pb-6 pt-2 space-y-6">
           <div className="grid grid-cols-2 gap-4 border-t border-border pt-4">
               <div className="space-y-1">
-                  <p className="text-[9px] font-black uppercase opacity-50 tracking-widest text-muted-foreground">
-                    {isTrial ? "Session Target" : "Daily Goal"}
-                  </p>
+                  <p className="text-[9px] font-black uppercase opacity-50 tracking-widest text-muted-foreground">{isTrial ? "Session Target" : "Daily Goal"}</p>
                   <div className="flex items-center gap-2">
                       <Target className="w-3.5 h-3.5 text-muted-foreground" />
                       <p className="text-sm font-black text-foreground">
                         {Math.round(habit.dailyGoal)} {habit.unit}
-                        {habit.carryoverValue > 0 && (
-                          <span className="ml-1 text-[10px] font-bold text-success"> (+{Math.round(habit.carryoverValue)} carryover)</span>
-                        )}
+                        {habit.carryoverValue > 0 && <span className="ml-1 text-[10px] font-bold text-success"> (+{Math.round(habit.carryoverValue)} carryover)</span>}
                       </p>
                   </div>
               </div>
@@ -279,103 +247,46 @@ const Index = () => {
                   </div>
               </div>
           </div>
-          
           <div className="w-full">
-            <MacroGoalProgress 
-              current={habit.weekly_completions} 
-              total={habit.frequency_per_week} 
-              label={isTrial ? "Weekly Session Log" : "Weekly Consistency"}
-            />
+            <MacroGoalProgress current={habit.weekly_completions} total={habit.frequency_per_week} label={isTrial ? "Weekly Session Log" : "Weekly Consistency"} />
           </div>
           <div className="w-full mt-4 mb-6">
             <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">Daily Progress</p>
-            <Progress
-              value={Math.min(100, (habit.displayProgress / habit.adjustedDailyGoal) * 100)}
-              className="h-1.5 [&>div]:bg-primary"
-            />
+            <Progress value={Math.min(100, (habit.displayProgress / habit.adjustedDailyGoal) * 100)} className="h-1.5 [&>div]:bg-primary" />
           </div>
-
           {!habit.allCompleted && (
             <div className="grid gap-3">
               {showOnlyNext && nextCapsule ? (
                 <>
                   <div className="relative">
                       <div className="absolute left-3 top-0 bottom-0 w-px bg-muted/40 z-0" />
-                      <HabitCapsule
-                        key={nextCapsule.id}
-                        {...nextCapsule}
-                        habitName={habit.name}
-                        color={color}
-                        onLogProgress={(actual, isComplete, mood) => handleCapsuleProgress(habit, nextCapsule, actual, isComplete, mood)}
-                        onUncomplete={() => handleCapsuleUncomplete(habit, nextCapsule)}
-                        showMood={data.neurodivergentMode}
-                      />
+                      <HabitCapsule key={nextCapsule.id} {...nextCapsule} habitName={habit.name} color={color} onLogProgress={(actual, isComplete, mood) => handleCapsuleProgress(habit, nextCapsule, actual, isComplete, mood)} onUncomplete={() => handleCapsuleUncomplete(habit, nextCapsule)} showMood={data.neurodivergentMode} />
                   </div>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="w-full text-[10px] font-black uppercase tracking-widest h-9 rounded-xl border-dashed text-muted-foreground"
-                    onClick={() => toggleShowAll(habit.key)}
-                  >
-                    <Layers className="w-3.5 h-3.5 mr-2" />
-                    View all session parts ({habit.numChunks})
+                  <Button variant="outline" size="sm" className="w-full text-[10px] font-black uppercase tracking-widest h-9 rounded-xl border-dashed text-muted-foreground" onClick={() => toggleShowAll(habit.key)}>
+                    <Layers className="w-3.5 h-3.5 mr-2" /> View all session parts ({habit.numChunks})
                   </Button>
                 </>
               ) : (
                 <div className="space-y-3">
                   {habit.capsules.map((capsule: any) => (
-                    <HabitCapsule
-                      key={capsule.id}
-                      {...capsule}
-                      habitName={habit.name}
-                      color={color}
-                      onLogProgress={(actual, isComplete, mood) => handleCapsuleProgress(habit, capsule, actual, isComplete, mood)}
-                      onUncomplete={() => handleCapsuleUncomplete(habit, capsule)}
-                      showMood={data.neurodivergentMode}
-                    />
+                    <HabitCapsule key={capsule.id} {...capsule} habitName={habit.name} color={color} onLogProgress={(actual, isComplete, mood) => handleCapsuleProgress(habit, capsule, actual, isComplete, mood)} onUncomplete={() => handleCapsuleUncomplete(habit, capsule)} showMood={data.neurodivergentMode} />
                   ))}
                   {habit.numChunks > 1 && (
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="w-full text-[10px] font-black uppercase opacity-40 h-8"
-                      onClick={() => toggleShowAll(habit.key)}
-                    >
-                      Simplify View (Focus Next)
-                    </Button>
+                    <Button variant="ghost" size="sm" className="w-full text-[10px] font-black uppercase opacity-40 h-8" onClick={() => toggleShowAll(habit.key)}>Simplify View (Focus Next)</Button>
                   )}
                 </div>
               )}
             </div>
           )}
-
           {habit.allCompleted && !habit.is_fixed && (
             <div className="p-5 bg-success/10 rounded-[28px] border-2 border-dashed border-success/30 flex flex-col items-center gap-4 text-center animate-in zoom-in-95">
-              <div className="w-14 h-14 rounded-2xl bg-success/20 flex items-center justify-center text-success">
-                <Sparkles className="w-8 h-8" />
-              </div>
+              <div className="w-14 h-14 rounded-2xl bg-success/20 flex items-center justify-center text-success"><Sparkles className="w-8 h-8" /></div>
               <div className="space-y-1">
                 <h4 className="font-black text-lg text-success">Goal Crushed!</h4>
                 <p className="text-sm font-medium text-success-foreground opacity-80">You've hit your target for today.</p>
               </div>
-              
               <div className="w-full">
-                <HabitCapsule
-                  id={`${habit.key}-bonus`}
-                  habitKey={habit.key}
-                  habitName={habit.name}
-                  label="Bonus Session"
-                  value={habit.capsules[0]?.value || 10}
-                  unit={habit.unit}
-                  measurementType={habit.measurement_type}
-                  isCompleted={false}
-                  isHabitComplete={true}
-                  isFixed={false}
-                  color={color}
-                  onLogProgress={(actual, isComplete, mood) => handleCapsuleProgress(habit, { index: 99 }, actual, isComplete, mood)}
-                  onUncomplete={() => {}}
-                  showMood={data.neurodivergentMode}
-                />
+                <HabitCapsule id={`${habit.key}-bonus`} habitKey={habit.key} habitName={habit.name} label="Bonus Session" value={habit.capsules[0]?.value || 10} unit={habit.unit} measurementType={habit.measurement_type} isCompleted={false} isHabitComplete={true} isFixed={false} color={color} onLogProgress={(actual, isComplete, mood) => handleCapsuleProgress(habit, { index: 99 }, actual, isComplete, mood)} onUncomplete={() => {}} showMood={data.neurodivergentMode} />
               </div>
             </div>
           )}
@@ -387,27 +298,52 @@ const Index = () => {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <div className="max-w-3xl mx-auto w-full px-4 py-6 pb-32">
-        <div className="mb-4">
-           <HomeHeader
-            dayCounter={data.daysActive}
-            lastActiveText={data.lastActiveText}
-            firstName={data.firstName}
-            lastName={data.lastName}
-            xp={data.xp}
-            level={data.level}
-          />
-        </div>
+        <HomeHeader
+          dayCounter={data.daysActive}
+          lastActiveText={data.lastActiveText}
+          firstName={data.firstName}
+          lastName={data.lastName}
+          xp={data.xp}
+          level={data.level}
+          tasksCompletedToday={data.tasks_completed_today}
+          dailyChallengeTarget={data.daily_challenge_target}
+        />
 
         <main className="space-y-8">
-          {/* Quality of Life: Critical Nudge if streak at risk (past 8pm and no tasks done) */}
+          {/* Streak Protection Nudge */}
           {data.patterns.streak > 0 && data.tasks_completed_today === 0 && new Date().getHours() >= 20 && (
             <Card className="bg-destructive/10 border-destructive border-2 rounded-2xl animate-pulse">
               <CardContent className="p-4 flex items-center gap-3">
                 <AlertCircle className="w-6 h-6 text-destructive" />
                 <div>
                   <p className="font-black text-sm text-destructive uppercase tracking-tight">Streak at Risk!</p>
-                  <p className="text-xs font-bold opacity-80">Complete any habit session to protect your {data.patterns.streak}-day streak.</p>
+                  <p className="text-xs font-bold opacity-80">Log something now to protect your {data.patterns.streak}-day streak.</p>
                 </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Smart Focus Action Nudge */}
+          {suggestedAction && (
+            <Card className="rounded-[2.5rem] border-2 border-primary overflow-hidden shadow-xl">
+              <CardContent className="p-6 sm:p-8 flex flex-col sm:flex-row items-center gap-6">
+                <div className="w-20 h-20 rounded-[2rem] bg-primary text-primary-foreground flex items-center justify-center shrink-0 shadow-lg">
+                  {React.createElement(habitIconMap[suggestedAction.key] || Target, { className: "w-10 h-10" })}
+                </div>
+                <div className="flex-grow text-center sm:text-left space-y-2">
+                  <div className="flex items-center justify-center sm:justify-start gap-2">
+                    <Clock className="w-4 h-4 text-primary" />
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/60">Practice Focus</span>
+                  </div>
+                  <h2 className="text-2xl font-black tracking-tight leading-tight uppercase italic">{suggestedAction.name}</h2>
+                  <p className="text-sm font-medium text-muted-foreground">Ready for your next session? Let's keep the momentum going.</p>
+                </div>
+                <Button 
+                   className="w-full sm:w-auto h-16 px-8 rounded-2xl font-black text-lg shadow-lg hover:scale-105 transition-transform"
+                   onClick={() => handleExpandedChange([suggestedAction.key])}
+                >
+                  <Play className="w-5 h-5 mr-2 fill-current" /> Get Started
+                </Button>
               </CardContent>
             </Card>
           )}
@@ -423,20 +359,13 @@ const Index = () => {
             </div>
             
             {anchorHabits.length > 0 ? (
-              <Accordion 
-                type="multiple" 
-                value={expandedItems} 
-                onValueChange={handleExpandedChange} 
-                className="space-y-4"
-              >
+              <Accordion type="multiple" value={expandedItems} onValueChange={handleExpandedChange} className="space-y-4">
                 {anchorHabits.map(renderHabitItem)}
               </Accordion>
             ) : (
               <div className="p-6 bg-muted/20 border-2 border-dashed border-border rounded-3xl text-center">
                 <p className="text-sm font-bold text-muted-foreground">No anchor practices yet.</p>
-                <Link to="/create-habit">
-                  <Button variant="link" className="text-xs font-black uppercase text-primary mt-1">Design your first anchor →</Button>
-                </Link>
+                <Link to="/create-habit"><Button variant="link" className="text-xs font-black uppercase text-primary mt-1">Design your first anchor →</Button></Link>
               </div>
             )}
           </div>
@@ -450,34 +379,19 @@ const Index = () => {
             </div>
             
             {dailyHabits.length > 0 ? (
-              <Accordion 
-                type="multiple" 
-                value={expandedItems} 
-                onValueChange={handleExpandedChange} 
-                className="space-y-4"
-              >
+              <Accordion type="multiple" value={expandedItems} onValueChange={handleExpandedChange} className="space-y-4">
                 {dailyHabits.map(renderHabitItem)}
               </Accordion>
             ) : !anchorHabits.length ? (
               <div className="bg-card border-2 border-primary/20 rounded-[2rem] p-10 text-center space-y-6 shadow-xl">
-                <div className="w-20 h-20 bg-primary/10 rounded-[2rem] flex items-center justify-center mx-auto">
-                  <PlusCircle className="w-10 h-10 text-primary" />
-                </div>
+                <div className="w-20 h-20 bg-primary/10 rounded-[2rem] flex items-center justify-center mx-auto"><PlusCircle className="w-10 h-10 text-primary" /></div>
                 <div className="space-y-2">
                   <h3 className="text-2xl font-black tracking-tight">Your Dashboard is Empty</h3>
                   <p className="text-muted-foreground font-medium max-w-xs mx-auto">Build your routines using the Habit Wizard or explore community templates.</p>
                 </div>
                 <div className="flex flex-col gap-3">
-                  <Link to="/create-habit">
-                    <Button size="lg" className="w-full h-14 rounded-2xl font-black text-base shadow-lg shadow-primary/20">
-                      Open Habit Wizard
-                    </Button>
-                  </Link>
-                  <Link to="/templates">
-                    <Button variant="outline" size="lg" className="w-full h-14 rounded-2xl font-black text-base border-2">
-                      Explore Templates
-                    </Button>
-                  </Link>
+                  <Link to="/create-habit"><Button size="lg" className="w-full h-14 rounded-2xl font-black text-base shadow-lg shadow-primary/20">Open Habit Wizard</Button></Link>
+                  <Link to="/templates"><Button variant="outline" size="lg" className="w-full h-14 rounded-2xl font-black text-base border-2">Explore Templates</Button></Link>
                 </div>
               </div>
             ) : (
@@ -488,7 +402,6 @@ const Index = () => {
           </div>
 
           <GrowthGuide />
-
           <MadeWithDyad className="mt-12" />
         </main>
       </div>

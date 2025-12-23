@@ -20,7 +20,7 @@ import {
   Settings2, Shield, ShieldCheck, Calendar, 
   Clock, Dumbbell, Wind, BookOpen, Music, 
   Home, Code, Pill, Timer, BarChart3, Layers, Zap, Info, Eye, EyeOff, Plus,
-  Volume2, Smartphone
+  Volume2, Smartphone, Trophy
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { 
@@ -29,7 +29,6 @@ import {
   AccordionItem, 
   AccordionTrigger 
 } from '@/components/ui/accordion';
-import { useUpdateHabitVisibility } from '@/hooks/useUpdateHabitVisibility';
 import { HabitSettingsCard } from '@/components/settings/HabitSettingsCard';
 import { NewHabitModal } from '@/components/habits/NewHabitModal';
 import { ResetEverythingCard } from '@/components/settings/ResetEverythingCard';
@@ -49,9 +48,9 @@ const Settings = () => {
   const habits = useMemo(() => data?.habits || [], [data]);
   const profile = useMemo(() => data?.profile, [data]);
 
-  // Merge profile settings from dashboard data which has the latest fields
   const enableSound = (dashboardData as any)?.enable_sound ?? true;
   const enableHaptics = (dashboardData as any)?.enable_haptics ?? true;
+  const challengeTarget = (dashboardData as any)?.daily_challenge_target ?? 3;
 
   const anchors = useMemo(() => habits.filter(h => h.category === 'anchor'), [habits]);
   const daily = useMemo(() => habits.filter(h => h.category !== 'anchor'), [habits]);
@@ -145,7 +144,33 @@ const Settings = () => {
           </Card>
         </div>
 
-        {/* Global neurodivergent toggle */}
+        {/* Daily Challenge Settings */}
+        <Card className="rounded-3xl shadow-sm border border-border bg-card">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="bg-primary/10 rounded-xl p-2.5">
+                  <Trophy className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-black uppercase text-[10px] tracking-tight">Daily Challenge Target</p>
+                  <p className="text-[10px] text-muted-foreground">Number of tasks to complete daily.</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Input 
+                  type="number" 
+                  min="1" 
+                  max="10" 
+                  className="w-16 h-10 rounded-xl font-bold text-center" 
+                  value={challengeTarget}
+                  onChange={(e) => updateProfile({ daily_challenge_target: parseInt(e.target.value) })}
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card className="rounded-3xl shadow-sm border-2 border-habit-purple-border/50 bg-habit-purple/50 dark:bg-habit-purple/10">
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
@@ -166,7 +191,6 @@ const Settings = () => {
           </CardContent>
         </Card>
 
-        {/* Create Custom Habit Button */}
         <Card className="rounded-3xl shadow-sm border-2 border-primary bg-primary">
           <CardContent className="p-5">
             <Button 
@@ -176,86 +200,46 @@ const Settings = () => {
               <Plus className="w-6 h-6 mr-2" />
               Create Custom Habit
             </Button>
-            <p className="text-xs text-primary-foreground mt-3 text-center">
-              Define a habit with full control over all parameters
-            </p>
           </CardContent>
         </Card>
       </div>
 
       <div className="space-y-10">
-        {/* Anchor Habits Section */}
         {anchors.length > 0 && (
           <div className="space-y-4">
             <div className="flex items-center gap-2 px-1">
               <Anchor className="w-5 h-5 text-primary" />
               <h2 className="text-sm font-black uppercase tracking-[0.2em] text-primary/80">Anchor Practices</h2>
             </div>
-            <Accordion 
-              type="single" 
-              collapsible 
-              value={activeHabitId || ""} 
-              onValueChange={setActiveHabitId}
-              className="w-full"
-            >
+            <Accordion type="single" collapsible value={activeHabitId || ""} onValueChange={setActiveHabitId} className="w-full">
               {anchors.map(habit => (
-                <HabitSettingsCard
-                  key={habit.id}
-                  habit={habit}
-                  onUpdateHabitField={updateHabitField}
-                  onToggleDay={toggleDay}
-                  isActiveHabit={activeHabitId === habit.id}
-                />
+                <HabitSettingsCard key={habit.id} habit={habit} onUpdateHabitField={updateHabitField} onToggleDay={toggleDay} isActiveHabit={activeHabitId === habit.id} />
               ))}
             </Accordion>
           </div>
         )}
 
-        {/* Daily Habits Section */}
         {daily.length > 0 && (
           <div className="space-y-4">
             <div className="flex items-center gap-2 px-1">
               <Settings2 className="w-5 h-5 text-muted-foreground" />
               <h2 className="text-sm font-black uppercase tracking-[0.2em] text-muted-foreground">Daily Momentum</h2>
             </div>
-            <Accordion 
-              type="single" 
-              collapsible 
-              value={activeHabitId || ""} 
-              onValueChange={setActiveHabitId}
-              className="w-full"
-            >
+            <Accordion type="single" collapsible value={activeHabitId || ""} onValueChange={setActiveHabitId} className="w-full">
               {daily.map(habit => (
-                <HabitSettingsCard
-                  key={habit.id}
-                  habit={habit}
-                  onUpdateHabitField={updateHabitField}
-                  onToggleDay={toggleDay}
-                  isActiveHabit={activeHabitId === habit.id}
-                />
+                <HabitSettingsCard key={habit.id} habit={habit} onUpdateHabitField={updateHabitField} onToggleDay={toggleDay} isActiveHabit={activeHabitId === habit.id} />
               ))}
             </Accordion>
           </div>
         )}
       </div>
 
-      <div className="pt-4 px-1">
-        <p className="text-[10px] text-center text-muted-foreground font-medium italic">
-          "Build the floor first. The ceiling will take care of itself."
-        </p>
-      </div>
-
-      {/* Reset Options */}
       <div className="space-y-4">
         <ResetExperienceCard />
         <ResetEverythingCard />
       </div>
 
-      {/* New Habit Modal */}
-      <NewHabitModal 
-        isOpen={showNewHabitModal} 
-        onClose={() => setShowNewHabitModal(false)} 
-      />
+      <NewHabitModal isOpen={showNewHabitModal} onClose={() => setShowNewHabitModal(false)} />
     </div>
   );
 };
