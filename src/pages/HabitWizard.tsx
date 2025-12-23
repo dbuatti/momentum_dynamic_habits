@@ -27,7 +27,7 @@ import { UserHabitRecord, HabitCategory } from '@/types/habit';
 import { useJourneyData } from '@/hooks/useJourneyData';
 import { useCreateTemplate } from '@/hooks/useCreateTemplate';
 import { useUserHabitWizardTemp, WizardHabitData } from '@/hooks/useUserHabitWizardTemp';
-import { calculateHabitParams } from '@/utils/habit-wizard-utils'; // Import new utility
+import { calculateHabitParams } from '@/utils/habit-wizard-utils';
 
 // Macro Steps
 import { HabitWizardStep1 } from '@/components/habits/wizard/HabitWizardStep1';
@@ -49,8 +49,9 @@ import { Step6_GrowthStyle } from '@/components/habits/wizard/micro/Step6_Growth
 import { Step6_FailureResponse } from '@/components/habits/wizard/micro/Step6_FailureResponse';
 import { Step6_SuccessDefinition } from '@/components/habits/wizard/micro/Step6_SuccessDefinition';
 import { HabitTemplateForm } from '@/components/habits/wizard/HabitTemplateForm';
-import { HabitReviewStep } from '@/pages/HabitReview'; // Corrected import path to the page component
-import { WizardStepper } from '@/components/habits/wizard/WizardStepper'; // Import new stepper component
+import { HabitReviewStep } from '@/pages/HabitReview';
+import { WizardStepper } from '@/components/habits/wizard/WizardStepper';
+import { EditHabitDetailsModal } from '@/components/habits/wizard/EditHabitDetailsModal'; // Import the new modal
 
 export interface CreateHabitParams {
   name: string;
@@ -180,6 +181,9 @@ const HabitWizard = () => {
   const [wizardData, setWizardData] = useState<Partial<WizardHabitData>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [hasLoadedInitialProgress, setHasLoadedInitialProgress] = useState(false);
+  const [showEditDetailsModal, setShowEditDetailsModal] = useState(false);
+  const [editableHabitData, setEditableHabitData] = useState<Partial<CreateHabitParams>>({});
+
 
   const createHabitMutation = useMutation({
     mutationFn: (habit: CreateHabitParams) => {
@@ -474,6 +478,27 @@ const HabitWizard = () => {
     return false;
   }, [currentStep, currentMicroStepIndex, wizardData]);
 
+  const handleUpdateHabitFromModal = useCallback(async (updatedData: Partial<CreateHabitParams>) => {
+    setIsSaving(true);
+    try {
+      // Update wizardData with the changes from the modal
+      setWizardData(prev => ({
+        ...prev,
+        ...updatedData,
+        // Ensure category is correctly typed if it comes from CreateHabitParams
+        category: updatedData.category as HabitCategory,
+      }));
+      // Also save this updated state to Supabase temp storage
+      await saveProgress({ current_step: currentStep, habit_data: { ...wizardData, ...updatedData } });
+      showSuccess('Habit details updated!');
+      setShowEditDetailsModal(false);
+    } catch (error) {
+      showError('Failed to update habit details.');
+    } finally {
+      setIsSaving(false);
+    }
+  }, [currentStep, wizardData, saveProgress]);
+
   if (isLoadingWizardProgress) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -513,16 +538,16 @@ const HabitWizard = () => {
       return (
         <HabitReviewStep
           wizardData={fullWizardData}
-          onEditDetails={() => {
-            // Go back to the last micro-step of the previous macro step (Step 6)
-            setCurrentStep(6);
-            setCurrentMicroStepIndex(MICRO_STEPS_MAP[6].length - 1);
+          onEditDetails={(data) => {
+            setEditableHabitData(data);
+            setShowEditDetailsModal(true);
           }}
           onSaveAndFinishLater={handleSaveAndFinishLater}
           onCreateHabit={handleSubmitFinal}
           onCancel={handleCancelWizard}
           isSaving={isSaving}
           isCreating={createHabitMutation.isPending || createTemplateMutation.isPending}
+          isTemplateMode={isTemplateCreationMode}
         />
       );
     }
@@ -647,6 +672,16 @@ const HabitWizard = () => {
           </AlertDialog>
         </div>
       )}
+
+      {/* Edit Habit Details Modal */}
+      <EditHabitDetailsModal
+        isOpen={showEditDetailsModal}
+        onClose={() => setShowEditDetailsModal(false)}
+        initialHabitData={editableHabitData}
+        onSave={handleUpdateHabitFromModal}
+        isSaving={isSaving}
+        isTemplateMode={isTemplateCreationMode}
+      />
     </div>
   );
 };
