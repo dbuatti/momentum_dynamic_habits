@@ -49,7 +49,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   const [completedTaskIdState, setCompletedTaskIdState] = useState<string | null>(initialCompletedTaskId || null);
   const [isResetting, setIsResetting] = useState(false);
   
-  // The Shield: Prevents any parent (Accordion) from seeing the interaction
   const ignoreClicksRef = useRef(false);
 
   const [currentSessionInitialValue, setCurrentSessionInitialValue] = useState(initialValue);
@@ -115,7 +114,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   }, [isCompleted, storageKey, initialValue]);
 
   const handleStartTimer = (e: React.MouseEvent | React.PointerEvent) => {
-    e.stopPropagation();
+    e.stopPropagation(); // Stop propagation
     if (ignoreClicksRef.current || isResetting) return;
     
     playStartSound();
@@ -155,7 +154,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   };
 
   const handlePauseTimer = (e: React.MouseEvent | React.PointerEvent) => {
-    e.stopPropagation();
+    e.stopPropagation(); // Stop propagation
     if (isPaused) {
       playStartSound();
       setIsPaused(false);
@@ -168,6 +167,8 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   };
 
   const handleFinishTiming = (mood?: string, promptMood: boolean = false) => {
+    // This function is called from the onClick of the "Done" button,
+    // which now explicitly calls e.stopPropagation() before calling this.
     stopInterval();
     const totalSessionMinutes = Math.max(1, Math.ceil((currentSessionInitialValue * 60 + elapsedSeconds) / 60));
     if (promptMood && showMood && mood === undefined) {
@@ -202,18 +203,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
           isCompleted ? 'bg-muted/40 border-muted opacity-70' : cn('bg-card/80 backdrop-blur-sm', colors.border),
           isTiming && 'ring-4 ring-primary/30 shadow-2xl scale-[1.02]'
         )}
-        // onPointerDown is more aggressive than onClick and kills the accordion toggle before it starts
-        onPointerDown={(e) => {
-          if (ignoreClicksRef.current) {
-            e.preventDefault();
-            e.stopPropagation();
-            return;
-          }
-        }}
-        onClick={(e) => {
-          if (ignoreClicksRef.current) return;
-          if (!isTiming && !isCompleted && !showMoodPicker) handleStartTimer(e);
-        }}
+        // Removed direct click handlers from the Card itself
       >
         <AnimatePresence>
           {!isCompleted && (isTiming || currentSessionInitialValue > 0 || elapsedSeconds > 0) && (
@@ -232,9 +222,16 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
           {!isTiming ? (
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-4 min-w-0">
-                <div className={cn('w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border border-border/50', isCompleted ? 'bg-card/80' : 'bg-card/95')}>
+                {/* Make this a button to start the timer */}
+                <Button
+                  size="icon"
+                  variant="ghost" // Use ghost variant to make it look like the original div
+                  className={cn('w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border border-border/50', isCompleted ? 'bg-card/80' : 'bg-card/95')}
+                  onClick={handleStartTimer} // Attach handler here
+                  disabled={isCompleted} // Disable if already completed
+                >
                   {isCompleted ? <Check className="w-7 h-7 text-success" /> : <Play className={cn('w-6 h-6 ml-0.5 fill-current', colors.text)} />}
-                </div>
+                </Button>
                 <div className="min-w-0">
                   <p className={cn('font-bold text-lg leading-tight truncate', isCompleted ? 'text-muted-foreground' : colors.text)}>
                     {label}
@@ -283,7 +280,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                   <Button
                     size="lg"
                     className="h-14 px-8 rounded-full font-black shadow-xl bg-primary text-primary-foreground border-2 border-primary-foreground/30"
-                    onClick={() => handleFinishTiming(undefined, true)}
+                    onClick={(e) => { e.stopPropagation(); handleFinishTiming(undefined, true); }} // Add stopPropagation here
                   >
                     <Square className="w-5 h-5 mr-2 fill-current" /> Done
                   </Button>
