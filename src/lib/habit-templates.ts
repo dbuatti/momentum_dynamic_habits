@@ -12,7 +12,7 @@ export interface HabitTemplate {
   autoChunking: boolean;
   anchorPractice: boolean;
   unit: 'min' | 'reps' | 'dose';
-  measurement_type: MeasurementType; // Added
+  measurement_type: MeasurementType;
   xpPerUnit: number;
   energyCostPerUnit: number;
   icon_name: string;
@@ -122,7 +122,7 @@ export const habitTemplates: HabitTemplate[] = [
     autoChunking: false,
     anchorPractice: true,
     unit: "dose",
-    measurement_type: "binary",
+    measurement_type: "binary", // Binary means single completion
     xpPerUnit: 10,
     energyCostPerUnit: 0,
     icon_name: "Pill",

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Check, Clock, Smile, Meh, Frown, Undo2, Play, Pause, Square, RotateCcw, Plus, Minus } from 'lucide-react';
+import { Check, Clock, Smile, Meh, Frown, Undo2, Play, Pause, Square, RotateCcw, Plus, Minus, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { playStartSound, playEndSound, playGoalSound } from '@/utils/audio';
@@ -19,6 +19,8 @@ interface HabitCapsuleProps {
   unit: string;
   measurementType: MeasurementType;
   isCompleted: boolean;
+  isHabitComplete?: boolean; // New prop to track overall habit status
+  isFixed?: boolean; // New prop to track if habit is fixed
   initialValue?: number;
   scheduledTime?: string;
   completedTaskId?: string | null;
@@ -36,6 +38,8 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   unit,
   measurementType,
   isCompleted,
+  isHabitComplete = false,
+  isFixed = false,
   initialValue = 0,
   scheduledTime,
   completedTaskId: initialCompletedTaskId,
@@ -46,13 +50,16 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
 }) => {
   const [showMoodPicker, setShowMoodPicker] = useState(false);
   const [isTiming, setIsTiming] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(value * 60); // Changed from elapsedSeconds to timeLeft
+  const [timeLeft, setTimeLeft] = useState(value * 60);
   const [isPaused, setIsPaused] = useState(false);
   const [completedTaskIdState, setCompletedTaskIdState] = useState<string | null>(initialCompletedTaskId || null);
   const [manualValue, setManualValue] = useState<number>(value);
   
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const storageKey = `timer_${habitKey}_${label}_${new Date().toISOString().split('T')[0]}`;
+
+  // Hard Guardrail Logic: Disable logging for fixed habits that are already complete
+  const isLoggingDisabled = isFixed && isHabitComplete && !isCompleted;
 
   useEffect(() => {
     setCompletedTaskIdState(initialCompletedTaskId || null);
@@ -78,11 +85,10 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     }, 1000);
   }, []);
 
-  // Monitor timeLeft to trigger completion when zero is reached
   useEffect(() => {
     if (isTiming && timeLeft === 0) {
       handleFinishTiming(undefined, true);
-      playGoalSound(); // Play goal hit sound when reaching zero
+      playGoalSound();
     }
   }, [timeLeft, isTiming]);
 
@@ -109,7 +115,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     return () => stopInterval();
   }, [isCompleted, storageKey, measurementType, startInterval, value]);
 
-  // Sync state to local storage
   useEffect(() => {
     if (measurementType === 'timer' && isTiming && !isCompleted) {
       localStorage.setItem(storageKey, JSON.stringify({
@@ -122,6 +127,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   }, [timeLeft, isPaused, isTiming, isCompleted, storageKey, measurementType]);
 
   const handleStartTimer = (e: React.MouseEvent) => {
+    if (isLoggingDisabled) return;
     e.stopPropagation();
     playStartSound();
     setIsTiming(true);
@@ -144,7 +150,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
 
   const handleFinishTiming = (mood?: string, promptMood: boolean = false) => {
     stopInterval();
-    // For countdown, actual value is the target value (or time spent if stopped early)
     const totalSessionMinutes = timeLeft === 0 ? value : Math.max(1, Math.ceil((value * 60 - timeLeft) / 60));
     
     if (promptMood && showMood && mood === undefined) {
@@ -160,6 +165,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   };
 
   const handleLogManual = (mood?: string, promptMood: boolean = false) => {
+    if (isLoggingDisabled) return;
     if (promptMood && showMood && mood === undefined) {
       setShowMoodPicker(true);
       return;
@@ -170,6 +176,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   };
 
   const handleLogBinary = (mood?: string, promptMood: boolean = false) => {
+    if (isLoggingDisabled) return;
     if (promptMood && showMood && mood === undefined) {
       setShowMoodPicker(true);
       return;
@@ -204,7 +211,8 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
         className={cn(
           'relative overflow-hidden transition-all duration-500 border-2 rounded-[28px] shadow-lg',
           isCompleted ? 'bg-muted/40 border-muted opacity-70' : cn('bg-card/80 backdrop-blur-sm', colors.border),
-          isTiming && 'ring-4 ring-primary/30 shadow-2xl scale-[1.01]'
+          isTiming && 'ring-4 ring-primary/30 shadow-2xl scale-[1.01]',
+          isLoggingDisabled && 'opacity-40 grayscale-[0.5]'
         )}
       >
         <AnimatePresence>
@@ -234,6 +242,18 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
               <Button size="sm" variant="ghost" className="h-10 px-4 rounded-xl font-bold" onClick={() => completedTaskIdState && onUncomplete(completedTaskIdState)}>
                 <Undo2 className="w-4 h-4 mr-1.5" /> Undo
               </Button>
+            </div>
+          ) : isLoggingDisabled ? (
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center border">
+                  <Lock className="w-6 h-6 text-muted-foreground" />
+                </div>
+                <div>
+                  <p className="font-bold text-lg text-muted-foreground">{label}</p>
+                  <p className="text-xs font-bold text-muted-foreground opacity-70">Daily limit reached</p>
+                </div>
+              </div>
             </div>
           ) : measurementType === 'timer' ? (
             isTiming ? (

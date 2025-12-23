@@ -24,18 +24,18 @@ import { Progress } from "@/components/ui/progress";
 import { TrialStatusCard } from "@/components/dashboard/TrialStatusCard";
 import { GrowthGuide } from "@/components/dashboard/GrowthGuide";
 import { Link } from "react-router-dom";
-import { showSuccess, showError } from "@/utils/toast"; // Import showError
+import { showSuccess, showError } from "@/utils/toast";
 import { habitIconMap, habitColorMap } from '@/lib/habit-utils';
-import { useSession } from "@/contexts/SessionContext"; // Import useSession for queryClient invalidation
-import { useQueryClient } from "@tanstack/react-query"; // Import useQueryClient
+import { useSession } from "@/contexts/SessionContext";
+import { useQueryClient } from "@tanstack/react-query";
 
 const Index = () => {
   const { data, isLoading, isError } = useDashboardData();
   const { dbCapsules, isLoading: isCapsulesLoading, logCapsuleProgress, uncompleteCapsule } = useCapsules();
   const { isLoading: isOnboardingLoading } = useOnboardingCheck();
-  const { mutate: logHabit, unlog } = useHabitLog(); // Use mutate
-  const { session } = useSession(); // Get session for queryClient invalidation
-  const queryClient = useQueryClient(); // Initialize useQueryClient
+  const { mutate: logHabit, unlog } = useHabitLog();
+  const { session } = useSession();
+  const queryClient = useQueryClient();
   
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [showAllMomentum, setShowAllMomentum] = useState<Record<string, boolean>>({});
@@ -43,37 +43,32 @@ const Index = () => {
   const habitGroups = useMemo(() => {
     if (!data?.habits) return [];
 
-    // Create a map for quick lookup of habit completion status
-    const habitCompletionStatus = new Map<string, boolean>();
-    data.habits.forEach(h => habitCompletionStatus.set(h.key, h.isComplete));
-
     return data.habits
-      .filter(habit => habit.is_visible) // Filter by is_visible
+      .filter(habit => habit.is_visible)
       .map(habit => {
-      const goal = habit.adjustedDailyGoal; // Use adjustedDailyGoal for display and chunking
+      const goal = habit.adjustedDailyGoal;
       const progress = habit.dailyProgress;
       
       const { numChunks, chunkValue } = calculateDynamicChunks(
         habit.key,
-        goal, // Pass adjustedDailyGoal to chunk calculation
+        goal,
         habit.unit,
         data.neurodivergentMode,
         habit.auto_chunking,
         habit.num_chunks,
-        habit.chunk_duration
+        habit.chunk_duration,
+        habit.is_fixed,
+        habit.measurement_type
       );
+
+      const isOverallComplete = progress >= goal;
 
       const capsules = Array.from({ length: numChunks }).map((_, i) => {
         const dbCapsule = dbCapsules?.find(c => c.habit_key === habit.key && c.capsule_index === i);
-        const isCompletedByDb = dbCapsule?.is_completed || false; // Explicitly check DB completion
+        const isCompletedByDb = dbCapsule?.is_completed || false;
         
-        // The initialValue for a capsule should be its full value if completed, otherwise 0.
-        // The timer will then track additional elapsed time.
         const initialValueForCapsule = isCompletedByDb ? chunkValue : 0;
-
-        // The overall habit.dailyProgress is still used for the `allCompleted` check and overall progress bar.
-        // But for individual capsules, we want to know if *this specific capsule* is completed.
-        const isCompleted = isCompletedByDb; // Use this for the prop
+        const isCompleted = isCompletedByDb;
 
         return {
           id: `${habit.key}-${i}`,
@@ -81,51 +76,37 @@ const Index = () => {
           index: i,
           label: habit.auto_chunking ? `Part ${i + 1}` : (habit.enable_chunks ? `Part ${i + 1}` : (habit.is_trial_mode ? 'Trial Session' : 'Daily Goal')),
           value: chunkValue,
-          initialValue: initialValueForCapsule, // This is the change
+          initialValue: initialValueForCapsule,
           unit: habit.unit,
+          measurementType: habit.measurement_type,
           isCompleted,
+          isHabitComplete: isOverallComplete, // Pass overall status
+          isFixed: habit.is_fixed, // Pass fixed status
           scheduledTime: dbCapsule?.scheduled_time,
-          completedTaskId: dbCapsule?.completed_task_id, // Pass completed_task_id
+          completedTaskId: dbCapsule?.completed_task_id,
         };
       });
 
       return {
         ...habit,
         capsules,
-        allCompleted: progress >= goal, // Check against adjusted goal
+        allCompleted: isOverallComplete,
         numChunks,
-        // isLockedByDependency is already calculated in useDashboardData
       };
     }).sort((a, b) => {
-      // Sort order:
-      // 1. Unlocked habits before locked habits
-      // 2. Incomplete habits before complete habits
-      // 3. Anchor habits before daily habits
-      // 4. Then by progress (least complete first)
-      // 5. Finally by name
-      
-      // 1. Unlocked vs Locked
       if (a.isLockedByDependency !== b.isLockedByDependency) {
         return a.isLockedByDependency ? 1 : -1;
       }
-
-      // 2. Incomplete vs Complete
       if (a.allCompleted !== b.allCompleted) {
         return a.allCompleted ? 1 : -1;
       }
-
-      // 3. Anchor vs Daily
       if (a.category === 'anchor' && b.category !== 'anchor') return -1;
       if (a.category !== 'anchor' && b.category === 'anchor') return 1;
-
-      // 4. Progress
-      const aProgressRatio = a.adjustedDailyGoal > 0 ? a.dailyProgress / a.adjustedDailyGoal : 0; // Use adjustedDailyGoal
-      const bProgressRatio = b.adjustedDailyGoal > 0 ? b.dailyProgress / b.adjustedDailyGoal : 0; // Use adjustedDailyGoal
+      const aProgressRatio = a.adjustedDailyGoal > 0 ? a.dailyProgress / a.adjustedDailyGoal : 0;
+      const bProgressRatio = b.adjustedDailyGoal > 0 ? b.dailyProgress / b.adjustedDailyGoal : 0;
       if (aProgressRatio !== bProgressRatio) {
         return aProgressRatio - bProgressRatio;
       }
-
-      // 5. Name - Ensure names are strings before comparison
       return (a.name || '').localeCompare(b.name || '');
     });
   }, [data?.habits, dbCapsules, data?.neurodivergentMode]);
@@ -135,28 +116,24 @@ const Index = () => {
 
   useEffect(() => {
     if (habitGroups.length === 0) return;
-    // Expand all incomplete, unlocked anchor/trial habits by default
     const initialExpanded = habitGroups
       .filter(h => h.is_visible && !h.allCompleted && !h.isLockedByDependency && (h.category === 'anchor' || h.is_trial_mode))
       .map(h => h.key);
     
-    // Only update if the expanded items are different to prevent infinite loop
     if (JSON.stringify(initialExpanded.sort()) !== JSON.stringify(expandedItems.sort())) {
       setExpandedItems(initialExpanded);
     }
-  }, [habitGroups]); // Only depend on habitGroups
+  }, [habitGroups]);
 
   const handleCapsuleProgress = async (habit: any, capsule: any, actualValue: number, isComplete: boolean, mood?: string) => {
-    // Use logCapsuleProgress for both complete and partial logging
     await logCapsuleProgress.mutateAsync({ 
       habitKey: habit.key, 
       index: capsule.index, 
       value: actualValue, 
       mood, 
       taskName: `${habit.name} session`,
-      isComplete: isComplete, // Pass the isComplete flag
+      isComplete: isComplete,
     });
-    // Invalidate dashboard data to refetch and update dailyProgress for the habit
     queryClient.invalidateQueries({ queryKey: ['dashboardData', session?.user?.id] });
   };
 
@@ -164,8 +141,7 @@ const Index = () => {
     if (capsule.completedTaskId) {
       uncompleteCapsule.mutate({ habitKey: habit.key, index: capsule.index, completedTaskId: capsule.completedTaskId });
     } else {
-      // This case should now be less likely if completedTaskId is always stored for partial logs
-      console.error("Cannot uncomplete capsule: completedTaskId is missing for partial log.");
+      console.error("Cannot uncomplete capsule: completedTaskId is missing.");
       showError("Failed to undo task. Please try again.");
     }
   };
@@ -175,24 +151,18 @@ const Index = () => {
   };
 
   const handleOverrideDependency = (habitKey: string) => {
-    // For now, just show a success message and allow the user to proceed.
-    // A more robust solution might involve a temporary "override" state or logging.
     showSuccess("Dependency overridden for this session. Proceed with caution!");
-    // Optionally, you could add this habitKey to a temporary "overridden" state
-    // that allows it to be interacted with for the current day.
-    // For simplicity, we'll just let the user know and they can click the habit again.
   };
 
   if (isLoading || isOnboardingLoading || isCapsulesLoading) return <DashboardSkeleton />;
   if (isError || !data) return null;
 
   const renderHabitItem = (habit: any) => {
-    const Icon = habitIconMap[habit.key] || habitIconMap.custom_habit; // Use custom_habit as a fallback
+    const Icon = habitIconMap[habit.key] || habitIconMap.custom_habit;
     const color = habitColorMap[habit.key] || 'blue';
     const isGrowth = !habit.is_fixed && !habit.is_trial_mode;
     const isTrial = habit.is_trial_mode;
     
-    // Use the custom habit- colors defined in globals.css and tailwind.config.ts
     const accentColorClasses = {
         orange: 'bg-habit-orange border-habit-orange-border text-habit-orange-foreground',
         blue: 'bg-habit-blue border-habit-blue-border text-habit-blue-foreground',
@@ -203,12 +173,7 @@ const Index = () => {
     }[color];
 
     const nextCapsule = habit.capsules.find((c: any) => !c.isCompleted);
-    const completedCount = habit.capsules.filter((c: any) => c.isCompleted).length;
-    
-    // Simplification: In daily habits or trial habits, only show the next capsule if multiple exist
-    // This reduces cognitive load significantly
     const showOnlyNext = !showAllMomentum[habit.key] && habit.numChunks > 1;
-
     const isLocked = habit.isLockedByDependency;
     const dependentHabitName = data.habits.find(h => h.id === habit.dependent_on_habit_id)?.name || 'previous habit';
 
@@ -220,7 +185,7 @@ const Index = () => {
           "border-2 rounded-3xl mb-4 overflow-hidden transition-all duration-500",
           habit.allCompleted ? "opacity-50 grayscale-[0.3] border-muted bg-muted/5" : cn(accentColorClasses, "shadow-md"),
           !habit.isWithinWindow && !habit.allCompleted && "opacity-75",
-          isLocked && "opacity-40 grayscale-[0.5]" // Apply styles for locked habits
+          isLocked && "opacity-40 grayscale-[0.5]"
         )}
       >
         <AccordionTrigger className="px-6 py-5 hover:no-underline group">
@@ -241,7 +206,7 @@ const Index = () => {
                   <span className={cn(
                     "text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border",
                     habit.allCompleted 
-                      ? "bg-success-background border-success-border text-primary dark:text-success-foreground" // Adjusted text color for light mode
+                      ? "bg-success-background border-success-border text-primary dark:text-success-foreground"
                       : habit.isWithinWindow 
                         ? "bg-primary text-primary-foreground border-transparent"
                         : "bg-muted text-muted-foreground border-transparent"
@@ -264,7 +229,6 @@ const Index = () => {
                     </span>
                   )}
                 </div>
-                {/* Daily Progress below name */}
                 <p className={cn("text-sm font-bold mt-2", habit.allCompleted ? "text-muted-foreground" : "text-foreground")}>
                   Progress: {Math.round(habit.dailyProgress)}/{Math.round(habit.adjustedDailyGoal)} {habit.unit}
                 </p>
@@ -280,7 +244,7 @@ const Index = () => {
                   size="sm" 
                   className="h-auto p-0 text-xs text-primary hover:text-primary/80"
                   onClick={(e) => {
-                    e.stopPropagation(); // Prevent accordion from toggling
+                    e.stopPropagation();
                     handleOverrideDependency(habit.key);
                   }}
                 >
@@ -322,7 +286,6 @@ const Index = () => {
               label={isTrial ? "Weekly Session Log" : "Weekly Consistency"}
             />
           </div>
-          {/* Daily Progress Bar */}
           <div className="w-full mt-4">
             <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">Daily Progress</p>
             <Progress
@@ -331,7 +294,6 @@ const Index = () => {
             />
           </div>
 
-          {/* Enhanced Trial Mode Context */}
           {isTrial && !habit.allCompleted && (
             <TrialStatusCard 
               habitName={habit.name} 
@@ -344,7 +306,6 @@ const Index = () => {
             />
           )}
 
-          {/* Adaptive Insights (Growth mode only) */}
           {isGrowth && !habit.allCompleted && (
             <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10 flex items-start gap-3 mt-6">
                 <div className="bg-primary/10 p-2 rounded-xl">
@@ -373,7 +334,7 @@ const Index = () => {
                       {...nextCapsule}
                       habitName={habit.name}
                       color={color}
-                      onLogProgress={(actual, isComplete, mood) => handleCapsuleProgress(habit, nextCapsule, actual, isComplete, mood)} // Updated prop name
+                      onLogProgress={(actual, isComplete, mood) => handleCapsuleProgress(habit, nextCapsule, actual, isComplete, mood)}
                       onUncomplete={(completedTaskId) => handleCapsuleUncomplete(habit, nextCapsule)}
                       showMood={data.neurodivergentMode}
                     />
@@ -396,7 +357,7 @@ const Index = () => {
                     {...capsule}
                     habitName={habit.name}
                     color={color}
-                    onLogProgress={(actual, isComplete, mood) => handleCapsuleProgress(habit, capsule, actual, isComplete, mood)} // Updated prop name
+                    onLogProgress={(actual, isComplete, mood) => handleCapsuleProgress(habit, capsule, actual, isComplete, mood)}
                     onUncomplete={(completedTaskId) => handleCapsuleUncomplete(habit, capsule)}
                     showMood={data.neurodivergentMode}
                   />
@@ -421,7 +382,7 @@ const Index = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <div className="max-w-3xl mx-auto w-full px-4 py-6 pb-32"> {/* Adjusted max-w-2xl to max-w-3xl */}
+      <div className="max-w-3xl mx-auto w-full px-4 py-6 pb-32">
         <div className="mb-4">
            <HomeHeader
             dayCounter={data.daysActive}
@@ -436,7 +397,6 @@ const Index = () => {
         <main className="space-y-8">
           <TipCard tip={data.tip} bestTime={data.patterns.bestTime} isNeurodivergent={data.neurodivergentMode} />
 
-          {/* Anchor Section */}
           {anchorHabits.length > 0 && (
             <div className="space-y-4">
               <div className="sticky top-[60px] z-20 bg-background/95 backdrop-blur-sm py-3 flex items-center gap-3 border-b border-border">
@@ -450,7 +410,6 @@ const Index = () => {
             </div>
           )}
 
-          {/* Daily Momentum Section */}
           <div className="space-y-4">
             <div className="sticky top-[60px] z-20 bg-background/95 backdrop-blur-sm py-3 flex items-center gap-3 border-b border-border">
               <Zap className="w-5 h-5 text-warning" />
