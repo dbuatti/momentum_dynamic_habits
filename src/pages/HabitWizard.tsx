@@ -401,6 +401,18 @@ const HabitWizard = () => {
     // No need to save on back, just update UI
   }, [currentStep, currentMicroStep, deleteProgress, navigate]);
 
+  const handleResetProgress = useCallback(async () => {
+    try {
+      await deleteProgress();
+      setWizardData({});
+      setCurrentStep(1);
+      setCurrentMicroStep(0);
+      showSuccess('Wizard progress reset.');
+    } catch (error) {
+      showError('Failed to reset progress.');
+    }
+  }, [deleteProgress]);
+
   const createTemplateMutation = useCreateTemplate();
 
   const handleSubmitFinal = async (e?: React.FormEvent) => {
@@ -495,7 +507,7 @@ const HabitWizard = () => {
   }
 
   const renderWizardStepContent = () => {
-    if (currentStep === 1) return <HabitWizardStep1 wizardData={wizardData} setWizardData={setWizardData} />;
+    if (currentStep === 1) return <HabitWizardStep1 wizardData={wizardData} setWizardData={setWizardData} onResetProgress={handleResetProgress} hasSavedProgress={!!wizardProgress} />;
     if (currentStep === 2) return <HabitWizardStep2 wizardData={wizardData} setWizardData={setWizardData} />;
     
     if (currentStep === 3) {

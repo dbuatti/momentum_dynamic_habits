@@ -4,17 +4,20 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-import { Layers } from 'lucide-react';
+import { Layers, RotateCcw } from 'lucide-react';
 import { habitCategories, habitTemplates } from '@/lib/habit-templates';
 import { WizardHabitData } from '@/hooks/useUserHabitWizardTemp';
 import { HabitCategory as HabitCategoryType } from '@/types/habit';
+import { Button } from '@/components/ui/button';
 
 interface HabitWizardStep1Props {
   wizardData: Partial<WizardHabitData>;
   setWizardData: React.Dispatch<React.SetStateAction<Partial<WizardHabitData>>>;
+  onResetProgress: () => void;
+  hasSavedProgress: boolean;
 }
 
-export const HabitWizardStep1: React.FC<HabitWizardStep1Props> = ({ wizardData, setWizardData }) => {
+export const HabitWizardStep1: React.FC<HabitWizardStep1Props> = ({ wizardData, setWizardData, onResetProgress, hasSavedProgress }) => {
   return (
     <div className="space-y-6">
       <div className="text-center">
@@ -66,6 +69,20 @@ export const HabitWizardStep1: React.FC<HabitWizardStep1Props> = ({ wizardData, 
           );
         })}
       </div>
+
+      {hasSavedProgress && (
+        <div className="flex justify-center mt-6">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={onResetProgress}
+            className="text-xs text-muted-foreground hover:text-destructive"
+          >
+            <RotateCcw className="w-3.5 h-3.5 mr-2" />
+            Reset Saved Progress
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
