@@ -111,7 +111,7 @@ const HabitLogTemplate: React.FC<HabitLogTemplateProps> = ({
   return (
     <div className="flex flex-col items-center w-full max-w-md mx-auto px-4 py-6">
       <div className="w-full space-y-8">
-        <PageHeader title={`${name} Analytics`} backLink="/" />
+        <PageHeader title={`${name || habit_key.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase())} Analytics`} backLink="/" />
 
         {/* Habit Overview Card */}
         <Card className={cn("rounded-2xl shadow-lg border-4 overflow-hidden", colors.border, colors.bg)}>
@@ -120,7 +120,7 @@ const HabitLogTemplate: React.FC<HabitLogTemplateProps> = ({
               <Icon className={cn("w-12 h-12", colors.text)} />
             </div>
             <CardTitle className={cn("text-2xl font-bold", colors.text)}>
-              {name}
+              {name || habit_key.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase())}
             </CardTitle>
             <p className="text-sm text-muted-foreground mt-2">
               {is_fixed ? 'Fixed Goal' : (is_trial_mode ? 'Trial Mode' : 'Adaptive Growth Mode')}
@@ -180,8 +180,8 @@ const HabitLogTemplate: React.FC<HabitLogTemplateProps> = ({
                     {...capsule}
                     habitName={name}
                     color={habitColor}
-                    onComplete={(actual, mood) => handleCapsuleComplete(capsule, actual, mood)}
-                    onUncomplete={() => handleCapsuleUncomplete(capsule)}
+                    onComplete={(actual, mood) => handleCapsuleComplete(habit, capsule, actual, mood)}
+                    onUncomplete={() => handleCapsuleUncomplete(habit, capsule)}
                     showMood={neurodivergentMode}
                   />
                 ))}

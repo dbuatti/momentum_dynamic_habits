@@ -106,6 +106,7 @@ const fetchDashboardData = async (userId: string) => {
     return {
       ...h, // Spread all properties from UserHabitRecord
       key: h.habit_key, // Add key property
+      name: h.name || h.habit_key.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase()), // Fallback for name
       dailyGoal: h.current_daily_goal, // Base daily goal
       adjustedDailyGoal: adjustedDailyGoal, // New: daily goal including carryover
       carryoverValue: h.carryover_value || 0, // New: carryover value
