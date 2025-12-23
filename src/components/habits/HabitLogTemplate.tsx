@@ -82,6 +82,17 @@ const HabitLogTemplate: React.FC<HabitLogTemplateProps> = ({
     const threshold = (i + 1) * calculatedChunkValue;
     const isCapsuleCompleted = dbCapsule?.is_completed || dailyProgress >= (i === calculatedNumChunks - 1 ? adjustedDailyGoal : threshold);
 
+    // Define local handlers for each capsule
+    const handleCapsuleCompleteLocal = (actualValue: number, mood?: string) => {
+      logHabit({ habitKey: habit_key, value: actualValue, taskName: `${name} session` });
+      completeCapsule.mutate({ habitKey: habit_key, index: i, value: actualValue, mood });
+    };
+
+    const handleCapsuleUncompleteLocal = () => {
+      uncompleteCapsule.mutate({ habitKey: habit_key, index: i });
+      unlog({ habitKey: habit_key, taskName: `${name} session` });
+    };
+
     return {
       id: `${habit_key}-${i}`,
       habitKey: habit_key,
@@ -92,18 +103,10 @@ const HabitLogTemplate: React.FC<HabitLogTemplateProps> = ({
       unit: unit,
       isCompleted: isCapsuleCompleted,
       scheduledTime: dbCapsule?.scheduled_time,
+      onComplete: handleCapsuleCompleteLocal, // Pass the local handler
+      onUncomplete: handleCapsuleUncompleteLocal, // Pass the local handler
     };
   });
-
-  const handleCapsuleComplete = (capsule: any, actualValue: number, mood?: string) => {
-    logHabit({ habitKey: habit_key, value: actualValue, taskName: `${name} session` });
-    completeCapsule.mutate({ habitKey: habit_key, index: capsule.index, value: actualValue, mood });
-  };
-
-  const handleCapsuleUncomplete = (capsule: any) => {
-    uncompleteCapsule.mutate({ habitKey: habit_key, index: capsule.index });
-    unlog({ habitKey: habit_key, taskName: `${name} session` });
-  };
 
   const progressPercentage = (dailyProgress / adjustedDailyGoal) * 100;
   const isGrowthMode = !is_fixed && !is_trial_mode;
@@ -180,8 +183,8 @@ const HabitLogTemplate: React.FC<HabitLogTemplateProps> = ({
                     {...capsule}
                     habitName={name}
                     color={habitColor}
-                    onComplete={(actual, mood) => handleCapsuleComplete(habit, capsule, actual, mood)}
-                    onUncomplete={() => handleCapsuleUncomplete(habit, capsule)}
+                    onComplete={capsule.onComplete}
+                    onUncomplete={capsule.onUncomplete}
                     showMood={neurodivergentMode}
                   />
                 ))}
