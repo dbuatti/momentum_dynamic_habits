@@ -36,14 +36,26 @@ export const calculateDynamicChunks = (
     };
   }
 
-  // If manual chunking is explicitly enabled and auto is off, use manual settings
-  if (!autoChunking && manualNumChunks && manualChunkDuration) {
-    return {
-      numChunks: manualNumChunks,
-      chunkValue: manualChunkDuration
-    };
+  // RECONCILIATION: If auto-chunking is OFF but chunks are enabled, ensure totals match goal
+  if (!autoChunking) {
+    if (manualNumChunks && manualNumChunks > 0) {
+      // Prioritize number of chunks if specified, calculate duration per chunk
+      return {
+        numChunks: manualNumChunks,
+        chunkValue: Number((goal / manualNumChunks).toFixed(1))
+      };
+    }
+    if (manualChunkDuration && manualChunkDuration > 0) {
+      // Use duration to calculate how many chunks are needed for the goal
+      const num = Math.ceil(goal / manualChunkDuration);
+      return {
+        numChunks: Math.max(1, num),
+        chunkValue: manualChunkDuration
+      };
+    }
   }
 
+  // AUTO-CHUNKING LOGIC
   const isTime = unit === 'min';
   const isReps = unit === 'reps';
 
@@ -66,7 +78,7 @@ export const calculateDynamicChunks = (
     }
   }
 
-  // Ensure minimums
+  // Ensure minimums and clean formatting
   return {
     numChunks: Math.max(1, numChunks),
     chunkValue: Number(chunkValue.toFixed(1))
@@ -85,7 +97,7 @@ export const calculateDailyParts = (habits: any[], isNeurodivergent: boolean) =>
       habit.unit,
       isNeurodivergent,
       habit.auto_chunking,
-      habit.enable_chunks, // Pass the toggle
+      habit.enable_chunks, 
       habit.num_chunks,
       habit.chunk_duration,
       habit.measurement_type
