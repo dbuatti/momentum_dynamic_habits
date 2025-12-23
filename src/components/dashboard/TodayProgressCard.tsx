@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress'; // Imported Progress
 import { CheckCircle2, Target, Timer, PlusCircle, Loader2 } from 'lucide-react';
 import { ProcessedUserHabit } from '@/types/habit';
 import { HabitCapsule } from './HabitCapsule';
@@ -13,7 +14,6 @@ import { showSuccess, showError } from '@/utils/toast';
 import RestTimer from '@/components/habits/RestTimer';
 import { Link } from 'react-router-dom';
 import { playEndSound } from '@/utils/audio';
-import { Progress } from '@/components/ui/progress'; // Import Progress component
 
 interface TodayProgressCardProps {
   habits: ProcessedUserHabit[];
@@ -23,7 +23,7 @@ interface TodayProgressCardProps {
 
 export const TodayProgressCard: React.FC<TodayProgressCardProps> = ({ habits, neurodivergentMode, isLoading }) => {
   const { dbCapsules, isLoading: isLoadingCapsules, completeCapsule, uncompleteCapsule, resetCapsulesForToday } = useCapsules();
-  const { mutate: logHabit, unlog: unlogHabit, isPending: isLoggingHabit } = useHabitLog(); // Destructure unlog
+  const { logHabit, unlogHabit, isLoggingHabit } = useHabitLog(); // Destructured unlogHabit
 
   const [activeTimer, setActiveTimer] = useState<{ label: string; elapsed: number; isPaused: boolean; habitKey: string; habitName: string; goalValue: number } | null>(null);
   const [showRestTimer, setShowRestTimer] = useState(false);
@@ -74,7 +74,7 @@ export const TodayProgressCard: React.FC<TodayProgressCardProps> = ({ habits, ne
 
   // Calculate overall daily progress
   const { completed: totalCompletedCapsules, total: totalPossibleCapsules } = useMemo(() => {
-    return calculateDailyParts(habitsWithCapsules, neurodivergentMode);
+    return calculateDailyParts(habitsWithCapsules, neurodiverdivergentMode);
   }, [habitsWithCapsules, neurodivergentMode]);
 
   // Update global tab/floating timer
@@ -95,7 +95,7 @@ export const TodayProgressCard: React.FC<TodayProgressCardProps> = ({ habits, ne
       await completeCapsule.mutateAsync({ habitKey, index: capsuleIndex, value: capsuleValue, mood });
       
       // Log to completedtasks table as well
-      await logHabit({
+      await logHabit.mutateAsync({ // Corrected to use .mutateAsync
         habitKey,
         value: unit === 'min' ? capsuleValue : Math.round(capsuleValue), // Log minutes or reps/doses
         taskName: `${habitName} (Part ${capsuleIndex + 1})`,
@@ -109,7 +109,7 @@ export const TodayProgressCard: React.FC<TodayProgressCardProps> = ({ habits, ne
         setRestTimerDuration(neurodivergentMode ? 30 : 60); // Shorter rest for ND mode
         setShowRestTimer(true);
       }
-    } catch (error) {
+    } catch (error: any) { // Added any type for error
       showError(`Failed to complete capsule: ${error.message}`);
     }
   };
@@ -118,12 +118,12 @@ export const TodayProgressCard: React.FC<TodayProgressCardProps> = ({ habits, ne
     try {
       await uncompleteCapsule.mutateAsync({ habitKey, index: capsuleIndex });
       // Also unlog from completedtasks
-      await unlogHabit({ // Corrected to unlogHabit
+      await unlogHabit.mutateAsync({ // Corrected to use unlogHabit.mutateAsync
         habitKey,
         taskName: `${habitName} (Part ${capsuleIndex + 1})`,
       });
       showSuccess(`Capsule ${capsuleIndex + 1} of ${habitName} uncompleted.`);
-    } catch (error) {
+    } catch (error: any) { // Added any type for error
       showError(`Failed to uncomplete capsule: ${error.message}`);
     }
   };
@@ -151,17 +151,17 @@ export const TodayProgressCard: React.FC<TodayProgressCardProps> = ({ habits, ne
 
   const handleRestComplete = () => {
     setShowRestTimer(false);
-    handleStopTimer(); // Corrected to call local handleStopTimer
+    handleStopTimer(); // Corrected call
   };
 
   const handleRestCancel = () => {
     setShowRestTimer(false);
-    handleStopTimer(); // Corrected to call local handleStopTimer
+    handleStopTimer(); // Corrected call
   };
 
   const handleSkipRest = () => {
     setShowRestTimer(false);
-    handleStopTimer(); // Corrected to call local handleStopTimer
+    handleStopTimer(); // Corrected call
   };
 
   if (isLoading || isLoadingCapsules) {

@@ -13,7 +13,7 @@ import { TodayProgressCard } from '@/components/dashboard/TodayProgressCard';
 import { JourneyProgressCard } from '@/components/dashboard/JourneyProgressCard';
 import { WeeklySummaryCard } from '@/components/dashboard/WeeklySummaryCard';
 import { PatternsCard } from '@/components/dashboard/PatternsCard';
-import { NextBadgeCard } from '@/components/dashboard/NextBadgeCard';
+import { NextBadgeCard } => '@/components/dashboard/NextBadgeCard';
 import { TipCard } from '@/components/dashboard/TipCard';
 import { DisciplineBanner } from '@/components/dashboard/DisciplineBanner';
 import { GrowthGuide } from '@/components/dashboard/GrowthGuide';
