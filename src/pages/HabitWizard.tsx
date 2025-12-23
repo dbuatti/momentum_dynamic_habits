@@ -133,11 +133,9 @@ const HabitWizard = () => {
 
   const { wizardProgress, isLoading: isLoadingWizardProgress, saveProgress, deleteProgress } = useUserHabitWizardTemp();
 
-  // Determine if we are in template creation mode (bypasses guided flow)
   const isTemplateCreationMode = location.state?.mode === 'template';
   const templateToPreFill: HabitTemplate | undefined = location.state?.templateToPreFill;
 
-  // Wizard state
   const [currentStep, setCurrentStep] = useState(1);
   const [wizardData, setWizardData] = useState<Partial<WizardHabitData>>({});
   const [isSaving, setIsSaving] = useState(false);
@@ -148,7 +146,6 @@ const HabitWizard = () => {
       setCurrentStep(wizardProgress.current_step);
       setWizardData(wizardProgress.habit_data);
     } else if (isTemplateCreationMode || templateToPreFill) {
-      // If in template mode, bypass wizard steps and go straight to form
       setCurrentStep(99); // A high number to indicate template form
       if (templateToPreFill) {
         // Pre-fill form fields from template
@@ -175,11 +172,11 @@ const HabitWizard = () => {
 
   // Auto-generate habit key from name
   useEffect(() => {
-    if (wizardData.name && !wizardData.habit_key) {
+    if (!templateToPreFill && wizardData.name) {
       const key = wizardData.name.toLowerCase().replace(/\s/g, '_').replace(/[^a-z0-9_]/g, '');
       setWizardData(prev => ({ ...prev, habit_key: key }));
     }
-  }, [wizardData.name, wizardData.habit_key]);
+  }, [wizardData.name, wizardData.habit_key, templateToPreFill]);
 
   const handleSaveAndNext = useCallback(async (nextStep: number, dataToSave: Partial<WizardHabitData>) => {
     setIsSaving(true);
@@ -285,8 +282,16 @@ const HabitWizard = () => {
     }
   };
 
-  const totalGuidedSteps = 6; // Updated total steps
+  const totalGuidedSteps = 6;
   const progress = (currentStep / totalGuidedSteps) * 100;
+
+  // Move this useMemo BEFORE the conditional return
+  const isNextDisabled = useMemo(() => {
+    if (currentStep === 1 && !wizardData.category) return true;
+    if (currentStep === 2 && !wizardData.motivation_type) return true;
+    // Add more validation for future steps
+    return false;
+  }, [currentStep, wizardData]);
 
   if (isLoadingWizardProgress) {
     return (
@@ -322,13 +327,6 @@ const HabitWizard = () => {
         return <div className="text-center text-muted-foreground">Unknown Step</div>;
     }
   };
-
-  const isNextDisabled = useMemo(() => {
-    if (currentStep === 1 && !wizardData.category) return true;
-    if (currentStep === 2 && !wizardData.motivation_type) return true;
-    // Add more validation for future steps
-    return false;
-  }, [currentStep, wizardData]);
 
   return (
     <div className="w-full max-w-4xl mx-auto px-4 py-6 space-y-8 pb-32">
