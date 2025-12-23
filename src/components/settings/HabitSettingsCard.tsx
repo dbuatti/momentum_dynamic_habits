@@ -100,10 +100,10 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
               </div>
             </div>
           </div>
-          {habit.dependent_on_habit_key && (
+          {habit.dependent_on_habit_id && (
             <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2 ml-[72px]"> {/* Indent to align with habit name */}
               <LinkIcon className="w-3.5 h-3.5" />
-              <span>Depends on: {otherHabits.find(h => h.habit_key === habit.dependent_on_habit_key)?.name || habit.dependent_on_habit_key.replace('_', ' ')}</span>
+              <span>Depends on: {otherHabits.find(h => h.id === habit.dependent_on_habit_id)?.name || 'Unknown Habit'}</span>
             </div>
           )}
         </div>
@@ -268,8 +268,8 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
              <div className="space-y-3">
                 <Label className="text-[10px] font-black uppercase tracking-widest opacity-60 ml-1">Dependent On</Label>
                 <Select 
-                  value={habit.dependent_on_habit_key || ''} 
-                  onValueChange={(value) => onUpdateHabitField(habit.id, { dependent_on_habit_key: value || null })}
+                  value={habit.dependent_on_habit_id || ''} 
+                  onValueChange={(value) => onUpdateHabitField(habit.id, { dependent_on_habit_id: value || null })}
                 >
                   <SelectTrigger className="h-11 rounded-xl font-bold text-base">
                     <SelectValue placeholder="No dependency" />
@@ -277,7 +277,7 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
                   <SelectContent>
                     <SelectItem value="">No dependency</SelectItem>
                     {otherHabits.map(otherHabit => (
-                      <SelectItem key={otherHabit.habit_key} value={otherHabit.habit_key}>
+                      <SelectItem key={otherHabit.id} value={otherHabit.id}>
                         {otherHabit.name}
                       </SelectItem>
                     ))}

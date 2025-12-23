@@ -27,7 +27,7 @@ const fetchDashboardData = async (userId: string) => {
     { data: bestTime, error: bestTimeError },
     { data: randomTip, error: randomTipError },
   ] = await Promise.all([
-    supabase.from('user_habits').select('*, dependent_on_habit_key').eq('user_id', userId), // Fetch dependent_on_habit_key
+    supabase.from('user_habits').select('*, dependent_on_habit_id').eq('user_id', userId), // Fetch dependent_on_habit_id
     supabase.rpc('get_completed_tasks_today', { p_user_id: userId, p_timezone: timezone }),
     supabase.from('completedtasks').select('original_source, duration_used, xp_earned, completed_at').eq('user_id', userId).gte('completed_at', startOfWeek(today).toISOString()).lte('completed_at', endOfWeek(today).toISOString()),
     supabase.from('completedtasks').select('original_source, duration_used, xp_earned').eq('user_id', userId).gte('completed_at', startOfWeek(subWeeks(today, 1)).toISOString()).lte('completed_at', endOfWeek(subWeeks(today, 1)).toISOString()),
@@ -37,7 +37,7 @@ const fetchDashboardData = async (userId: string) => {
     supabase.from('tips').select('content, related_habit_key').order('created_at', { ascending: false }).limit(1).single()
   ]);
 
-  if (habitsError || completedTodayError) throw new Error('Failed to fetch essential data');
+  if (profileError || habitsError || completedTodayError) throw new Error('Failed to fetch essential data');
 
   // Use a map for initialHabits for quick lookup, but prioritize DB values
   const initialHabitsMap = new Map(initialHabits.map(h => [h.id, h]));
@@ -50,7 +50,7 @@ const fetchDashboardData = async (userId: string) => {
   });
 
   const dailyProgressMap = new Map<string, number>();
-  const completedHabitKeysToday = new Set<string>(); // Track which habits are completed today
+  const completedHabitKeysToday = new Set<string>(); // Track which habits are completed today (by habit_key)
   (completedToday || []).forEach((task: any) => {
     const key = task.original_source;
     completedHabitKeysToday.add(key); // Mark as completed
@@ -94,12 +94,14 @@ const fetchDashboardData = async (userId: string) => {
     const daysInPlateau = differenceInDays(new Date(), new Date(h.last_plateau_start_date));
     const daysRemainingInPlateau = Math.max(0, plateauRequired - h.completions_in_plateau);
 
-    // Dependency check
-    const isDependent = !!h.dependent_on_habit_key;
-    const isDependencyMet = isDependent ? completedHabitKeysToday.has(h.dependent_on_habit_key!) : true;
+    // Dependency check: Check if the dependent habit (by its habit_key) is completed today
+    const isDependent = !!h.dependent_on_habit_id;
+    const dependentHabit = habits?.find(depH => depH.id === h.dependent_on_habit_id);
+    const isDependencyMet = isDependent ? completedHabitKeysToday.has(dependentHabit?.habit_key || '') : true;
     const isLockedByDependency = isDependent && !isDependencyMet;
 
     return {
+      id: h.id, // Explicitly include id
       key: h.habit_key,
       name: h.name || initialHabit?.name || h.habit_key.charAt(0).toUpperCase() + h.habit_key.slice(1), // Use name from DB
       dailyGoal, 
@@ -133,7 +135,7 @@ const fetchDashboardData = async (userId: string) => {
         daysRemaining: daysRemainingInPlateau,
         phase: h.growth_phase
       },
-      dependent_on_habit_key: h.dependent_on_habit_key, // Include dependency key
+      dependent_on_habit_id: h.dependent_on_habit_id, // Include dependency ID
       isLockedByDependency: isLockedByDependency, // New: indicates if this habit is locked
     };
   });

@@ -50,7 +50,7 @@ export interface UserHabitRecord {
   num_chunks: number;
   chunk_duration: number;
   is_visible: boolean;
-  dependent_on_habit_key: string | null; // Added this line
+  dependent_on_habit_id: string | null; // Changed from dependent_on_habit_key to dependent_on_habit_id
 }
 
 export interface PianoHabit extends Habit {

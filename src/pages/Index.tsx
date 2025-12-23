@@ -208,6 +208,7 @@ const Index = () => {
     const showOnlyNext = !showAllMomentum[habit.key] && habit.numChunks > 1;
 
     const isLocked = habit.isLockedByDependency;
+    const dependentHabitName = data.habits.find(h => h.id === habit.dependent_on_habit_id)?.name || 'previous habit';
 
     return (
       <AccordionItem
@@ -272,10 +273,10 @@ const Index = () => {
                 </div>
             </div>
 
-            {habit.dependent_on_habit_key && (
+            {habit.dependent_on_habit_id && (
               <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2 ml-[72px]">
                 <Lock className="w-3.5 h-3.5" />
-                <span>Locked. Complete {data.habits.find(h => h.key === habit.dependent_on_habit_key)?.name || habit.dependent_on_habit_key.replace('_', ' ')} first.</span>
+                <span>Locked. Complete {dependentHabitName} first.</span>
                 <Button 
                   variant="link" 
                   size="sm" 

@@ -23,6 +23,7 @@ import { useSession } from '@/contexts/SessionContext';
 import { showError, showSuccess } from '@/utils/toast';
 import { useNavigate } from 'react-router-dom';
 import { UserHabitRecord, HabitCategory as HabitCategoryType } from '@/types/habit'; // Import HabitCategoryType
+import { useJourneyData } from '@/hooks/useJourneyData'; // Import useJourneyData
 
 interface CreateHabitParams {
   name: string;
@@ -39,6 +40,7 @@ interface CreateHabitParams {
   energy_cost_per_unit: number;
   icon_name: string; // New field for icon
   default_chunks: number; // Added default_chunks
+  dependent_on_habit_id: string | null; // Added this line
 }
 
 const createNewHabit = async ({ userId, habit }: { userId: string; habit: CreateHabitParams }) => {
@@ -46,7 +48,7 @@ const createNewHabit = async ({ userId, habit }: { userId: string; habit: Create
   const oneYearFromNow = new Date(today.setFullYear(today.getFullYear() + 1));
   const oneYearDateString = oneYearFromNow.toISOString().split('T')[0];
 
-  const { name, habit_key, category, current_daily_goal, frequency_per_week, is_trial_mode, is_fixed, anchor_practice, auto_chunking, unit, xp_per_unit, energy_cost_per_unit, icon_name, default_chunks } = habit; // Destructure default_chunks
+  const { name, habit_key, category, current_daily_goal, frequency_per_week, is_trial_mode, is_fixed, anchor_practice, auto_chunking, unit, xp_per_unit, energy_cost_per_unit, icon_name, default_chunks, dependent_on_habit_id } = habit; // Destructure default_chunks and dependent_on_habit_id
 
   const habitToInsert: Partial<UserHabitRecord> = {
     user_id: userId,
@@ -79,6 +81,7 @@ const createNewHabit = async ({ userId, habit }: { userId: string; habit: Create
     num_chunks: auto_chunking ? default_chunks : 1, // Use default_chunks from params
     chunk_duration: auto_chunking ? (current_daily_goal / default_chunks) : current_daily_goal, // Calculate chunk duration
     is_visible: true,
+    dependent_on_habit_id: dependent_on_habit_id, // Added this line
   };
 
   const { error } = await supabase.from('user_habits').insert(habitToInsert);
@@ -106,6 +109,12 @@ const CreateHabit = () => {
   const [xpPerUnit, setXpPerUnit] = useState(30);
   const [energyCostPerUnit, setEnergyCostPerUnit] = useState(6);
   const [selectedIconName, setSelectedIconName] = useState<string>('Target');
+  const [dependentOnHabitId, setDependentOnHabitId] = useState<string | null>(null); // New state for dependency
+
+  const { data: journeyData } = useJourneyData(); // Fetch all habits for dependency selection
+  const otherHabits = useMemo(() => {
+    return (journeyData?.habits || []).filter(h => h.is_visible); // All visible habits can be dependencies
+  }, [journeyData?.habits]);
 
   const selectedTemplate = useMemo(() => {
     if (selectedTemplateId === 'custom_habit') {
@@ -147,6 +156,7 @@ const CreateHabit = () => {
       // Correctly assign icon name by finding the value from habitIcons
       const iconEntry = habitIcons.find(entry => entry.icon === selectedTemplate.icon);
       setSelectedIconName(iconEntry?.value || 'Target');
+      setDependentOnHabitId(null); // Reset dependency when template changes
     }
   }, [selectedTemplate]);
 
@@ -194,6 +204,7 @@ const CreateHabit = () => {
       energy_cost_per_unit: energyCostPerUnit,
       icon_name: selectedIconName,
       default_chunks: selectedTemplate.defaultChunks, // Pass default_chunks from selectedTemplate
+      dependent_on_habit_id: dependentOnHabitId, // Pass the selected dependency ID
     });
   };
 
@@ -318,7 +329,7 @@ const CreateHabit = () => {
                 <SelectContent>
                   {habitIcons.map((icon) => (
                     <SelectItem key={icon.value} value={icon.value}>
-                      <div className="flex items-center gap-2"> {/* Added closing div tag here */}
+                      <div className="flex items-center gap-2">
                         <icon.icon className="w-4 h-4" />
                         {icon.label}
                       </div>
@@ -435,6 +446,29 @@ const CreateHabit = () => {
               </div>
               <Switch checked={autoChunking} onCheckedChange={setAutoChunking} />
             </div>
+
+            <div className="space-y-3">
+                <Label className="text-[10px] font-black uppercase tracking-widest opacity-60 ml-1">Dependent On</Label>
+                <Select 
+                  value={dependentOnHabitId || ''} 
+                  onValueChange={(value) => setDependentOnHabitId(value || null)}
+                >
+                  <SelectTrigger className="h-11 rounded-xl font-bold text-base">
+                    <SelectValue placeholder="No dependency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">No dependency</SelectItem>
+                    {otherHabits.map(otherHabit => (
+                      <SelectItem key={otherHabit.id} value={otherHabit.id}>
+                        {otherHabit.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-[10px] text-muted-foreground leading-snug">
+                  This habit will be marked as "locked" until the dependent habit is completed for the day.
+                </p>
+             </div>
           </CardContent>
         </Card>
 
