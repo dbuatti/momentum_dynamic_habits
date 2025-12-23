@@ -5,49 +5,53 @@ export const initialHabits: (Habit | PianoHabit)[] = [
     id: "pushups",
     name: "Push-ups",
     type: "count",
-    targetGoal: 1, // Updated from 10 to 1 rep
+    category: "daily",
+    targetGoal: 1,
     unit: "reps",
     currentProgress: 0,
     momentum: "Building",
     route: "/log/pushups",
-    xpPerUnit: 1, // 1 XP per push-up
-    energyCostPerUnit: 0.5, // 0.5 energy per push-up
+    xpPerUnit: 1,
+    energyCostPerUnit: 0.5,
   },
   {
     id: "meditation",
     name: "Meditation",
     type: "time",
-    targetGoal: 5, // Changed to 5 minutes (was 30 seconds)
-    unit: "min", // Unit changed to minutes
+    category: "daily",
+    targetGoal: 5,
+    unit: "min",
     currentProgress: 0,
     momentum: "Building",
     route: "/log/meditation",
-    xpPerUnit: 30, // 30 XP per minute (0.5 XP/sec * 60 sec/min)
-    energyCostPerUnit: 6, // 6 energy per minute (0.1 energy/sec * 60 sec/min)
+    xpPerUnit: 30,
+    energyCostPerUnit: 6,
   },
   {
     id: "kinesiology",
     name: "Kinesiology Study",
     type: "time",
-    targetGoal: 10, // Set default to 10 minutes
-    unit: "min", // Unit changed to minutes
+    category: "anchor", // Set as Anchor
+    targetGoal: 10,
+    unit: "min",
     currentProgress: 0,
     momentum: "Struggling",
     route: "/log/study",
-    xpPerUnit: 42, // 42 XP per minute (0.7 XP/sec * 60 sec/min)
-    energyCostPerUnit: 9, // 9 energy per minute (0.15 energy/sec * 60 sec/min)
+    xpPerUnit: 42,
+    energyCostPerUnit: 9,
   },
   {
     id: "piano",
     name: "Piano Practice",
     type: "time",
-    targetGoal: 10, // Set default to 10 minutes
-    unit: "min", // Unit changed to minutes
+    category: "anchor", // Set as Anchor
+    targetGoal: 10,
+    unit: "min",
     currentProgress: 0,
     momentum: "Strong",
     route: "/log/piano",
-    xpPerUnit: 36, // 36 XP per minute (0.6 XP/sec * 60 sec/min)
-    energyCostPerUnit: 7.2, // 7.2 energy per minute (0.12 energy/sec * 60 sec/min)
+    xpPerUnit: 36,
+    energyCostPerUnit: 7.2,
     targetSongs: ["Song A", "Song B", "Song C", "Song D", "Song E"],
     songsCompletedToday: [],
   } as PianoHabit,
@@ -55,43 +59,47 @@ export const initialHabits: (Habit | PianoHabit)[] = [
     id: "housework",
     name: "House Work",
     type: "time",
-    targetGoal: 30, // Fixed goal - will not adapt
+    category: "daily",
+    targetGoal: 30,
     unit: "min",
     currentProgress: 0,
     momentum: "Building",
     route: "/log/housework",
-    xpPerUnit: 24, // 24 XP per minute
-    energyCostPerUnit: 4.8, // 4.8 energy per minute
+    xpPerUnit: 24,
+    energyCostPerUnit: 4.8,
   },
   {
     id: "projectwork",
     name: "Project Work",
     type: "time",
-    targetGoal: 60, // Fixed goal - will not adapt
+    category: "daily",
+    targetGoal: 60,
     unit: "min",
     currentProgress: 0,
     momentum: "Building",
     route: "/log/projectwork",
-    xpPerUnit: 60, // 60 XP per minute
-    energyCostPerUnit: 12, // 12 energy per minute
+    xpPerUnit: 60,
+    energyCostPerUnit: 12,
   },
   {
     id: "teeth_brushing",
     name: "Brush Teeth",
     type: "time",
-    targetGoal: 2, // 2 minutes fixed duration
+    category: "daily",
+    targetGoal: 2,
     unit: "min",
     currentProgress: 0,
     momentum: "Building",
     route: "/log/teeth-brushing",
-    xpPerUnit: 5, // 5 XP per minute
+    xpPerUnit: 5,
     energyCostPerUnit: 0,
   },
   {
     id: "medication",
     name: "Take Medication",
     type: "count",
-    targetGoal: 1, // Fixed goal - will not adapt
+    category: "daily",
+    targetGoal: 1,
     unit: "dose",
     currentProgress: 0,
     momentum: "Building",

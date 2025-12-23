@@ -2,14 +2,9 @@
 
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import HomeHeader from "@/components/HomeHeader";
-import { BookOpen, Dumbbell, Music, Wind, Home, Code, Sparkles, Pill, LayoutGrid, ListTodo, Zap, Lock, CheckCircle2, Timer } from "lucide-react";
+import { BookOpen, Dumbbell, Music, Wind, Home, Code, Sparkles, Pill, LayoutGrid, ListTodo, Zap, Lock, CheckCircle2, Timer, ChevronRight, Sparkle } from "lucide-react";
 import { TodaysProgressCard } from "@/components/dashboard/TodaysProgressCard";
-import { JourneyProgressCard } from "@/components/dashboard/JourneyProgressCard";
 import { HabitDetailCard } from "@/components/dashboard/HabitDetailCard";
-import { WeeklySummaryCard } from "@/components/dashboard/WeeklySummaryCard";
-import { PatternsCard } from "@/components/dashboard/PatternsCard";
-import { NextBadgeCard } from "@/components/dashboard/NextBadgeCard";
-import { FooterStats } from "@/components/dashboard/FooterStats";
 import { LevelProgressCard } from "@/components/dashboard/LevelProgressCard";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { DashboardSkeleton } from "@/components/dashboard/DashboardSkeleton";
@@ -20,8 +15,8 @@ import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useOnboardingCheck } from "@/hooks/useOnboardingCheck";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 import { TipCard } from "@/components/dashboard/TipCard";
 import { toast } from "sonner";
 
@@ -62,7 +57,7 @@ const Index = () => {
   const habitGroups = useMemo(() => {
     if (!data?.habits) return [];
 
-    const groups = data.habits.map(habit => {
+    return data.habits.map(habit => {
       const goal = habit.dailyGoal;
       const progress = habit.dailyProgress;
       const isReps = habit.unit === 'reps';
@@ -76,8 +71,6 @@ const Index = () => {
         numCapsules = Math.max(1, Math.ceil(goal / idealSetSize));
         capsuleValue = idealSetSize;
       } else if (isMinutes) {
-        // Updated Threshold: Only split into parts if >= 20 min.
-        // This forces 10m habits (Kinesiology/Piano) into a single session.
         if (goal >= 60) {
           numCapsules = 4;
           capsuleValue = 15;
@@ -95,19 +88,14 @@ const Index = () => {
 
       const capsules = Array.from({ length: numCapsules }).map((_, i) => {
         const dbCapsule = dbCapsules?.find(c => c.habit_key === habit.key && c.capsule_index === i);
-        
         const startOfThisCapsule = i * capsuleValue;
-        const endOfThisCapsule = (i + 1) * capsuleValue;
-        
         const initialValue = Math.max(0, Math.min(capsuleValue, progress - startOfThisCapsule));
-        
         const isCompleted = dbCapsule?.is_completed || initialValue >= capsuleValue || (i === numCapsules - 1 && progress >= goal);
 
         return {
           id: `${habit.key}-${i}`,
           habitKey: habit.key,
           index: i,
-          // Simplify label if only one capsule exists
           label: numCapsules === 1 ? 'Session' : (habit.key === 'pushups' ? `Set ${i + 1}` : `Part ${i + 1}`),
           value: i === numCapsules - 1 ? goal - capsuleValue * (numCapsules - 1) : capsuleValue,
           initialValue,
@@ -118,21 +106,31 @@ const Index = () => {
       });
 
       const allCompleted = (goal > 0 && progress >= goal) || (capsules.length > 0 && capsules.every(c => c.isCompleted));
+      
+      // Categorize based on our new system
+      const category = ['kinesiology', 'piano'].includes(habit.key) ? 'anchor' : 'daily';
 
       return {
         ...habit,
+        category,
         capsules,
         allCompleted,
         completedCapsulesCount: capsules.filter(c => c.isCompleted).length,
         totalCapsulesCount: numCapsules,
       };
     });
-
-    return [...groups].sort((a, b) => {
-      if (a.allCompleted === b.allCompleted) return 0;
-      return a.allCompleted ? 1 : -1;
-    });
   }, [data?.habits, dbCapsules]);
+
+  // Split habits into two priority groups
+  const anchorHabits = useMemo(() => habitGroups.filter(h => h.category === 'anchor'), [habitGroups]);
+  const dailyHabits = useMemo(() => {
+    return habitGroups
+      .filter(h => h.category === 'daily')
+      .sort((a, b) => {
+        if (a.allCompleted === b.allCompleted) return 0;
+        return a.allCompleted ? 1 : -1;
+      });
+  }, [habitGroups]);
 
   useEffect(() => {
     if (habitGroups.length === 0) return;
@@ -208,21 +206,69 @@ const Index = () => {
   };
 
   const iconBgMap: Record<HabitColor, string> = {
-    orange: 'bg-orange-100/80',
-    blue: 'bg-blue-100/80',
-    green: 'bg-green-100/80',
-    purple: 'bg-purple-100/80',
-    red: 'bg-red-100/80',
-    indigo: 'bg-indigo-100/80',
+    orange: 'bg-orange-100/80', blue: 'bg-blue-100/80', green: 'bg-green-100/80',
+    purple: 'bg-purple-100/80', red: 'bg-red-100/80', indigo: 'bg-indigo-100/80',
   };
 
   const textTintMap: Record<HabitColor, string> = {
-    orange: 'text-orange-700',
-    blue: 'text-blue-700',
-    green: 'text-green-700',
-    purple: 'text-purple-700',
-    red: 'text-red-700',
-    indigo: 'text-indigo-700',
+    orange: 'text-orange-700', blue: 'text-blue-700', green: 'text-green-700',
+    purple: 'text-purple-700', red: 'text-red-700', indigo: 'text-indigo-700',
+  };
+
+  const renderHabitItem = (habit: any) => {
+    const Icon = habitIconMap[habit.key] || Timer;
+    const color = habitColorMap[habit.key] || 'blue';
+
+    return (
+      <AccordionItem
+        key={habit.key}
+        value={habit.key}
+        className={cn(
+          "border-2 bg-card rounded-2xl shadow-sm overflow-hidden transition-all",
+          habit.allCompleted ? "opacity-80 grayscale-[0.3] border-transparent" : cn(accordionBgMap[color], "border-inherit")
+        )}
+      >
+        <AccordionTrigger className="px-6 py-5 hover:no-underline">
+          <div className="flex items-center justify-between w-full pr-4">
+            <div className="flex items-center gap-4 text-left">
+              <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center relative shadow-sm", habit.allCompleted ? "bg-muted" : iconBgMap[color])}>
+                <Icon className={cn("w-6 h-6", habit.allCompleted ? "text-muted-foreground" : textTintMap[color])} />
+                {habit.is_fixed && (
+                  <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full p-1 shadow-lg">
+                    <Lock className="w-3 h-3" />
+                  </div>
+                )}
+              </div>
+              <div>
+                <h3 className={cn("font-bold text-lg flex items-center gap-2", !habit.allCompleted && textTintMap[color])}>
+                  {habit.name}
+                  {habit.allCompleted && <CheckCircle2 className="w-5 h-5 text-green-500" />}
+                </h3>
+                <p className="text-sm text-muted-foreground font-medium">
+                  {habit.completedCapsulesCount}/{habit.totalCapsulesCount} {habit.totalCapsulesCount === 1 ? 'session' : 'parts'} done
+                  {habit.is_fixed && " • Fixed goal"}
+                </p>
+              </div>
+            </div>
+          </div>
+        </AccordionTrigger>
+        <AccordionContent className="px-6 pb-6 pt-2">
+          <div className="grid grid-cols-1 gap-4">
+            {habit.capsules.map(capsule => (
+              <HabitCapsule
+                key={capsule.id}
+                {...capsule}
+                habitName={habit.name}
+                color={color}
+                onComplete={(actual, mood) => handleCapsuleComplete(habit, capsule, actual, mood)}
+                onUncomplete={() => handleCapsuleUncomplete(habit, capsule)}
+                showMood={data.neurodivergentMode}
+              />
+            ))}
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+    );
   };
 
   return (
@@ -237,7 +283,7 @@ const Index = () => {
           level={data.level}
         />
 
-        <main className="space-y-6 mt-6">
+        <main className="space-y-8 mt-6">
           <TipCard
             tip={data.tip}
             bestTime={data.patterns.bestTime}
@@ -245,132 +291,87 @@ const Index = () => {
             isNeurodivergent={data.neurodivergentMode}
           />
 
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold flex items-center gap-2">
-              <ListTodo className="w-5 h-5 text-primary" />
-              Your Daily Chunks
-            </h2>
-
-            <div className="bg-muted/60 p-1 rounded-xl flex gap-1 border border-border/50">
-              <Button
-                variant={viewMode === 'capsules' ? 'secondary' : 'ghost'}
-                size="sm"
-                className="h-8 px-4 text-xs font-semibold"
-                onClick={() => setViewMode('capsules')}
-              >
-                <LayoutGrid className="w-4 h-4 mr-1" />
-                Capsules
-              </Button>
-              <Button
-                variant={viewMode === 'overview' ? 'secondary' : 'ghost'}
-                size="sm"
-                className="h-8 px-4 text-xs font-semibold"
-                onClick={() => setViewMode('overview')}
-              >
-                <Zap className="w-4 h-4 mr-1" />
-                Overview
-              </Button>
+          {/* Section 1: Anchor Practices - Fixed & Prominent */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 px-1">
+              <Sparkle className="w-5 h-5 text-primary fill-primary/20" />
+              <h2 className="text-lg font-black uppercase tracking-widest text-primary/80">Anchor Practices</h2>
+            </div>
+            <div className="space-y-4">
+              <Accordion type="multiple" value={expandedItems} onValueChange={setExpandedItems}>
+                {anchorHabits.map(renderHabitItem)}
+              </Accordion>
             </div>
           </div>
 
-          {viewMode === 'capsules' ? (
-            <div className="space-y-5">
-              <Accordion 
-                type="multiple" 
-                value={expandedItems} 
-                onValueChange={setExpandedItems}
-                className="space-y-4"
-              >
-                {habitGroups.map(habit => {
-                  const Icon = habitIconMap[habit.key] || Timer;
-                  const color = habitColorMap[habit.key] || 'blue';
+          <Separator className="opacity-50" />
 
-                  return (
-                    <AccordionItem
-                      key={habit.key}
-                      value={habit.key}
-                      className={cn(
-                        "border-2 bg-card rounded-2xl shadow-sm overflow-hidden transition-all",
-                        habit.allCompleted ? "opacity-80 grayscale-[0.3] border-transparent" : cn(accordionBgMap[color], "border-inherit")
-                      )}
-                    >
-                      <AccordionTrigger className="px-6 py-5 hover:no-underline">
-                        <div className="flex items-center justify-between w-full pr-4">
-                          <div className="flex items-center gap-4 text-left">
-                            <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center relative shadow-sm", habit.allCompleted ? "bg-muted" : iconBgMap[color])}>
-                              <Icon className={cn("w-6 h-6", habit.allCompleted ? "text-muted-foreground" : textTintMap[color])} />
-                              {habit.is_fixed && (
-                                <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full p-1 shadow-lg">
-                                  <Lock className="w-3 h-3" />
-                                </div>
-                              )}
-                            </div>
-                            <div>
-                              <h3 className={cn("font-bold text-lg flex items-center gap-2", !habit.allCompleted && textTintMap[color])}>
-                                {habit.name}
-                                {habit.allCompleted && <CheckCircle2 className="w-5 h-5 text-green-500" />}
-                              </h3>
-                              <p className="text-sm text-muted-foreground font-medium">
-                                {habit.completedCapsulesCount}/{habit.totalCapsulesCount} {habit.totalCapsulesCount === 1 ? 'session' : 'parts'} done
-                                {habit.is_fixed && " • Fixed goal"}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </AccordionTrigger>
+          {/* Section 2: Daily Chunks - Momentum Building */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between px-1">
+              <div className="flex items-center gap-2">
+                <Zap className="w-5 h-5 text-orange-500" />
+                <h2 className="text-lg font-black uppercase tracking-widest text-muted-foreground">Daily Momentum</h2>
+              </div>
 
-                      <AccordionContent className="px-6 pb-6 pt-2">
-                        <div className="grid grid-cols-1 gap-4">
-                          {habit.capsules.map(capsule => (
-                            <HabitCapsule
-                              key={capsule.id}
-                              {...capsule}
-                              habitName={habit.name}
-                              color={color}
-                              onComplete={(actual, mood) => handleCapsuleComplete(habit, capsule, actual, mood)}
-                              onUncomplete={() => handleCapsuleUncomplete(habit, capsule)}
-                              showMood={data.neurodivergentMode}
-                            />
-                          ))}
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  );
-                })}
-              </Accordion>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              <LevelProgressCard currentXp={data.xp} currentLevel={data.level} />
-              <TodaysProgressCard habits={data.habits} />
-
-              <div className="space-y-4">
-                {data.habits.map(habit => {
-                  const Icon = habitIconMap[habit.key];
-                  return (
-                    <HabitDetailCard
-                      key={habit.key}
-                      icon={Icon ? <Icon className="w-6 h-6" /> : null}
-                      title={habit.name}
-                      momentum={habit.momentum}
-                      goal={`${habit.dailyGoal} ${habit.unit}`}
-                      progressText={`${Math.round(habit.dailyProgress)}/${habit.dailyGoal}`}
-                      progressValue={(habit.dailyProgress / habit.dailyGoal) * 100}
-                      color={habitColorMap[habit.key]}
-                      isComplete={habit.isComplete}
-                      daysCompletedLast7Days={habit.daysCompletedLast7Days}
-                      habitKey={habit.key}
-                      dailyGoal={habit.dailyGoal}
-                      onCheck={() => refetch()}
-                      isFrozen={habit.is_frozen}
-                      isFixed={habit.is_fixed}
-                      neurodivergentMode={data.neurodivergentMode}
-                    />
-                  );
-                })}
+              <div className="bg-muted/60 p-1 rounded-xl flex gap-1 border border-border/50">
+                <Button
+                  variant={viewMode === 'capsules' ? 'secondary' : 'ghost'}
+                  size="sm"
+                  className="h-8 px-4 text-xs font-semibold"
+                  onClick={() => setViewMode('capsules')}
+                >
+                  <LayoutGrid className="w-4 h-4 mr-1" />
+                  Chunks
+                </Button>
+                <Button
+                  variant={viewMode === 'overview' ? 'secondary' : 'ghost'}
+                  size="sm"
+                  className="h-8 px-4 text-xs font-semibold"
+                  onClick={() => setViewMode('overview')}
+                >
+                  <ListTodo className="w-4 h-4 mr-1" />
+                  Summary
+                </Button>
               </div>
             </div>
-          )}
+
+            {viewMode === 'capsules' ? (
+              <Accordion type="multiple" value={expandedItems} onValueChange={setExpandedItems} className="space-y-4">
+                {dailyHabits.map(renderHabitItem)}
+              </Accordion>
+            ) : (
+              <div className="space-y-6">
+                <LevelProgressCard currentXp={data.xp} currentLevel={data.level} />
+                <TodaysProgressCard habits={data.habits} />
+                <div className="space-y-4">
+                  {data.habits.map(habit => {
+                    const Icon = habitIconMap[habit.key];
+                    return (
+                      <HabitDetailCard
+                        key={habit.key}
+                        icon={Icon ? <Icon className="w-6 h-6" /> : null}
+                        title={habit.name}
+                        momentum={habit.momentum}
+                        goal={`${habit.dailyGoal} ${habit.unit}`}
+                        progressText={`${Math.round(habit.dailyProgress)}/${habit.dailyGoal}`}
+                        progressValue={(habit.dailyProgress / habit.dailyGoal) * 100}
+                        color={habitColorMap[habit.key]}
+                        isComplete={habit.isComplete}
+                        daysCompletedLast7Days={habit.daysCompletedLast7Days}
+                        habitKey={habit.key}
+                        dailyGoal={habit.dailyGoal}
+                        onCheck={() => refetch()}
+                        isFrozen={habit.is_frozen}
+                        isFixed={habit.is_fixed}
+                        neurodivergentMode={data.neurodivergentMode}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
 
           <MadeWithDyad className="mt-12" />
         </main>

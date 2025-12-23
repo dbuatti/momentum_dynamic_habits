@@ -1,12 +1,14 @@
 export type HabitType = 'count' | 'time';
 export type MomentumLevel = 'Struggling' | 'Building' | 'Strong' | 'Crushing';
+export type HabitCategory = 'anchor' | 'daily';
 
 export interface Habit {
   id: string;
   name: string;
   type: HabitType;
-  targetGoal: number; // The current adaptive goal
-  unit: string; // e.g., "reps", "minutes"
+  category: HabitCategory; // New category field
+  targetGoal: number; 
+  unit: string; 
   currentProgress: number;
   momentum: MomentumLevel;
   route: string;
