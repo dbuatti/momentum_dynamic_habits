@@ -24,7 +24,7 @@ import { Progress } from "@/components/ui/progress";
 import { TrialStatusCard } from "@/components/dashboard/TrialStatusCard";
 import { GrowthGuide } from "@/components/dashboard/GrowthGuide";
 import { Link } from "react-router-dom";
-import { showSuccess } from "@/utils/toast";
+import { showSuccess, showError } from "@/utils/toast"; // Import showError
 import { habitIconMap, habitColorMap } from '@/lib/habit-utils';
 import { useSession } from "@/contexts/SessionContext"; // Import useSession for queryClient invalidation
 import { useQueryClient } from "@tanstack/react-query"; // Import useQueryClient
@@ -33,7 +33,7 @@ const Index = () => {
   const { data, isLoading, isError } = useDashboardData();
   const { dbCapsules, isLoading: isCapsulesLoading, completeCapsule, uncompleteCapsule } = useCapsules();
   const { isLoading: isOnboardingLoading } = useOnboardingCheck();
-  const { mutateAsync: logHabit, unlog } = useHabitLog(); // Use mutateAsync
+  const { mutate: logHabit, unlog } = useHabitLog(); // Use mutate
   const { session } = useSession(); // Get session for queryClient invalidation
   const queryClient = useQueryClient(); // Initialize useQueryClient
   
