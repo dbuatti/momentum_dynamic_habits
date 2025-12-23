@@ -47,6 +47,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   const [isPaused, setIsPaused] = useState(false);
   const [goalReachedAlerted, setGoalReachedAlerted] = useState(false);
   const [completedTaskIdState, setCompletedTaskIdState] = useState<string | null>(initialCompletedTaskId || null);
+  const [isResetting, setIsResetting] = useState(false); // New state for reset lock
   
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number | null>(null);
@@ -160,6 +161,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
 
   const handleStartTimer = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (isResetting) return; // Guard against ghost clicks during reset
     console.log(`[HabitCapsule:${habitKey}-${label}] handleStartTimer called.`);
     playStartSound();
     setIsTiming(true);
@@ -171,6 +173,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
 
   const handlePauseTimer = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (isResetting) return; // Guard against ghost clicks during reset
     console.log(`[HabitCapsule:${habitKey}-${label}] handlePauseTimer called. Current isPaused: ${isPaused}`);
     if (isPaused) {
       playStartSound();
@@ -186,9 +189,11 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     }
   };
 
-  const handleResetTimer = (e: React.MouseEvent) => {
+  const handleResetTimer = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    setIsResetting(true); // Set resetting lock
     console.log(`[HabitCapsule:${habitKey}-${label}] handleResetTimer called. completedTaskIdState: ${completedTaskIdState}`);
+    
     stopInterval();
     setElapsedSeconds(0);
     setIsTiming(false);
@@ -200,14 +205,18 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     
     if (completedTaskIdState) {
       console.log(`[HabitCapsule:${habitKey}-${label}] Calling onUncomplete with completedTaskIdState: ${completedTaskIdState}`);
-      onUncomplete(completedTaskIdState);
-      setCompletedTaskIdState(null);
+      await onUncomplete(completedTaskIdState); // Await the uncomplete action
+      setCompletedTaskIdState(null); // Clear local state immediately after uncomplete
     } else {
       console.log(`[HabitCapsule:${habitKey}-${label}] No completedTaskIdState to uncomplete.`);
     }
+
+    // Add a small delay to prevent immediate re-triggering of start/quick complete
+    setTimeout(() => setIsResetting(false), 300); 
   };
 
   const handleFinishTiming = (mood?: string, promptMood: boolean = false) => {
+    if (isResetting) return; // Guard against ghost clicks during reset
     console.log(`[HabitCapsule:${habitKey}-${label}] handleFinishTiming called. Mood: ${mood}, PromptMood: ${promptMood}`);
     stopInterval();
     const totalSessionMinutes = Math.max(1, Math.ceil((initialValue * 60 + elapsedSeconds) / 60));
@@ -242,6 +251,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
 
   const handleQuickComplete = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (isResetting) return; // Guard against ghost clicks during reset
     console.log(`[HabitCapsule:${habitKey}-${label}] handleQuickComplete called. isCompleted: ${isCompleted}`);
     if (isCompleted) return;
     
@@ -351,7 +361,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
             setGoalReachedAlerted(false);
             startTimeRef.current = null;
           }
-        } : (!isCompleted && !showMoodPicker) ? (isTimeBased ? handleStartTimer : handleQuickComplete) : undefined}
+        } : (!isCompleted && !showMoodPicker && !isResetting) ? (isTimeBased ? handleStartTimer : handleQuickComplete) : undefined}
       >
         {/* Enhanced liquid fill with multi-stop gradient + subtle wave effect */}
         <AnimatePresence>
@@ -455,6 +465,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                         variant="ghost" 
                         className="h-11 w-11 rounded-full hover:bg-secondary/70" 
                         onClick={handleQuickComplete}
+                        disabled={isResetting} // Disable during reset
                       >
                         <Edit2 className="w-5 h-5 opacity-50" />
                       </Button>
@@ -481,6 +492,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                     variant="ghost"
                     className="h-14 w-14 rounded-full bg-card/90 text-foreground/70 hover:text-foreground hover:bg-secondary/80 shadow-lg border border-border/30"
                     onClick={handleResetTimer}
+                    disabled={isResetting} // Disable during reset
                   >
                     <RotateCcw className="w-6 h-6" />
                   </Button>
@@ -489,6 +501,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                     size="icon" 
                     className="h-14 w-14 rounded-full bg-card/90 text-foreground hover:bg-secondary shadow-lg border border-border/30"
                     onClick={handlePauseTimer}
+                    disabled={isResetting} // Disable during reset
                   >
                     {isPaused ? <Play className="w-7 h-7 ml-0.5 fill-current" /> : <Pause className="w-7 h-7 fill-current" />}
                   </Button>
@@ -496,6 +509,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                     size="lg" 
                     className="h-14 px-8 rounded-full font-black shadow-xl bg-primary text-primary-foreground hover:bg-primary/90 border-2 border-primary-foreground/30"
                     onClick={() => handleFinishTiming(undefined, true)}
+                    disabled={isResetting} // Disable during reset
                   >
                     <Square className="w-5 h-5 mr-2 fill-current" />
                     Done
