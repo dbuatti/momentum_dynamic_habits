@@ -5,22 +5,31 @@ import { useHabitLog } from '@/hooks/useHabitLog';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { useDailyHabitCompletion } from '@/hooks/useDailyHabitCompletion';
+import { useDashboardData } from '@/hooks/useDashboardData'; // Import useDashboardData
+import { useMemo } from 'react'; // Import useMemo
 
 const HABIT_KEY = 'medication';
 
 const MedicationLog = () => {
   const { data: isCompleted, isLoading: isCompletionLoading } = useDailyHabitCompletion(HABIT_KEY);
   const { mutate: logHabit, isPending: isLogPending } = useHabitLog();
+  const { data: dashboardData, isLoading: isDashboardLoading } = useDashboardData();
+
+  const medicationHabit = useMemo(() => 
+    dashboardData?.habits.find(h => h.key === HABIT_KEY), 
+  [dashboardData]);
+
+  const adjustedDailyGoal = medicationHabit?.adjustedDailyGoal || 1; // Default to 1 dose
 
   const handleMarkDone = () => {
     logHabit({
       habitKey: HABIT_KEY,
-      value: 1,
+      value: adjustedDailyGoal, // Log the adjusted daily goal
       taskName: 'Take Medication'
     });
   };
 
-  const isPending = isLogPending || isCompletionLoading;
+  const isPending = isLogPending || isCompletionLoading || isDashboardLoading;
 
   return (
     <div className="flex flex-col items-center w-full max-w-md mx-auto px-4 py-6">

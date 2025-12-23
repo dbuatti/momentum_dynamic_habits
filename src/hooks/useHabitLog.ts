@@ -17,7 +17,7 @@ interface LogHabitParams {
 }
 
 const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, note }: LogHabitParams & { userId: string }) => {
-  // Fetch user_habit data to get dynamic properties
+  // Fetch user_habit data to get dynamic properties, including carryover_value
   const { data: userHabitDataResult, error: userHabitFetchError } = await supabase
     .from('user_habits')
     .select('*')
@@ -83,6 +83,16 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
     else if (userHabitData.unit === 'reps' || userHabitData.unit === 'dose') totalDailyProgressAfterLog += (task.xp_earned || 0) / (userHabitData.xp_per_unit || 1);
     else totalDailyProgressAfterLog += 1; // Fallback for unknown units
   });
+  
+  // Calculate surplus for carryover
+  const surplus = totalDailyProgressAfterLog - userHabitData.current_daily_goal;
+  const newCarryoverValue = Math.max(0, surplus); // Carryover cannot be negative
+
+  // Update carryover_value in user_habits
+  await supabase.from('user_habits').update({
+    carryover_value: newCarryoverValue,
+  }).eq('id', userHabitData.id);
+
   const isGoalMetAfterLog = totalDailyProgressAfterLog >= userHabitData.current_daily_goal;
 
   // Adaptive logic
@@ -224,16 +234,16 @@ const unlogHabit = async ({ userId, habitKey, taskName }: { userId: string, habi
 
   if (findError || !task) throw findError || new Error('Task not found');
 
-  // Fetch user_habit data to get dynamic properties
+  // Fetch user_habit data to get dynamic properties, including carryover_value
   const { data: userHabitDataResult, error: userHabitFetchError } = await supabase
     .from('user_habits')
-    .select('id, unit, xp_per_unit, current_daily_goal, completions_in_plateau, last_plateau_start_date')
+    .select('id, unit, xp_per_unit, current_daily_goal, completions_in_plateau, last_plateau_start_date, carryover_value')
     .eq('user_id', userId)
     .eq('habit_key', habitKey)
     .single();
 
   if (!userHabitDataResult || userHabitFetchError) throw userHabitFetchError || new Error(`Habit data not found for key: ${habitKey}`);
-  const userHabitData: Pick<UserHabitRecord, 'id' | 'unit' | 'xp_per_unit' | 'current_daily_goal' | 'completions_in_plateau' | 'last_plateau_start_date'> = userHabitDataResult;
+  const userHabitData: Pick<UserHabitRecord, 'id' | 'unit' | 'xp_per_unit' | 'current_daily_goal' | 'completions_in_plateau' | 'last_plateau_start_date' | 'carryover_value'> = userHabitDataResult;
 
   let lifetimeProgressDecrementValue;
   if (userHabitData.unit === 'min') {
@@ -260,7 +270,7 @@ const unlogHabit = async ({ userId, habitKey, taskName }: { userId: string, habi
     }).eq('id', userId);
   }
 
-  // Decrement completions_in_plateau if unlogging causes goal to be unmet for today
+  // Recalculate carryover_value after unlogging
   const { data: completedTodayAfterUnlog } = await supabase.rpc('get_completed_tasks_today', { 
     p_user_id: userId, p_timezone: timezone 
   });
@@ -270,6 +280,15 @@ const unlogHabit = async ({ userId, habitKey, taskName }: { userId: string, habi
     else if (userHabitData.unit === 'reps' || userHabitData.unit === 'dose') totalDailyProgressAfterUnlog += (t.xp_earned || 0) / (userHabitData.xp_per_unit || 1);
     else totalDailyProgressAfterUnlog += 1;
   });
+
+  const surplusAfterUnlog = totalDailyProgressAfterUnlog - userHabitData.current_daily_goal;
+  const newCarryoverValueAfterUnlog = Math.max(0, surplusAfterUnlog);
+
+  await supabase.from('user_habits').update({
+    carryover_value: newCarryoverValueAfterUnlog,
+  }).eq('id', userHabitData.id);
+
+  // Decrement completions_in_plateau if unlogging causes goal to be unmet for today
   const isGoalMetAfterUnlog = totalDailyProgressAfterUnlog >= userHabitData.current_daily_goal;
 
   if (!isGoalMetAfterUnlog && userHabitData.completions_in_plateau > 0) {

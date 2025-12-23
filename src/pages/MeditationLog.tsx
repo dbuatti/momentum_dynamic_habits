@@ -9,6 +9,8 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { showError } from '@/utils/toast';
 import { playStartSound, playEndSound } from '@/utils/audio';
+import { useDashboardData } from '@/hooks/useDashboardData'; // Import useDashboardData
+import { useMemo } from 'react'; // Import useMemo
 
 interface TimerState {
   timeRemaining: number;
@@ -19,10 +21,17 @@ interface TimerState {
 }
 
 const LOCAL_STORAGE_KEY = 'meditationTimerState';
+const HABIT_KEY = 'meditation';
 
 const MeditationLog = () => {
   const location = useLocation();
-  const initialDurationFromState = location.state?.duration || 1; // Default from dashboard or 1 min
+  const { data: dashboardData, isLoading: isDashboardLoading } = useDashboardData();
+
+  const meditationHabit = useMemo(() => 
+    dashboardData?.habits.find(h => h.key === HABIT_KEY), 
+  [dashboardData]);
+
+  const initialDurationFromState = location.state?.duration || meditationHabit?.adjustedDailyGoal || 1; // Default from dashboard or 1 min
   const [selectedDuration, setSelectedDuration] = useState<number>(initialDurationFromState);
   const initialTimeInSeconds = selectedDuration * 60;
 
@@ -233,6 +242,14 @@ const MeditationLog = () => {
     logButtonText = `Log ${durationToLogMinutes} min session`;
   } else {
     logButtonText = `Log ${selectedDuration} min session`;
+  }
+
+  if (isDashboardLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+      </div>
+    );
   }
 
   return (

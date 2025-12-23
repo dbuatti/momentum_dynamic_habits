@@ -75,12 +75,12 @@ const Index = () => {
     return data.habits
       .filter(habit => habit.is_visible) // Filter by is_visible
       .map(habit => {
-      const goal = habit.dailyGoal;
+      const goal = habit.adjustedDailyGoal; // Use adjustedDailyGoal for display and chunking
       const progress = habit.dailyProgress;
       
       const { numChunks, chunkValue } = calculateDynamicChunks(
         habit.key,
-        goal,
+        goal, // Pass adjustedDailyGoal to chunk calculation
         habit.unit,
         data.neurodivergentMode,
         habit.auto_chunking,
@@ -109,7 +109,7 @@ const Index = () => {
       return {
         ...habit,
         capsules,
-        allCompleted: progress >= goal,
+        allCompleted: progress >= goal, // Check against adjusted goal
         numChunks,
         // isLockedByDependency is already calculated in useDashboardData
       };
@@ -136,8 +136,8 @@ const Index = () => {
       if (a.category !== 'anchor' && b.category === 'anchor') return 1;
 
       // 4. Progress
-      const aProgressRatio = a.dailyGoal > 0 ? a.dailyProgress / a.dailyGoal : 0;
-      const bProgressRatio = b.dailyGoal > 0 ? b.dailyProgress / b.dailyGoal : 0;
+      const aProgressRatio = a.adjustedDailyGoal > 0 ? a.dailyProgress / a.adjustedDailyGoal : 0; // Use adjustedDailyGoal
+      const bProgressRatio = b.adjustedDailyGoal > 0 ? b.dailyProgress / b.adjustedDailyGoal : 0; // Use adjustedDailyGoal
       if (aProgressRatio !== bProgressRatio) {
         return aProgressRatio - bProgressRatio;
       }
@@ -268,7 +268,7 @@ const Index = () => {
                 </div>
                 
                 <div className="hidden sm:flex flex-col items-end text-right">
-                    <p className="text-xl font-black">{habit.dailyProgress}/{habit.dailyGoal}</p>
+                    <p className="text-xl font-black">{habit.dailyProgress}/{habit.adjustedDailyGoal}</p> {/* Use adjustedDailyGoal */}
                     <p className="text-[10px] font-bold uppercase opacity-60 tracking-widest">{habit.unit} session</p>
                 </div>
             </div>
@@ -298,7 +298,12 @@ const Index = () => {
                     </p>
                     <div className="flex items-center gap-2">
                         <Target className="w-3.5 h-3.5 opacity-40" />
-                        <p className="text-sm font-black">{habit.dailyGoal} {habit.unit}</p>
+                        <p className="text-sm font-black">
+                          {habit.dailyGoal} {habit.unit}
+                          {habit.carryoverValue > 0 && (
+                            <span className="ml-1 text-[10px] font-bold text-green-600"> (+{habit.carryoverValue} carryover)</span>
+                          )}
+                        </p>
                     </div>
                 </div>
                 <div className="space-y-1">

@@ -53,6 +53,7 @@ export interface UserHabitRecord {
   is_visible: boolean;
   dependent_on_habit_id: string | null;
   anchor_practice: boolean; // New: indicates if this is an anchor practice
+  carryover_value: number; // New: carryover from previous day's surplus
 }
 
 export interface PianoHabit extends Habit {

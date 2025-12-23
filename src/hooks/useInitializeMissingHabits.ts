@@ -145,6 +145,7 @@ const initializeSelectedHabits = async (userId: string, params: OnboardingHabitP
       is_visible: true,
       dependent_on_habit_id: null,
       anchor_practice: template.anchorPractice, // Set anchor_practice from template
+      carryover_value: 0, // Initialize carryover_value
     };
   });
 
@@ -184,6 +185,7 @@ const initializeSelectedHabits = async (userId: string, params: OnboardingHabitP
     is_visible: true,
     dependent_on_habit_id: null,
     anchor_practice: template.anchorPractice,
+    carryover_value: 0, // Initialize carryover_value
   }));
 
   const finalHabitsToUpsert = [...habitsToUpsert, ...fixedHabitsToAdd];

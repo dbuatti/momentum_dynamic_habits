@@ -10,14 +10,16 @@ interface HabitDetailCardProps {
   icon: React.ReactNode;
   title: string;
   momentum: string;
-  goal: string;
+  goal: string; // This is the base daily goal
+  adjustedDailyGoal: number; // New: daily goal including carryover
+  carryoverValue: number; // New: carryover value
   progressText: string;
   progressValue: number;
   color: 'orange' | 'blue' | 'green' | 'purple' | 'red' | 'indigo';
   isComplete: boolean;
   daysCompletedLast7Days: number; // This is now `completions_in_plateau`
   habitKey: string;
-  dailyGoal: number;
+  dailyGoal: number; // This is the base daily goal
   onCheck: () => void;
   isFrozen?: boolean;
   isFixed?: boolean;
@@ -27,7 +29,7 @@ interface HabitDetailCardProps {
 }
 
 export const HabitDetailCard: React.FC<HabitDetailCardProps> = ({ 
-  icon, title, momentum, goal, progressText, progressValue, color, 
+  icon, title, momentum, goal, adjustedDailyGoal, carryoverValue, progressText, progressValue, color, 
   isComplete, daysCompletedLast7Days, habitKey, dailyGoal, onCheck,
   isFrozen, isFixed, neurodivergentMode, plateauDaysRequired
 }) => {
@@ -63,7 +65,10 @@ export const HabitDetailCard: React.FC<HabitDetailCardProps> = ({
                 {isFixed && <Lock className="w-3.5 h-3.5 text-muted-foreground ml-2" />}
               </h4>
               <p className="text-sm text-muted-foreground text-left">
-                {isFixed ? `Fixed Goal: ${goal}` : goal}
+                {isFixed ? `Fixed Goal: ${goal}` : `${adjustedDailyGoal} ${progressText.split('/')[1].trim()}`}
+                {carryoverValue > 0 && (
+                  <span className="ml-1 text-xs font-bold text-green-600"> (+{carryoverValue} carryover)</span>
+                )}
               </p>
             </div>
           </div>

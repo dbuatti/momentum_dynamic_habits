@@ -20,9 +20,11 @@ const PushupLog = () => {
     dashboardData?.habits.find(h => h.key === 'pushups'), 
   [dashboardData]);
 
-  const dailyGoal = pushupHabit?.dailyGoal || 1;
+  const dailyGoal = pushupHabit?.dailyGoal || 1; // Base daily goal
+  const adjustedDailyGoal = pushupHabit?.adjustedDailyGoal || dailyGoal; // Adjusted goal with carryover
+  const carryoverValue = pushupHabit?.carryoverValue || 0; // Carryover value
   const alreadyCompletedToday = pushupHabit?.dailyProgress || 0;
-  const remainingGoal = Math.max(0, dailyGoal - alreadyCompletedToday);
+  const remainingGoal = Math.max(0, adjustedDailyGoal - alreadyCompletedToday);
   
   // Logic for suggested sets
   const suggestedSets = useMemo(() => {
@@ -48,7 +50,7 @@ const PushupLog = () => {
   const handleSetLogged = (reps: number) => {
     setSetsLogged(prev => [...prev, reps]);
     setTotalCount(prev => prev + reps);
-    if (totalCount + reps < dailyGoal) {
+    if (totalCount + reps < adjustedDailyGoal) { // Check against adjustedDailyGoal
       setShowRestTimer(true);
     }
   };
@@ -80,7 +82,12 @@ const PushupLog = () => {
             <div className="flex justify-between items-end mb-3">
               <div>
                 <p className="text-sm font-semibold text-orange-600 uppercase tracking-wider">Today's Goal</p>
-                <h3 className="text-3xl font-black text-orange-700">{dailyGoal} <span className="text-lg font-normal">reps</span></h3>
+                <h3 className="text-3xl font-black text-orange-700">
+                  {adjustedDailyGoal} <span className="text-lg font-normal">reps</span>
+                  {carryoverValue > 0 && (
+                    <span className="ml-1 text-base font-bold text-green-600"> (+{carryoverValue})</span>
+                  )}
+                </h3>
               </div>
               <div className="text-right">
                 <p className="text-xs text-muted-foreground font-medium mb-1">Status</p>
@@ -97,11 +104,11 @@ const PushupLog = () => {
             
             <div className="space-y-2">
               <div className="flex justify-between text-xs font-medium">
-                <span>{Math.round(alreadyCompletedToday + totalCount)} / {dailyGoal} completed</span>
-                <span>{Math.round(Math.max(0, dailyGoal - (alreadyCompletedToday + totalCount)))} left</span>
+                <span>{Math.round(alreadyCompletedToday + totalCount)} / {adjustedDailyGoal} completed</span>
+                <span>{Math.round(Math.max(0, adjustedDailyGoal - (alreadyCompletedToday + totalCount)))} left</span>
               </div>
               <Progress 
-                value={((alreadyCompletedToday + totalCount) / dailyGoal) * 100} 
+                value={((alreadyCompletedToday + totalCount) / adjustedDailyGoal) * 100} 
                 className="h-2.5 [&>div]:bg-orange-500" 
               />
             </div>
@@ -149,7 +156,7 @@ const PushupLog = () => {
         </Card>
 
         {/* Set Grouping Suggestion */}
-        {dailyGoal > 5 && (
+        {adjustedDailyGoal > 5 && ( // Use adjustedDailyGoal for suggestion
           <div className="space-y-3">
             <h4 className="text-sm font-bold text-muted-foreground uppercase tracking-widest px-1">Suggested Sets</h4>
             <div className="flex flex-wrap gap-2">

@@ -7,7 +7,9 @@ interface Habit {
   key: string;
   name: string;
   dailyProgress: number;
-  dailyGoal: number;
+  dailyGoal: number; // This is the base daily goal
+  adjustedDailyGoal: number; // New: daily goal including carryover
+  carryoverValue: number; // New: carryover value
   unit: string;
 }
 
@@ -37,8 +39,8 @@ export const TodaysProgressCard: React.FC<TodaysProgressCardProps> = ({ habits }
       <CardContent className="p-5 pt-0 space-y-4">
         {habits.map((habit) => {
           const progressColorClass = habitColorMap[habit.key] || 'primary';
-          const progressValue = (habit.dailyProgress / habit.dailyGoal) * 100;
-          const isComplete = habit.dailyProgress >= habit.dailyGoal;
+          const progressValue = (habit.dailyProgress / habit.adjustedDailyGoal) * 100; // Use adjustedDailyGoal
+          const isComplete = habit.dailyProgress >= habit.adjustedDailyGoal; // Check against adjustedDailyGoal
           
           return (
             <div key={habit.key} className="space-y-2.5">
@@ -51,7 +53,10 @@ export const TodaysProgressCard: React.FC<TodaysProgressCardProps> = ({ habits }
                   "font-medium",
                   isComplete ? "text-green-600" : "text-foreground"
                 )}>
-                  {Math.round(habit.dailyProgress)}/{habit.dailyGoal} {habit.unit}
+                  {Math.round(habit.dailyProgress)}/{habit.adjustedDailyGoal} {habit.unit}
+                  {habit.carryoverValue > 0 && (
+                    <span className="ml-1 text-xs font-bold text-green-600"> (+{habit.carryoverValue})</span>
+                  )}
                 </span>
               </div>
               <Progress 

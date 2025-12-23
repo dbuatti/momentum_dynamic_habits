@@ -27,7 +27,7 @@ const fetchDashboardData = async (userId: string) => {
     { data: bestTime, error: bestTimeError },
     { data: randomTip, error: randomTipError },
   ] = await Promise.all([
-    supabase.from('user_habits').select('*, dependent_on_habit_id, anchor_practice').eq('user_id', userId), // Fetch dependent_on_habit_id and anchor_practice
+    supabase.from('user_habits').select('*, dependent_on_habit_id, anchor_practice, carryover_value').eq('user_id', userId), // Fetch dependent_on_habit_id, anchor_practice, and carryover_value
     supabase.rpc('get_completed_tasks_today', { p_user_id: userId, p_timezone: timezone }),
     supabase.from('completedtasks').select('original_source, duration_used, xp_earned, completed_at').eq('user_id', userId).gte('completed_at', startOfWeek(today).toISOString()).lte('completed_at', endOfWeek(today).toISOString()),
     supabase.from('completedtasks').select('original_source, duration_used, xp_earned').eq('user_id', userId).gte('completed_at', startOfWeek(subWeeks(today, 1)).toISOString()).lte('completed_at', endOfWeek(subWeeks(today, 1)).toISOString()),
@@ -74,7 +74,9 @@ const fetchDashboardData = async (userId: string) => {
     .map(h => {
     const initialHabit = initialHabitsMap.get(h.habit_key);
     const dailyProgress = dailyProgressMap.get(h.habit_key) || 0;
-    const dailyGoal = h.current_daily_goal;
+    
+    // Apply carryover to the daily goal for display and chunking
+    const adjustedDailyGoal = h.current_daily_goal + (h.carryover_value || 0);
     
     const isScheduledForToday = h.days_of_week ? h.days_of_week.includes(currentDayOfWeek) : true;
 
@@ -104,9 +106,11 @@ const fetchDashboardData = async (userId: string) => {
       id: h.id, // Explicitly include id
       key: h.habit_key,
       name: h.name || initialHabit?.name || h.habit_key.charAt(0).toUpperCase() + h.habit_key.slice(1), // Use name from DB
-      dailyGoal, 
+      dailyGoal: h.current_daily_goal, // Keep original daily goal for surplus calculation
+      adjustedDailyGoal: adjustedDailyGoal, // New: daily goal including carryover
+      carryoverValue: h.carryover_value || 0, // New: carryover value
       dailyProgress, 
-      isComplete: dailyProgress >= dailyGoal,
+      isComplete: dailyProgress >= adjustedDailyGoal, // Check against adjusted goal
       momentum: h.momentum_level, 
       longTermGoal: h.long_term_goal,
       lifetimeProgress: h.unit === 'min' ? Math.round((h.lifetime_progress || 0) / 60) : (h.lifetime_progress || 0), // Use unit from DB
@@ -119,7 +123,7 @@ const fetchDashboardData = async (userId: string) => {
       is_trial_mode: h.is_trial_mode,
       frequency_per_week: h.frequency_per_week,
       weekly_completions: weeklyCompletions,
-      weekly_goal: dailyGoal * h.frequency_per_week,
+      weekly_goal: h.current_daily_goal * h.frequency_per_week, // Weekly goal based on base daily goal
       is_visible: h.is_visible,
       isScheduledForToday: isScheduledForToday,
       isWithinWindow,

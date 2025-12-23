@@ -58,6 +58,7 @@ interface AnalyticsData {
   };
   latestReflection: Reflection | null;
   reflectionPrompt: string;
+  bestTime: string; // Added bestTime
 }
 
 const fetchAnalyticsData = async (userId: string): Promise<AnalyticsData> => {
@@ -70,16 +71,18 @@ const fetchAnalyticsData = async (userId: string): Promise<AnalyticsData> => {
     { data: completedTasks, error: completedTasksError },
     { data: habitCapsules, error: habitCapsulesError },
     { data: reflections, error: reflectionsError },
+    { data: bestTime, error: bestTimeError }, // Fetch bestTime
   ] = await Promise.all([
     supabase.from('profiles').select('neurodivergent_mode, timezone, first_name, last_name, daily_streak').eq('id', userId).single(),
     supabase.from('user_habits').select('*, dependent_on_habit_id, anchor_practice').eq('user_id', userId),
     supabase.from('completedtasks').select('*').eq('user_id', userId).gte('completed_at', eightWeeksAgo.toISOString()),
     supabase.from('habit_capsules').select('*').eq('user_id', userId).gte('created_at', format(eightWeeksAgo, 'yyyy-MM-dd')),
     supabase.from('reflections').select('*').eq('user_id', userId).order('reflection_date', { ascending: false }).limit(1),
+    supabase.rpc('get_best_time', { p_user_id: userId }), // Fetch bestTime
   ]);
 
-  if (profileError || userHabitsError || completedTasksError || habitCapsulesError || reflectionsError) {
-    console.error('Error fetching analytics data:', profileError || userHabitsError || completedTasksError || habitCapsulesError || reflectionsError);
+  if (profileError || userHabitsError || completedTasksError || habitCapsulesError || reflectionsError || bestTimeError) {
+    console.error('Error fetching analytics data:', profileError || userHabitsError || completedTasksError || habitCapsulesError || reflectionsError || bestTimeError);
     throw new Error('Failed to fetch analytics data');
   }
 
@@ -239,6 +242,7 @@ const fetchAnalyticsData = async (userId: string): Promise<AnalyticsData> => {
     overallWeeklySummary,
     latestReflection,
     reflectionPrompt,
+    bestTime: bestTime || '—', // Include bestTime
   };
 };
 

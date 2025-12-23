@@ -6,6 +6,8 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { showError } from '@/utils/toast';
 import { playStartSound, playEndSound } from '@/utils/audio';
+import { useDashboardData } from '@/hooks/useDashboardData'; // Import useDashboardData
+import { useMemo } from 'react'; // Import useMemo
 
 interface TimerState {
   timeRemaining: number;
@@ -16,10 +18,18 @@ interface TimerState {
 
 const HABIT_KEY = 'teeth_brushing';
 const FIXED_DURATION_MINUTES = 2;
-const INITIAL_TIME_IN_SECONDS = FIXED_DURATION_MINUTES * 60;
 const LOCAL_STORAGE_KEY = 'teethBrushingTimerState';
 
 const TeethBrushingLog = () => {
+  const { data: dashboardData, isLoading: isDashboardLoading } = useDashboardData();
+
+  const teethBrushingHabit = useMemo(() => 
+    dashboardData?.habits.find(h => h.key === HABIT_KEY), 
+  [dashboardData]);
+
+  const adjustedDailyGoal = teethBrushingHabit?.adjustedDailyGoal || FIXED_DURATION_MINUTES;
+  const initialTimeInSeconds = adjustedDailyGoal * 60;
+
   // Initialize state from localStorage or defaults
   const getInitialState = useCallback((): TimerState => {
     if (typeof window !== 'undefined') {
@@ -60,12 +70,12 @@ const TeethBrushingLog = () => {
     }
     
     return {
-      timeRemaining: INITIAL_TIME_IN_SECONDS,
+      timeRemaining: initialTimeInSeconds,
       isActive: false,
       isFinished: false,
       startTime: null,
     };
-  }, []);
+  }, [initialTimeInSeconds]);
 
   const [timerState, setTimerState] = useState<TimerState>(getInitialState());
   const { timeRemaining, isActive, isFinished } = timerState;
@@ -154,7 +164,7 @@ const TeethBrushingLog = () => {
   const handleReset = () => {
     if (intervalRef.current) clearInterval(intervalRef.current);
     setTimerState({
-      timeRemaining: INITIAL_TIME_IN_SECONDS,
+      timeRemaining: initialTimeInSeconds,
       isActive: false,
       isFinished: false,
       startTime: null,
@@ -162,7 +172,7 @@ const TeethBrushingLog = () => {
     localStorage.removeItem(LOCAL_STORAGE_KEY);
   };
 
-  const durationSpentSeconds = INITIAL_TIME_IN_SECONDS - timeRemaining;
+  const durationSpentSeconds = initialTimeInSeconds - timeRemaining;
   const durationToLogMinutes = Math.floor(durationSpentSeconds / 60);
 
   const handleLogSession = () => {
@@ -174,13 +184,13 @@ const TeethBrushingLog = () => {
     let minutesToLog = 0;
     
     if (isFinished) {
-      minutesToLog = FIXED_DURATION_MINUTES;
+      minutesToLog = adjustedDailyGoal; // Log the adjusted daily goal
     } else if (durationToLogMinutes > 0) {
       minutesToLog = durationToLogMinutes;
     } else {
       // Timer is not active, not finished, and no time spent yet.
       // Log the full fixed duration, assuming manual completion.
-      minutesToLog = FIXED_DURATION_MINUTES;
+      minutesToLog = adjustedDailyGoal; // Log the adjusted daily goal
     }
     
     if (minutesToLog > 0) {
@@ -202,11 +212,19 @@ const TeethBrushingLog = () => {
   
   let logButtonText;
   if (isFinished) {
-    logButtonText = `Log ${FIXED_DURATION_MINUTES} minute session`;
+    logButtonText = `Log ${adjustedDailyGoal} minute session`;
   } else if (durationToLogMinutes > 0) {
     logButtonText = `Log ${durationToLogMinutes} min session`;
   } else {
-    logButtonText = `Log ${FIXED_DURATION_MINUTES} min session`;
+    logButtonText = `Log ${adjustedDailyGoal} min session`;
+  }
+
+  if (isDashboardLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+      </div>
+    );
   }
 
   return (
@@ -242,7 +260,7 @@ const TeethBrushingLog = () => {
                     )}
                   </Button>
                   
-                  {(isActive || isFinished || timeRemaining < INITIAL_TIME_IN_SECONDS) && (
+                  {(isActive || isFinished || timeRemaining < initialTimeInSeconds) && (
                     <Button 
                       size="icon" 
                       variant="outline" 

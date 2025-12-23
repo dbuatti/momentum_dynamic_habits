@@ -110,6 +110,7 @@ const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: s
     is_visible: true,
     dependent_on_habit_id: dependent_on_habit_id,
     anchor_practice: anchor_practice,
+    carryover_value: 0, // Initialize carryover_value
   };
 
   const { error } = await supabase.from('user_habits').insert(habitToInsert);
@@ -820,7 +821,7 @@ const CreateHabit = () => {
                       setIsFixed(mode.value === 'Fixed');
                     }}
                     className={cn(
-                      "flex items-start gap-4 p-4 rounded-2xl border-2 text-left transition-all",
+                      "flex items-start gap-4 p-4 rounded-2xl border-2 text-left w-full transition-all",
                       (isTrialMode && mode.value === 'Trial') || (isFixed && mode.value === 'Fixed') || (!isTrialMode && !isFixed && mode.value === 'Growth')
                         ? "border-primary bg-primary/[0.02] shadow-sm"
                         : "border-transparent bg-muted/30 opacity-60 hover:opacity-100"

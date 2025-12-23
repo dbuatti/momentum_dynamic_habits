@@ -8,6 +8,8 @@ import { Label } from '@/components/ui/label';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { showError } from '@/utils/toast';
+import { useDashboardData } from '@/hooks/useDashboardData'; // Import useDashboardData
+import { useMemo } from 'react'; // Import useMemo
 
 interface TimerState {
   timeRemaining: number;
@@ -18,10 +20,17 @@ interface TimerState {
 }
 
 const LOCAL_STORAGE_KEY = 'projectworkTimerState';
+const HABIT_KEY = 'projectwork';
 
 const ProjectWorkLog = () => {
   const location = useLocation();
-  const initialDurationFromState = location.state?.duration || 60; // Default 60 min
+  const { data: dashboardData, isLoading: isDashboardLoading } = useDashboardData();
+
+  const projectWorkHabit = useMemo(() => 
+    dashboardData?.habits.find(h => h.key === HABIT_KEY), 
+  [dashboardData]);
+
+  const initialDurationFromState = location.state?.duration || projectWorkHabit?.adjustedDailyGoal || 60; // Default from dashboard or 60 min
   const [selectedDuration, setSelectedDuration] = useState<number>(initialDurationFromState);
   const initialTimeInSeconds = selectedDuration * 60;
   const { mutate: logHabit, isPending } = useHabitLog();
@@ -221,6 +230,14 @@ const ProjectWorkLog = () => {
     logButtonText = `Log ${durationToLogMinutes} min session`;
   } else {
     logButtonText = `Log ${selectedDuration} min session`;
+  }
+
+  if (isDashboardLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
+      </div>
+    );
   }
 
   return (

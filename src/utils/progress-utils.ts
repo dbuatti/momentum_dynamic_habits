@@ -8,7 +8,7 @@ import { Habit } from '@/types/habit';
  */
 export const calculateDynamicChunks = (
   habitKey: string, 
-  goal: number, 
+  goal: number, // This should be the adjustedDailyGoal
   unit: string, 
   isNeurodivergent: boolean,
   autoChunking: boolean,
@@ -57,9 +57,10 @@ export const calculateDailyParts = (habits: any[], isNeurodivergent: boolean) =>
   let completedParts = 0;
 
   habits.forEach(habit => {
+    // Use adjustedDailyGoal for chunk calculation
     const { numChunks, chunkValue } = calculateDynamicChunks(
       habit.key,
-      habit.dailyGoal,
+      habit.adjustedDailyGoal, // Use adjustedDailyGoal here
       habit.unit,
       isNeurodivergent,
       habit.auto_chunking,
@@ -73,8 +74,8 @@ export const calculateDailyParts = (habits: any[], isNeurodivergent: boolean) =>
     for (let i = 0; i < numChunks; i++) {
       const cumulativeNeeded = (i + 1) * chunkValue;
       const isLast = i === numChunks - 1;
-      // Ensure we check against the actual goal for the last capsule to handle rounding
-      if (habit.dailyProgress >= (isLast ? habit.dailyGoal : cumulativeNeeded)) {
+      // Ensure we check against the actual adjusted goal for the last capsule to handle rounding
+      if (habit.dailyProgress >= (isLast ? habit.adjustedDailyGoal : cumulativeNeeded)) {
         completedParts++;
       }
     }
