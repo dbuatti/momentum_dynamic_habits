@@ -12,16 +12,18 @@ import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { 
   Target, Anchor, Brain, Clock, Layers,
-  Plus, Loader2, Info, X, LayoutTemplate, Zap
+  Plus, Loader2, Info, X, LayoutTemplate, Zap,
+  Percent, Hash
 } from 'lucide-react';
 import { habitCategories, habitUnits, habitModes, habitIcons, habitMeasurementTypes, HabitTemplate } from '@/lib/habit-templates';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { showError, showSuccess } from '@/utils/toast';
-import { UserHabitRecord, HabitCategory as HabitCategoryType, MeasurementType } from '@/types/habit';
+import { UserHabitRecord, HabitCategory as HabitCategoryType, MeasurementType, GrowthType } from '@/types/habit';
 import { useJourneyData } from '@/hooks/useJourneyData';
 import { useCreateTemplate, CreateTemplateParams } from '@/hooks/useCreateTemplate';
+import { CreateHabitParams } from '@/pages/HabitWizard';
 
 interface NewHabitModalProps {
   isOpen: boolean;
@@ -30,35 +32,18 @@ interface NewHabitModalProps {
   isTemplateMode?: boolean;
 }
 
-export interface CreateHabitParams {
-  name: string;
-  habit_key: string;
-  category: HabitCategoryType;
-  current_daily_goal: number;
-  frequency_per_week: number;
-  is_trial_mode: boolean;
-  is_fixed: boolean;
-  anchor_practice: boolean;
-  auto_chunking: boolean;
-  unit: 'min' | 'reps' | 'dose';
-  measurement_type: MeasurementType; // Added
-  xp_per_unit: number;
-  energy_cost_per_unit: number;
-  icon_name: string;
-  dependent_on_habit_id: string | null;
-  plateau_days_required: number;
-  window_start: string | null;
-  window_end: string | null;
-  carryover_enabled: boolean;
-  short_description?: string;
-}
-
 const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: string; habit: CreateHabitParams; neurodivergentMode: boolean }) => {
   const today = new Date();
   const oneYearFromNow = new Date(today.setFullYear(today.getFullYear() + 1));
   const oneYearDateString = oneYearFromNow.toISOString().split('T')[0];
 
-  const { name, habit_key, category, current_daily_goal, frequency_per_week, is_trial_mode, is_fixed, anchor_practice, auto_chunking, unit, measurement_type, xp_per_unit, energy_cost_per_unit, icon_name, dependent_on_habit_id, window_start, window_end, carryover_enabled } = habit;
+  const { 
+    name, habit_key, category, current_daily_goal, frequency_per_week, 
+    is_trial_mode, is_fixed, anchor_practice, auto_chunking, unit, 
+    measurement_type, xp_per_unit, energy_cost_per_unit, icon_name, 
+    dependent_on_habit_id, window_start, window_end, carryover_enabled,
+    growth_type, growth_value 
+  } = habit;
 
   let calculatedPlateauDays = habit.plateau_days_required;
   if (is_trial_mode) {
@@ -77,43 +62,31 @@ const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: s
     chunkDuration = Number((current_daily_goal / numChunks).toFixed(1));
   }
 
-  const roundedCurrentDailyGoal = Math.round(current_daily_goal);
-  const roundedFrequencyPerWeek = Math.round(frequency_per_week);
-  const roundedXpPerUnit = Math.round(xp_per_unit);
-  const roundedPlateauDaysRequired = Math.round(calculatedPlateauDays);
-  const roundedLongTermGoal = Math.round(current_daily_goal * (unit === 'min' ? 365 * 60 : 365));
-  const roundedNumChunks = Math.round(numChunks);
-  const roundedLifetimeProgress = Math.round(0);
-
-  const finalDependentOnHabitId = dependent_on_habit_id === '' ? null : dependent_on_habit_id;
-  const finalWindowStart = window_start === 'none' ? null : window_start;
-  const finalWindowEnd = window_end === 'none' ? null : window_end;
-
   const { error } = await supabase.rpc('upsert_user_habit', {
     p_user_id: userId,
     p_habit_key: habit_key,
     p_name: name,
     p_category: category,
-    p_current_daily_goal: roundedCurrentDailyGoal,
-    p_frequency_per_week: roundedFrequencyPerWeek,
+    p_current_daily_goal: Math.round(current_daily_goal),
+    p_frequency_per_week: Math.round(frequency_per_week),
     p_is_trial_mode: is_trial_mode,
     p_is_fixed: is_fixed,
     p_anchor_practice: anchor_practice,
     p_auto_chunking: auto_chunking,
     p_unit: unit,
-    p_measurement_type: measurement_type, // Added
-    p_xp_per_unit: roundedXpPerUnit,
+    p_measurement_type: measurement_type,
+    p_xp_per_unit: Math.round(xp_per_unit),
     p_energy_cost_per_unit: energy_cost_per_unit,
     p_icon_name: icon_name,
-    p_dependent_on_habit_id: finalDependentOnHabitId,
-    p_plateau_days_required: roundedPlateauDaysRequired,
-    p_window_start: finalWindowStart,
-    p_window_end: finalWindowEnd,
+    p_dependent_on_habit_id: dependent_on_habit_id === '' ? null : dependent_on_habit_id,
+    p_plateau_days_required: Math.round(calculatedPlateauDays),
+    p_window_start: window_start === 'none' ? null : window_start,
+    p_window_end: window_end === 'none' ? null : window_end,
     p_carryover_enabled: carryover_enabled,
-    p_long_term_goal: roundedLongTermGoal,
+    p_long_term_goal: Math.round(current_daily_goal * (unit === 'min' ? 365 * 60 : 365)),
     p_target_completion_date: oneYearDateString,
     p_momentum_level: 'Building',
-    p_lifetime_progress: roundedLifetimeProgress,
+    p_lifetime_progress: 0,
     p_last_goal_increase_date: today.toISOString().split('T')[0],
     p_is_frozen: false,
     p_max_goal_cap: null,
@@ -122,16 +95,16 @@ const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: s
     p_growth_phase: 'duration',
     p_days_of_week: [0, 1, 2, 3, 4, 5, 6],
     p_enable_chunks: auto_chunking,
-    p_num_chunks: roundedNumChunks,
+    p_num_chunks: Math.round(numChunks),
     p_chunk_duration: chunkDuration,
     p_is_visible: true,
+    p_growth_type: growth_type,
+    p_growth_value: growth_value
   });
 
   if (error) throw error;
   return { success: true };
 };
-
-const timeOptions = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0') + ':00');
 
 export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, templateToPreFill, isTemplateMode = false }) => {
   const { session } = useSession();
@@ -149,7 +122,7 @@ export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, t
   const [isAnchorPractice, setIsAnchorPractice] = useState(false);
   const [autoChunking, setAutoChunking] = useState(true);
   const [unit, setUnit] = useState<'min' | 'reps' | 'dose'>('min');
-  const [measurementType, setMeasurementType] = useState<MeasurementType>('timer'); // New state
+  const [measurementType, setMeasurementType] = useState<MeasurementType>('timer');
   const [xpPerUnit, setXpPerUnit] = useState(30);
   const [energyCostPerUnit, setEnergyCostPerUnit] = useState(6);
   const [selectedIconName, setSelectedIconName] = useState<string>('Target');
@@ -159,6 +132,8 @@ export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, t
   const [windowEnd, setWindowEnd] = useState<string | null>(null);
   const [carryoverEnabled, setCarryoverEnabled] = useState(false);
   const [shortDescription, setShortDescription] = useState('');
+  const [growthType, setGrowthType] = useState<GrowthType>('percentage');
+  const [growthValue, setGrowthValue] = useState(10);
 
   useEffect(() => {
     if (templateToPreFill) {
@@ -178,6 +153,14 @@ export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, t
       setSelectedIconName(templateToPreFill.icon_name);
       setPlateauDaysRequired(templateToPreFill.plateauDaysRequired);
       setShortDescription(templateToPreFill.shortDescription || '');
+      
+      if (templateToPreFill.unit === 'min') {
+        setGrowthType('percentage');
+        setGrowthValue(neurodivergentMode ? 10 : 20);
+      } else {
+        setGrowthType('fixed');
+        setGrowthValue(neurodivergentMode ? 1 : 2);
+      }
     } else {
       setHabitName('');
       setHabitKey('');
@@ -199,15 +182,28 @@ export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, t
       setWindowEnd(null);
       setCarryoverEnabled(false);
       setShortDescription('');
+      setGrowthType('percentage');
+      setGrowthValue(10);
     }
-  }, [templateToPreFill, isOpen]);
+  }, [templateToPreFill, isOpen, neurodivergentMode]);
 
-  useEffect(() => {
-    if (!templateToPreFill && habitName) {
-      const key = habitName.toLowerCase().replace(/\s/g, '_').replace(/[^a-z0-9_]/g, '');
-      setHabitKey(key);
+  const handleUnitChange = (newUnit: 'min' | 'reps' | 'dose') => {
+    setUnit(newUnit);
+    if (newUnit === 'min') {
+      setGrowthType('percentage');
+      setGrowthValue(neurodivergentMode ? 10 : 20);
+      setMeasurementType('timer');
+    } else if (newUnit === 'reps') {
+      setGrowthType('fixed');
+      setGrowthValue(neurodivergentMode ? 1 : 3);
+      setMeasurementType('unit');
+    } else {
+      setGrowthType('fixed');
+      setGrowthValue(0);
+      setMeasurementType('binary');
+      setDailyGoal(1);
     }
-  }, [habitName, templateToPreFill]);
+  };
 
   const createHabitMutation = useMutation({
     mutationFn: (habit: CreateHabitParams) => {
@@ -236,7 +232,7 @@ export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, t
       anchor_practice: isAnchorPractice,
       auto_chunking: autoChunking,
       unit,
-      measurement_type: measurementType, // Added
+      measurement_type: measurementType,
       xp_per_unit: xpPerUnit,
       energy_cost_per_unit: energyCostPerUnit,
       icon_name: selectedIconName,
@@ -246,28 +242,20 @@ export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, t
       window_end: windowEnd,
       carryover_enabled: carryoverEnabled,
       short_description: shortDescription,
+      growth_type: growthType,
+      growth_value: growthValue
     };
 
     if (isTemplateMode) {
       createTemplateMutation.mutate({
+        ...habitData,
         id: habitData.habit_key,
-        name: habitData.name,
-        category: habitData.category,
         default_frequency: habitData.frequency_per_week,
         default_duration: habitData.current_daily_goal,
         default_mode: habitData.is_fixed ? 'Fixed' : (habitData.is_trial_mode ? 'Trial' : 'Growth'),
         default_chunks: 1,
-        auto_chunking: habitData.auto_chunking,
-        anchor_practice: habitData.anchor_practice,
-        unit: habitData.unit,
-        measurement_type: habitData.measurement_type, // Added
-        xp_per_unit: habitData.xp_per_unit,
-        energy_cost_per_unit: habitData.energy_cost_per_unit,
-        icon_name: habitData.icon_name,
-        plateau_days_required: habitData.plateau_days_required,
-        short_description: habitData.short_description || '',
         is_public: true,
-      });
+      } as any);
     } else {
       createHabitMutation.mutate(habitData);
     }
@@ -284,7 +272,7 @@ export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, t
               </div>
               <div>
                 <DialogTitle className="text-xl font-bold">{isTemplateMode ? 'Contribute Template' : 'Create Habit'}</DialogTitle>
-                <DialogDescription className="text-sm text-muted-foreground">Explicitly define how you measure success.</DialogDescription>
+                <DialogDescription className="text-sm text-muted-foreground">Define how your habit evolves.</DialogDescription>
               </div>
             </div>
             <Button variant="ghost" size="icon" className="rounded-full" onClick={onClose}><X className="w-5 h-5" /></Button>
@@ -300,50 +288,78 @@ export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, t
                 <Input id="habitName" value={habitName} onChange={(e) => setHabitName(e.target.value)} required className="h-12 rounded-xl" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="habitKey">Unique ID *</Label>
-                <Input id="habitKey" value={habitKey} onChange={(e) => setHabitKey(e.target.value)} required className="h-12 rounded-xl" />
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <Label>Measurement Mode</Label>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                {habitMeasurementTypes.map((m) => (
-                  <button
-                    key={m.value}
-                    type="button"
-                    onClick={() => setMeasurementType(m.value)}
-                    className={cn(
-                      "p-4 rounded-2xl border-2 text-left transition-all",
-                      measurementType === m.value ? "border-primary bg-primary/5" : "border-transparent bg-muted/30"
-                    )}
-                  >
-                    <p className="text-xs font-black uppercase">{m.label}</p>
-                    <p className="text-[10px] text-muted-foreground mt-1 leading-tight">{m.description}</p>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
                 <Label htmlFor="unit">Unit</Label>
-                <Select value={unit} onValueChange={(v: 'min' | 'reps' | 'dose') => setUnit(v)}>
+                <Select value={unit} onValueChange={(v: any) => handleUnitChange(v)}>
                   <SelectTrigger className="h-12 rounded-xl"><SelectValue /></SelectTrigger>
                   <SelectContent>{habitUnits.map(u => <SelectItem key={u.value} value={u.value}>{u.label}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+               <div className="space-y-2">
                 <Label htmlFor="dailyGoal">Daily Goal *</Label>
                 <Input type="number" value={dailyGoal} onChange={(e) => setDailyGoal(Number(e.target.value))} required className="h-12 rounded-xl" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="frequency">Weekly Frequency *</Label>
+                <Input type="number" min="1" max="7" value={frequency} onChange={(e) => setFrequency(Number(e.target.value))} required className="h-12 rounded-xl" />
               </div>
             </div>
           </div>
 
+          {!isFixed && unit !== 'dose' && (
+            <div className="space-y-6">
+              <h3 className="text-lg font-bold flex items-center gap-2"><Zap className="w-5 h-5 text-primary" /> Growth Increments</h3>
+              <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10 space-y-4">
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant={growthType === 'percentage' ? 'default' : 'outline'}
+                    className="flex-1 rounded-xl h-12"
+                    onClick={() => setGrowthType('percentage')}
+                    disabled={dailyGoal === 1}
+                  >
+                    <Percent className="w-4 h-4 mr-2" /> Percentage
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={growthType === 'fixed' ? 'default' : 'outline'}
+                    className="flex-1 rounded-xl h-12"
+                    onClick={() => setGrowthType('fixed')}
+                  >
+                    <Hash className="w-4 h-4 mr-2" /> Fixed Value
+                  </Button>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Increase by</Label>
+                  <div className="flex items-center gap-3">
+                    <Input
+                      type="number"
+                      value={growthValue}
+                      onChange={(e) => setGrowthValue(Number(e.target.value))}
+                      className="h-12 rounded-xl font-bold"
+                    />
+                    <span className="font-bold text-lg">
+                      {growthType === 'percentage' ? '%' : unit}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {growthType === 'percentage' 
+                      ? `Target will increase from ${dailyGoal} to ${Math.round(dailyGoal * (1 + growthValue / 100))} ${unit}`
+                      : `Target will increase from ${dailyGoal} to ${dailyGoal + growthValue} ${unit}`
+                    } after stability plateau.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="flex gap-4 pt-4 border-t">
             <Button variant="ghost" className="flex-1 h-14 rounded-2xl" onClick={onClose}>Cancel</Button>
-            <Button type="submit" className="flex-1 h-14 rounded-2xl font-bold" disabled={createHabitMutation.isPending || createTemplateMutation.isPending}>
-              {createHabitMutation.isPending || createTemplateMutation.isPending ? <Loader2 className="animate-spin" /> : 'Confirm'}
+            <Button type="submit" className="flex-1 h-14 rounded-2xl font-bold" disabled={createHabitMutation.isPending}>
+              {createHabitMutation.isPending ? <Loader2 className="animate-spin" /> : 'Confirm'}
             </Button>
           </div>
         </form>

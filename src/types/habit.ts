@@ -3,6 +3,7 @@ export type MomentumLevel = 'Struggling' | 'Building' | 'Strong' | 'Crushing';
 export type HabitCategory = 'anchor' | 'daily' | 'cognitive' | 'physical' | 'wellness' | 'daily_task';
 export type GrowthPhase = 'frequency' | 'duration';
 export type MeasurementType = 'timer' | 'unit' | 'binary';
+export type GrowthType = 'fixed' | 'percentage';
 
 export interface Habit {
   id: string;
@@ -56,6 +57,8 @@ export interface UserHabitRecord {
   anchor_practice: boolean;
   carryover_value: number;
   measurement_type: MeasurementType;
+  growth_type: GrowthType;
+  growth_value: number;
 }
 
 export interface ProcessedUserHabit extends UserHabitRecord {

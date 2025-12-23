@@ -22,7 +22,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { showError, showSuccess } from '@/utils/toast';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { UserHabitRecord, HabitCategory, MeasurementType } from '@/types/habit'; // Added MeasurementType
+import { UserHabitRecord, HabitCategory, MeasurementType, GrowthType } from '@/types/habit';
 import { useJourneyData } from '@/hooks/useJourneyData';
 import { useCreateTemplate } from '@/hooks/useCreateTemplate';
 import { useUserHabitWizardTemp, WizardHabitData } from '@/hooks/useUserHabitWizardTemp';
@@ -62,7 +62,7 @@ export interface CreateHabitParams {
   anchor_practice: boolean;
   auto_chunking: boolean;
   unit: 'min' | 'reps' | 'dose';
-  measurement_type: MeasurementType; // Added measurement_type
+  measurement_type: MeasurementType;
   xp_per_unit: number;
   energy_cost_per_unit: number;
   icon_name: string;
@@ -71,7 +71,9 @@ export interface CreateHabitParams {
   window_start: string | null;
   window_end: string | null;
   carryover_enabled: boolean;
-  short_description?: string; // For templates
+  short_description?: string;
+  growth_type: GrowthType;
+  growth_value: number;
 }
 
 const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: string; habit: CreateHabitParams; neurodivergentMode: boolean }) => {
@@ -79,8 +81,13 @@ const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: s
   const oneYearFromNow = new Date(today.setFullYear(today.getFullYear() + 1));
   const oneYearDateString = oneYearFromNow.toISOString().split('T')[0];
 
-  // Destructure habit, explicitly omitting short_description for RPC call
-  const { name, habit_key, category, current_daily_goal, frequency_per_week, is_trial_mode, is_fixed, anchor_practice, auto_chunking, unit, measurement_type, xp_per_unit, energy_cost_per_unit, icon_name, dependent_on_habit_id, window_start, window_end, carryover_enabled } = habit;
+  const { 
+    name, habit_key, category, current_daily_goal, frequency_per_week, 
+    is_trial_mode, is_fixed, anchor_practice, auto_chunking, unit, 
+    measurement_type, xp_per_unit, energy_cost_per_unit, icon_name, 
+    dependent_on_habit_id, window_start, window_end, carryover_enabled,
+    growth_type, growth_value
+  } = habit;
 
   let calculatedPlateauDays = habit.plateau_days_required;
   if (is_trial_mode) {
@@ -103,46 +110,30 @@ const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: s
     chunkDuration = Number((current_daily_goal / numChunks).toFixed(1));
   }
 
-  // Round integer values before sending to RPC
-  const roundedCurrentDailyGoal = Math.round(current_daily_goal);
-  const roundedFrequencyPerWeek = Math.round(frequency_per_week);
-  const roundedXpPerUnit = Math.round(xp_per_unit);
-  const roundedPlateauDaysRequired = Math.round(calculatedPlateauDays);
-  const roundedLongTermGoal = Math.round(current_daily_goal * (unit === 'min' ? 365 * 60 : 365));
-  const roundedNumChunks = Math.round(numChunks);
-  const roundedLifetimeProgress = Math.round(0); 
-
-  // Ensure dependent_on_habit_id is null if empty string
-  const finalDependentOnHabitId = dependent_on_habit_id === '' ? null : dependent_on_habit_id;
-  // Ensure window_start and window_end are null if 'none'
-  const finalWindowStart = window_start === 'none' ? null : window_start;
-  const finalWindowEnd = window_end === 'none' ? null : window_end;
-
-  // Call the RPC function instead of upsert
   const { error } = await supabase.rpc('upsert_user_habit', {
     p_user_id: userId,
     p_habit_key: habit_key,
     p_name: name,
     p_category: category,
-    p_current_daily_goal: roundedCurrentDailyGoal,
-    p_frequency_per_week: roundedFrequencyPerWeek,
+    p_current_daily_goal: Math.round(current_daily_goal),
+    p_frequency_per_week: Math.round(frequency_per_week),
     p_is_trial_mode: is_trial_mode,
     p_is_fixed: is_fixed,
     p_anchor_practice: anchor_practice,
     p_auto_chunking: auto_chunking,
     p_unit: unit,
-    p_xp_per_unit: roundedXpPerUnit,
+    p_xp_per_unit: Math.round(xp_per_unit),
     p_energy_cost_per_unit: energy_cost_per_unit,
     p_icon_name: icon_name,
-    p_dependent_on_habit_id: finalDependentOnHabitId,
-    p_plateau_days_required: roundedPlateauDaysRequired,
-    p_window_start: finalWindowStart,
-    p_window_end: finalWindowEnd,
+    p_dependent_on_habit_id: dependent_on_habit_id === '' ? null : dependent_on_habit_id,
+    p_plateau_days_required: Math.round(calculatedPlateauDays),
+    p_window_start: window_start === 'none' ? null : window_start,
+    p_window_end: window_end === 'none' ? null : window_end,
     p_carryover_enabled: carryover_enabled,
-    p_long_term_goal: roundedLongTermGoal,
+    p_long_term_goal: Math.round(current_daily_goal * (unit === 'min' ? 365 * 60 : 365)),
     p_target_completion_date: oneYearDateString,
     p_momentum_level: 'Building',
-    p_lifetime_progress: roundedLifetimeProgress,
+    p_lifetime_progress: 0,
     p_last_goal_increase_date: today.toISOString().split('T')[0],
     p_is_frozen: false,
     p_max_goal_cap: null,
@@ -151,10 +142,12 @@ const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: s
     p_growth_phase: 'duration',
     p_days_of_week: [0, 1, 2, 3, 4, 5, 6],
     p_enable_chunks: auto_chunking,
-    p_num_chunks: roundedNumChunks,
+    p_num_chunks: Math.round(numChunks),
     p_chunk_duration: chunkDuration,
     p_is_visible: true,
     p_measurement_type: measurement_type,
+    p_growth_type: growth_type,
+    p_growth_value: growth_value
   });
 
   if (error) throw error;
@@ -223,13 +216,8 @@ const HabitWizard = () => {
   const handleSubmitFinal = async (e?: React.FormEvent) => {
     e?.preventDefault();
 
-    if (!wizardData.name?.trim() || !wizardData.habit_key?.trim() || (wizardData.daily_goal || 0) <= 0 || (wizardData.frequency_per_week || 0) <= 0) {
-      showError('Please ensure all required habit details are filled with valid values.');
-      return;
-    }
-
-    if (isTemplateCreationMode && !wizardData.short_description?.trim()) {
-      showError('Please provide a short description for your template.');
+    if (!wizardData.name?.trim() || !wizardData.habit_key?.trim()) {
+      showError('Please ensure habit name and key are filled.');
       return;
     }
 
@@ -238,7 +226,7 @@ const HabitWizard = () => {
     const habitData: CreateHabitParams = {
       name: wizardData.name!,
       habit_key: wizardData.habit_key.toLowerCase().replace(/\s/g, '_').replace(/[^a-z0-9_]/g, ''),
-      category: wizardData.category as HabitCategory,
+      category: (wizardData.category as HabitCategory) || 'daily',
       unit: wizardData.unit || 'min',
       icon_name: wizardData.icon_name || 'Target',
       short_description: wizardData.short_description || '',
@@ -276,9 +264,26 @@ const HabitWizard = () => {
       setWizardData(wizardProgress.habit_data);
       setCurrentMicroStepIndex(0);
       setHasLoadedInitialProgress(true);
-    } else if (!isLoadingWizardProgress && (isTemplateCreationMode || templateToPreFill) && !hasLoadedInitialProgress) {
+    } else if (!isLoadingWizardProgress && !hasLoadedInitialProgress) {
+      if (templateToPreFill) {
+        setWizardData({
+          name: templateToPreFill.name,
+          habit_key: templateToPreFill.id,
+          category: templateToPreFill.category,
+          unit: templateToPreFill.unit,
+          icon_name: templateToPreFill.icon_name,
+          daily_goal: templateToPreFill.defaultDuration,
+          frequency_per_week: templateToPreFill.defaultFrequency,
+          is_fixed: templateToPreFill.defaultMode === 'Fixed',
+          is_trial_mode: templateToPreFill.defaultMode === 'Trial',
+          auto_chunking: templateToPreFill.autoChunking,
+          anchor_practice: templateToPreFill.anchorPractice,
+          xp_per_unit: templateToPreFill.xpPerUnit,
+          energy_cost_per_unit: templateToPreFill.energyCostPerUnit,
+          plateau_days_required: templateToPreFill.plateauDaysRequired,
+        });
+      }
       setHasLoadedInitialProgress(true);
-      navigate('/');
     }
   }, [isLoadingWizardProgress, wizardProgress, isTemplateCreationMode, templateToPreFill, hasLoadedInitialProgress, navigate]);
 
@@ -299,28 +304,16 @@ const HabitWizard = () => {
       let nextMicroStepIdx = currentMicroStepIndex;
       let shouldSaveProgress = true;
 
-      if (currentStep >= 1 && currentStep <= 6) {
-        const microStepsForCurrentMacro = MICRO_STEPS_MAP[currentStep];
-        if (microStepsForCurrentMacro && nextMicroStepIdx < microStepsForCurrentMacro.length - 1) {
-          nextMicroStepIdx++;
-        } else {
-          nextMacroStep++;
-          nextMicroStepIdx = 0;
-        }
+      const microStepsForCurrentMacro = MICRO_STEPS_MAP[currentStep];
+      if (microStepsForCurrentMacro && nextMicroStepIdx < microStepsForCurrentMacro.length - 1) {
+        nextMicroStepIdx++;
+      } else {
+        nextMacroStep++;
+        nextMicroStepIdx = 0;
       }
 
       if (nextMacroStep > MACRO_STEPS[MACRO_STEPS.length - 1]) {
-        const inferredParams = calculateHabitParams(updatedWizardData, neurodivergentMode);
-        const finalHabitData: CreateHabitParams = {
-          name: updatedWizardData.name!,
-          habit_key: updatedWizardData.habit_key!,
-          category: updatedWizardData.category as HabitCategory,
-          unit: updatedWizardData.unit || 'min',
-          icon_name: updatedWizardData.icon_name || 'Target',
-          ...inferredParams,
-        } as CreateHabitParams;
-
-        await createHabitMutation.mutateAsync(finalHabitData);
+        handleSubmitFinal();
         shouldSaveProgress = false;
         return;
       }
@@ -335,7 +328,7 @@ const HabitWizard = () => {
     } finally {
       setIsSaving(false);
     }
-  }, [wizardData, currentStep, currentMicroStepIndex, saveProgress, createHabitMutation, neurodivergentMode]);
+  }, [wizardData, currentStep, currentMicroStepIndex, saveProgress, neurodivergentMode, handleSubmitFinal]);
 
   const handleBack = useCallback(async () => {
     if (currentStep === 1 && currentMicroStepIndex === 0) {
@@ -467,7 +460,7 @@ const HabitWizard = () => {
       }
     }
     if (currentStep === 7) {
-      return !wizardData.name?.trim() || !wizardData.habit_key?.trim() || !wizardData.category;
+      return !wizardData.name?.trim() || !wizardData.habit_key?.trim();
     }
     return false;
   }, [currentStep, currentMicroStepIndex, wizardData]);
@@ -475,12 +468,13 @@ const HabitWizard = () => {
   const handleUpdateHabitFromModal = useCallback(async (updatedData: Partial<CreateHabitParams>) => {
     setIsSaving(true);
     try {
-      setWizardData(prev => ({
-        ...prev,
+      const newWizardData = {
+        ...wizardData,
         ...updatedData,
-        category: updatedData.category as HabitCategory,
-      }));
-      await saveProgress({ current_step: currentStep, habit_data: { ...wizardData, ...updatedData } });
+        daily_goal: updatedData.current_daily_goal || wizardData.daily_goal,
+      };
+      setWizardData(newWizardData);
+      await saveProgress({ current_step: currentStep, habit_data: newWizardData });
       showSuccess('Habit details updated!');
       setShowEditDetailsModal(false);
     } catch (error) {
@@ -519,7 +513,7 @@ const HabitWizard = () => {
         case '6.2': return <Step6_GrowthStyle wizardData={wizardData} setWizardData={setWizardData} onSkip={handleSkipMicroStep} />;
         case '6.3': return <Step6_FailureResponse wizardData={wizardData} setWizardData={setWizardData} onSkip={handleSkipMicroStep} />;
         case '6.4': return <Step6_SuccessDefinition wizardData={wizardData} setWizardData={setWizardData} onSkip={handleSkipMicroStep} />;
-        default: return <div className="text-center text-muted-foreground">Unknown Micro Step</div>;
+        default: return null;
       }
     }
 

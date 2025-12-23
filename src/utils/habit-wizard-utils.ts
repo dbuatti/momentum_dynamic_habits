@@ -1,6 +1,6 @@
 import { WizardHabitData } from '@/hooks/useUserHabitWizardTemp';
 import { CreateHabitParams } from '@/pages/HabitWizard';
-import { HabitCategory, MeasurementType } from '@/types/habit';
+import { HabitCategory, MeasurementType, GrowthType } from '@/types/habit';
 
 export const timeOfDayOptions = [
   { id: 'morning', label: 'Morning', icon: 'Sunrise', start: '06:00', end: '10:00' },
@@ -25,18 +25,32 @@ export const calculateHabitParams = (data: Partial<WizardHabitData>, neurodiverg
     else if (unit === 'dose') measurementType = 'binary';
   }
 
+  // Determine recommended Growth settings
+  let growthType: GrowthType = 'fixed';
+  let growthValue = 1;
+
   if (unit === 'min') {
     if (energyPerSession === 'very_little') dailyGoal = 5;
     else if (energyPerSession === 'a_bit') dailyGoal = 10;
     else if (energyPerSession === 'moderate') dailyGoal = 20;
     else if (energyPerSession === 'plenty') dailyGoal = 30;
+    
+    // Auto-recommend percentage for time
+    growthType = 'percentage';
+    growthValue = neurodivergentMode ? 10 : 20; // +10% or +20%
   } else if (unit === 'reps') {
     if (energyPerSession === 'very_little') dailyGoal = 5;
     else if (energyPerSession === 'a_bit') dailyGoal = 10;
     else if (energyPerSession === 'moderate') dailyGoal = 20;
     else if (energyPerSession === 'plenty') dailyGoal = 30;
+    
+    // Auto-recommend fixed for reps
+    growthType = 'fixed';
+    growthValue = neurodivergentMode ? 1 : 2; // +1 or +2 reps
   } else if (unit === 'dose') {
     dailyGoal = 1;
+    growthType = 'fixed';
+    growthValue = 0; // Binary growth disabled
   }
 
   const consistencyReality = data.consistency_reality_skipped ? '3-4_days' : data.consistency_reality;
@@ -109,5 +123,7 @@ export const calculateHabitParams = (data: Partial<WizardHabitData>, neurodiverg
     window_start: windowStart,
     window_end: windowEnd,
     carryover_enabled: carryoverEnabled,
+    growth_type: growthType,
+    growth_value: growthValue,
   };
 };
