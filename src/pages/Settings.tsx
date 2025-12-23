@@ -103,7 +103,8 @@ const Settings = () => {
                     {habit.is_trial_mode && <span className="text-[10px] font-black bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full uppercase">Trial Mode</span>}
                   </div>
                 </div>
-                <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                    <Label className="text-[10px] font-black uppercase opacity-60">Anchor Practice</Label>
                     <Switch checked={habit.category === 'anchor'} onCheckedChange={(val) => updateHabitField(habit.id, { category: val ? 'anchor' : 'daily' })} />
                 </div>
               </div>

@@ -17,16 +17,16 @@ const initializeMissingHabits = async (userId: string) => {
   const oneYearFromNow = new Date(today.setFullYear(today.getFullYear() + 1));
   const oneYearDateString = oneYearFromNow.toISOString().split('T')[0];
   
-  // Define ALL default habits and their desired initial state, enforcing the 10 min goal for Kinesiology/Piano
+  // Define ALL default habits
   const habitsToEnsure: DefaultHabit[] = [
     { habit_key: 'pushups', long_term_goal: 200, target_completion_date: oneYearDateString, current_daily_goal: 1, is_fixed: false },
     { habit_key: 'meditation', long_term_goal: 120, target_completion_date: oneYearDateString, current_daily_goal: 5, is_fixed: false },
-    { habit_key: 'kinesiology', long_term_goal: 60, target_completion_date: oneYearDateString, current_daily_goal: 10, is_fixed: false }, // Enforcing 10 min
-    { habit_key: 'piano', long_term_goal: 60, target_completion_date: oneYearDateString, current_daily_goal: 10, is_fixed: false }, // Enforcing 10 min
+    { habit_key: 'kinesiology', long_term_goal: 60, target_completion_date: oneYearDateString, current_daily_goal: 10, is_fixed: false },
+    { habit_key: 'piano', long_term_goal: 60, target_completion_date: oneYearDateString, current_daily_goal: 10, is_fixed: false },
     { habit_key: 'housework', long_term_goal: 30, target_completion_date: oneYearDateString, current_daily_goal: 30, is_fixed: false },
     { habit_key: 'projectwork', long_term_goal: 1000, target_completion_date: oneYearDateString, current_daily_goal: 60, is_fixed: false },
-    { habit_key: 'teeth_brushing', long_term_goal: 365, target_completion_date: oneYearDateString, current_daily_goal: 2, is_fixed: true }, // Enforcing 2 min fixed
-    { habit_key: 'medication', long_term_goal: 365, target_completion_date: oneYearDateString, current_daily_goal: 1, is_fixed: true }, // Enforcing 1 dose fixed
+    { habit_key: 'teeth_brushing', long_term_goal: 365, target_completion_date: oneYearDateString, current_daily_goal: 2, is_fixed: true },
+    { habit_key: 'medication', long_term_goal: 365, target_completion_date: oneYearDateString, current_daily_goal: 1, is_fixed: true },
   ];
 
   const habitsToUpsert = habitsToEnsure.map(habit => ({
@@ -37,13 +37,14 @@ const initializeMissingHabits = async (userId: string) => {
     current_daily_goal: habit.current_daily_goal,
     momentum_level: 'Building',
     is_fixed: habit.is_fixed,
+    days_of_week: [0, 1, 2, 3, 4, 5, 6], // Default to all days
   }));
 
   if (habitsToUpsert.length > 0) {
-    // Use upsert without ignoreDuplicates: true to force update existing records
+    // ignoreDuplicates: true ensures we only create habits that aren't already there
     const { error: upsertError } = await supabase
       .from('user_habits')
-      .upsert(habitsToUpsert, { onConflict: 'user_id, habit_key' });
+      .upsert(habitsToUpsert, { onConflict: 'user_id, habit_key', ignoreDuplicates: true });
 
     if (upsertError) throw upsertError;
   }
@@ -62,15 +63,12 @@ export const useInitializeMissingHabits = () => {
     },
     onSuccess: (data) => {
       if (data.initialized) {
-        console.log('Ensured default habits exist and goals are up-to-date.');
-        // Invalidate dashboard data to refresh with new habits
         queryClient.invalidateQueries({ queryKey: ['dashboardData', session?.user?.id] });
         queryClient.invalidateQueries({ queryKey: ['journeyData', session?.user?.id] });
       }
     },
     onError: (error) => {
       showError(`Failed to ensure habits exist: ${error.message}`);
-      console.error('Error ensuring default habits exist:', error);
     },
   });
 };
