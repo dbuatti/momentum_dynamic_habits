@@ -52,6 +52,13 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   // Unique storage key for each capsule for the current day
   const storageKey = `timer_${habitKey}_${label}_${new Date().toISOString().split('T')[0]}`;
 
+  // Helper function for formatting time
+  const formatTime = (totalSeconds: number) => {
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   const stopInterval = () => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -171,23 +178,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     }
   };
 
-  const handleCancelTimer = () => { // Removed event parameter as it's now triggered by card click
-    stopInterval();
-    localStorage.removeItem(storageKey);
-    window.dispatchEvent(new CustomEvent('habit-timer-update', { detail: null }));
-    setIsTiming(false);
-    setElapsedSeconds(0);
-    setIsPaused(false);
-    setGoalReachedAlerted(false);
-    startTimeRef.current = null;
-  };
-
-  const formatTime = (totalSeconds: number) => {
-    const mins = Math.floor(totalSeconds / 60);
-    const secs = totalSeconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
+  // This function is now only called by the "Done" button, not by clicking the capsule itself.
   const handleFinishTiming = (mood?: string) => {
     stopInterval();
     const totalSessionMinutes = Math.max(1, Math.ceil((initialValue * 60 + elapsedSeconds) / 60));
@@ -284,7 +275,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
             : cn(colors.bg, colors.border, "shadow-sm hover:shadow-md"),
           isTiming && "ring-4 ring-primary/20 shadow-xl scale-[1.01]"
         )}
-        onClick={isTiming ? handleCancelTimer : (!isCompleted && !showMoodPicker) ? (isTimeBased ? handleStartTimer : handleQuickComplete) : undefined}
+        onClick={isTiming ? () => handleFinishTiming() : (!isCompleted && !showMoodPicker) ? (isTimeBased ? handleStartTimer : handleQuickComplete) : undefined}
       >
         <AnimatePresence>
           {(!isCompleted && (isTiming || initialValue > 0)) && (
@@ -294,8 +285,8 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
               animate={{ height: `${progressPercent}%` }}
               transition={{ type: "tween", ease: isTiming ? "linear" : "easeOut", duration: isTiming ? 1 : 0.6 }}
             >
-              {/* Reinstated and enhanced progress fill */}
-              <div className={cn("absolute inset-0 bg-primary")} />
+              {/* Reinstated and enhanced progress fill with habit-specific gradient */}
+              <div className={cn("absolute inset-0 bg-gradient-to-t", colors.light, colors.dark)} />
             </motion.div>
           )}
         </AnimatePresence>
@@ -320,16 +311,16 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                 </div>
                 
                 <div className="min-w-0">
-                  <p className={cn("font-bold text-base leading-tight truncate", isCompleted ? "text-muted-foreground" : "text-primary-foreground")}>
+                  <p className={cn("font-bold text-base leading-tight truncate", isCompleted ? "text-muted-foreground" : colors.text)}>
                     {label}
                     {initialValue > 0 && !isCompleted && (
-                      <span className={cn("ml-2 text-[10px] bg-black/10 dark:bg-white/20 px-1.5 py-0.5 rounded-md align-middle font-black", isCompleted ? "text-muted-foreground" : "text-primary-foreground")}>+ {Math.round(initialValue)} {unit}</span>
+                      <span className={cn("ml-2 text-[10px] bg-black/10 dark:bg-white/20 px-1.5 py-0.5 rounded-md align-middle font-black", isCompleted ? "text-muted-foreground" : colors.text)}>+ {Math.round(initialValue)} {unit}</span>
                     )}
                   </p>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className={cn("text-xs font-bold", isCompleted ? "text-muted-foreground" : "text-primary-foreground")}>{value} {unit}</span>
+                    <span className={cn("text-xs font-bold", isCompleted ? "text-muted-foreground opacity-40" : colors.text)}>{value} {unit}</span>
                     {scheduledTime && (
-                      <span className={cn("flex items-center gap-1 text-[10px] font-bold text-primary-foreground/80 bg-secondary px-2 py-0.5 rounded-full", isCompleted && "text-muted-foreground")}>
+                      <span className="flex items-center gap-1 text-[10px] font-bold opacity-70 bg-secondary px-2 py-0.5 rounded-full">
                         <Clock className="w-3 h-3" />
                         {scheduledTime}
                       </span>
@@ -367,12 +358,12 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
               )}
             </div>
           ) : (
-            <div className={cn("space-y-5 py-2", "text-primary-foreground")}>
+            <div className={cn("space-y-5 py-2", colors.text)}>
               <div className="flex justify-between items-start">
                 <div className="pl-1">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-primary-foreground/80">Active {label}</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Active {label}</p>
                   <p className="text-4xl font-black tabular-nums mt-1">{formatTime(initialValue * 60 + elapsedSeconds)}</p>
-                  <p className="text-[10px] text-primary-foreground/80 mt-1 font-bold">
+                  <p className="text-[10px] opacity-60 mt-1 font-bold">
                     Goal: {value} min {initialValue > 0 && `(incl. ${initialValue}m surplus)`}
                   </p>
                 </div>
