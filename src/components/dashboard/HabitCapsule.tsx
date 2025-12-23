@@ -50,7 +50,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
 }) => {
   const [showMoodPicker, setShowMoodPicker] = useState(false);
   const [isTiming, setIsTiming] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(value * 60);
+  const [timeLeft, setTimeLeft] = useState(measurementType === 'timer' ? value * 60 : 0);
   const [isPaused, setIsPaused] = useState(false);
   const [completedTaskIdState, setCompletedTaskIdState] = useState<string | null>(initialCompletedTaskId || null);
   const [manualValue, setManualValue] = useState<number>(value);
@@ -87,6 +87,24 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   }, []);
 
   useEffect(() => {
+    if (measurementType === 'timer' && isTiming) {
+      window.dispatchEvent(new CustomEvent('habit-timer-update', {
+        detail: {
+          label,
+          elapsed: value * 60 - timeLeft,
+          isPaused,
+          habitKey,
+          habitName,
+          goalValue: value
+        }
+      }));
+    } else if (measurementType === 'timer' && !isTiming) {
+      // Clear floating timer when stopped
+      window.dispatchEvent(new CustomEvent('habit-timer-update', { detail: null }));
+    }
+  }, [timeLeft, isTiming, isPaused, label, value, habitKey, habitName, measurementType]);
+
+  useEffect(() => {
     if (isTiming && timeLeft === 0) {
       handleFinishTiming(undefined, true);
       triggerFeedback('goal_reached');
@@ -113,7 +131,10 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     } else {
       setTimeLeft(value * 60);
     }
-    return () => stopInterval();
+    return () => {
+        stopInterval();
+        window.dispatchEvent(new CustomEvent('habit-timer-update', { detail: null }));
+    };
   }, [isCompleted, storageKey, measurementType, startInterval, value]);
 
   useEffect(() => {

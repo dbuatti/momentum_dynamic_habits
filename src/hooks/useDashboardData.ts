@@ -8,7 +8,7 @@ import { ProcessedUserHabit } from '@/types/habit';
 const fetchDashboardData = async (userId: string) => {
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('journey_start_date, daily_streak, last_active_at, first_name, last_name, timezone, xp, level, tasks_completed_today, neurodivergent_mode')
+    .select('journey_start_date, daily_streak, last_active_at, first_name, last_name, timezone, xp, level, tasks_completed_today, neurodivergent_mode, enable_sound, enable_haptics')
     .eq('id', userId)
     .single();
 
@@ -54,12 +54,12 @@ const fetchDashboardData = async (userId: string) => {
     const key = task.original_source;
     completedHabitKeysToday.add(key);
     const userHabit = habits?.find(h => h.habit_key === key);
-    const unit = userHabit?.unit || initialHabitsMap.get(key)?.unit || 'min';
-    const xpPerUnit = userHabit?.xp_per_unit || initialHabitsMap.get(key)?.xpPerUnit || 1;
+    const mType = userHabit?.measurement_type || 'timer';
+    const xpPerUnit = userHabit?.xp_per_unit || 1;
 
     let progress = 0;
-    if (unit === 'min') progress = (task.duration_used || 0) / 60;
-    else if (unit === 'reps' || unit === 'dose') progress = (task.xp_earned || 0) / xpPerUnit;
+    if (mType === 'timer') progress = (task.duration_used || 0) / 60;
+    else if (mType === 'unit' || mType === 'binary') progress = (task.xp_earned || 0) / xpPerUnit;
     else progress = 1;
 
     dailyProgressMap.set(key, (dailyProgressMap.get(key) || 0) + progress);
@@ -91,8 +91,6 @@ const fetchDashboardData = async (userId: string) => {
     const isDependencyMet = isDependent ? completedHabitKeysToday.has(dependentHabit?.habit_key || '') : true;
     const isLockedByDependency = isDependent && !isDependencyMet;
 
-    // Apply unbounded progress formula for Growth/Trial habits
-    // For Binary: goal = 1, progress = completed ? 1 : 0
     let dailyProgress = rawDailyProgress;
     let adjustedDailyGoal = baseAdjustedDailyGoal;
     let isComplete = false;
@@ -103,7 +101,7 @@ const fetchDashboardData = async (userId: string) => {
       adjustedDailyGoal = 1;
     } else {
       isComplete = rawDailyProgress >= (baseAdjustedDailyGoal - 0.01);
-      // Removed capping: User can exceed daily target
+      // Logic: Let the user do more. Uncapped progress.
       dailyProgress = rawDailyProgress; 
       adjustedDailyGoal = baseAdjustedDailyGoal;
     }
@@ -138,8 +136,7 @@ const fetchDashboardData = async (userId: string) => {
     const totals = { pushups: 0, meditation: 0 };
     tasks.forEach(t => {
       const userHabit = habits?.find(h => h.habit_key === t.original_source);
-      const unit = userHabit?.unit || initialHabitsMap.get(t.original_source)?.unit || 'min';
-      const xpPerUnit = userHabit?.xp_per_unit || initialHabitsMap.get(t.original_source)?.xpPerUnit || 1;
+      const xpPerUnit = userHabit?.xp_per_unit || 1;
 
       if (t.original_source === 'pushups') totals.pushups += (t.xp_earned || 0) / xpPerUnit;
       if (t.original_source === 'meditation') totals.meditation += (t.duration_used || 0) / 60;
@@ -159,6 +156,8 @@ const fetchDashboardData = async (userId: string) => {
     totalJourneyDays: processedHabits[0]?.long_term_goal || 365,
     habits: processedHabits,
     neurodivergentMode: profile?.neurodivergent_mode || false,
+    enable_sound: profile?.enable_sound ?? true,
+    enable_haptics: profile?.enable_haptics ?? true,
     weeklySummary: { 
       activeDays: new Set((completedThisWeek || []).map(t => startOfDay(new Date(t.completed_at)).toISOString())).size,
       pushups: { current: currentWeekTotals.pushups, previous: previousWeekTotals.pushups },
