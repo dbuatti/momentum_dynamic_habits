@@ -31,7 +31,7 @@ import { useQueryClient } from "@tanstack/react-query"; // Import useQueryClient
 
 const Index = () => {
   const { data, isLoading, isError } = useDashboardData();
-  const { dbCapsules, isLoading: isCapsulesLoading, completeCapsule, uncompleteCapsule } = useCapsules();
+  const { dbCapsules, isLoading: isCapsulesLoading, logCapsuleProgress, uncompleteCapsule } = useCapsules();
   const { isLoading: isOnboardingLoading } = useOnboardingCheck();
   const { mutate: logHabit, unlog } = useHabitLog(); // Use mutate
   const { session } = useSession(); // Get session for queryClient invalidation
@@ -140,30 +140,25 @@ const Index = () => {
   }, [habitGroups]); // Only depend on habitGroups
 
   const handleCapsuleProgress = async (habit: any, capsule: any, actualValue: number, isComplete: boolean, mood?: string) => {
-    if (isComplete) {
-      // When a capsule is completed, log the habit and then update the capsule with the returned completedTaskId
-      await completeCapsule.mutateAsync({ 
-        habitKey: habit.key, 
-        index: capsule.index, 
-        value: actualValue, 
-        mood, 
-        taskName: `${habit.name} session` 
-      });
-    } else {
-      // Log partial progress without marking capsule as complete
-      await logHabit({ habitKey: habit.key, value: actualValue, taskName: `${habit.name} partial session` });
-      // Invalidate dashboard data to refetch and update dailyProgress for the habit
-      // This will cause the HabitCapsule to re-render with an updated initialValue
-      queryClient.invalidateQueries({ queryKey: ['dashboardData', session?.user?.id] });
-    }
+    // Use logCapsuleProgress for both complete and partial logging
+    await logCapsuleProgress.mutateAsync({ 
+      habitKey: habit.key, 
+      index: capsule.index, 
+      value: actualValue, 
+      mood, 
+      taskName: `${habit.name} session`,
+      isComplete: isComplete, // Pass the isComplete flag
+    });
+    // Invalidate dashboard data to refetch and update dailyProgress for the habit
+    queryClient.invalidateQueries({ queryKey: ['dashboardData', session?.user?.id] });
   };
 
   const handleCapsuleUncomplete = (habit: any, capsule: any) => {
     if (capsule.completedTaskId) {
       uncompleteCapsule.mutate({ habitKey: habit.key, index: capsule.index, completedTaskId: capsule.completedTaskId });
     } else {
-      // Fallback or error handling if completedTaskId is missing
-      console.error("Cannot uncomplete capsule: completedTaskId is missing.");
+      // This case should now be less likely if completedTaskId is always stored for partial logs
+      console.error("Cannot uncomplete capsule: completedTaskId is missing for partial log.");
       showError("Failed to undo task. Please try again.");
     }
   };

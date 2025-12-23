@@ -186,9 +186,11 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     startTimeRef.current = null;
     localStorage.removeItem(storageKey);
     window.dispatchEvent(new CustomEvent('habit-timer-update', { detail: null }));
+    
+    // If there was any completed task ID associated with this capsule (even partial), unlog it.
     if (completedTaskIdState) {
       onUncomplete(completedTaskIdState);
-      setCompletedTaskIdState(null);
+      setCompletedTaskIdState(null); // Clear local state
     }
   };
 
@@ -215,7 +217,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     localStorage.removeItem(storageKey);
     window.dispatchEvent(new CustomEvent('habit-timer-update', { detail: null }));
     
-    onLogProgress(totalSessionMinutes, true, mood);
+    onLogProgress(totalSessionMinutes, true, mood); // Always true for finish timing
     setIsTiming(false);
     setElapsedSeconds(0);
     setShowMoodPicker(false);
@@ -237,7 +239,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     localStorage.removeItem(storageKey);
     window.dispatchEvent(new CustomEvent('habit-timer-update', { detail: null }));
     
-    onLogProgress(value, true);
+    onLogProgress(value, true); // Always true for quick complete
   };
 
   const currentTotalMinutes = isTimeBased ? initialValue + (elapsedSeconds / 60) : initialValue;
@@ -324,7 +326,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
             stopInterval();
             window.dispatchEvent(new CustomEvent('habit-timer-update', { detail: null }));
             localStorage.removeItem(storageKey);
-            onLogProgress(elapsedSeconds / 60, false);
+            onLogProgress(elapsedSeconds / 60, false); // This is the partial log
             setIsTiming(false);
             setElapsedSeconds(0);
             setIsPaused(false);

@@ -51,21 +51,23 @@ export const useCapsules = () => {
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
-  const { mutate: logHabit } = useHabitLog(); // Get logHabit from useHabitLog
+  const { mutate: logHabit, unlog: unlogHabitFromHook } = useHabitLog(); // Get logHabit and unlog from useHabitLog
 
-  const completeCapsule = useMutation({
+  const logCapsuleProgress = useMutation({
     mutationFn: async ({
       habitKey,
       index,
       value,
       mood,
       taskName, // Added taskName for logging
+      isComplete, // Added isComplete parameter
     }: {
       habitKey: string;
       index: number;
       value: number;
       mood?: string;
       taskName: string; // Required for logging
+      isComplete: boolean; // New parameter
     }) => {
       if (!userId) throw new Error('User not authenticated');
 
@@ -77,7 +79,7 @@ export const useCapsules = () => {
         habit_key: habitKey,
         capsule_index: index,
         value,
-        is_completed: true,
+        is_completed: isComplete, // Use the new isComplete parameter
         mood: mood || null,
         created_at: today,
         label: `Part ${index + 1}`,
@@ -94,6 +96,8 @@ export const useCapsules = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['habitCapsules', userId, today] });
+      // Also invalidate dashboard data to reflect changes in dailyProgress
+      queryClient.invalidateQueries({ queryKey: ['dashboardData', userId] });
     },
   });
 
@@ -110,8 +114,7 @@ export const useCapsules = () => {
       if (!userId) throw new Error('User not authenticated');
 
       // First, unlog the habit using the completedTaskId
-      const { unlog } = useHabitLog();
-      unlog({ completedTaskId });
+      await unlogHabitFromHook({ completedTaskId });
 
       const { error } = await supabase
         .from('habit_capsules')
@@ -125,6 +128,8 @@ export const useCapsules = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['habitCapsules', userId, today] });
+      // Also invalidate dashboard data to reflect changes in dailyProgress
+      queryClient.invalidateQueries({ queryKey: ['dashboardData', userId] });
     },
   });
 
@@ -171,10 +176,9 @@ export const useCapsules = () => {
 
       // Before deleting capsules, unlog any associated completed tasks
       const currentCapsules = await fetchCapsules();
-      const { unlog } = useHabitLog();
       for (const capsule of currentCapsules) {
-        if (capsule.is_completed && capsule.completed_task_id) {
-          unlog({ completedTaskId: capsule.completed_task_id });
+        if (capsule.completed_task_id) { // Check for completed_task_id
+          unlogHabitFromHook({ completedTaskId: capsule.completed_task_id });
         }
       }
 
@@ -194,7 +198,7 @@ export const useCapsules = () => {
   return {
     dbCapsules,
     isLoading,
-    completeCapsule,
+    logCapsuleProgress,
     uncompleteCapsule,
     scheduleCapsule,
     resetCapsulesForToday,
