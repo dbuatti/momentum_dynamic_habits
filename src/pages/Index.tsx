@@ -47,9 +47,8 @@ const Index = () => {
       .filter(habit => habit.is_visible)
       .map(habit => {
       const goal = habit.adjustedDailyGoal;
-      // Formula: progressToday = min(loggedAmount, dailyTarget)
-      const rawProgress = habit.dailyProgress;
-      const progress = Math.min(rawProgress, goal);
+      // Formula: dailyProgress is now unbounded in useDashboardData
+      const progress = habit.dailyProgress;
       
       const { numChunks, chunkValue } = calculateDynamicChunks(
         habit.key,
@@ -69,7 +68,11 @@ const Index = () => {
         const dbCapsule = dbCapsules?.find(c => c.habit_key === habit.key && c.capsule_index === i);
         const isCompletedByDb = dbCapsule?.is_completed || false;
         
-        const isCompleted = isCompletedByDb;
+        // Logical completion based on progress for UI feedback
+        // If progress >= (i + 1) * chunkValue, it's visually complete
+        const isVisuallyComplete = progress >= ((i + 1) * chunkValue - 0.01);
+        
+        const isCompleted = isCompletedByDb || isVisuallyComplete;
 
         return {
           id: `${habit.key}-${i}`,
@@ -87,12 +90,16 @@ const Index = () => {
         };
       });
 
+      // Special case: If habit is complete and not fixed, we want to allow an "Extra" capsule
+      const showExtraCapsule = isOverallComplete && !habit.is_fixed;
+
       return {
         ...habit,
-        displayProgress: progress, // Use capped progress for display
+        displayProgress: progress,
         capsules,
         allCompleted: isOverallComplete,
         numChunks,
+        showExtraCapsule
       };
     }).sort((a, b) => {
       if (a.isLockedByDependency !== b.isLockedByDependency) {
@@ -134,6 +141,16 @@ const Index = () => {
       mood, 
       taskName: `${habit.name} session`,
       isComplete: isComplete,
+    });
+    queryClient.invalidateQueries({ queryKey: ['dashboardData', session?.user?.id] });
+  };
+
+  const handleLogExtra = async (habit: any, value: number, mood?: string) => {
+    await logHabit({
+      habitKey: habit.key,
+      value,
+      taskName: `${habit.name} (Bonus)`,
+      note: mood
     });
     queryClient.invalidateQueries({ queryKey: ['dashboardData', session?.user?.id] });
   };
@@ -184,7 +201,7 @@ const Index = () => {
         value={habit.key}
         className={cn(
           "border-2 rounded-3xl mb-4 overflow-hidden transition-all duration-500",
-          habit.allCompleted ? "opacity-50 grayscale-[0.3] border-muted bg-muted/5" : cn(accentColorClasses, "shadow-md"),
+          habit.allCompleted ? "opacity-75 border-success/30 bg-success/5" : cn(accentColorClasses, "shadow-md"),
           !habit.isWithinWindow && !habit.allCompleted && "opacity-75",
           isLocked && "opacity-40 grayscale-[0.5]"
         )}
@@ -194,7 +211,7 @@ const Index = () => {
             <div className="flex items-center gap-5 text-left w-full">
               <div className={cn(
                 "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border border-border",
-                habit.allCompleted ? "bg-card/80" : "bg-card/90"
+                habit.allCompleted ? "bg-success/20 text-success" : "bg-card/90"
               )}>
                 <Icon className="w-6 h-6" />
               </div>
@@ -207,30 +224,21 @@ const Index = () => {
                   <span className={cn(
                     "text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border",
                     habit.allCompleted 
-                      ? "bg-success-background border-success-border text-primary dark:text-success-foreground"
+                      ? "bg-success text-success-foreground border-transparent"
                       : habit.isWithinWindow 
                         ? "bg-primary text-primary-foreground border-transparent"
                         : "bg-muted text-muted-foreground border-transparent"
                   )}>
-                    {habit.allCompleted ? "Goal Met" : (habit.isWithinWindow ? "Ready Now" : "Restricted")}
+                    {habit.allCompleted ? "Goal Reached" : (habit.isWithinWindow ? "Ready Now" : "Restricted")}
                   </span>
-                  {isTrial && (
-                    <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-info-background text-info-foreground border border-info-border">
-                      Trial Mode
-                    </span>
-                  )}
-                  {isGrowth && (
-                    <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-habit-purple/20 text-habit-purple-foreground border border-habit-purple-border">
-                      Growth Mode
-                    </span>
-                  )}
-                  {habit.is_fixed && (
-                    <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-secondary text-secondary-foreground border border-border">
-                      Fixed Mode
+                  {habit.displayProgress > habit.adjustedDailyGoal && (
+                    <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-success/20 text-success border border-success/30 flex items-center gap-1">
+                      <Sparkles className="w-3 h-3" />
+                      Bonus!
                     </span>
                   )}
                 </div>
-                <p className={cn("text-sm font-bold mt-2", habit.allCompleted ? "text-muted-foreground" : "text-foreground")}>
+                <p className={cn("text-sm font-bold mt-2", habit.allCompleted ? "text-success-foreground" : "text-foreground")}>
                   Progress: {Math.round(habit.displayProgress)}/{Math.round(habit.adjustedDailyGoal)} {habit.unit}
                 </p>
               </div>
@@ -290,7 +298,7 @@ const Index = () => {
           <div className="w-full mt-4">
             <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">Daily Progress</p>
             <Progress
-              value={(habit.displayProgress / habit.adjustedDailyGoal) * 100}
+              value={Math.min(100, (habit.displayProgress / habit.adjustedDailyGoal) * 100)}
               className="h-1.5 [&>div]:bg-primary"
             />
           </div>
@@ -325,57 +333,90 @@ const Index = () => {
             </div>
           )}
 
-          <div className="grid gap-3">
-            {showOnlyNext && nextCapsule ? (
-              <>
-                <div className="relative">
-                    <div className="absolute left-3 top-0 bottom-0 w-px bg-muted/40 z-0" />
-                    <HabitCapsule
-                      key={nextCapsule.id}
-                      {...nextCapsule}
-                      habitName={habit.name}
-                      color={color}
-                      onLogProgress={(actual, isComplete, mood) => handleCapsuleProgress(habit, nextCapsule, actual, isComplete, mood)}
-                      onUncomplete={(completedTaskId) => handleCapsuleUncomplete(habit, nextCapsule)}
-                      showMood={data.neurodivergentMode}
-                    />
-                </div>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="w-full text-[10px] font-black uppercase tracking-widest h-9 rounded-xl border-dashed text-muted-foreground"
-                  onClick={() => toggleShowAll(habit.key)}
-                >
-                  <Layers className="w-3.5 h-3.5 mr-2" />
-                  View all session parts ({habit.numChunks})
-                </Button>
-              </>
-            ) : (
-              <div className="space-y-3">
-                {habit.capsules.map((capsule: any) => (
-                  <HabitCapsule
-                    key={capsule.id}
-                    {...capsule}
-                    habitName={habit.name}
-                    color={color}
-                    onLogProgress={(actual, isComplete, mood) => handleCapsuleProgress(habit, capsule, actual, isComplete, mood)}
-                    onUncomplete={(completedTaskId) => handleCapsuleUncomplete(habit, capsule)}
-                    showMood={data.neurodivergentMode}
-                  />
-                ))}
-                {habit.numChunks > 1 && (
+          {habit.allCompleted && !habit.is_fixed && (
+            <div className="p-5 bg-success/10 rounded-[28px] border-2 border-dashed border-success/30 flex flex-col items-center gap-4 text-center animate-in zoom-in-95">
+              <div className="w-14 h-14 rounded-2xl bg-success/20 flex items-center justify-center text-success">
+                <Sparkles className="w-8 h-8" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="font-black text-lg text-success">Goal Crushed!</h4>
+                <p className="text-sm font-medium text-success-foreground opacity-80">You've hit your target for today. Ready for a little extra?</p>
+              </div>
+              
+              <div className="w-full">
+                <HabitCapsule
+                  id={`${habit.key}-bonus`}
+                  habitKey={habit.key}
+                  habitName={habit.name}
+                  label="Bonus Session"
+                  value={habit.capsules[0]?.value || 10}
+                  unit={habit.unit}
+                  measurementType={habit.measurement_type}
+                  isCompleted={false}
+                  isHabitComplete={true}
+                  isFixed={false}
+                  color={color}
+                  onLogProgress={(actual, isComplete, mood) => handleCapsuleProgress(habit, { index: habit.numChunks }, actual, isComplete, mood)}
+                  onUncomplete={() => {}}
+                  showMood={data.neurodivergentMode}
+                />
+              </div>
+            </div>
+          )}
+
+          {!habit.allCompleted && (
+            <div className="grid gap-3">
+              {showOnlyNext && nextCapsule ? (
+                <>
+                  <div className="relative">
+                      <div className="absolute left-3 top-0 bottom-0 w-px bg-muted/40 z-0" />
+                      <HabitCapsule
+                        key={nextCapsule.id}
+                        {...nextCapsule}
+                        habitName={habit.name}
+                        color={color}
+                        onLogProgress={(actual, isComplete, mood) => handleCapsuleProgress(habit, nextCapsule, actual, isComplete, mood)}
+                        onUncomplete={(completedTaskId) => handleCapsuleUncomplete(habit, nextCapsule)}
+                        showMood={data.neurodivergentMode}
+                      />
+                  </div>
                   <Button 
-                    variant="ghost" 
+                    variant="outline" 
                     size="sm" 
-                    className="w-full text-[10px] font-black uppercase opacity-40 h-8"
+                    className="w-full text-[10px] font-black uppercase tracking-widest h-9 rounded-xl border-dashed text-muted-foreground"
                     onClick={() => toggleShowAll(habit.key)}
                   >
-                    Simplify View (Focus Next)
+                    <Layers className="w-3.5 h-3.5 mr-2" />
+                    View all session parts ({habit.numChunks})
                   </Button>
-                )}
-              </div>
-            )}
-          </div>
+                </>
+              ) : (
+                <div className="space-y-3">
+                  {habit.capsules.map((capsule: any) => (
+                    <HabitCapsule
+                      key={capsule.id}
+                      {...capsule}
+                      habitName={habit.name}
+                      color={color}
+                      onLogProgress={(actual, isComplete, mood) => handleCapsuleProgress(habit, capsule, actual, isComplete, mood)}
+                      onUncomplete={(completedTaskId) => handleCapsuleUncomplete(habit, capsule)}
+                      showMood={data.neurodivergentMode}
+                    />
+                  ))}
+                  {habit.numChunks > 1 && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="w-full text-[10px] font-black uppercase opacity-40 h-8"
+                      onClick={() => toggleShowAll(habit.key)}
+                    >
+                      Simplify View (Focus Next)
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </AccordionContent>
       </AccordionItem>
     );

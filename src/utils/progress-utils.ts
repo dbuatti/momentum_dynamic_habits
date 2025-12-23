@@ -84,18 +84,17 @@ export const calculateDailyParts = (habits: any[], isNeurodivergent: boolean) =>
 
     totalParts += numChunks;
     
-    // 2. Determine effective progress (Cap at target)
-    // Formula: progressToday = min(loggedAmount, dailyTarget)
+    // 2. Determine effective progress (Cap for parts calculation, but allow visual overflow)
     const dailyTarget = habit.adjustedDailyGoal;
-    const effectiveProgress = Math.min(habit.dailyProgress, dailyTarget);
+    const rawProgress = habit.dailyProgress;
     
-    // 3. Calculate completed parts for this habit based on effective progress
+    // 3. Calculate completed parts for this habit based on raw progress
     for (let i = 0; i < numChunks; i++) {
       const isLast = i === numChunks - 1;
       const cumulativeNeeded = isLast ? dailyTarget : (i + 1) * chunkValue;
       
-      // Use a small epsilon for float comparison to avoid "0/2" logic errors
-      if (effectiveProgress >= (cumulativeNeeded - 0.01)) {
+      // Use a small epsilon for float comparison
+      if (rawProgress >= (cumulativeNeeded - 0.01)) {
         completedParts++;
       }
     }

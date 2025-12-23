@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Check, Clock, Smile, Meh, Frown, Undo2, Play, Pause, Square, RotateCcw, Plus, Minus, Lock } from 'lucide-react';
+import { Check, Clock, Smile, Meh, Frown, Undo2, Play, Pause, Square, RotateCcw, Plus, Minus, Lock, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { playStartSound, playEndSound, playGoalSound } from '@/utils/audio';
@@ -19,8 +19,8 @@ interface HabitCapsuleProps {
   unit: string;
   measurementType: MeasurementType;
   isCompleted: boolean;
-  isHabitComplete?: boolean; // New prop to track overall habit status
-  isFixed?: boolean; // New prop to track if habit is fixed
+  isHabitComplete?: boolean; 
+  isFixed?: boolean; 
   initialValue?: number;
   scheduledTime?: string;
   completedTaskId?: string | null;
@@ -58,8 +58,10 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const storageKey = `timer_${habitKey}_${label}_${new Date().toISOString().split('T')[0]}`;
 
-  // Hard Guardrail Logic: Disable logging for fixed habits that are already complete
+  // Capping guardrail: Only Fixed habits are disabled once complete.
   const isLoggingDisabled = isFixed && isHabitComplete && !isCompleted;
+  // Bonus Mode: Habit is complete, but not fixed, so we can log more.
+  const isBonusMode = !isFixed && isHabitComplete && !isCompleted;
 
   useEffect(() => {
     setCompletedTaskIdState(initialCompletedTaskId || null);
@@ -212,7 +214,8 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
           'relative overflow-hidden transition-all duration-500 border-2 rounded-[28px] shadow-lg',
           isCompleted ? 'bg-muted/40 border-muted opacity-70' : cn('bg-card/80 backdrop-blur-sm', colors.border),
           isTiming && 'ring-4 ring-primary/30 shadow-2xl scale-[1.01]',
-          isLoggingDisabled && 'opacity-40 grayscale-[0.5]'
+          isLoggingDisabled && 'opacity-40 grayscale-[0.5]',
+          isBonusMode && 'border-dashed border-success/50'
         )}
       >
         <AnimatePresence>
@@ -278,21 +281,32 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                     <Play className={cn('w-6 h-6 ml-0.5 fill-current', colors.text)} />
                   </Button>
                   <div>
-                    <p className={cn('font-bold text-lg leading-tight', colors.text)}>{label}</p>
-                    <p className="text-sm font-bold opacity-70">{value} {unit} Goal</p>
+                    <p className={cn('font-bold text-lg leading-tight', colors.text)}>
+                      {isBonusMode ? 'Log More?' : label}
+                    </p>
+                    <p className="text-sm font-bold opacity-70">
+                      {isBonusMode ? `Bonus ${unit}` : `${value} ${unit} Goal`}
+                    </p>
                   </div>
                 </div>
-                <div className="flex flex-col items-end">
-                   <p className="text-[10px] font-black uppercase opacity-40">Ready to Start</p>
-                </div>
+                {isBonusMode && (
+                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-success/10 text-success border border-success/20">
+                    <Sparkles className="w-3 h-3" />
+                    <span className="text-[10px] font-black uppercase">Goal Met!</span>
+                  </div>
+                )}
               </div>
             )
           ) : measurementType === 'unit' ? (
             <div className="flex flex-col gap-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className={cn('font-bold text-lg leading-tight', colors.text)}>{label}</p>
-                  <p className="text-sm font-bold opacity-70">Goal: {value} {unit}</p>
+                  <p className={cn('font-bold text-lg leading-tight', colors.text)}>
+                    {isBonusMode ? 'Bonus Reps' : label}
+                  </p>
+                  <p className="text-sm font-bold opacity-70">
+                    {isBonusMode ? 'Goal already met!' : `Goal: ${value} ${unit}`}
+                  </p>
                 </div>
                 <div className="flex items-center bg-card rounded-2xl p-1 border shadow-inner">
                   <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl" onClick={() => setManualValue(v => Math.max(1, v - 1))}>
@@ -309,18 +323,36 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                   </Button>
                 </div>
               </div>
-              <Button size="lg" className="w-full h-12 rounded-2xl font-black shadow-md bg-primary text-primary-foreground" onClick={() => handleLogManual(undefined, true)}>
-                Log {manualValue} {unit}
+              <Button 
+                size="lg" 
+                className={cn(
+                  "w-full h-12 rounded-2xl font-black shadow-md",
+                  isBonusMode ? "bg-success text-success-foreground" : "bg-primary text-primary-foreground"
+                )} 
+                onClick={() => handleLogManual(undefined, true)}
+              >
+                Log {manualValue} {unit} {isBonusMode && 'Extra'}
               </Button>
             </div>
           ) : (
             <div className="flex items-center justify-between">
               <div>
-                <p className={cn('font-bold text-lg leading-tight', colors.text)}>{label}</p>
-                <p className="text-sm font-bold opacity-70">Single session</p>
+                <p className={cn('font-bold text-lg leading-tight', colors.text)}>
+                  {isBonusMode ? 'Log More?' : label}
+                </p>
+                <p className="text-sm font-bold opacity-70">
+                  {isBonusMode ? 'Exceeding target' : 'Single session'}
+                </p>
               </div>
-              <Button size="lg" className="h-12 px-8 rounded-2xl font-black shadow-md bg-primary text-primary-foreground" onClick={() => handleLogBinary(undefined, true)}>
-                Complete
+              <Button 
+                size="lg" 
+                className={cn(
+                  "h-12 px-8 rounded-2xl font-black shadow-md",
+                  isBonusMode ? "bg-success text-success-foreground" : "bg-primary text-primary-foreground"
+                )} 
+                onClick={() => handleLogBinary(undefined, true)}
+              >
+                {isBonusMode ? 'Log Extra' : 'Complete'}
               </Button>
             </div>
           )}

@@ -91,7 +91,7 @@ const fetchDashboardData = async (userId: string) => {
     const isDependencyMet = isDependent ? completedHabitKeysToday.has(dependentHabit?.habit_key || '') : true;
     const isLockedByDependency = isDependent && !isDependencyMet;
 
-    // Apply strict progress formula: progressToday = min(loggedAmount, dailyTarget)
+    // Apply unbounded progress formula for Growth/Trial habits
     // For Binary: goal = 1, progress = completed ? 1 : 0
     let dailyProgress = rawDailyProgress;
     let adjustedDailyGoal = baseAdjustedDailyGoal;
@@ -103,7 +103,8 @@ const fetchDashboardData = async (userId: string) => {
       adjustedDailyGoal = 1;
     } else {
       isComplete = rawDailyProgress >= (baseAdjustedDailyGoal - 0.01);
-      dailyProgress = Math.min(rawDailyProgress, baseAdjustedDailyGoal);
+      // Removed capping: User can exceed daily target
+      dailyProgress = rawDailyProgress; 
       adjustedDailyGoal = baseAdjustedDailyGoal;
     }
 
