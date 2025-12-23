@@ -519,43 +519,42 @@ const HabitWizard = () => {
     <div className="w-full max-w-4xl mx-auto px-4 py-8">
       <PageHeader title={isTemplateCreationMode ? "Contribute New Template" : "Habit Wizard"} />
 
-      {/* Single clean card with fixed layout */}
-      <Card className="w-full max-w-2xl mx-auto shadow-2xl rounded-3xl overflow-hidden border-0 bg-card">
-        {/* Header with progress - always present and fixed height */}
+      {/* Clean single card matching the screenshot style */}
+      <Card className="w-full max-w-2xl mx-auto bg-card/80 backdrop-blur border-0 shadow-2xl rounded-3xl overflow-hidden">
+        {/* Progress Header */}
         {!isTemplateCreationMode && (
-          <CardHeader className="pb-6 pt-8 px-10 bg-gradient-to-b from-primary/5 to-transparent">
+          <CardHeader className="pt-8 pb-6 px-10">
             <div className="flex justify-between items-center mb-4">
-              <div className="text-sm font-bold text-muted-foreground uppercase tracking-wider">
+              <div className="text-sm font-bold text-muted-foreground uppercase tracking-widest">
                 Step {currentDisplayStep} of {totalDisplaySteps}
               </div>
               <div className="text-sm font-bold text-primary">{Math.round(progress)}%</div>
             </div>
-            <div className="w-full bg-secondary rounded-full h-2.5">
+            <div className="w-full bg-muted/50 rounded-full h-2">
               <div
-                className="bg-primary h-2.5 rounded-full transition-all duration-500 ease-out"
+                className="bg-primary h-2 rounded-full transition-all duration-500"
                 style={{ width: `${progress}%` }}
               />
             </div>
           </CardHeader>
         )}
 
-        {/* Main content + fixed bottom button bar */}
-        <div className="flex flex-col min-h-[600px]">
-          {/* Scrollable content area */}
-          <CardContent className="flex-1 px-10 pt-6 pb-32 overflow-y-auto">
-            {renderWizardStepContent()}
-          </CardContent>
+        {/* Main Content */}
+        <CardContent className="px-10 pb-10">
+          <div className="min-h-[420px] flex flex-col justify-between">
+            <div className="space-y-8">
+              {renderWizardStepContent()}
+            </div>
 
-          {/* Fixed button bar at the bottom - never moves */}
-          {!isTemplateCreationMode && (
-            <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border/50 shadow-lg">
-              <div className="max-w-2xl mx-auto px-10 py-6 flex justify-between items-center">
+            {/* Fixed button section inside the card */}
+            {!isTemplateCreationMode && (
+              <div className="flex justify-between items-center mt-12 pt-8 border-t border-border/30">
                 <Button
                   variant="outline"
                   size="lg"
                   onClick={handleBack}
                   disabled={isSaving || (currentStep === 1 && currentMicroStep === 0)}
-                  className="rounded-2xl px-10 py-6 text-base"
+                  className="rounded-full px-10 py-6 text-base border-muted-foreground/30"
                 >
                   Back
                 </Button>
@@ -564,7 +563,7 @@ const HabitWizard = () => {
                   size="lg"
                   onClick={() => handleSaveAndNext({})}
                   disabled={isSaving || isNextDisabled}
-                  className="rounded-2xl px-14 py-6 text-base font-semibold shadow-md"
+                  className="rounded-full px-12 py-6 text-base font-medium shadow-lg bg-primary hover:bg-primary/90"
                 >
                   {isSaving ? (
                     <>
@@ -576,14 +575,14 @@ const HabitWizard = () => {
                   )}
                 </Button>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        </CardContent>
       </Card>
 
-      {/* Reset progress button below the card */}
+      {/* Reset button below card */}
       {wizardProgress && !isTemplateCreationMode && (
-        <div className="flex justify-center mt-12">
+        <div className="flex justify-center mt-10">
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="ghost" size="sm" className="text-xs text-muted-foreground hover:text-destructive">
