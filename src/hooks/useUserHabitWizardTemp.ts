@@ -31,6 +31,13 @@ export interface WizardHabitData {
   barriers: string[]; // e.g., ['time', 'energy', 'focus']
   confidence_level: number; // 1-10
   motivation_type: 'stress_reduction' | 'skill_development' | 'health_improvement' | 'routine_building' | null;
+  // Step 5 fields
+  timing_preference?: string; // 'morning', 'midday', etc.
+  flexibility?: 'strict' | 'flexible' | 'none';
+  sequence_bias?: 'early' | 'after_core' | 'energy_based';
+  soft_lock?: boolean;
+  carryover_enabled?: boolean;
+  safety_net_choice?: 'none' | 'rollover' | 'gentle';
 }
 
 export interface UserHabitWizardTemp {
