@@ -121,7 +121,6 @@ const initializeSelectedHabits = async (userId: string, params: OnboardingHabitP
       energy_cost_per_unit: template.energyCostPerUnit,
       current_daily_goal: currentDailyGoal,
       long_term_goal: currentDailyGoal * (template.unit === 'min' ? 365 * 60 : 365),
-      target_completion_date: oneYearDateString,
       momentum_level: 'Building',
       lifetime_progress: 0,
       last_goal_increase_date: today.toISOString().split('T')[0],
@@ -193,8 +192,7 @@ const initializeSelectedHabits = async (userId: string, params: OnboardingHabitP
   if (finalHabitsToUpsert.length > 0) {
     const { error: upsertError } = await supabase
       .from('user_habits')
-      .upsert(finalHabitsToUpsert, { onConflict: 'user_id, habit_key', ignoreDuplicates: true });
-
+      .upsert(finalHabitsToUpsert, { onConflict: 'user_id, habit_key' }); // Removed ignoreDuplicates: true
     if (upsertError) throw upsertError;
   }
 

@@ -114,7 +114,7 @@ const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: s
     carryover_value: 0, // Initialize carryover_value
   };
 
-  const { error } = await supabase.from('user_habits').insert(habitToInsert);
+  const { error } = await supabase.from('user_habits').upsert(habitToInsert, { onConflict: 'user_id, habit_key' });
 
   if (error) throw error;
   return { success: true };
