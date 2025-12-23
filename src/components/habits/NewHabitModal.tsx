@@ -90,6 +90,12 @@ const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: s
   const roundedNumChunks = Math.round(numChunks);
   const roundedLifetimeProgress = Math.round(0); // Lifetime progress starts at 0, ensure it's an integer
 
+  // Ensure dependent_on_habit_id is null if empty string
+  const finalDependentOnHabitId = dependent_on_habit_id === '' ? null : dependent_on_habit_id;
+  // Ensure window_start and window_end are null if 'none'
+  const finalWindowStart = window_start === 'none' ? null : window_start;
+  const finalWindowEnd = window_end === 'none' ? null : window_end;
+
   // Call the RPC function instead of upsert
   const { error } = await supabase.rpc('upsert_user_habit', {
     p_user_id: userId,
@@ -106,10 +112,10 @@ const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: s
     p_xp_per_unit: roundedXpPerUnit, // Use rounded value
     p_energy_cost_per_unit: energy_cost_per_unit,
     p_icon_name: icon_name,
-    p_dependent_on_habit_id: dependent_on_habit_id,
+    p_dependent_on_habit_id: finalDependentOnHabitId, // Use final value
     p_plateau_days_required: roundedPlateauDaysRequired, // Use rounded value
-    p_window_start: window_start,
-    p_window_end: window_end,
+    p_window_start: finalWindowStart, // Use final value
+    p_window_end: finalWindowEnd, // Use final value
     p_carryover_enabled: carryover_enabled,
     p_long_term_goal: roundedLongTermGoal, // Use rounded value
     p_target_completion_date: oneYearDateString,
