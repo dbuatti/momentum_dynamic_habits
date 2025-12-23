@@ -65,11 +65,15 @@ const Index = () => {
 
       const capsules = Array.from({ length: numChunks }).map((_, i) => {
         const dbCapsule = dbCapsules?.find(c => c.habit_key === habit.key && c.capsule_index === i);
-        const threshold = (i + 1) * chunkValue;
-        const isCompleted = dbCapsule?.is_completed || progress >= (i === numChunks - 1 ? goal : threshold);
+        const isCompletedByDb = dbCapsule?.is_completed || false; // Explicitly check DB completion
+        
+        // The initialValue for a capsule should be its full value if completed, otherwise 0.
+        // The timer will then track additional elapsed time.
+        const initialValueForCapsule = isCompletedByDb ? chunkValue : 0;
 
-        const calculatedInitialValue = Math.max(0, Math.min(chunkValue, progress - (i * chunkValue)));
-        console.log('[Index] Calculating capsule initialValue for', { habitKey: habit.key, index: i, progress, chunkValue, calculatedInitialValue });
+        // The overall habit.dailyProgress is still used for the `allCompleted` check and overall progress bar.
+        // But for individual capsules, we want to know if *this specific capsule* is completed.
+        const isCompleted = isCompletedByDb; // Use this for the prop
 
         return {
           id: `${habit.key}-${i}`,
@@ -77,7 +81,7 @@ const Index = () => {
           index: i,
           label: habit.auto_chunking ? `Part ${i + 1}` : (habit.enable_chunks ? `Part ${i + 1}` : (habit.is_trial_mode ? 'Trial Session' : 'Daily Goal')),
           value: chunkValue,
-          initialValue: calculatedInitialValue, // This is the key line
+          initialValue: initialValueForCapsule, // This is the change
           unit: habit.unit,
           isCompleted,
           scheduledTime: dbCapsule?.scheduled_time,
@@ -224,7 +228,7 @@ const Index = () => {
             <div className="flex items-center gap-5 text-left w-full">
               <div className={cn(
                 "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border border-border",
-                habit.allCompleted ? "bg-card" : "bg-card/90"
+                habit.allCompleted ? "bg-card/80" : "bg-card/90"
               )}>
                 <Icon className="w-6 h-6" />
               </div>
