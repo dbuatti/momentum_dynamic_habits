@@ -314,7 +314,7 @@ const CreateHabit = () => {
     const progress = (currentGuidedStep / totalGuidedSteps) * 100;
 
     return (
-      <Card className="w-full max-w-md shadow-xl rounded-3xl overflow-hidden border-0">
+      <Card className="w-full max-w-md mx-auto shadow-xl rounded-3xl overflow-hidden border-0">
         <CardHeader className="pb-0">
           <div className="flex justify-between items-center mb-4">
             <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Step {currentGuidedStep} of {totalGuidedSteps}</div>
@@ -503,7 +503,7 @@ const CreateHabit = () => {
     }, [dependentOnHabitId, otherHabits]);
 
     return (
-      <form onSubmit={handleSubmit} className="space-y-8">
+      <form onSubmit={handleSubmit} className="space-y-8 max-w-md mx-auto">
         <Card className="rounded-3xl shadow-sm border-0">
           <CardHeader className="p-6 pb-4">
             <CardTitle className="flex items-center gap-3 text-lg font-bold">
@@ -828,7 +828,7 @@ const CreateHabit = () => {
       <PageHeader title="Create New Habit" />
 
       {flowType === 'entry' && (
-        <div className="space-y-6 text-center">
+        <div className="space-y-6 text-center max-w-md mx-auto">
           <div className="mx-auto w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mb-6">
             <Target className="w-12 h-12 text-primary" />
           </div>
