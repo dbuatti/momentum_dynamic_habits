@@ -65,7 +65,7 @@ const LandingPage = () => {
       <section className="relative pt-20 pb-16 md:pt-32 md:pb-32 overflow-hidden">
         <div className="container mx-auto px-6 text-center space-y-10 relative z-10">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 mb-4">
-            <Sparkles className="w-4 h-4" />
+            <Sparkles className="w-4 h-4" /> {/* <-- TypeScript compiler error here */}
             <span className="text-[10px] font-black uppercase tracking-widest">Built for ADHD & Neurodivergence</span>
           </div>
           

@@ -39,14 +39,40 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
   if (!userHabitDataResult || userHabitFetchError) throw userHabitFetchError || new Error(`Habit data not found for key: ${habitKey}`);
   const userHabitData: UserHabitRecord = userHabitDataResult; // Explicitly type userHabitData
 
-  const actualValue = habitConfig.type === 'time' && habitConfig.unit === 'min' ? value * 60 : value;
-  const xpEarned = Math.round(actualValue * habitConfig.xpPerUnit);
-  const energyCost = Math.round(actualValue * habitConfig.energyCostPerUnit);
+  let xpBaseValue = value; // This will be in reps or minutes, used for XP calculation
+  let lifetimeProgressIncrementValue = value; // This will be in reps or minutes, used for lifetime progress
+  let durationUsedForDB = null; // This will be in seconds for time-based habits
+
+  if (habitConfig.type === 'time' && habitConfig.unit === 'min') {
+    // For time-based habits, 'value' is in minutes.
+    // XP is calculated based on minutes (xpBaseValue).
+    // lifetime_progress in DB is in seconds, so increment by seconds.
+    // duration_used in completedtasks is in seconds.
+    durationUsedForDB = value * 60; // Convert minutes to seconds for DB storage
+    lifetimeProgressIncrementValue = value * 60; // Convert minutes to seconds for lifetime progress
+  } else {
+    // For count-based habits, 'value' is in reps.
+    // XP is calculated based on reps (xpBaseValue).
+    // lifetime_progress in DB is in reps, so increment by reps.
+    // duration_used is null.
+    durationUsedForDB = null;
+    lifetimeProgressIncrementValue = value; // Already in reps
+  }
+
+  const xpEarned = Math.round(xpBaseValue * habitConfig.xpPerUnit);
+  const energyCost = Math.round(xpBaseValue * habitConfig.energyCostPerUnit);
+
+  console.log(`[XP Debug] Logging habit: ${habitKey}, value: ${value} ${habitConfig.unit}`);
+  console.log(`[XP Debug]   xpBaseValue: ${xpBaseValue}, xpPerUnit: ${habitConfig.xpPerUnit}, xpEarned: ${xpEarned}`);
+  console.log(`[XP Debug]   lifetimeProgressIncrementValue: ${lifetimeProgressIncrementValue}`);
+  console.log(`[XP Debug]   durationUsedForDB: ${durationUsedForDB}`);
+  console.log(`[XP Debug]   energyCost: ${energyCost}`);
 
   const { error: insertError } = await supabase.from('completedtasks').insert({
     user_id: userId, original_source: habitKey, task_name: taskName,
-    duration_used: habitConfig.type === 'time' ? actualValue : null,
-    xp_earned: xpEarned, energy_cost: energyCost, difficulty_rating: difficultyRating || null,
+    duration_used: durationUsedForDB,
+    xp_earned: xpEarned,
+    energy_cost: energyCost, difficulty_rating: difficultyRating || null,
     completed_at: new Date().toISOString(),
     note: note || null,
   });
@@ -54,7 +80,7 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
   if (insertError) throw insertError;
 
   await supabase.rpc('increment_lifetime_progress', {
-    p_user_id: userId, p_habit_key: habitKey, p_increment_value: actualValue,
+    p_user_id: userId, p_habit_key: habitKey, p_increment_value: lifetimeProgressIncrementValue,
   });
 
   // Fetch current daily progress *after* this log
@@ -198,10 +224,23 @@ const unlogHabit = async ({ userId, habitKey, taskName }: { userId: string, habi
   if (findError || !task) throw findError || new Error('Task not found');
 
   const habitConfig = initialHabits.find(h => h.id === habitKey);
-  const valueToRevert = habitConfig?.type === 'time' ? (task.duration_used || 0) : task.xp_earned;
-  
+  if (!habitConfig) throw new Error(`Habit configuration not found for key: ${habitKey}`);
+
+  let lifetimeProgressDecrementValue;
+  if (habitConfig.type === 'time' && habitConfig.unit === 'min') {
+    lifetimeProgressDecrementValue = task.duration_used || 0; // In seconds
+  } else {
+    // For count-based habits, lifetime_progress is in reps.
+    // task.xp_earned is XP, so convert back to reps.
+    lifetimeProgressDecrementValue = (task.xp_earned || 0) / (habitConfig.xpPerUnit || 1);
+  }
+
+  console.log(`[XP Debug] Unlogging habit: ${habitKey}, task_id: ${task.id}`);
+  console.log(`[XP Debug]   xp_earned to revert: ${task.xp_earned}`);
+  console.log(`[XP Debug]   lifetimeProgressDecrementValue: ${lifetimeProgressDecrementValue}`);
+
   await supabase.rpc('increment_lifetime_progress', {
-    p_user_id: userId, p_habit_key: habitKey, p_increment_value: -valueToRevert,
+    p_user_id: userId, p_habit_key: habitKey, p_increment_value: -lifetimeProgressDecrementValue,
   });
 
   const { data: profile } = await supabase.from('profiles').select('xp, tasks_completed_today').eq('id', userId).single();
