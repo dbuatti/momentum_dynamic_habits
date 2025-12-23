@@ -145,6 +145,11 @@
     --habit-purple: 250 50% 15%; /* Darker purple for background */
     --habit-purple-foreground: 250 70% 70%; /* Lighter purple for text */
     --habit-purple-border: 250 40% 30%; /* Medium dark purple for border */
+
+    /* Dark mode specific habit-green colors for better contrast */
+    --habit-green: 145 50% 15%; /* Darker green for background */
+    --habit-green-foreground: 145 70% 70%; /* Lighter green for text */
+    --habit-green-border: 145 40% 30%; /* Medium dark green for border */
   }
 
   /* Landing Page specific theme override */
