@@ -19,9 +19,9 @@ interface HabitCapsuleProps {
   isCompleted: boolean;
   initialValue?: number;
   scheduledTime?: string;
-  completedTaskId?: string | null; // New prop
+  completedTaskId?: string | null;
   onLogProgress: (actualValue: number, isComplete: boolean, mood?: string) => void;
-  onUncomplete: (completedTaskId: string) => void; // Now accepts completedTaskId
+  onUncomplete: (completedTaskId: string) => void;
   color: 'orange' | 'blue' | 'green' | 'purple' | 'red' | 'indigo';
   showMood?: boolean;
 }
@@ -35,7 +35,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   isCompleted,
   initialValue = 0,
   scheduledTime,
-  completedTaskId: initialCompletedTaskId, // Use initialCompletedTaskId from props
+  completedTaskId: initialCompletedTaskId,
   onLogProgress,
   onUncomplete,
   color,
@@ -46,7 +46,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [goalReachedAlerted, setGoalReachedAlerted] = useState(false);
-  const [completedTaskIdState, setCompletedTaskIdState] = useState<string | null>(initialCompletedTaskId || null); // State for completedTaskId
+  const [completedTaskIdState, setCompletedTaskIdState] = useState<string | null>(initialCompletedTaskId || null);
   
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number | null>(null);
@@ -55,7 +55,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   const storageKey = `timer_${habitKey}_${label}_${new Date().toISOString().split('T')[0]}`;
 
   const formatTime = (totalSeconds: number) => {
-    const roundedTotalSeconds = Math.round(totalSeconds); // Round the total seconds first
+    const roundedTotalSeconds = Math.round(totalSeconds);
     const mins = Math.floor(roundedTotalSeconds / 60);
     const secs = roundedTotalSeconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
@@ -102,7 +102,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   }, [elapsedSeconds, isTiming, isTimeBased, value, initialValue, goalReachedAlerted]);
 
   useEffect(() => {
-    // Update internal state if prop changes
     setCompletedTaskIdState(initialCompletedTaskId || null);
 
     if (isCompleted) {
@@ -177,9 +176,8 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     }
   };
 
-  // New: Reset timer function
   const handleResetTimer = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent event propagation
+    e.stopPropagation();
     stopInterval();
     setElapsedSeconds(0);
     setIsTiming(false);
@@ -188,9 +186,9 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     startTimeRef.current = null;
     localStorage.removeItem(storageKey);
     window.dispatchEvent(new CustomEvent('habit-timer-update', { detail: null }));
-    if (completedTaskIdState) { // Only uncomplete if there's a task ID
-      onUncomplete(completedTaskIdState); // Call onUncomplete to reset the capsule in the database
-      setCompletedTaskIdState(null); // Clear the state
+    if (completedTaskIdState) {
+      onUncomplete(completedTaskIdState);
+      setCompletedTaskIdState(null);
     }
   };
 
@@ -217,7 +215,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     localStorage.removeItem(storageKey);
     window.dispatchEvent(new CustomEvent('habit-timer-update', { detail: null }));
     
-    onLogProgress(totalSessionMinutes, true, mood); // This will trigger the parent to update completedTaskIdState
+    onLogProgress(totalSessionMinutes, true, mood);
     setIsTiming(false);
     setElapsedSeconds(0);
     setShowMoodPicker(false);
@@ -239,7 +237,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     localStorage.removeItem(storageKey);
     window.dispatchEvent(new CustomEvent('habit-timer-update', { detail: null }));
     
-    onLogProgress(value, true); // This will trigger the parent to update completedTaskIdState
+    onLogProgress(value, true);
   };
 
   const currentTotalMinutes = isTimeBased ? initialValue + (elapsedSeconds / 60) : initialValue;
@@ -247,8 +245,8 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
 
   const colors = {
     orange: { 
-      light: 'from-habit-orange/60', // Adjusted opacity
-      mid: 'via-habit-orange/80',    // Adjusted opacity
+      light: 'from-habit-orange/60', 
+      mid: 'via-habit-orange/80', 
       dark: 'to-habit-orange', 
       wave: 'hsl(var(--habit-orange))', 
       bg: 'bg-habit-orange', 
@@ -344,23 +342,23 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
               animate={{ height: `${progressPercent}%` }}
               transition={{ type: "spring", stiffness: 80, damping: 20 }}
             >
-              <div className={cn("absolute inset-0 bg-gradient-to-t", colors.light, colors.mid, colors.dark, "shadow-inner-lg")} /> {/* Added shadow-inner-lg */}
+              <div className={cn("absolute inset-0 bg-gradient-to-t", colors.light, colors.mid, colors.dark, "shadow-inner-lg")} />
               <div className="absolute inset-0 overflow-hidden">
                 <motion.div
                   className={cn("absolute inset-x-0 h-16 opacity-40")}
-                  animate={{ y: ["0%", "-50%", "0%"], x: ["-10%", "10%", "-10%"] }} // More organic wave motion
+                  animate={{ y: ["0%", "-50%", "0%"], x: ["-10%", "10%", "-10%"] }}
                   transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
                   style={{ 
-                    background: `linear-gradient(to right, transparent, ${colors.wave}33, transparent)`, // Use wave color with opacity
+                    background: `linear-gradient(to right, transparent, ${colors.wave}33, transparent)`,
                     transform: "translateY(4px) rotate(2deg)" 
                   }}
                 />
                 <motion.div
                   className={cn("absolute inset-x-0 h-16 opacity-30")}
-                  animate={{ y: ["-50%", "0%", "-50%"], x: ["10%", "-10%", "10%"] }} // More organic wave motion
+                  animate={{ y: ["-50%", "0%", "-50%"], x: ["10%", "-10%", "10%"] }}
                   transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
                   style={{ 
-                    background: `linear-gradient(to right, transparent, ${colors.wave}22, transparent)`, // Use wave color with opacity
+                    background: `linear-gradient(to right, transparent, ${colors.wave}22, transparent)`,
                     transform: "translateY(-2px) rotate(-1deg)" 
                   }}
                 />
@@ -420,7 +418,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                     e.stopPropagation();
                     if (completedTaskIdState) {
                       onUncomplete(completedTaskIdState);
-                      setCompletedTaskIdState(null); // Clear the state after uncompleting
+                      setCompletedTaskIdState(null);
                     }
                   }}
                 >
@@ -456,7 +454,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                 </div>
                 
                 <div className="flex gap-3">
-                  {/* Reset button added here */}
+                  {/* Reset button moved to LEFT side */}
                   <Button
                     size="icon"
                     variant="ghost"
