@@ -6,7 +6,7 @@ export interface HabitTemplate {
   name: string;
   category: HabitCategory;
   defaultFrequency: number;
-  defaultDuration: number; // in minutes
+  defaultDuration: number; // in minutes or reps/doses
   defaultMode: 'Trial' | 'Growth' | 'Fixed';
   defaultChunks: number;
   autoChunking: boolean;
@@ -32,8 +32,7 @@ export const habitTemplates: HabitTemplate[] = [
     unit: "min",
     xpPerUnit: 42,
     energyCostPerUnit: 9,
-    icon: BookOpen,
-    plateauDaysRequired: 7,
+    plateauDaysRequired: 7, // Default for standard trial
   },
   {
     id: "exercise_generic",
@@ -48,8 +47,7 @@ export const habitTemplates: HabitTemplate[] = [
     unit: "min",
     xpPerUnit: 30,
     energyCostPerUnit: 6,
-    icon: Dumbbell,
-    plateauDaysRequired: 7,
+    plateauDaysRequired: 7, // Default for standard trial
   },
   {
     id: "mindfulness_generic",
@@ -64,8 +62,7 @@ export const habitTemplates: HabitTemplate[] = [
     unit: "min",
     xpPerUnit: 30,
     energyCostPerUnit: 6,
-    icon: Wind,
-    plateauDaysRequired: 7,
+    plateauDaysRequired: 7, // Default for standard trial
   },
   {
     id: "creative_practice_generic",
@@ -81,7 +78,7 @@ export const habitTemplates: HabitTemplate[] = [
     xpPerUnit: 36,
     energyCostPerUnit: 7.2,
     icon: Music,
-    plateauDaysRequired: 7,
+    plateauDaysRequired: 7, // Default for standard trial
   },
   {
     id: "daily_task_generic",
@@ -97,7 +94,7 @@ export const habitTemplates: HabitTemplate[] = [
     xpPerUnit: 24,
     energyCostPerUnit: 4.8,
     icon: Home,
-    plateauDaysRequired: 7,
+    plateauDaysRequired: 7, // Default for standard trial
   },
   {
     id: "fixed_medication",
@@ -113,7 +110,7 @@ export const habitTemplates: HabitTemplate[] = [
     xpPerUnit: 10,
     energyCostPerUnit: 0,
     icon: Pill,
-    plateauDaysRequired: 7,
+    plateauDaysRequired: 7, // Fixed habits still track consistency
   },
   {
     id: "fixed_teeth_brushing",
@@ -129,7 +126,7 @@ export const habitTemplates: HabitTemplate[] = [
     xpPerUnit: 5,
     energyCostPerUnit: 0,
     icon: Sparkles,
-    plateauDaysRequired: 7,
+    plateauDaysRequired: 7, // Fixed habits still track consistency
   },
   {
     id: "custom_habit",
@@ -145,7 +142,7 @@ export const habitTemplates: HabitTemplate[] = [
     xpPerUnit: 30,
     energyCostPerUnit: 6,
     icon: Target,
-    plateauDaysRequired: 7,
+    plateauDaysRequired: 7, // Default for custom trial
   },
 ];
 

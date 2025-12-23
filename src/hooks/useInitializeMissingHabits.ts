@@ -62,6 +62,17 @@ const initializeSelectedHabits = async (userId: string, params: OnboardingHabitP
   // Ensure unique templates if multiple categories are selected
   const uniqueTemplates = Array.from(new Map(availableTemplates.map(item => [item.id, item])).values());
 
+  // Sort templates: Anchor practices first if foundational, then by category, then by name
+  uniqueTemplates.sort((a, b) => {
+    if (isFoundational) {
+      if (a.anchorPractice && !b.anchorPractice) return -1;
+      if (!a.anchorPractice && b.anchorPractice) return 1;
+    }
+    if (a.category < b.category) return -1;
+    if (a.category > b.category) return 1;
+    return a.name.localeCompare(b.name);
+  });
+
   // Select a subset of templates based on numHabits
   const selectedTemplates = uniqueTemplates.slice(0, numHabits);
 
@@ -132,6 +143,7 @@ const initializeSelectedHabits = async (userId: string, params: OnboardingHabitP
       num_chunks: numChunks,
       chunk_duration: chunkDuration,
       is_visible: true,
+      dependent_on_habit_id: null,
       anchor_practice: template.anchorPractice, // Set anchor_practice from template
     };
   });
@@ -170,6 +182,7 @@ const initializeSelectedHabits = async (userId: string, params: OnboardingHabitP
     num_chunks: 1,
     chunk_duration: template.defaultDuration,
     is_visible: true,
+    dependent_on_habit_id: null,
     anchor_practice: template.anchorPractice,
   }));
 
