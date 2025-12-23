@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils";
 import { TipCard } from "@/components/dashboard/TipCard";
 import { calculateDynamicChunks } from "@/utils/progress-utils";
 import { MacroGoalProgress } from "@/components/dashboard/MacroGoalProgress";
-import { Progress } from "@/components/ui/progress";
+import { Progress } from "@/components/ui/progress';
 import { TrialStatusCard } from "@/components/dashboard/TrialStatusCard";
 import { GrowthGuide } from "@/components/dashboard/GrowthGuide";
 import { Link } from "react-router-dom";
@@ -191,10 +191,10 @@ const Index = () => {
         key={habit.key}
         value={habit.key}
         className={cn(
-          "border-2 rounded-[32px] shadow-sm overflow-hidden transition-all duration-300",
+          "border-2 rounded-3xl mb-4 overflow-hidden transition-all duration-500",
           habit.allCompleted ? "opacity-50 grayscale-[0.3] border-muted bg-muted/5" : cn(accentColorClasses, "shadow-md"),
           !habit.isWithinWindow && !habit.allCompleted && "opacity-75",
-          isLocked && "opacity-40 grayscale-[0.5] pointer-events-none" // Apply styles for locked habits
+          isLocked && "opacity-40 grayscale-[0.5]" // Apply styles for locked habits
         )}
       >
         <AccordionTrigger className="px-6 py-5 hover:no-underline group">
@@ -245,7 +245,7 @@ const Index = () => {
               </div>
             </div>
 
-            {habit.isLockedByDependency && (
+            {isLocked && (
               <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2 ml-[72px]">
                 <Lock className="w-3.5 h-3.5" />
                 <span>Locked. Complete {dependentHabitName} first.</span>
@@ -262,48 +262,48 @@ const Index = () => {
                 </Button>
               </div>
             )}
-
-            <div className="grid grid-cols-2 gap-4 border-t border-border pt-4">
-                <div className="space-y-1">
-                    <p className="text-[9px] font-black uppercase opacity-50 tracking-widest">
-                      {isTrial ? "Session Target" : "Daily Goal"}
-                    </p>
-                    <div className="flex items-center gap-2">
-                        <Target className="w-3.5 h-3.5 opacity-40" />
-                        <p className="text-sm font-black">
-                          {Math.round(habit.dailyGoal)} {habit.unit}
-                          {habit.carryoverValue > 0 && (
-                            <span className="ml-1 text-[10px] font-bold text-success"> (+{Math.round(habit.carryoverValue)} carryover)</span>
-                          )}
-                        </p>
-                    </div>
-                </div>
-                <div className="space-y-1">
-                    <p className="text-[9px] font-black uppercase opacity-50 tracking-widest">Weekly Goal</p>
-                    <div className="flex items-center gap-2">
-                        <TrendingUp className="w-3.5 h-3.5 opacity-40" />
-                        <p className="text-sm font-black">{Math.round(habit.weekly_goal)} {habit.unit}</p>
-                    </div>
-                </div>
-            </div>
-            
-            <div className="w-full">
-              <MacroGoalProgress 
-                current={habit.weekly_completions} 
-                total={habit.frequency_per_week} 
-                label={isTrial ? "Weekly Session Log" : "Weekly Consistency"}
-              />
-            </div>
-            {/* Daily Progress Bar */}
-            <div className="w-full mt-2">
-              <Progress
-                value={(habit.dailyProgress / habit.adjustedDailyGoal) * 100}
-                className="h-1.5 [&>div]:bg-primary"
-              />
-            </div>
           </div>
         </AccordionTrigger>
         <AccordionContent className="px-6 pb-6 pt-2 space-y-6">
+          <div className="grid grid-cols-2 gap-4 border-t border-border pt-4">
+              <div className="space-y-1">
+                  <p className="text-[9px] font-black uppercase opacity-50 tracking-widest">
+                    {isTrial ? "Session Target" : "Daily Goal"}
+                  </p>
+                  <div className="flex items-center gap-2">
+                      <Target className="w-3.5 h-3.5 opacity-40" />
+                      <p className="text-sm font-black">
+                        {Math.round(habit.dailyGoal)} {habit.unit}
+                        {habit.carryoverValue > 0 && (
+                          <span className="ml-1 text-[10px] font-bold text-success"> (+{Math.round(habit.carryoverValue)} carryover)</span>
+                        )}
+                      </p>
+                  </div>
+              </div>
+              <div className="space-y-1">
+                  <p className="text-[9px] font-black uppercase opacity-50 tracking-widest">Weekly Goal</p>
+                  <div className="flex items-center gap-2">
+                      <TrendingUp className="w-3.5 h-3.5 opacity-40" />
+                      <p className="text-sm font-black">{Math.round(habit.weekly_goal)} {habit.unit}</p>
+                  </div>
+              </div>
+          </div>
+          
+          <div className="w-full">
+            <MacroGoalProgress 
+              current={habit.weekly_completions} 
+              total={habit.frequency_per_week} 
+              label={isTrial ? "Weekly Session Log" : "Weekly Consistency"}
+            />
+          </div>
+          {/* Daily Progress Bar */}
+          <div className="w-full mt-2">
+            <Progress
+              value={(habit.dailyProgress / habit.adjustedDailyGoal) * 100}
+              className="h-1.5 [&>div]:bg-primary"
+            />
+          </div>
+
           {/* Enhanced Trial Mode Context */}
           {isTrial && !habit.allCompleted && (
             <TrialStatusCard 
@@ -393,7 +393,7 @@ const Index = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <div className="max-w-2xl mx-auto w-full px-4 py-6 pb-32">
+      <div className="max-w-3xl mx-auto w-full px-4 py-6 pb-32"> {/* Adjusted max-w-2xl to max-w-3xl */}
         <div className="mb-4">
            <HomeHeader
             dayCounter={data.daysActive}

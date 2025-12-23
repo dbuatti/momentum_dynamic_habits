@@ -7,6 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { getXpForNextLevel, getXpForCurrentLevelStart } from '@/utils/leveling'; // Import leveling utils
 
 interface HomeHeaderProps {
   dayCounter: number;
@@ -50,12 +51,12 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
   const displayName = [firstName, lastName].filter(Boolean).join(' ') || 'User';
   
   // Calculate XP for level progression
-  const xpForCurrentLevel = 50 * level * (level - 1);
-  const xpForNextLevel = 50 * (level + 1) * level;
+  const xpForCurrentLevelStart = getXpForCurrentLevelStart(level);
+  const xpForNextLevel = getXpForNextLevel(level);
   
   // Ensure XP progress is non-negative
-  const xpProgressInCurrentLevel = Math.max(0, xp - xpForCurrentLevel);
-  const xpNeededForNextLevel = xpForNextLevel - xpForCurrentLevel;
+  const xpProgressInCurrentLevel = Math.max(0, xp - xpForCurrentLevelStart);
+  const xpNeededForNextLevel = xpForNextLevel - xpForCurrentLevelStart;
   
   const levelProgress = xpNeededForNextLevel > 0 
     ? (xpProgressInCurrentLevel / xpNeededForNextLevel) * 100 
@@ -72,7 +73,7 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
             </Button>
           </Link>
           
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pr-10">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pr-10">
             <div className="flex items-center gap-3">
               <Avatar className="w-14 h-14 border-2 border-primary/20">
                 <AvatarImage src="" />
@@ -81,7 +82,7 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
                 </AvatarFallback>
               </Avatar>
               <div>
-                <h1 className="text-xl md:text-2xl font-bold text-foreground">
+                <h1 className="text-xl sm:text-2xl font-bold text-foreground">
                   {getGreeting(firstName, lastName)}
                 </h1>
                 <div className="flex items-center text-sm text-muted-foreground mt-1">
@@ -91,24 +92,25 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
               </div>
             </div>
             
-            <div className="flex flex-col items-end">
-              <div className="flex items-center gap-3">
-                <div className="text-right">
-                  <p className="text-xs font-semibold text-muted-foreground flex items-center">
-                    <Trophy className="w-3 h-3 mr-1" />
-                    LVL {level}
-                  </p>
-                  <p className="text-lg font-bold text-foreground">{xp} XP</p>
-                </div>
-                <div className="bg-primary rounded-full w-14 h-14 flex items-center justify-center shadow-md">
-                  <span className="text-lg font-bold text-primary-foreground">{level}</span>
-                </div>
+            <div className="flex flex-col items-end sm:items-center md:flex-row md:gap-3">
+              <div className="text-right md:text-center">
+                <p className="text-xs font-semibold text-muted-foreground flex items-center justify-end md:justify-center">
+                  <Trophy className="w-3 h-3 mr-1" />
+                  LVL {level}
+                </p>
+                <p className="text-lg font-bold text-foreground">{xp} XP</p>
               </div>
-              <p className="text-sm text-muted-foreground mt-1">
+              <div className="bg-primary rounded-full w-14 h-14 flex items-center justify-center shadow-md mt-2 md:mt-0">
+                <span className="text-lg font-bold text-primary-foreground">{level}</span>
+              </div>
+              <p className="text-sm text-muted-foreground mt-1 md:hidden">
                 Day {dayCounter} • {formattedTime}
               </p>
             </div>
           </div>
+          <p className="text-sm text-muted-foreground mt-2 hidden md:block text-right">
+            Day {dayCounter} • {formattedTime}
+          </p>
         </div>
         
         {/* Progress bar */}
