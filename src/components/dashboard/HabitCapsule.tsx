@@ -226,16 +226,29 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     onComplete(value); 
   };
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isCompleted || showMoodPicker) return;
+
+    if (isTiming) {
+      handlePauseTimer(e);
+    } else if (isTimeBased) {
+      handleStartTimer(e);
+    } else {
+      handleQuickComplete(e);
+    }
+  };
+
   const currentTotalMinutes = isTimeBased ? initialValue + (elapsedSeconds / 60) : initialValue;
   const progressPercent = Math.min(100, (currentTotalMinutes / value) * 100);
 
   const colorMap = {
-    orange: { light: 'from-orange-300', dark: 'to-orange-600', wave: '#fb923c', bg: 'bg-orange-50', border: 'border-orange-100', text: 'text-orange-900', iconBg: 'bg-orange-200' },
-    blue: { light: 'from-blue-300', dark: 'to-blue-600', wave: '#60a5fa', bg: 'bg-blue-50', border: 'border-blue-100', text: 'text-blue-900', iconBg: 'bg-blue-200' },
-    green: { light: 'from-green-300', dark: 'to-green-600', wave: '#4ade80', bg: 'bg-green-50', border: 'border-green-100', text: 'text-green-900', iconBg: 'bg-green-200' },
-    purple: { light: 'from-purple-300', dark: 'to-purple-600', wave: '#a78bfa', bg: 'bg-purple-50', border: 'border-purple-100', text: 'text-purple-900', iconBg: 'bg-purple-200' },
-    red: { light: 'from-red-300', dark: 'to-red-600', wave: '#f87171', bg: 'bg-red-50', border: 'border-red-100', text: 'text-red-900', iconBg: 'bg-red-200' },
-    indigo: { light: 'from-indigo-300', dark: 'to-indigo-600', wave: '#6366f1', bg: 'bg-indigo-50', border: 'border-indigo-100', text: 'text-indigo-900', iconBg: 'bg-indigo-200' },
+    orange: { light: 'from-orange-300', dark: 'to-orange-600', wave: '#fb923c', bg: 'bg-habit-orange', border: 'border-habit-orange', text: 'text-habit-orange-foreground', iconBg: 'bg-white/90' },
+    blue: { light: 'from-blue-300', dark: 'to-blue-600', wave: '#60a5fa', bg: 'bg-habit-blue', border: 'border-habit-blue', text: 'text-habit-blue-foreground', iconBg: 'bg-white/90' },
+    green: { light: 'from-green-300', dark: 'to-green-600', wave: '#4ade80', bg: 'bg-habit-green', border: 'border-habit-green-border', text: 'text-habit-green-foreground', iconBg: 'bg-white/90' },
+    purple: { light: 'from-purple-300', dark: 'to-purple-600', wave: '#a78bfa', bg: 'bg-habit-purple', border: 'border-habit-purple-border', text: 'text-habit-purple-foreground', iconBg: 'bg-white/90' },
+    red: { light: 'from-red-300', dark: 'to-red-600', wave: '#f87171', bg: 'bg-habit-red', border: 'border-habit-red-border', text: 'text-habit-red-foreground', iconBg: 'bg-white/90' },
+    indigo: { light: 'from-indigo-300', dark: 'to-indigo-600', wave: '#6366f1', bg: 'bg-habit-indigo', border: 'border-habit-indigo-border', text: 'text-habit-indigo-foreground', iconBg: 'bg-white/90' },
   };
 
   const colors = colorMap[color];
@@ -250,7 +263,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
             : cn(colors.bg, colors.border, "shadow-sm hover:shadow-md"),
           isTiming && "ring-4 ring-primary/20 shadow-xl scale-[1.01]"
         )}
-        onClick={(!isCompleted && !isTiming && !showMoodPicker) ? (isTimeBased ? handleStartTimer : handleQuickComplete) : undefined}
+        onClick={handleCardClick}
       >
         <AnimatePresence>
           {(!isCompleted && (isTiming || initialValue > 0)) && (
@@ -288,7 +301,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                   <p className={cn("font-bold text-base leading-tight truncate", isCompleted ? "text-muted-foreground" : colors.text)}>
                     {label}
                     {initialValue > 0 && !isCompleted && (
-                      <span className="ml-2 text-[10px] bg-black/10 dark:bg-white/20 px-1.5 py-0.5 rounded-md align-middle font-black">+ {initialValue}m</span>
+                      <span className="ml-2 text-[10px] bg-black/10 dark:bg-white/20 px-1.5 py-0.5 rounded-md align-middle font-black">+ {Math.round(initialValue)}{unit === 'min' ? 'm' : unit}</span>
                     )}
                   </p>
                   <div className="flex items-center gap-2 mt-1">
@@ -338,7 +351,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                   <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Active {label}</p>
                   <p className="text-4xl font-black tabular-nums mt-1">{formatTime(initialValue * 60 + elapsedSeconds)}</p>
                   <p className="text-[10px] opacity-60 mt-1 font-bold">
-                    Goal: {value} min {initialValue > 0 && `(incl. ${initialValue}m surplus)`}
+                    Goal: {value} min {initialValue > 0 && `(incl. ${Math.round(initialValue)}m surplus)`}
                   </p>
                 </div>
                 

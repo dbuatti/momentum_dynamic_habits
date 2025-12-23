@@ -77,7 +77,8 @@ const fetchDashboardData = async (userId: string) => {
     const dailyProgress = dailyProgressMap.get(h.habit_key) || 0;
     
     // Apply carryover to the daily goal for display and chunking
-    const adjustedDailyGoal = h.current_daily_goal + (h.carryover_value || 0);
+    // For fixed habits, adjustedDailyGoal should always be current_daily_goal
+    const adjustedDailyGoal = h.is_fixed ? h.current_daily_goal : h.current_daily_goal + (h.carryover_value || 0);
     
     const isScheduledForToday = h.days_of_week ? h.days_of_week.includes(currentDayOfWeek) : true;
 
