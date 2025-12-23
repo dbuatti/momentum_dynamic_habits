@@ -1,3 +1,9 @@
-// ... inside vercel.json
-// (No changes needed, just ensuring it exists)
-// ... rest of file
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}

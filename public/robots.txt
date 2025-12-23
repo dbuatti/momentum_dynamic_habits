@@ -1,3 +1,14 @@
-// ... inside public/robots.txt
-// (No changes needed, just ensuring it exists)
-// ... rest of file
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: *
+Allow: /
