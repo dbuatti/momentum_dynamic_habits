@@ -19,7 +19,7 @@ import {
   Brain, LogOut, Anchor, Target, Sparkles, 
   Settings2, Shield, ShieldCheck, Calendar, 
   Clock, Dumbbell, Wind, BookOpen, Music, 
-  Home, Code, Pill, Timer, BarChart3, Layers, Zap, Info, Eye, EyeOff
+  Home, Code, Pill, Timer, BarChart3, Layers, Zap, Info, Eye, EyeOff, Plus
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { 
@@ -28,8 +28,9 @@ import {
   AccordionItem, 
   AccordionTrigger 
 } from '@/components/ui/accordion';
-import { useUpdateHabitVisibility } from '@/hooks/useUpdateHabitVisibility'; // Import new hook
-import { HabitSettingsCard } from '@/components/settings/HabitSettingsCard'; // Import new component
+import { useUpdateHabitVisibility } from '@/hooks/useUpdateHabitVisibility';
+import { HabitSettingsCard } from '@/components/settings/HabitSettingsCard';
+import { NewHabitModal } from '@/components/habits/NewHabitModal'; // Import NewHabitModal
 
 const Settings = () => {
   const { session, signOut } = useSession();
@@ -38,6 +39,7 @@ const Settings = () => {
   const { mutate: updateProfile } = useUpdateProfile();
   
   const [activeHabitId, setActiveHabitId] = useState<string | null>(null);
+  const [showNewHabitModal, setShowNewHabitModal] = useState(false); // State for modal
 
   const habits = useMemo(() => data?.habits || [], [data]);
   const profile = useMemo(() => data?.profile, [data]);
@@ -111,6 +113,22 @@ const Settings = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Create Custom Habit Button */}
+        <Card className="rounded-3xl shadow-sm border-2 border-primary/10 bg-primary/5">
+          <CardContent className="p-5">
+            <Button 
+              className="w-full h-14 rounded-2xl font-bold bg-primary hover:bg-primary/90 text-white"
+              onClick={() => setShowNewHabitModal(true)}
+            >
+              <Plus className="w-6 h-6 mr-2" />
+              Create Custom Habit
+            </Button>
+            <p className="text-xs text-muted-foreground mt-3 text-center">
+              Define a habit with full control over all parameters
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="space-y-10">
@@ -174,6 +192,12 @@ const Settings = () => {
           "Build the floor first. The ceiling will take care of itself."
         </p>
       </div>
+
+      {/* New Habit Modal */}
+      <NewHabitModal 
+        isOpen={showNewHabitModal} 
+        onClose={() => setShowNewHabitModal(false)} 
+      />
     </div>
   );
 };

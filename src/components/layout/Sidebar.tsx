@@ -5,13 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Home, Dumbbell, Wind, BookOpen, Music, Trophy, Settings, Menu, LogOut, BarChart, Code, Moon, Sun, Calendar, Target, Sparkles, Pill, HelpCircle, PlusCircle, BarChart3, LayoutTemplate } from 'lucide-react'; // Added LayoutTemplate
+import { Home, Dumbbell, Wind, BookOpen, Music, Trophy, Settings, Menu, LogOut, BarChart, Code, Moon, Sun, Calendar, Target, Sparkles, Pill, HelpCircle, PlusCircle, BarChart3, LayoutTemplate } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useSession } from '@/contexts/SessionContext';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useTheme } from '@/contexts/ThemeContext';
-import { habitIconMap } from '@/lib/habit-utils'; // Import from centralized utility
+import { habitIconMap } from '@/lib/habit-utils';
 
 interface NavLinkProps {
   to: string;
@@ -78,8 +78,8 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick }) => {
     { to: "/journey", icon: Trophy, label: "Journey" },
     { to: "/history", icon: BarChart, label: "History" },
     { to: "/analytics", icon: BarChart3, label: "Analytics" },
-    { to: "/templates", icon: LayoutTemplate, label: "Templates" }, // New Templates link
-    { to: "/create-habit", icon: PlusCircle, label: "Create New Habit" },
+    { to: "/templates", icon: LayoutTemplate, label: "Templates" },
+    { to: "/create-habit", icon: PlusCircle, label: "Create New Habit" }, // Keep this for direct access
     { to: "/settings", icon: Settings, label: "Settings" },
     { to: "/help", icon: HelpCircle, label: "Help" },
   ];

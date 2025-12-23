@@ -15,19 +15,20 @@ import {
   Target, Anchor, Zap, ShieldCheck, Brain, Clock, Layers,
   Dumbbell, Wind, BookOpen, Music, Home, Code, Sparkles, Pill,
   Plus, Loader2, Check, Info, Eye, EyeOff, ArrowRight, FlaskConical,
-  Calendar, Timer, Settings, LayoutTemplate // Added LayoutTemplate
+  Calendar, Timer, Settings, LayoutTemplate, X
 } from 'lucide-react';
 import { habitTemplates, habitCategories, habitUnits, habitModes, habitIcons, HabitTemplate } from '@/lib/habit-templates';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { showError, showSuccess } from '@/utils/toast';
-import { useNavigate, useLocation } from 'react-router-dom'; // Import useLocation
+import { useNavigate, useLocation } from 'react-router-dom';
 import { UserHabitRecord, HabitCategory as HabitCategoryType } from '@/types/habit';
 import { useJourneyData } from '@/hooks/useJourneyData';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { habitIconMap } from '@/lib/habit-utils';
-import { useCreateTemplate } from '@/hooks/useCreateTemplate'; // Import useCreateTemplate
+import { useCreateTemplate } from '@/hooks/useCreateTemplate';
+import { NewHabitModal } from '@/components/habits/NewHabitModal';
 
 interface CreateHabitParams {
   name: string;
@@ -131,7 +132,7 @@ const CreateHabit = () => {
   const { session } = useSession();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const location = useLocation(); // Use useLocation to get state/params
+  const location = useLocation();
   const { data: journeyData } = useJourneyData();
   const neurodivergentMode = journeyData?.profile?.neurodivergent_mode || false;
 
@@ -139,10 +140,10 @@ const CreateHabit = () => {
   const isTemplateCreationMode = location.state?.mode === 'template';
   const templateToPreFill: HabitTemplate | undefined = location.state?.templateToPreFill;
 
-  const [flowType, setFlowType] = useState<'entry' | 'guided' | 'custom'>('entry');
-  const [step, setStep] = useState(0); // Start at 0 for "Choose Mode"
+  const [flowType, setFlowType] = useState<'entry' | 'guided'>('entry');
+  const [step, setStep] = useState(0);
 
-  // Habit state for both flows
+  // Habit state for guided flow
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [habitName, setHabitName] = useState('');
   const [habitKey, setHabitKey] = useState('');
@@ -161,13 +162,16 @@ const CreateHabit = () => {
   const [plateauDaysRequired, setPlateauDaysRequired] = useState(7);
   const [windowStart, setWindowStart] = useState<string | null>(null);
   const [windowEnd, setWindowEnd] = useState<string | null>(null);
-  const [shortDescription, setShortDescription] = useState(''); // For template creation
+  const [shortDescription, setShortDescription] = useState('');
 
   // New state for guided flow: selected category group
   const [selectedCategoryGroup, setSelectedCategoryGroup] = useState<string | null>(null);
 
+  // Modal state for custom habit creation
+  const [showNewHabitModal, setShowNewHabitModal] = useState(false);
+
   const otherHabits = useMemo(() => {
-    return (journeyData?.allHabits || []).filter(h => h.id !== habitKey); // Filter out the habit being created
+    return (journeyData?.allHabits || []).filter(h => h.id !== habitKey);
   }, [journeyData?.allHabits, habitKey]);
 
   const selectedDependentHabit = useMemo(() => {
@@ -190,7 +194,7 @@ const CreateHabit = () => {
         unit: 'min',
         xpPerUnit: 30,
         energyCostPerUnit: 6,
-        icon_name: 'Target', // Use icon_name string
+        icon_name: 'Target',
         plateauDaysRequired: 7,
         shortDescription: "Design a habit tailored to your unique needs.",
       } as HabitTemplate;
@@ -201,44 +205,12 @@ const CreateHabit = () => {
   // Pre-fill form if a template is passed via state
   useEffect(() => {
     if (templateToPreFill) {
-      setFlowType('custom'); // Automatically switch to custom flow for pre-filling
-      setHabitName(templateToPreFill.name);
-      setHabitKey(templateToPreFill.id); // Use template ID as habit key
-      setCategory(templateToPreFill.category);
-      setDailyGoal(templateToPreFill.defaultDuration);
-      setFrequency(templateToPreFill.defaultFrequency);
-      setIsTrialMode(templateToPreFill.defaultMode === 'Trial');
-      setIsFixed(templateToPreFill.defaultMode === 'Fixed');
-      setIsAnchorPractice(templateToPreFill.anchorPractice);
-      setAutoChunking(templateToPreFill.autoChunking);
-      setUnit(templateToPreFill.unit);
-      setXpPerUnit(templateToPreFill.xpPerUnit);
-      setEnergyCostPerUnit(templateToPreFill.energyCostPerUnit);
-      setSelectedIconName(templateToPreFill.icon_name);
-      setPlateauDaysRequired(templateToPreFill.plateauDaysRequired);
-      setShortDescription(templateToPreFill.shortDescription || '');
-      // Dependent habit, window start/end are not part of templates, so leave as null
+      setFlowType('guided'); // Switch to guided flow for pre-filling
+      setStep(2); // Go to template selection step
+      setSelectedTemplateId(templateToPreFill.id);
     } else if (isTemplateCreationMode) {
-      setFlowType('custom'); // Force custom flow for template contribution
-      // Clear any pre-filled data if it's a fresh template creation
-      setHabitName('');
-      setHabitKey('');
-      setCategory('daily');
-      setDailyGoal(15);
-      setFrequency(3);
-      setIsTrialMode(true);
-      setIsFixed(false);
-      setIsAnchorPractice(false);
-      setAutoChunking(true);
-      setUnit('min');
-      setXpPerUnit(30);
-      setEnergyCostPerUnit(6);
-      setSelectedIconName('Target');
-      setDependentOnHabitId(null);
-      setPlateauDaysRequired(7);
-      setWindowStart(null);
-      setWindowEnd(null);
-      setShortDescription('');
+      setFlowType('guided'); // Force guided flow for template contribution
+      setStep(1); // Start at template selection
     }
   }, [templateToPreFill, isTemplateCreationMode]);
 
@@ -246,7 +218,7 @@ const CreateHabit = () => {
   useEffect(() => {
     if (selectedTemplate && flowType === 'guided') {
       setHabitName(selectedTemplate.name);
-      setHabitKey(selectedTemplate.id); // Use template ID as habit key
+      setHabitKey(selectedTemplate.id);
       setCategory(selectedTemplate.category);
       setDailyGoal(selectedTemplate.defaultDuration);
       setFrequency(selectedTemplate.defaultFrequency);
@@ -255,13 +227,13 @@ const CreateHabit = () => {
       setIsAnchorPractice(selectedTemplate.anchorPractice);
       setAutoChunking(selectedTemplate.autoChunking);
       setUnit(selectedTemplate.unit);
-      setXpPerUnit(selectedTemplate.xpPerUnit);
-      setEnergyCostPerUnit(selectedTemplate.energyCostPerUnit);
+      setXpPerUnit(templateToPreFill?.xpPerUnit || selectedTemplate.xpPerUnit);
+      setEnergyCostPerUnit(templateToPreFill?.energyCostPerUnit || selectedTemplate.energyCostPerUnit);
       setSelectedIconName(selectedTemplate.icon_name);
       setPlateauDaysRequired(selectedTemplate.plateauDaysRequired);
-      setShortDescription(selectedTemplate.shortDescription || '');
+      setShortDescription(templateToPreFill?.shortDescription || selectedTemplate.shortDescription || '');
     }
-  }, [selectedTemplate, flowType]);
+  }, [selectedTemplate, flowType, templateToPreFill]);
 
   const createHabitMutation = useMutation({
     mutationFn: (habit: CreateHabitParams) => {
@@ -279,7 +251,7 @@ const CreateHabit = () => {
     },
   });
 
-  const createTemplateMutation = useCreateTemplate(); // Use the new hook
+  const createTemplateMutation = useCreateTemplate();
 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -316,13 +288,13 @@ const CreateHabit = () => {
 
     if (isTemplateCreationMode) {
       createTemplateMutation.mutate({
-        id: habitKey.toLowerCase().replace(/\s/g, '_'), // Template ID is the habit_key
+        id: habitKey.toLowerCase().replace(/\s/g, '_'),
         name: habitName,
-        category: category.toString(), // Ensure category is string
+        category: category.toString(),
         default_frequency: frequency,
         default_duration: dailyGoal,
         default_mode: isFixed ? 'Fixed' : (isTrialMode ? 'Trial' : 'Growth'),
-        default_chunks: 1, // Templates usually start with 1 chunk, auto-chunking handles more
+        default_chunks: 1,
         auto_chunking: autoChunking,
         anchor_practice: isAnchorPractice,
         unit: unit,
@@ -331,7 +303,7 @@ const CreateHabit = () => {
         icon_name: selectedIconName,
         plateau_days_required: plateauDaysRequired,
         short_description: shortDescription,
-        is_public: true, // All contributed templates are public by default
+        is_public: true,
       });
     } else {
       createHabitMutation.mutate(habitData);
@@ -349,8 +321,8 @@ const CreateHabit = () => {
   const handleGuidedBack = () => {
     if (step === 1) { // If on first step of guided flow, go back to mode selection
       setFlowType('entry');
-      setStep(0); // Reset step for entry screen
-      setSelectedCategoryGroup(null); // Clear any selections
+      setStep(0);
+      setSelectedCategoryGroup(null);
       setSelectedTemplateId(null);
     } else if (step === 2) { // If on Template Selection, go back to Focus Area
       setSelectedTemplateId(null);
@@ -386,8 +358,8 @@ const CreateHabit = () => {
 
   const renderGuidedStep = () => {
     const IconComponent = getHabitIconComponent(selectedIconName);
-    const totalGuidedSteps = 4; // Excluding initial mode selection
-    const currentGuidedStep = step; // Step 1-4
+    const totalGuidedSteps = 4;
+    const currentGuidedStep = step;
     const progress = (currentGuidedStep / totalGuidedSteps) * 100;
 
     return (
@@ -572,30 +544,26 @@ const CreateHabit = () => {
     );
   };
 
-  const renderCustomForm = () => {
+  const renderTemplateCreationForm = () => {
     const IconComponent = getHabitIconComponent(selectedIconName);
-    // selectedDependentHabit is now available from the outer scope
 
     return (
       <form onSubmit={handleSubmit} className="space-y-8 max-w-md mx-auto">
         <Card className="rounded-3xl shadow-sm border-0">
           <CardHeader className="p-6 pb-4">
             <CardTitle className="flex items-center gap-3 text-lg font-bold">
-              <Target className="w-5 h-5 text-primary" />
-              {isTemplateCreationMode ? 'Template Details' : 'Habit Details'}
+              <LayoutTemplate className="w-5 h-5 text-primary" />
+              Template Details
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6 pt-0 space-y-6">
             <div className="space-y-3">
-              <Label htmlFor="habitName">{isTemplateCreationMode ? 'Template Name' : 'Habit Name'}</Label>
+              <Label htmlFor="habitName">Template Name</Label>
               <Input
                 id="habitName"
                 value={habitName}
                 onChange={(e) => {
                   setHabitName(e.target.value);
-                  if (!isTemplateCreationMode) { // Only auto-generate key for user habits
-                    setHabitKey(e.target.value.toLowerCase().replace(/\s/g, '_'));
-                  }
                 }}
                 placeholder="e.g., Daily Reading, Morning Run"
                 className="h-12 rounded-xl"
@@ -603,14 +571,24 @@ const CreateHabit = () => {
               />
             </div>
             <div className="space-y-3">
-              <Label htmlFor="habitKey">{isTemplateCreationMode ? 'Unique Template ID' : 'Unique Habit Key (auto-generated)'}</Label>
+              <Label htmlFor="habitKey">Unique Template ID</Label>
               <Input
                 id="habitKey"
                 value={habitKey}
-                onChange={(e) => setHabitKey(e.target.value)} // Allow editing key for templates
-                readOnly={!isTemplateCreationMode} // Read-only for user habits
-                placeholder={isTemplateCreationMode ? 'e.g., morning_meditation_template' : ''}
-                className={cn("h-12 rounded-xl", !isTemplateCreationMode && "bg-muted/50")}
+                onChange={(e) => setHabitKey(e.target.value)}
+                placeholder="e.g., morning_meditation_template"
+                className="h-12 rounded-xl"
+                required
+              />
+            </div>
+            <div className="space-y-3">
+              <Label htmlFor="shortDescription">Short Description</Label>
+              <Textarea
+                id="shortDescription"
+                value={shortDescription}
+                onChange={(e) => setShortDescription(e.target.value)}
+                placeholder="A brief description for the template list."
+                className="min-h-[80px] rounded-xl"
                 required
               />
             </div>
@@ -672,19 +650,6 @@ const CreateHabit = () => {
                 </SelectContent>
               </Select>
             </div>
-            {isTemplateCreationMode && (
-              <div className="space-y-3">
-                <Label htmlFor="shortDescription">Short Description</Label>
-                <Textarea
-                  id="shortDescription"
-                  value={shortDescription}
-                  onChange={(e) => setShortDescription(e.target.value)}
-                  placeholder="A brief description for the template list."
-                  className="min-h-[80px] rounded-xl"
-                  required
-                />
-              </div>
-            )}
           </CardContent>
         </Card>
 
@@ -832,32 +797,30 @@ const CreateHabit = () => {
                 </div>
              </div>
 
-             {!isTemplateCreationMode && ( // Dependent on is only for user habits, not templates
-               <div className="space-y-3">
-                  <Label className="text-[10px] font-black uppercase tracking-widest opacity-60 ml-1">Dependent On</Label>
-                  <Select
-                    value={dependentOnHabitId || 'none'}
-                    onValueChange={(value) => setDependentOnHabitId(value === 'none' ? null : value)}
-                  >
-                    <SelectTrigger className="h-11 rounded-xl font-bold text-base">
-                      <SelectValue placeholder="No dependency">
-                        {selectedDependentHabit?.name || "No dependency"}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">No dependency</SelectItem>
-                      {otherHabits.map(otherHabit => (
-                        <SelectItem key={otherHabit.id} value={otherHabit.id}>
-                          {otherHabit.name || otherHabit.habit_key.replace(/_/g, ' ')}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-[10px] text-muted-foreground leading-snug">
-                    This habit will be marked as "locked" until the dependent habit is completed for the day.
-                  </p>
-               </div>
-             )}
+             <div className="space-y-3">
+                <Label className="text-[10px] font-black uppercase tracking-widest opacity-60 ml-1">Dependent On</Label>
+                <Select
+                  value={dependentOnHabitId || 'none'}
+                  onValueChange={(value) => setDependentOnHabitId(value === 'none' ? null : value)}
+                >
+                  <SelectTrigger className="h-11 rounded-xl font-bold text-base">
+                    <SelectValue placeholder="No dependency">
+                      {selectedDependentHabit?.name || "No dependency"}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No dependency</SelectItem>
+                    {otherHabits.map(otherHabit => (
+                      <SelectItem key={otherHabit.id} value={otherHabit.id}>
+                        {otherHabit.name || otherHabit.habit_key.replace(/_/g, ' ')}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-[10px] text-muted-foreground leading-snug">
+                  This habit will be marked as "locked" until the dependent habit is completed for the day.
+                </p>
+             </div>
           </CardContent>
         </Card>
 
@@ -909,7 +872,7 @@ const CreateHabit = () => {
           ) : (
             <>
               <Plus className="w-6 h-6 mr-2" />
-              {isTemplateCreationMode ? 'Contribute Template' : 'Create Habit'}
+              Contribute Template
             </>
           )}
         </Button>
@@ -921,6 +884,7 @@ const CreateHabit = () => {
     <div className="w-full max-w-4xl mx-auto px-4 py-6 space-y-8 pb-32">
       <PageHeader title={isTemplateCreationMode ? "Contribute New Template" : "Create New Habit"} />
 
+      {/* Entry Screen */}
       {flowType === 'entry' && !isTemplateCreationMode && !templateToPreFill && (
         <div className="space-y-6 text-center max-w-md mx-auto">
           <div className="mx-auto w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mb-6">
@@ -930,7 +894,7 @@ const CreateHabit = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Button
               className="h-32 rounded-3xl text-xl font-bold flex flex-col items-center justify-center space-y-2 bg-primary hover:bg-primary/90"
-              onClick={() => { setFlowType('guided'); setStep(1); }} // Start guided flow at step 1
+              onClick={() => { setFlowType('guided'); setStep(1); }}
             >
               <Zap className="w-8 h-8" />
               <span>Template</span>
@@ -939,7 +903,7 @@ const CreateHabit = () => {
             <Button
               variant="outline"
               className="h-32 rounded-3xl text-xl font-bold flex flex-col items-center justify-center space-y-2 border-2 border-muted-foreground/20 hover:bg-muted/20"
-              onClick={() => setFlowType('custom')}
+              onClick={() => setShowNewHabitModal(true)}
             >
               <Brain className="w-8 h-8" />
               <span>Custom</span>
@@ -949,8 +913,17 @@ const CreateHabit = () => {
         </div>
       )}
 
+      {/* Guided Flow */}
       {(flowType === 'guided' && !isTemplateCreationMode && !templateToPreFill) && renderGuidedStep()}
-      {(flowType === 'custom' || isTemplateCreationMode || templateToPreFill) && renderCustomForm()}
+
+      {/* Template Creation Form */}
+      {(isTemplateCreationMode || templateToPreFill) && renderTemplateCreationForm()}
+
+      {/* New Habit Modal */}
+      <NewHabitModal 
+        isOpen={showNewHabitModal} 
+        onClose={() => setShowNewHabitModal(false)} 
+      />
     </div>
   );
 };

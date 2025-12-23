@@ -14,7 +14,7 @@ import HelpPage from "./pages/HelpPage";
 import LandingPage from "./pages/LandingPage";
 import CreateHabit from "./pages/CreateHabit";
 import Analytics from "./pages/Analytics";
-import TemplatesPage from "./pages/TemplatesPage"; // Import TemplatesPage
+import TemplatesPage from "./pages/TemplatesPage";
 import { SessionContextProvider, useSession } from "./contexts/SessionContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import React, { useEffect, useState } from "react";
@@ -135,14 +135,13 @@ const AppRoutes = () => {
         }
       />
       <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-      {/* Removed /log/:habitKey route */}
       <Route path="/journey" element={<ProtectedRoute><Journey /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
       <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
       <Route path="/help" element={<ProtectedRoute><HelpPage /></ProtectedRoute>} />
       <Route path="/create-habit" element={<ProtectedRoute><CreateHabit /></ProtectedRoute>} />
       <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
-      <Route path="/templates" element={<ProtectedRoute><TemplatesPage /></ProtectedRoute>} /> {/* New Templates Page Route */}
+      <Route path="/templates" element={<ProtectedRoute><TemplatesPage /></ProtectedRoute>} />
       <Route path="*" element={<ProtectedRoute><NotFound /></ProtectedRoute>} />
     </Routes>
   );
