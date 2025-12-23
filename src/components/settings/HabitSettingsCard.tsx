@@ -1,22 +1,21 @@
 "use client";
 
-import React, { useMemo } from 'react'; // Import useMemo
+import React, { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { 
-  Brain, LogOut, Anchor, Target, Sparkles, 
-  Settings2, Shield, ShieldCheck, Calendar, 
+  Anchor, Target, Sparkles, ShieldCheck, Calendar, 
   Clock, Dumbbell, Wind, BookOpen, Music, 
   Home, Code, Pill, Timer, BarChart3, Layers, Zap, Info, Eye, EyeOff
 } from 'lucide-react';
 import { UserHabitRecord } from '@/types/habit';
 import { useUpdateHabitVisibility } from '@/hooks/useUpdateHabitVisibility';
-import { initialHabits } from '@/lib/habit-data'; // Import initialHabits
+import { initialHabits } from '@/lib/habit-data';
 
 interface HabitSettingsCardProps {
   habit: UserHabitRecord;
@@ -45,293 +44,213 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
   isActiveHabit,
 }) => {
   const Icon = habitIconMap[habit.habit_key] || Timer;
-  
-  // Find the initial habit configuration to get the unit
+  const { mutate: updateHabitVisibility } = useUpdateHabitVisibility();
+
   const initialHabitConfig = useMemo(() => 
     initialHabits.find(h => h.id === habit.habit_key), 
     [habit.habit_key]
   );
-  const habitUnit = initialHabitConfig?.unit || ''; // Default to empty string if not found
+  const habitUnit = initialHabitConfig?.unit || '';
 
-  const weeklyTotal = habit.current_daily_goal * habit.frequency_per_week;
   const calculatedParts = Math.ceil(habit.current_daily_goal / (habit.chunk_duration || 1));
-  const { mutate: updateHabitVisibility } = useUpdateHabitVisibility();
 
   return (
     <AccordionItem 
       key={habit.id} 
       value={habit.id}
       className={cn(
-        "border-2 rounded-2xl mb-4 overflow-hidden transition-all duration-300",
-        isActiveHabit ? "border-primary bg-card shadow-md" : "border-transparent bg-muted/30"
+        "border-2 rounded-3xl mb-4 overflow-hidden transition-all duration-500",
+        isActiveHabit ? "border-primary/40 bg-card shadow-xl scale-[1.01]" : "border-transparent bg-muted/20"
       )}
     >
-      <AccordionTrigger className="px-5 py-4 hover:no-underline">
-        <div className="flex items-center gap-4 text-left w-full">
+      <AccordionTrigger className="px-6 py-5 hover:no-underline group">
+        <div className="flex items-center gap-5 text-left w-full">
           <div className={cn(
-            "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
-            isActiveHabit ? "bg-primary text-primary-foreground" : "bg-white border"
+            "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-all duration-300",
+            isActiveHabit ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20" : "bg-background border shadow-sm"
           )}>
-            <Icon className="w-5 h-5" />
+            <Icon className="w-6 h-6" />
           </div>
-          <div className="flex-grow min-w-0">
-            <h4 className="font-bold text-base uppercase tracking-tight truncate">
+          <div className="flex-grow">
+            <h4 className="font-black text-lg tracking-tight group-hover:text-primary transition-colors capitalize">
               {habit.habit_key.replace('_', ' ')}
             </h4>
-            <p className="text-[10px] font-black uppercase opacity-60 tracking-widest truncate">
-              {habit.is_fixed ? 'Fixed' : (habit.is_trial_mode ? 'Trial Phase' : 'Growth Mode')} • {habit.frequency_per_week}x/week
-            </p>
+            <div className="flex items-center gap-2 mt-0.5">
+               <span className={cn(
+                 "text-[9px] font-black uppercase px-2 py-0.5 rounded-full border",
+                 habit.is_fixed ? "bg-blue-50 text-blue-600 border-blue-200" : 
+                 habit.is_trial_mode ? "bg-amber-50 text-amber-600 border-amber-200" : 
+                 "bg-green-50 text-green-600 border-green-200"
+               )}>
+                 {habit.is_fixed ? 'Fixed' : (habit.is_trial_mode ? 'Trial' : 'Growth')}
+               </span>
+               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                 • {habit.frequency_per_week}x Weekly
+               </span>
+            </div>
           </div>
         </div>
       </AccordionTrigger>
-      <AccordionContent className="px-5 pb-6 pt-2 space-y-6">
-        {/* Macro Goal Section */}
-        <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10 space-y-4">
-          <div className="flex items-center gap-2 mb-1">
-            <BarChart3 className="w-4 h-4 text-primary" />
-            <Label className="text-[10px] font-black uppercase tracking-widest">Macro Configuration</Label>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label className="text-[9px] font-black uppercase opacity-60">Frequency (Sessions/Week)</Label>
-              <Input 
-                type="number" 
-                min="1" max="7" 
-                className="h-9 rounded-xl text-sm font-bold" 
-                defaultValue={habit.frequency_per_week} 
-                onBlur={(e) => onUpdateHabitField(habit.id, { frequency_per_week: parseInt(e.target.value) })} 
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-[9px] font-black uppercase opacity-60">Session Goal ({habitUnit})</Label>
-              <Input 
-                type="number" 
-                min="1" 
-                className="h-9 rounded-xl text-sm font-bold" 
-                defaultValue={habit.current_daily_goal} 
-                onBlur={(e) => {
-                  const newGoal = parseInt(e.target.value);
-                  const updates: any = { current_daily_goal: newGoal };
-                  if (habit.enable_chunks && !habit.auto_chunking) {
-                    updates.num_chunks = Math.ceil(newGoal / (habit.chunk_duration || 1));
-                  }
-                  onUpdateHabitField(habit.id, updates);
-                }} 
-              />
-            </div>
-          </div>
 
-          <div className="pt-2 border-t border-primary/10 flex justify-between items-center">
-            <span className="text-[10px] font-bold text-muted-foreground uppercase">Estimated Weekly Total</span>
-            <span className="text-sm font-black text-primary">{weeklyTotal} {habitUnit}</span>
-          </div>
-        </div>
+      <AccordionContent className="px-6 pb-8 pt-2">
+        <Tabs defaultValue="basics" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 mb-6 bg-muted/50 p-1 rounded-xl">
+            <TabsTrigger value="basics" className="text-[10px] font-black uppercase tracking-widest rounded-lg">Basics</TabsTrigger>
+            <TabsTrigger value="schedule" className="text-[10px] font-black uppercase tracking-widest rounded-lg">Schedule</TabsTrigger>
+            <TabsTrigger value="advanced" className="text-[10px] font-black uppercase tracking-widest rounded-lg">Logic</TabsTrigger>
+          </TabsList>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Mode Selection */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 mb-1">
-              <Target className="w-4 h-4 text-primary" />
-              <Label className="text-[10px] font-black uppercase tracking-widest">Operating Mode</Label>
+          {/* BASICS TAB: Core Goal and Mode */}
+          <TabsContent value="basics" className="space-y-6 focus-visible:outline-none">
+            <div className="grid grid-cols-2 gap-4 bg-primary/[0.03] p-4 rounded-2xl border border-primary/10">
+               <div className="space-y-2">
+                 <Label className="text-[10px] font-black uppercase opacity-60 ml-1">Daily Target</Label>
+                 <div className="relative">
+                   <Input 
+                     type="number" 
+                     className="pl-3 pr-12 h-11 rounded-xl font-bold text-base" 
+                     defaultValue={habit.current_daily_goal} 
+                     onBlur={(e) => onUpdateHabitField(habit.id, { current_daily_goal: parseInt(e.target.value) })}
+                   />
+                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-black opacity-40 uppercase">{habitUnit}</span>
+                 </div>
+               </div>
+               <div className="space-y-2">
+                 <Label className="text-[10px] font-black uppercase opacity-60 ml-1">Weekly Sessions</Label>
+                 <Input 
+                    type="number" 
+                    min="1" max="7"
+                    className="h-11 rounded-xl font-bold text-base" 
+                    defaultValue={habit.frequency_per_week}
+                    onBlur={(e) => onUpdateHabitField(habit.id, { frequency_per_week: parseInt(e.target.value) })}
+                  />
+               </div>
             </div>
-            <div className="grid grid-cols-1 gap-2">
-              <Button 
-                variant={habit.is_trial_mode ? 'default' : 'outline'} 
-                size="sm" 
-                className="h-10 px-4 text-xs font-black uppercase rounded-xl justify-start gap-2"
-                onClick={() => onUpdateHabitField(habit.id, { is_trial_mode: true, is_fixed: false })}
-              >
-                <Anchor className="w-3.5 h-3.5" />
-                Trial (Anchoring Only)
-              </Button>
-              <Button 
-                variant={!habit.is_trial_mode && !habit.is_fixed ? 'default' : 'outline'} 
-                size="sm" 
-                className="h-10 px-4 text-xs font-black uppercase rounded-xl justify-start gap-2"
-                onClick={() => onUpdateHabitField(habit.id, { is_trial_mode: false, is_fixed: false })}
-              >
-                <Zap className="w-3.5 h-3.5" />
-                Growth (Adaptive Scaling)
-              </Button>
-              <Button 
-                variant={habit.is_fixed ? 'default' : 'outline'} 
-                size="sm" 
-                className="h-10 px-4 text-xs font-black uppercase rounded-xl justify-start gap-2"
-                onClick={() => onUpdateHabitField(habit.id, { is_fixed: true, is_trial_mode: false })}
-              >
-                <ShieldCheck className="w-3.5 h-3.5" />
-                Fixed (Maintenance)
-              </Button>
-            </div>
-            <p className="text-[9px] text-muted-foreground italic px-1">
-              {habit.is_trial_mode ? "Focus on showing up once or twice a week. No growth suggestions." : 
-               habit.is_fixed ? "Ideal for habits that are perfect as they are." : 
-               "Automatically scales your goals based on weekly consistency."}
-            </p>
-          </div>
 
-          {/* Anchoring Toggle */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 mb-1">
-              <Anchor className="w-4 h-4 text-primary" />
-              <Label className="text-[10px] font-black uppercase tracking-widest">Practice Type</Label>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-white/50 dark:bg-black/20 rounded-xl border border-black/5">
-              <div className="space-y-0.5">
-                  <span className="text-xs font-bold block">Anchor Practice</span>
-                  <span className="text-[9px] text-muted-foreground">Foundational habits prioritized in dash.</span>
+            <div className="space-y-3">
+              <Label className="text-[10px] font-black uppercase tracking-widest opacity-60 ml-1">Operating Mode</Label>
+              <div className="flex flex-col gap-2">
+                {[
+                  { id: 'trial', label: 'Trial Phase', icon: Anchor, active: habit.is_trial_mode, desc: 'Focus on entry-level consistency. No growth pressure.' },
+                  { id: 'growth', label: 'Growth Mode', icon: Zap, active: !habit.is_trial_mode && !habit.is_fixed, desc: 'Adaptive scaling based on your weekly momentum.' },
+                  { id: 'fixed', label: 'Fixed (Maintenance)', icon: ShieldCheck, active: habit.is_fixed, desc: 'Stable maintenance. Goals stay exactly where they are.' }
+                ].map((mode) => (
+                  <button
+                    key={mode.id}
+                    onClick={() => onUpdateHabitField(habit.id, { 
+                      is_trial_mode: mode.id === 'trial', 
+                      is_fixed: mode.id === 'fixed' 
+                    })}
+                    className={cn(
+                      "flex items-start gap-4 p-4 rounded-2xl border-2 text-left transition-all",
+                      mode.active ? "border-primary bg-primary/[0.02] shadow-sm" : "border-transparent bg-muted/30 opacity-60 hover:opacity-100"
+                    )}
+                  >
+                    <div className={cn("p-2 rounded-lg", mode.active ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground")}>
+                        <mode.icon className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-black uppercase leading-none">{mode.label}</p>
+                      <p className="text-[10px] text-muted-foreground mt-1.5 leading-relaxed">{mode.desc}</p>
+                    </div>
+                  </button>
+                ))}
               </div>
-              <Switch 
-                checked={habit.category === 'anchor'} 
-                onCheckedChange={(val) => onUpdateHabitField(habit.id, { category: val ? 'anchor' : 'daily' })} 
-              />
             </div>
-          </div>
+          </TabsContent>
 
-          {/* Active Days Selection */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 mb-1">
-              <Calendar className="w-4 h-4 text-primary" />
-              <Label className="text-[10px] font-black uppercase tracking-widest">Active Schedule</Label>
-            </div>
-            <div className="flex justify-between gap-1">
-              {days.map((day, idx) => {
-                const isSelected = habit.days_of_week?.includes(idx);
-                return (
+          {/* SCHEDULE TAB: Days and Time Windows */}
+          <TabsContent value="schedule" className="space-y-6 focus-visible:outline-none">
+            <div className="space-y-4">
+              <Label className="text-[10px] font-black uppercase tracking-widest opacity-60 ml-1">Active Days</Label>
+              <div className="flex justify-between bg-muted/30 p-2 rounded-2xl border border-black/5">
+                {days.map((day, idx) => (
                   <Button
                     key={idx}
-                    size="sm"
-                    variant={isSelected ? "default" : "outline"}
-                    className="h-8 w-8 rounded-lg p-0 text-[10px] font-black"
+                    variant={habit.days_of_week?.includes(idx) ? "default" : "ghost"}
+                    className={cn(
+                        "h-10 w-10 rounded-xl font-black text-xs transition-all",
+                        habit.days_of_week?.includes(idx) ? "shadow-md" : "hover:bg-background"
+                    )}
                     onClick={() => onToggleDay(habit.id, habit.days_of_week || [], idx)}
                   >
                     {day}
                   </Button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Time Window Settings */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 mb-1">
-              <Clock className="w-4 h-4 text-primary" />
-              <Label className="text-[10px] font-black uppercase tracking-widest">Time Window</Label>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <Input 
-                type="time" 
-                className="h-9 rounded-xl text-xs font-bold" 
-                defaultValue={habit.window_start || ''} 
-                onBlur={(e) => onUpdateHabitField(habit.id, { window_start: e.target.value || null })} 
-              />
-              <Input 
-                type="time" 
-                className="h-9 rounded-xl text-xs font-bold" 
-                defaultValue={habit.window_end || ''} 
-                onBlur={(e) => onUpdateHabitField(habit.id, { window_end: e.target.value || null })} 
-              />
-            </div>
-          </div>
-
-          {/* Plateau Days Required */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 mb-1">
-              <Info className="w-4 h-4 text-primary" />
-              <Label className="text-[10px] font-black uppercase tracking-widest">Plateau Days Required</Label>
-            </div>
-            <Input 
-              type="number" 
-              min="1" 
-              className="h-9 rounded-xl text-sm font-bold" 
-              defaultValue={habit.plateau_days_required} 
-              onBlur={(e) => onUpdateHabitField(habit.id, { plateau_days_required: parseInt(e.target.value) })} 
-            />
-            <p className="text-[9px] text-muted-foreground italic px-1">
-              Number of consistent days needed to trigger growth or complete trial.
-            </p>
-          </div>
-
-          {/* Habit Visibility Toggle */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 mb-1">
-              {habit.is_visible ? <Eye className="w-4 h-4 text-primary" /> : <EyeOff className="w-4 h-4 text-muted-foreground" />}
-              <Label className="text-[10px] font-black uppercase tracking-widest">Show on Dashboard</Label>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-white/50 dark:bg-black/20 rounded-xl border border-black/5">
-              <div className="space-y-0.5">
-                  <span className="text-xs font-bold block">Visible Habit</span>
-                  <span className="text-[9px] text-muted-foreground">Toggle to show/hide this habit from your dashboard.</span>
+                ))}
               </div>
-              <Switch 
-                checked={habit.is_visible} 
-                onCheckedChange={(val) => updateHabitVisibility({ habitKey: habit.habit_key, isVisible: val })} 
-              />
             </div>
-          </div>
 
-          {/* Auto-Chunking (Session Granularity) */}
-          <div className="col-span-full">
-            <div className="p-4 bg-muted/50 rounded-2xl border border-black/5 space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-blue-500" />
+            <div className="grid grid-cols-2 gap-4">
+               <div className="space-y-2">
+                 <div className="flex items-center gap-2 ml-1">
+                    <Clock className="w-3.5 h-3.5 text-primary" />
+                    <Label className="text-[10px] font-black uppercase opacity-60">Window Start</Label>
+                 </div>
+                 <Input type="time" className="rounded-xl h-11 font-bold" defaultValue={habit.window_start || ''} onBlur={(e) => onUpdateHabitField(habit.id, { window_start: e.target.value })} />
+               </div>
+               <div className="space-y-2">
+                 <div className="flex items-center gap-2 ml-1">
+                    <Clock className="w-3.5 h-3.5 text-primary" />
+                    <Label className="text-[10px] font-black uppercase opacity-60">Window End</Label>
+                 </div>
+                 <Input type="time" className="rounded-xl h-11 font-bold" defaultValue={habit.window_end || ''} onBlur={(e) => onUpdateHabitField(habit.id, { window_end: e.target.value })} />
+               </div>
+            </div>
+          </TabsContent>
+
+          {/* LOGIC TAB: Visibility, Plateau, Chunking */}
+          <TabsContent value="advanced" className="space-y-4 focus-visible:outline-none">
+             <div className="flex items-center justify-between p-4 rounded-2xl bg-blue-500/5 border border-blue-500/10">
+                <div className="flex gap-4">
+                  <div className="bg-blue-500/20 p-2 rounded-xl">
+                    <Sparkles className="w-5 h-5 text-blue-600" />
+                  </div>
                   <div>
-                      <Label className="text-[10px] font-black uppercase">Adaptive Auto-chunking</Label>
-                      <p className="text-[9px] text-muted-foreground leading-tight">Breaks sessions into micro-capsules to reduce overwhelm.</p>
+                    <p className="text-xs font-black uppercase">Adaptive Auto-Chunking</p>
+                    <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">Automagically break sessions into capsules.</p>
                   </div>
                 </div>
                 <Switch 
-                  checked={habit.auto_chunking ?? true} 
-                  onCheckedChange={(val) => onUpdateHabitField(habit.id, { auto_chunking: val })} 
+                  checked={habit.auto_chunking} 
+                  onCheckedChange={(v) => onUpdateHabitField(habit.id, { auto_chunking: v })} 
                 />
-              </div>
-              
-              {!(habit.auto_chunking ?? true) && (
-                <div className="space-y-4 pt-4 border-t border-black/5">
-                  <div className="flex items-center justify-between">
-                      <Label className="text-[10px] font-black uppercase opacity-60">Manual Chunks</Label>
-                      <Switch 
-                        checked={habit.enable_chunks} 
-                        onCheckedChange={(val) => onUpdateHabitField(habit.id, { enable_chunks: val })} 
-                      />
+             </div>
+             
+             <div className="flex items-center justify-between p-4 rounded-2xl bg-primary/5 border border-primary/10">
+                <div className="flex gap-4">
+                  <div className="bg-primary/20 p-2 rounded-xl">
+                    <Eye className="w-5 h-5 text-primary" />
                   </div>
-                  {habit.enable_chunks && (
-                      <div className="grid grid-cols-2 gap-4 items-end">
-                          <div className="space-y-1.5">
-                              <Label className="text-[9px] font-black uppercase opacity-60">Duration per Part ({habitUnit})</Label>
-                              <Input 
-                                type="number" 
-                                min="1" 
-                                className="h-10 rounded-xl text-sm font-bold" 
-                                defaultValue={habit.chunk_duration} 
-                                onBlur={(e) => {
-                                  const val = parseInt(e.target.value);
-                                  const num = Math.ceil(habit.current_daily_goal / val);
-                                  onUpdateHabitField(habit.id, { 
-                                    chunk_duration: val,
-                                    num_chunks: num
-                                  });
-                                }} 
-                              />
-                          </div>
-                          <div className="bg-white/50 dark:bg-black/20 p-2.5 rounded-xl border border-black/5 flex items-center gap-3 h-10">
-                              <div className="bg-primary/10 p-1 rounded-md">
-                                  <Layers className="w-3.5 h-3.5 text-primary" />
-                              </div>
-                              <div className="flex-grow">
-                                  <p className="text-[8px] font-black uppercase opacity-60 leading-none">Result</p>
-                                  <p className="text-[11px] font-black text-primary leading-tight">{calculatedParts} parts / session</p>
-                              </div>
-                          </div>
-                      </div>
-                  )}
+                  <div>
+                    <p className="text-xs font-black uppercase">Show on Dashboard</p>
+                    <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">Toggle visibility without losing progress.</p>
+                  </div>
                 </div>
-              )}
-            </div>
-          </div>
-        </div>
+                <Switch 
+                  checked={habit.is_visible} 
+                  onCheckedChange={(v) => updateHabitVisibility({ habitKey: habit.habit_key, isVisible: v })} 
+                />
+             </div>
+
+             <div className="p-4 rounded-2xl bg-muted/30 border border-black/5 space-y-3">
+                <div className="flex items-center gap-2">
+                    <Info className="w-4 h-4 text-muted-foreground" />
+                    <Label className="text-[10px] font-black uppercase opacity-60">Growth Threshold</Label>
+                </div>
+                <div className="flex items-center gap-4">
+                    <Input 
+                        type="number" 
+                        className="h-10 w-20 rounded-xl font-bold" 
+                        defaultValue={habit.plateau_days_required}
+                        onBlur={(e) => onUpdateHabitField(habit.id, { plateau_days_required: parseInt(e.target.value) })}
+                    />
+                    <p className="text-[10px] text-muted-foreground leading-snug">
+                        Days of 100% consistency required before the system suggests a goal increase.
+                    </p>
+                </div>
+             </div>
+          </TabsContent>
+        </Tabs>
       </AccordionContent>
     </AccordionItem>
   );
