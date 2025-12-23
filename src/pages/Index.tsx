@@ -5,7 +5,7 @@ import HomeHeader from "@/components/HomeHeader";
 import { 
   BookOpen, Dumbbell, Music, Wind, Home, Code, Sparkles, Pill, 
   CheckCircle2, Timer, Target, Anchor, Clock, Zap, ChevronDown, ChevronUp,
-  Layers, TrendingUp, ShieldCheck
+  Layers, TrendingUp, ShieldCheck, Info
 } from "lucide-react";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { DashboardSkeleton } from "@/components/dashboard/DashboardSkeleton";
@@ -21,6 +21,8 @@ import { TipCard } from "@/components/dashboard/TipCard";
 import { calculateDynamicChunks } from "@/utils/progress-utils";
 import { MacroGoalProgress } from "@/components/dashboard/MacroGoalProgress";
 import { Progress } from "@/components/ui/progress";
+import { TrialStatusCard } from "@/components/dashboard/TrialStatusCard";
+import { GrowthGuide } from "@/components/dashboard/GrowthGuide";
 
 const habitIconMap: Record<string, React.ElementType> = {
   pushups: Dumbbell,
@@ -127,6 +129,7 @@ const Index = () => {
     const Icon = habitIconMap[habit.key] || Timer;
     const color = habitColorMap[habit.key] || 'blue';
     const isGrowth = !habit.is_fixed && !habit.is_trial_mode;
+    const isTrial = habit.is_trial_mode;
     
     const accentColor = {
         orange: 'text-orange-950 bg-orange-50 border-orange-200',
@@ -139,7 +142,10 @@ const Index = () => {
 
     const nextCapsule = habit.capsules.find((c: any) => !c.isCompleted);
     const completedCount = habit.capsules.filter((c: any) => c.isCompleted).length;
-    const showOnlyNext = habit.category === 'daily' && !showAllMomentum[habit.key] && habit.numChunks > 1;
+    
+    // Simplification: In daily habits or trial habits, only show the next capsule if multiple exist
+    // This reduces cognitive load significantly
+    const showOnlyNext = !showAllMomentum[habit.key] && habit.numChunks > 1;
 
     return (
       <AccordionItem
@@ -174,8 +180,13 @@ const Index = () => {
                       )}>
                         {habit.allCompleted ? "Goal Met" : (habit.isWithinWindow ? "Ready Now" : "Restricted")}
                       </span>
-                      {isGrowth && (
+                      {isTrial && (
                         <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-700 border border-blue-200">
+                          Trial Mode
+                        </span>
+                      )}
+                      {isGrowth && (
+                        <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-700 border border-purple-200">
                           Growth Mode
                         </span>
                       )}
@@ -185,20 +196,22 @@ const Index = () => {
                 
                 <div className="hidden sm:flex flex-col items-end text-right">
                     <p className="text-xl font-black">{habit.dailyProgress}/{habit.dailyGoal}</p>
-                    <p className="text-[10px] font-bold uppercase opacity-60 tracking-widest">{habit.unit} today</p>
+                    <p className="text-[10px] font-bold uppercase opacity-60 tracking-widest">{habit.unit} session</p>
                 </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4 border-t border-black/5 pt-4">
                 <div className="space-y-1">
-                    <p className="text-[9px] font-black uppercase opacity-50 tracking-widest">Daily Focus</p>
+                    <p className="text-[9px] font-black uppercase opacity-50 tracking-widest">
+                      {isTrial ? "Session Target" : "Daily Goal"}
+                    </p>
                     <div className="flex items-center gap-2">
                         <Target className="w-3.5 h-3.5 opacity-40" />
                         <p className="text-sm font-black">{habit.dailyGoal} {habit.unit}</p>
                     </div>
                 </div>
                 <div className="space-y-1">
-                    <p className="text-[9px] font-black uppercase opacity-50 tracking-widest">Weekly Commitment</p>
+                    <p className="text-[9px] font-black uppercase opacity-50 tracking-widest">Weekly Goal</p>
                     <div className="flex items-center gap-2">
                         <TrendingUp className="w-3.5 h-3.5 opacity-40" />
                         <p className="text-sm font-black">{habit.weekly_goal} {habit.unit}</p>
@@ -210,12 +223,22 @@ const Index = () => {
               <MacroGoalProgress 
                 current={habit.weekly_completions} 
                 total={habit.frequency_per_week} 
-                label="Weekly Consistency"
+                label={isTrial ? "Weekly Session Log" : "Weekly Consistency"}
               />
             </div>
           </div>
         </AccordionTrigger>
         <AccordionContent className="px-6 pb-6 pt-2 space-y-6">
+          {/* Enhanced Trial Mode Context */}
+          {isTrial && !habit.allCompleted && (
+            <TrialStatusCard 
+              habitName={habit.name} 
+              sessionsPerWeek={habit.frequency_per_week} 
+              duration={habit.dailyGoal} 
+              unit={habit.unit} 
+            />
+          )}
+
           {/* Adaptive Insights (Growth mode only) */}
           {isGrowth && !habit.allCompleted && (
             <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10 flex items-start gap-3">
@@ -257,7 +280,7 @@ const Index = () => {
                   onClick={() => toggleShowAll(habit.key)}
                 >
                   <Layers className="w-3.5 h-3.5 mr-2" />
-                  View all {habit.numChunks} session parts
+                  View all session parts ({habit.numChunks})
                 </Button>
               </>
             ) : (
@@ -273,14 +296,14 @@ const Index = () => {
                     showMood={data.neurodivergentMode}
                   />
                 ))}
-                {habit.category === 'daily' && habit.numChunks > 1 && (
+                {habit.numChunks > 1 && (
                   <Button 
                     variant="ghost" 
                     size="sm" 
                     className="w-full text-[10px] font-black uppercase tracking-widest opacity-40 h-8"
                     onClick={() => toggleShowAll(habit.key)}
                   >
-                    Simplify View
+                    Simplify View (Focus Next)
                   </Button>
                 )}
               </div>
@@ -333,6 +356,8 @@ const Index = () => {
               {dailyHabits.map(renderHabitItem)}
             </Accordion>
           </div>
+
+          <GrowthGuide />
 
           <MadeWithDyad className="mt-12" />
         </main>

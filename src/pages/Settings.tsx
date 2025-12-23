@@ -19,7 +19,7 @@ import {
   Brain, LogOut, Anchor, Target, Sparkles, 
   Settings2, Shield, Calendar, 
   Clock, Dumbbell, Wind, BookOpen, Music, 
-  Home, Code, Pill, Timer, BarChart3, Layers
+  Home, Code, Pill, Timer, BarChart3, Layers, Zap
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { 
@@ -84,7 +84,6 @@ const Settings = () => {
     const isExpanded = activeHabitId === habit.id;
     const weeklyTotal = habit.current_daily_goal * habit.frequency_per_week;
 
-    // Local state for immediate UI feedback on calculations
     const calculatedParts = Math.ceil(habit.current_daily_goal / (habit.chunk_duration || 1));
 
     return (
@@ -109,7 +108,7 @@ const Settings = () => {
                 {habit.habit_key.replace('_', ' ')}
               </h4>
               <p className="text-[10px] font-black uppercase opacity-60 tracking-widest truncate">
-                {habit.is_fixed ? 'Fixed' : (habit.is_trial_mode ? 'Trial' : 'Growth')} • {habit.frequency_per_week} sessions/week
+                {habit.is_fixed ? 'Fixed' : (habit.is_trial_mode ? 'Trial Phase' : 'Growth Mode')} • {habit.frequency_per_week}x/week
               </p>
             </div>
           </div>
@@ -119,24 +118,22 @@ const Settings = () => {
           <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10 space-y-4">
             <div className="flex items-center gap-2 mb-1">
               <BarChart3 className="w-4 h-4 text-primary" />
-              <Label className="text-[10px] font-black uppercase tracking-widest">Macro Goal Configuration</Label>
+              <Label className="text-[10px] font-black uppercase tracking-widest">Macro Configuration</Label>
             </div>
             
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label className="text-[9px] font-black uppercase opacity-60">Frequency (Sessions/Week)</Label>
-                <div className="flex items-center gap-2">
-                  <Input 
-                    type="number" 
-                    min="1" max="7" 
-                    className="h-9 rounded-xl text-sm font-bold" 
-                    defaultValue={habit.frequency_per_week} 
-                    onBlur={(e) => updateHabitField(habit.id, { frequency_per_week: parseInt(e.target.value) })} 
-                  />
-                </div>
+                <Input 
+                  type="number" 
+                  min="1" max="7" 
+                  className="h-9 rounded-xl text-sm font-bold" 
+                  defaultValue={habit.frequency_per_week} 
+                  onBlur={(e) => updateHabitField(habit.id, { frequency_per_week: parseInt(e.target.value) })} 
+                />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-[9px] font-black uppercase opacity-60">Session Duration ({habit.unit})</Label>
+                <Label className="text-[9px] font-black uppercase opacity-60">Session Goal ({habit.unit})</Label>
                 <Input 
                   type="number" 
                   min="1" 
@@ -145,7 +142,6 @@ const Settings = () => {
                   onBlur={(e) => {
                     const newGoal = parseInt(e.target.value);
                     const updates: any = { current_daily_goal: newGoal };
-                    // If manual chunking is active, sync the parts count
                     if (habit.enable_chunks && !habit.auto_chunking) {
                       updates.num_chunks = Math.ceil(newGoal / (habit.chunk_duration || 1));
                     }
@@ -168,33 +164,53 @@ const Settings = () => {
                 <Target className="w-4 h-4 text-primary" />
                 <Label className="text-[10px] font-black uppercase tracking-widest">Operating Mode</Label>
               </div>
-              <div className="flex flex-wrap gap-2">
-                {[
-                  { id: 'trial', label: 'Trial', active: habit.is_trial_mode, updates: { is_trial_mode: true, is_fixed: false } },
-                  { id: 'growth', label: 'Growth', active: !habit.is_trial_mode && !habit.is_fixed, updates: { is_trial_mode: false, is_fixed: false } },
-                  { id: 'fixed', label: 'Fixed', active: habit.is_fixed, updates: { is_fixed: true, is_trial_mode: false } }
-                ].map(opt => (
-                  <Button 
-                    key={opt.id}
-                    variant={opt.active ? 'default' : 'outline'} 
-                    size="sm" 
-                    className="h-9 px-4 text-xs font-bold uppercase rounded-xl flex-1"
-                    onClick={() => updateHabitField(habit.id, opt.updates)}
-                  >
-                    {opt.label}
-                  </Button>
-                ))}
+              <div className="grid grid-cols-1 gap-2">
+                <Button 
+                  variant={habit.is_trial_mode ? 'default' : 'outline'} 
+                  size="sm" 
+                  className="h-10 px-4 text-xs font-black uppercase rounded-xl justify-start gap-2"
+                  onClick={() => updateHabitField(habit.id, { is_trial_mode: true, is_fixed: false })}
+                >
+                  <Anchor className="w-3.5 h-3.5" />
+                  Trial (Anchoring Only)
+                </Button>
+                <Button 
+                  variant={!habit.is_trial_mode && !habit.is_fixed ? 'default' : 'outline'} 
+                  size="sm" 
+                  className="h-10 px-4 text-xs font-black uppercase rounded-xl justify-start gap-2"
+                  onClick={() => updateHabitField(habit.id, { is_trial_mode: false, is_fixed: false })}
+                >
+                  <Zap className="w-3.5 h-3.5" />
+                  Growth (Adaptive Scaling)
+                </Button>
+                <Button 
+                  variant={habit.is_fixed ? 'default' : 'outline'} 
+                  size="sm" 
+                  className="h-10 px-4 text-xs font-black uppercase rounded-xl justify-start gap-2"
+                  onClick={() => updateHabitField(habit.id, { is_fixed: true, is_trial_mode: false })}
+                >
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  Fixed (Maintenance)
+                </Button>
               </div>
+              <p className="text-[9px] text-muted-foreground italic px-1">
+                {habit.is_trial_mode ? "Focus on showing up once or twice a week. No growth suggestions." : 
+                 habit.is_fixed ? "Ideal for habits that are perfect as they are." : 
+                 "Automatically scales your goals based on weekly consistency."}
+              </p>
             </div>
 
             {/* Anchoring Toggle */}
             <div className="space-y-3">
               <div className="flex items-center gap-2 mb-1">
                 <Anchor className="w-4 h-4 text-primary" />
-                <Label className="text-[10px] font-black uppercase tracking-widest">Category</Label>
+                <Label className="text-[10px] font-black uppercase tracking-widest">Practice Type</Label>
               </div>
               <div className="flex items-center justify-between p-3 bg-white/50 dark:bg-black/20 rounded-xl border border-black/5">
-                <span className="text-xs font-bold">Anchor Practice</span>
+                <div className="space-y-0.5">
+                    <span className="text-xs font-bold block">Anchor Practice</span>
+                    <span className="text-[9px] text-muted-foreground">Foundational habits prioritized in dash.</span>
+                </div>
                 <Switch 
                   checked={habit.category === 'anchor'} 
                   onCheckedChange={(val) => updateHabitField(habit.id, { category: val ? 'anchor' : 'daily' })} 
@@ -206,7 +222,7 @@ const Settings = () => {
             <div className="space-y-3">
               <div className="flex items-center gap-2 mb-1">
                 <Calendar className="w-4 h-4 text-primary" />
-                <Label className="text-[10px] font-black uppercase tracking-widest">Availability Schedule</Label>
+                <Label className="text-[10px] font-black uppercase tracking-widest">Active Schedule</Label>
               </div>
               <div className="flex justify-between gap-1">
                 {days.map((day, idx) => {
@@ -230,7 +246,7 @@ const Settings = () => {
             <div className="space-y-3">
               <div className="flex items-center gap-2 mb-1">
                 <Clock className="w-4 h-4 text-primary" />
-                <Label className="text-[10px] font-black uppercase tracking-widest">Window (Start - End)</Label>
+                <Label className="text-[10px] font-black uppercase tracking-widest">Time Window</Label>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <Input 
@@ -255,8 +271,8 @@ const Settings = () => {
                   <div className="flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-blue-500" />
                     <div>
-                        <Label className="text-[10px] font-black uppercase">Local Auto-chunking</Label>
-                        <p className="text-[9px] text-muted-foreground leading-tight">Breaks current session into manageable parts</p>
+                        <Label className="text-[10px] font-black uppercase">Adaptive Auto-chunking</Label>
+                        <p className="text-[9px] text-muted-foreground leading-tight">Breaks sessions into micro-capsules to reduce overwhelm.</p>
                     </div>
                   </div>
                   <Switch 
@@ -316,7 +332,7 @@ const Settings = () => {
 
   return (
     <div className="w-full max-w-2xl mx-auto px-4 py-6 space-y-8 pb-32">
-      <PageHeader title="App Settings" backLink="/" />
+      <PageHeader title="Growth Settings" backLink="/" />
       
       {/* Profile Header */}
       <div className="space-y-4">
@@ -329,7 +345,7 @@ const Settings = () => {
             </Avatar>
             <div className="flex-grow">
               <p className="font-black text-xl leading-tight">{profile?.first_name || 'User'}</p>
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-0.5">Growth Profile</p>
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-0.5">Focus Mode: {profile?.neurodivergent_mode ? 'ND Optimized' : 'Standard'}</p>
             </div>
             <Button variant="ghost" size="icon" onClick={() => signOut()} className="rounded-full hover:bg-destructive/10 hover:text-destructive">
               <LogOut className="w-5 h-5" />
@@ -347,7 +363,7 @@ const Settings = () => {
                 </div>
                 <div>
                   <p className="font-black uppercase tracking-tight">Neurodivergent Mode</p>
-                  <p className="text-xs text-muted-foreground">ADHD-optimized stabilization and chunks.</p>
+                  <p className="text-xs text-muted-foreground">Enables small increments and modular task capsules.</p>
                 </div>
               </div>
               <Switch 
@@ -401,7 +417,7 @@ const Settings = () => {
 
       <div className="pt-4 px-1">
         <p className="text-[10px] text-center text-muted-foreground font-medium italic">
-          "The way you do anything is the way you do everything."
+          "Build the floor first. The ceiling will take care of itself."
         </p>
       </div>
     </div>
