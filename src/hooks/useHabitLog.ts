@@ -19,6 +19,8 @@ interface LogHabitParams {
 }
 
 const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, note }: LogHabitParams & { userId: string }) => {
+  console.log(`[useHabitLog:logHabit] Called with userId: ${userId}, habitKey: ${habitKey}, value: ${value}, taskName: ${taskName}`);
+
   // Fetch user_habit data to get dynamic properties, including carryover_value
   const { data: userHabitDataResult, error: userHabitFetchError } = await supabase
     .from('user_habits')
@@ -27,8 +29,12 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
     .eq('habit_key', habitKey)
     .single();
 
-  if (!userHabitDataResult || userHabitFetchError) throw userHabitFetchError || new Error(`Habit data not found for key: ${habitKey}`);
+  if (!userHabitDataResult || userHabitFetchError) {
+    console.error(`[useHabitLog:logHabit] Error fetching user habit data for ${habitKey}:`, userHabitFetchError);
+    throw userHabitFetchError || new Error(`Habit data not found for key: ${habitKey}`);
+  }
   const userHabitData: UserHabitRecord = userHabitDataResult;
+  console.log(`[useHabitLog:logHabit] Fetched userHabitData:`, userHabitData);
 
   const { data: profileData, error: profileFetchError } = await supabase
     .from('profiles')
@@ -36,7 +42,10 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
     .eq('id', userId)
     .single();
 
-  if (profileFetchError) throw profileFetchError;
+  if (profileFetchError) {
+    console.error(`[useHabitLog:logHabit] Error fetching profile data for ${userId}:`, profileFetchError);
+    throw profileFetchError;
+  }
   const timezone = profileData.timezone || 'UTC';
   
   let xpBaseValue = value; // This will be in reps or minutes, used for XP calculation
@@ -69,11 +78,16 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
     note: note || null,
   }).select('id').single(); // Select the ID of the inserted task
 
-  if (insertError) throw insertError;
+  if (insertError) {
+    console.error(`[useHabitLog:logHabit] Error inserting completed task for ${habitKey}:`, insertError);
+    throw insertError;
+  }
+  console.log(`[useHabitLog:logHabit] Inserted task with ID: ${insertedTask.id}`);
 
   await supabase.rpc('increment_lifetime_progress', {
     p_user_id: userId, p_habit_key: habitKey, p_increment_value: Math.round(lifetimeProgressIncrementValue),
   });
+  console.log(`[useHabitLog:logHabit] Lifetime progress incremented for ${habitKey}.`);
 
   // Fetch current daily progress *after* this log
   const { data: completedTodayAfterLog } = await supabase.rpc('get_completed_tasks_today', { 
@@ -85,15 +99,18 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
     else if (userHabitData.unit === 'reps' || userHabitData.unit === 'dose') totalDailyProgressAfterLog += (task.xp_earned || 0) / (userHabitData.xp_per_unit || 1);
     else totalDailyProgressAfterLog += 1; // Fallback for unknown units
   });
+  console.log(`[useHabitLog:logHabit] Total daily progress after log for ${habitKey}: ${totalDailyProgressAfterLog}`);
   
   // Calculate surplus for carryover
   const surplus = totalDailyProgressAfterLog - userHabitData.current_daily_goal;
   const newCarryoverValue = Math.max(0, surplus); // Carryover cannot be negative
+  console.log(`[useHabitLog:logHabit] Calculated surplus: ${surplus}, newCarryoverValue: ${newCarryoverValue}`);
 
   // Update carryover_value in user_habits
   await supabase.from('user_habits').update({
     carryover_value: newCarryoverValue,
   }).eq('id', userHabitData.id);
+  console.log(`[useHabitLog:logHabit] Updated carryover_value for ${habitKey} to ${newCarryoverValue}.`);
 
   const isGoalMetAfterLog = totalDailyProgressAfterLog >= userHabitData.current_daily_goal;
 
@@ -117,6 +134,7 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
   // This aims to track consecutive days of meeting the goal within the plateau period.
   const lastPlateauDate = new Date(userHabitData.last_plateau_start_date);
   const isNewDayForPlateau = !isSameDay(todayDate, lastPlateauDate);
+  console.log(`[useHabitLog:logHabit] isNewDayForPlateau: ${isNewDayForPlateau}, lastPlateauDate: ${lastPlateauDate}`);
 
   if (isGoalMetAfterLog) {
     // If goal is met today
@@ -132,29 +150,35 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
         .limit(1);
       
       const wasCompletedYesterday = completedYesterday && completedYesterday.length > 0;
+      console.log(`[useHabitLog:logHabit] Goal met today, isNewDayForPlateau. Was completed yesterday: ${wasCompletedYesterday}`);
 
       if (isSameDay(lastPlateauDate, yesterday) && wasCompletedYesterday) {
         // Continue streak
         newCompletionsInPlateau = userHabitData.completions_in_plateau + 1;
+        console.log(`[useHabitLog:logHabit] Continuing plateau streak. New completionsInPlateau: ${newCompletionsInPlateau}`);
       } else {
         // Start new streak
         newCompletionsInPlateau = 1;
+        console.log(`[useHabitLog:logHabit] Starting new plateau streak. New completionsInPlateau: ${newCompletionsInPlateau}`);
       }
       newLastPlateauStartDate = todayDateString;
     } else {
       // Same day, goal met, no change to completions_in_plateau (already counted for today)
       // This ensures multiple logs on the same day don't inflate `completions_in_plateau`
+      console.log(`[useHabitLog:logHabit] Goal met same day, no change to completionsInPlateau.`);
     }
   } else if (isNewDayForPlateau) {
     // If it's a new day and goal is NOT met, reset plateau progress
     newCompletionsInPlateau = 0;
     newLastPlateauStartDate = todayDateString;
+    console.log(`[useHabitLog:logHabit] Goal not met on new day. Resetting completionsInPlateau to 0.`);
   }
 
   // Check for Trial -> Growth transition
   if (userHabitData.is_trial_mode && newCompletionsInPlateau >= plateauRequired) {
     newIsTrialMode = false; // Transition out of trial mode
     showSuccess(`Congratulations! Your ${userHabitData.name} habit has transitioned from Trial Mode to Adaptive Growth!`);
+    console.log(`[useHabitLog:logHabit] ${habitKey} transitioned from Trial to Adaptive Growth.`);
   }
 
   // Only apply growth logic if not trial and not fixed/frozen
@@ -165,6 +189,7 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
         newFrequency = userHabitData.frequency_per_week + 1;
         newGrowthPhase = 'duration';
         showSuccess(`Dynamic Growth: Frequency for ${userHabitData.name} increased to ${newFrequency}x per week!`);
+        console.log(`[useHabitLog:logHabit] ${habitKey} frequency increased to ${newFrequency}.`);
       } else if (userHabitData.growth_phase === 'duration') {
         // Neurodivergent mode specific increments
         const increment = profileData.neurodivergent_mode ? 5 : 10; // 5 min for ND, 10 for standard
@@ -174,9 +199,11 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
         if (!userHabitData.max_goal_cap || newDailyGoal <= userHabitData.max_goal_cap) {
           newGrowthPhase = userHabitData.frequency_per_week < 7 ? 'frequency' : 'duration';
           showSuccess(`Dynamic Growth: Daily goal for ${userHabitData.name} increased to ${newDailyGoal} ${userHabitData.unit}!`);
+          console.log(`[useHabitLog:logHabit] ${habitKey} daily goal increased to ${newDailyGoal}.`);
         } else {
           newDailyGoal = userHabitData.max_goal_cap;
           showSuccess(`Dynamic Growth: Daily goal for ${userHabitData.name} reached its cap at ${newDailyGoal} ${userHabitData.unit}!`);
+          console.log(`[useHabitLog:logHabit] ${habitKey} daily goal reached cap at ${newDailyGoal}.`);
         }
       }
 
@@ -189,6 +216,7 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
         growth_phase: newGrowthPhase,
         is_trial_mode: newIsTrialMode, // Update trial mode status
       }).eq('id', userHabitData.id);
+      console.log(`[useHabitLog:logHabit] User habit ${habitKey} updated with new growth parameters.`);
     }
   } else {
     // If not in growth mode (e.g., trial, fixed, or frozen), just update plateau progress
@@ -197,6 +225,7 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
       last_plateau_start_date: newLastPlateauStartDate,
       is_trial_mode: newIsTrialMode, // Update trial mode status
     }).eq('id', userHabitData.id);
+    console.log(`[useHabitLog:logHabit] User habit ${habitKey} plateau progress updated.`);
   }
 
   const newXp = (profileData.xp || 0) + xpEarned;
@@ -206,11 +235,14 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
     xp: newXp,
     level: calculateLevel(newXp),
   }).eq('id', userId);
+  console.log(`[useHabitLog:logHabit] User profile ${userId} updated with new XP and tasks completed today.`);
 
   return { success: true, taskName, xpEarned, completedTaskId: insertedTask.id }; // Return taskName, xpEarned, and completedTaskId
 };
 
 const unlogHabit = async ({ userId, completedTaskId }: { userId: string, completedTaskId: string }) => {
+  console.log(`[useHabitLog:unlogHabit] Called with userId: ${userId}, completedTaskId: ${completedTaskId}`);
+
   // Fetch the completed task to get its details before deleting
   const { data: task, error: fetchTaskError } = await supabase
     .from('completedtasks')
@@ -219,7 +251,11 @@ const unlogHabit = async ({ userId, completedTaskId }: { userId: string, complet
     .eq('user_id', userId)
     .single();
 
-  if (fetchTaskError || !task) throw fetchTaskError || new Error('Completed task not found');
+  if (fetchTaskError || !task) {
+    console.error(`[useHabitLog:unlogHabit] Error fetching completed task ${completedTaskId}:`, fetchTaskError);
+    throw fetchTaskError || new Error('Completed task not found');
+  }
+  console.log(`[useHabitLog:unlogHabit] Fetched task to unlog:`, task);
 
   // Fetch profile to get timezone for RPC call
   const { data: profileData, error: profileFetchError } = await supabase
@@ -229,7 +265,7 @@ const unlogHabit = async ({ userId, completedTaskId }: { userId: string, complet
     .single();
 
   if (profileFetchError) {
-    console.error('Error fetching profile for unlogging:', profileFetchError);
+    console.error('[useHabitLog:unlogHabit] Error fetching profile for unlogging:', profileFetchError);
     // Fallback to UTC if profile fetch fails
   }
   const timezone = profileData?.timezone || 'UTC';
@@ -242,8 +278,12 @@ const unlogHabit = async ({ userId, completedTaskId }: { userId: string, complet
     .eq('habit_key', task.original_source) // Use original_source from the fetched task
     .single();
 
-  if (!userHabitDataResult || userHabitFetchError) throw userHabitFetchError || new Error(`Habit data not found for key: ${task.original_source}`);
+  if (!userHabitDataResult || userHabitFetchError) {
+    console.error(`[useHabitLog:unlogHabit] Error fetching user habit data for ${task.original_source}:`, userHabitFetchError);
+    throw userHabitFetchError || new Error(`Habit data not found for key: ${task.original_source}`);
+  }
   const userHabitData: Pick<UserHabitRecord, 'id' | 'unit' | 'xp_per_unit' | 'current_daily_goal' | 'completions_in_plateau' | 'last_plateau_start_date' | 'carryover_value'> = userHabitDataResult;
+  console.log(`[useHabitLog:unlogHabit] Fetched userHabitData for unlog:`, userHabitData);
 
   let lifetimeProgressDecrementValue;
   if (userHabitData.unit === 'min') {
@@ -259,6 +299,7 @@ const unlogHabit = async ({ userId, completedTaskId }: { userId: string, complet
   await supabase.rpc('increment_lifetime_progress', {
     p_user_id: userId, p_habit_key: task.original_source, p_increment_value: -Math.round(lifetimeProgressDecrementValue),
   });
+  console.log(`[useHabitLog:unlogHabit] Lifetime progress decremented for ${task.original_source}.`);
 
   if (profileData) {
     const newXp = Math.max(0, (profileData.xp || 0) - (task.xp_earned || 0));
@@ -267,6 +308,7 @@ const unlogHabit = async ({ userId, completedTaskId }: { userId: string, complet
       level: calculateLevel(newXp),
       tasks_completed_today: Math.max(0, (profileData.tasks_completed_today || 0) - 1)
     }).eq('id', userId);
+    console.log(`[useHabitLog:unlogHabit] User profile ${userId} XP and tasks completed today updated.`);
   }
 
   // Recalculate carryover_value after unlogging
@@ -279,25 +321,34 @@ const unlogHabit = async ({ userId, completedTaskId }: { userId: string, complet
     else if (userHabitData.unit === 'reps' || userHabitData.unit === 'dose') totalDailyProgressAfterUnlog += (t.xp_earned || 0) / (userHabitData.xp_per_unit || 1);
     else totalDailyProgressAfterUnlog += 1;
   });
+  console.log(`[useHabitLog:unlogHabit] Total daily progress after unlog for ${task.original_source}: ${totalDailyProgressAfterUnlog}`);
 
   const surplusAfterUnlog = totalDailyProgressAfterUnlog - userHabitData.current_daily_goal;
   const newCarryoverValueAfterUnlog = Math.max(0, surplusAfterUnlog);
+  console.log(`[useHabitLog:unlogHabit] Calculated surplus after unlog: ${surplusAfterUnlog}, newCarryoverValueAfterUnlog: ${newCarryoverValueAfterUnlog}`);
 
   await supabase.from('user_habits').update({
     carryover_value: newCarryoverValueAfterUnlog,
   }).eq('id', userHabitData.id);
+  console.log(`[useHabitLog:unlogHabit] Updated carryover_value for ${task.original_source} to ${newCarryoverValueAfterUnlog}.`);
 
   // Decrement completions_in_plateau if unlogging causes goal to be unmet for today
   const isGoalMetAfterUnlog = totalDailyProgressAfterUnlog >= userHabitData.current_daily_goal;
+  console.log(`[useHabitLog:unlogHabit] Is goal met after unlog: ${isGoalMetAfterUnlog}, current completions_in_plateau: ${userHabitData.completions_in_plateau}`);
 
   if (!isGoalMetAfterUnlog && userHabitData.completions_in_plateau > 0) {
     await supabase.from('user_habits').update({
       completions_in_plateau: Math.round(userHabitData.completions_in_plateau - 1), // Round here
     }).eq('id', userHabitData.id);
+    console.log(`[useHabitLog:unlogHabit] Decremented completions_in_plateau for ${task.original_source}.`);
   }
 
   const { error: deleteError } = await supabase.from('completedtasks').delete().eq('id', completedTaskId);
-  if (deleteError) throw deleteError;
+  if (deleteError) {
+    console.error(`[useHabitLog:unlogHabit] Error deleting completed task ${completedTaskId}:`, deleteError);
+    throw deleteError;
+  }
+  console.log(`[useHabitLog:unlogHabit] Completed task ${completedTaskId} deleted successfully.`);
 
   return { success: true };
 };
@@ -313,6 +364,7 @@ export const useHabitLog = () => {
       return logHabit({ ...params, userId: session.user.id });
     },
     onSuccess: (data) => {
+      console.log('[useHabitLog] logMutation onSuccess:', data);
       showSuccess(`${data.taskName} completed! +${data.xpEarned} XP`); // More specific success message
       queryClient.invalidateQueries({ queryKey: ['dashboardData', session?.user?.id] });
       queryClient.invalidateQueries({ queryKey: ['journeyData', session?.user?.id] });
@@ -322,7 +374,10 @@ export const useHabitLog = () => {
       // Return the completedTaskId for further use in the UI or other mutations
       return data.completedTaskId;
     },
-    onError: (error) => showError(`Failed: ${error.message}`),
+    onError: (error) => {
+      console.error('[useHabitLog] logMutation onError:', error);
+      showError(`Failed: ${error.message}`);
+    },
   });
 
   const unlogMutation = useMutation({
@@ -331,6 +386,7 @@ export const useHabitLog = () => {
       return unlogHabit({ ...params, userId: session.user.id });
     },
     onSuccess: () => {
+      console.log('[useHabitLog] unlogMutation onSuccess.');
       showSuccess('Task uncompleted.');
       queryClient.invalidateQueries({ queryKey: ['dashboardData', session?.user?.id] });
       queryClient.invalidateQueries({ queryKey: ['journeyData', session?.user?.id] });
@@ -338,7 +394,10 @@ export const useHabitLog = () => {
       queryClient.invalidateQueries({ queryKey: ['habitHeatmapData', session?.user?.id] });
       queryClient.invalidateQueries({ queryKey: ['habitCapsules', session?.user?.id] });
     },
-    onError: (error) => showError(`Failed to uncomplete: ${error.message}`),
+    onError: (error) => {
+      console.error('[useHabitLog] unlogMutation onError:', error);
+      showError(`Failed to uncomplete: ${error.message}`);
+    },
   });
 
   return {

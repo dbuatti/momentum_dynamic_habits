@@ -91,20 +91,11 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   }, [label, initialValue, habitKey, habitName, value]);
 
   useEffect(() => {
-    if (isTiming && isTimeBased && !goalReachedAlerted) {
-      const totalMinutes = (initialValue * 60 + elapsedSeconds) / 60;
-      if (totalMinutes >= value) {
-        playGoalSound();
-        if (window.navigator?.vibrate) window.navigator.vibrate([100, 50, 100]);
-        setGoalReachedAlerted(true);
-      }
-    }
-  }, [elapsedSeconds, isTiming, isTimeBased, value, initialValue, goalReachedAlerted]);
-
-  useEffect(() => {
+    console.log(`[HabitCapsule:${habitKey}-${label}] Component mounted/updated. initialCompletedTaskId: ${initialCompletedTaskId}, completedTaskIdState: ${completedTaskIdState}`);
     setCompletedTaskIdState(initialCompletedTaskId || null);
 
     if (isCompleted) {
+      console.log(`[HabitCapsule:${habitKey}-${label}] isCompleted is true. Clearing local state.`);
       localStorage.removeItem(storageKey);
       setIsTiming(false);
       setElapsedSeconds(0);
@@ -117,6 +108,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     const saved = localStorage.getItem(storageKey);
     if (saved) {
       const { start, elapsed, paused, timing } = JSON.parse(saved);
+      console.log(`[HabitCapsule:${habitKey}-${label}] Loaded from localStorage:`, { start, elapsed, paused, timing });
       setIsPaused(paused);
       setIsTiming(timing);
       
@@ -134,8 +126,22 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
       }
     }
 
-    return () => stopInterval();
+    return () => {
+      console.log(`[HabitCapsule:${habitKey}-${label}] Component unmounting. Stopping interval.`);
+      stopInterval();
+    };
   }, [storageKey, isCompleted, startInterval, label, initialValue, habitKey, habitName, value, initialCompletedTaskId]);
+
+  useEffect(() => {
+    if (isTiming && isTimeBased && !goalReachedAlerted) {
+      const totalMinutes = (initialValue * 60 + elapsedSeconds) / 60;
+      if (totalMinutes >= value) {
+        playGoalSound();
+        if (window.navigator?.vibrate) window.navigator.vibrate([100, 50, 100]);
+        setGoalReachedAlerted(true);
+      }
+    }
+  }, [elapsedSeconds, isTiming, isTimeBased, value, initialValue, goalReachedAlerted]);
 
   useEffect(() => {
     if (!isCompleted && (isTiming || elapsedSeconds > 0)) {
@@ -145,13 +151,16 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
         paused: isPaused,
         timing: isTiming
       }));
+      console.log(`[HabitCapsule:${habitKey}-${label}] Saved to localStorage:`, { start: startTimeRef.current, elapsed: elapsedSeconds, paused: isPaused, timing: isTiming });
     } else if (isCompleted) {
+      console.log(`[HabitCapsule:${habitKey}-${label}] isCompleted is true, removing from localStorage.`);
       localStorage.removeItem(storageKey);
     }
   }, [isTiming, elapsedSeconds, isPaused, isCompleted, storageKey]);
 
   const handleStartTimer = (e: React.MouseEvent) => {
     e.stopPropagation();
+    console.log(`[HabitCapsule:${habitKey}-${label}] handleStartTimer called.`);
     playStartSound();
     setIsTiming(true);
     setIsPaused(false);
@@ -162,6 +171,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
 
   const handlePauseTimer = (e: React.MouseEvent) => {
     e.stopPropagation();
+    console.log(`[HabitCapsule:${habitKey}-${label}] handlePauseTimer called. Current isPaused: ${isPaused}`);
     if (isPaused) {
       playStartSound();
       setIsPaused(false);
@@ -178,6 +188,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
 
   const handleResetTimer = (e: React.MouseEvent) => {
     e.stopPropagation();
+    console.log(`[HabitCapsule:${habitKey}-${label}] handleResetTimer called. completedTaskIdState: ${completedTaskIdState}`);
     stopInterval();
     setElapsedSeconds(0);
     setIsTiming(false);
@@ -187,14 +198,17 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     localStorage.removeItem(storageKey);
     window.dispatchEvent(new CustomEvent('habit-timer-update', { detail: null }));
     
-    // If there was any completed task ID associated with this capsule (even partial), unlog it.
     if (completedTaskIdState) {
+      console.log(`[HabitCapsule:${habitKey}-${label}] Calling onUncomplete with completedTaskIdState: ${completedTaskIdState}`);
       onUncomplete(completedTaskIdState);
-      setCompletedTaskIdState(null); // Clear local state
+      setCompletedTaskIdState(null);
+    } else {
+      console.log(`[HabitCapsule:${habitKey}-${label}] No completedTaskIdState to uncomplete.`);
     }
   };
 
   const handleFinishTiming = (mood?: string, promptMood: boolean = false) => {
+    console.log(`[HabitCapsule:${habitKey}-${label}] handleFinishTiming called. Mood: ${mood}, PromptMood: ${promptMood}`);
     stopInterval();
     const totalSessionMinutes = Math.max(1, Math.ceil((initialValue * 60 + elapsedSeconds) / 60));
     
@@ -217,7 +231,8 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     localStorage.removeItem(storageKey);
     window.dispatchEvent(new CustomEvent('habit-timer-update', { detail: null }));
     
-    onLogProgress(totalSessionMinutes, true, mood); // Always true for finish timing
+    console.log(`[HabitCapsule:${habitKey}-${label}] Calling onLogProgress (finish timing) with actualValue: ${totalSessionMinutes}, isComplete: true, mood: ${mood}`);
+    onLogProgress(totalSessionMinutes, true, mood);
     setIsTiming(false);
     setElapsedSeconds(0);
     setShowMoodPicker(false);
@@ -227,6 +242,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
 
   const handleQuickComplete = (e: React.MouseEvent) => {
     e.stopPropagation();
+    console.log(`[HabitCapsule:${habitKey}-${label}] handleQuickComplete called. isCompleted: ${isCompleted}`);
     if (isCompleted) return;
     
     if (showMood) {
@@ -239,7 +255,8 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     localStorage.removeItem(storageKey);
     window.dispatchEvent(new CustomEvent('habit-timer-update', { detail: null }));
     
-    onLogProgress(value, true); // Always true for quick complete
+    console.log(`[HabitCapsule:${habitKey}-${label}] Calling onLogProgress (quick complete) with actualValue: ${value}, isComplete: true`);
+    onLogProgress(value, true);
   };
 
   const currentTotalMinutes = isTimeBased ? initialValue + (elapsedSeconds / 60) : initialValue;
@@ -326,6 +343,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
             stopInterval();
             window.dispatchEvent(new CustomEvent('habit-timer-update', { detail: null }));
             localStorage.removeItem(storageKey);
+            console.log(`[HabitCapsule:${habitKey}-${label}] Calling onLogProgress (partial log) with actualValue: ${elapsedSeconds / 60}, isComplete: false`);
             onLogProgress(elapsedSeconds / 60, false); // This is the partial log
             setIsTiming(false);
             setElapsedSeconds(0);
@@ -419,6 +437,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                   onClick={(e) => {
                     e.stopPropagation();
                     if (completedTaskIdState) {
+                      console.log(`[HabitCapsule:${habitKey}-${label}] Calling onUncomplete from Undo button with completedTaskIdState: ${completedTaskIdState}`);
                       onUncomplete(completedTaskIdState);
                       setCompletedTaskIdState(null);
                     }
