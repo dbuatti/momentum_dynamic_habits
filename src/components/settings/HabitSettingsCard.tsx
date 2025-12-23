@@ -241,14 +241,79 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
             </div>
           </TabsContent>
 
-          <TabsContent value="advanced" className="space-y-4 focus-visible:outline-none">
+          <TabsContent value="advanced" className="space-y-6 focus-visible:outline-none">
              <div className="flex items-center justify-between p-4 rounded-2xl bg-primary/5 border border-primary/10">
                 <div className="flex gap-4">
                   <div className="bg-primary/20 p-2 rounded-xl"><Anchor className="w-5 h-5 text-primary" /></div>
-                  <div><p className="text-xs font-black uppercase">Anchor Practice</p></div>
+                  <div className="space-y-0.5">
+                    <p className="text-xs font-black uppercase">Anchor Practice</p>
+                    <p className="text-[10px] text-muted-foreground">Prioritize on dashboard.</p>
+                  </div>
                 </div>
                 <Switch checked={habit.anchor_practice} onCheckedChange={(v) => onUpdateHabitField(habit.id, { anchor_practice: v })} />
              </div>
+
+             <div className="space-y-4">
+               <div className="flex items-center gap-2 px-1">
+                 <Layers className="w-4 h-4 text-primary" />
+                 <h3 className="text-[10px] font-black uppercase tracking-widest opacity-60">Modular Capsules (Chunking)</h3>
+               </div>
+               
+               <div className="bg-muted/30 p-4 rounded-2xl border border-border space-y-4">
+                 <div className="flex items-center justify-between">
+                   <div className="space-y-0.5">
+                     <p className="text-xs font-bold">Auto-Chunking</p>
+                     <p className="text-[10px] text-muted-foreground">System suggests optimal parts.</p>
+                   </div>
+                   <Switch 
+                     checked={habit.auto_chunking} 
+                     onCheckedChange={(v) => onUpdateHabitField(habit.id, { auto_chunking: v, enable_chunks: true })} 
+                   />
+                 </div>
+
+                 {!habit.auto_chunking && (
+                   <div className="pt-3 border-t border-border space-y-4">
+                     <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <p className="text-xs font-bold">Enable Chunks</p>
+                          <p className="text-[10px] text-muted-foreground">Break sessions into multiple parts.</p>
+                        </div>
+                        <Switch 
+                          checked={habit.enable_chunks} 
+                          onCheckedChange={(v) => onUpdateHabitField(habit.id, { enable_chunks: v })} 
+                        />
+                     </div>
+
+                     {habit.enable_chunks && (
+                       <div className="grid grid-cols-2 gap-4 pt-2">
+                         <div className="space-y-2">
+                           <Label className="text-[10px] font-bold text-muted-foreground uppercase">Number of Parts</Label>
+                           <Input 
+                             type="number" 
+                             min="1" 
+                             max="10" 
+                             className="h-10 rounded-xl font-bold"
+                             defaultValue={habit.num_chunks}
+                             onBlur={(e) => onUpdateHabitField(habit.id, { num_chunks: Math.round(parseInt(e.target.value)) })}
+                           />
+                         </div>
+                         <div className="space-y-2">
+                           <Label className="text-[10px] font-bold text-muted-foreground uppercase">Value per Part</Label>
+                           <Input 
+                             type="number" 
+                             step="0.5"
+                             className="h-10 rounded-xl font-bold"
+                             defaultValue={habit.chunk_duration}
+                             onBlur={(e) => onUpdateHabitField(habit.id, { chunk_duration: parseFloat(e.target.value) })}
+                           />
+                         </div>
+                       </div>
+                     )}
+                   </div>
+                 )}
+               </div>
+             </div>
+
              <div className="p-4 rounded-2xl bg-destructive/5 border border-destructive/10 space-y-3 mt-8">
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
