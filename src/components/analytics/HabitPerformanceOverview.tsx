@@ -6,26 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { Target, Info, CheckCircle2, Dumbbell, Wind, BookOpen, Music, Home, Code, Sparkles, Pill } from 'lucide-react';
 import { UserHabitRecord } from '@/types/habit';
-
-// Icon map for habits, consistent with other parts of the app
-const habitIconMap: Record<string, React.ElementType> = {
-  pushups: Dumbbell,
-  meditation: Wind,
-  kinesiology: BookOpen,
-  piano: Music,
-  housework: Home,
-  projectwork: Code,
-  teeth_brushing: Sparkles,
-  medication: Pill,
-  study_generic: BookOpen,
-  exercise_generic: Dumbbell,
-  mindfulness_generic: Wind,
-  creative_practice_generic: Music,
-  daily_task_generic: Home,
-  fixed_medication: Pill,
-  fixed_teeth_brushing: Sparkles,
-  custom_habit: Target,
-};
+import { habitIconMap } from '@/lib/habit-utils'; // Import from centralized utility
 
 interface HabitAnalyticsSummary {
   habit: UserHabitRecord;
@@ -34,9 +15,9 @@ interface HabitAnalyticsSummary {
   totalCompletions: number;
   totalDurationOrReps: number;
   averageDurationOrReps: number;
-  completionRate: number;
-  capsuleCompletionRate: number;
-  missedDays: string[];
+  completionRate: number; // Percentage of scheduled days completed
+  capsuleCompletionRate: number; // Percentage of capsules completed
+  missedDays: string[]; // Dates when habit was scheduled but not completed
   weeklyCompletions: { [weekStart: string]: number };
   weeklyDurationOrReps: { [weekStart: string]: number };
   weeklyCapsuleCompletions: { [weekStart: string]: number };
@@ -62,7 +43,7 @@ export const HabitPerformanceOverview: React.FC<HabitPerformanceOverviewProps> =
         ) : (
           habits.map((summary) => {
             const habit = summary.habit;
-            const Icon = habitIconMap[habit.habit_key] || Target;
+            const Icon = habitIconMap[habit.habit_key] || habitIconMap.custom_habit; // Fallback icon
             const progressValue = (habit.current_daily_goal > 0) ? (summary.dailyProgress / habit.current_daily_goal) * 100 : 0;
             const isGrowth = !habit.is_fixed && !habit.is_trial_mode;
             const isTrial = habit.is_trial_mode;
@@ -91,7 +72,7 @@ export const HabitPerformanceOverview: React.FC<HabitPerformanceOverviewProps> =
                     <div>
                       <p className="font-semibold">{habit.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        {habit.current_daily_goal} {habit.unit} daily • {habit.frequency_per_week}x weekly
+                        {Math.round(habit.current_daily_goal)} {habit.unit} daily • {habit.frequency_per_week}x weekly
                       </p>
                     </div>
                   </div>
@@ -102,13 +83,13 @@ export const HabitPerformanceOverview: React.FC<HabitPerformanceOverviewProps> =
                 <div className="space-y-1">
                   <div className="flex justify-between text-xs text-muted-foreground">
                     <span>Daily Progress</span>
-                    <span>{Math.round(summary.dailyProgress)}/{habit.current_daily_goal} {habit.unit}</span>
+                    <span>{Math.round(summary.dailyProgress)}/{Math.round(habit.current_daily_goal)} {habit.unit}</span>
                   </div>
                   <Progress value={progressValue} className="h-2 [&>div]:bg-primary" />
                 </div>
                 <div className="flex justify-between text-xs text-muted-foreground">
                   <span>Lifetime Progress</span>
-                  <span>{summary.totalDurationOrReps} {habit.unit}</span>
+                  <span>{Math.round(summary.totalDurationOrReps)} {habit.unit}</span>
                 </div>
                 <div className="flex justify-between text-xs text-muted-foreground">
                   <span>Completion Rate</span>

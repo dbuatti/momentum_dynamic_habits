@@ -1,46 +1,50 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
-import PushupLog from './PushupLog';
-import MeditationLog from './MeditationLog';
-import StudyLog from './StudyLog'; // KinesiologyLog
-import PianoLog from './PianoLog';
-import HouseworkLog from './HouseworkLog';
-import ProjectWorkLog from './ProjectWorkLog';
-import TeethBrushingLog from './TeethBrushingLog';
-import MedicationLog from './MedicationLog';
-import NotFound from './NotFound'; // Fallback for unknown habit keys
-// Layout is now handled by the ProtectedRoute in App.tsx, so it's not needed here.
+import HabitLogTemplate from '@/components/habits/HabitLogTemplate'; // Import the new template
+import NotFound from './NotFound';
+import { useDashboardData } from '@/hooks/useDashboardData'; // Import useDashboardData
+import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton'; // Import skeleton
+import { AlertCircle } from 'lucide-react'; // Import icons
+import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
+import { habitIconMap, habitColorMap } from '@/lib/habit-utils'; // Import from centralized utility
 
 const LogHabit = () => {
   const { habitKey } = useParams<{ habitKey: string }>();
+  const { data: dashboardData, isLoading, isError } = useDashboardData();
 
-  const renderHabitLogComponent = () => {
-    switch (habitKey) {
-      case 'pushups':
-        return <PushupLog />;
-      case 'meditation':
-        return <MeditationLog />;
-      case 'kinesiology': // Corresponds to StudyLog
-        return <StudyLog />;
-      case 'piano':
-        return <PianoLog />;
-      case 'housework':
-        return <HouseworkLog />;
-      case 'projectwork':
-        return <ProjectWorkLog />;
-      case 'teeth_brushing': // Corrected habit key
-        return <TeethBrushingLog />;
-      case 'medication':
-        return <MedicationLog />;
-      default:
-        return <NotFound />; // Handle unknown habit keys
-    }
-  };
+  if (isLoading) {
+    return <DashboardSkeleton />; // Use a generic skeleton for loading
+  }
+
+  if (isError || !dashboardData) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center text-center p-4 bg-background">
+        <AlertCircle className="w-12 h-12 text-destructive mb-4" />
+        <h2 className="text-2xl font-bold mb-2 text-foreground">Could not load Habit Data</h2>
+        <p className="text-lg text-muted-foreground">There was an error fetching your habit details. Please try again later.</p>
+        <Link to="/"><Button variant="outline" className="mt-4">Go Home</Button></Link>
+      </div>
+    );
+  }
+
+  const habit = dashboardData.habits.find(h => h.key === habitKey);
+
+  if (!habit) {
+    return <NotFound />;
+  }
+
+  const habitIcon = habitIconMap[habit.key] || habitIconMap.custom_habit; // Fallback to custom_habit icon
+  const habitColor = habitColorMap[habit.key] || 'blue'; // Fallback to blue color
 
   return (
-    <>
-      {renderHabitLogComponent()}
-    </>
+    <HabitLogTemplate
+      habit={habit}
+      habitIcon={habitIcon}
+      habitColor={habitColor}
+      neurodivergentMode={dashboardData.neurodivergentMode}
+      bestTime={dashboardData.patterns.bestTime}
+    />
   );
 };
 

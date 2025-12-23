@@ -11,7 +11,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useSession } from '@/contexts/SessionContext';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useTheme } from '@/contexts/ThemeContext';
-import { initialHabits } from '@/lib/habit-data'; // Import initialHabits to get full habit details
+import { habitIconMap } from '@/lib/habit-utils'; // Import from centralized utility
 
 interface NavLinkProps {
   to: string;
@@ -59,18 +59,6 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick }) => {
     setTheme(theme === "dark" ? "light" : "dark");
   };
 
-  // Map habit keys to Lucide icons
-  const habitIconMap: Record<string, React.ElementType> = {
-    pushups: Dumbbell,
-    meditation: Wind,
-    kinesiology: BookOpen,
-    piano: Music,
-    housework: Home,
-    projectwork: Code,
-    'teeth_brushing': Sparkles,
-    medication: Pill,
-  };
-
   // Filter habits based on dashboardData and initialHabits
   const visibleHabits = React.useMemo(() => {
     if (isDashboardLoading || !dashboardData?.habits) return [];
@@ -80,7 +68,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick }) => {
       .filter(h => h.is_visible)
       .map(h => ({
         to: `/log/${h.key}`, // Use h.key for the route
-        icon: habitIconMap[h.key] || Target, // Fallback icon
+        icon: habitIconMap[h.key] || habitIconMap.custom_habit, // Fallback icon
         label: h.name, // Use h.name for the label
       }));
   }, [dashboardData?.habits, isDashboardLoading]);

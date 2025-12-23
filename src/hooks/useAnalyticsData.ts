@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { startOfWeek, endOfWeek, subWeeks, format, startOfDay, endOfDay, eachDayOfInterval, isSameDay, isBefore, isAfter } from 'date-fns';
-import { UserHabitRecord } from '@/types/habit';
+import { UserHabitRecord, ProcessedUserHabit } from '@/types/habit'; // Import ProcessedUserHabit
 
 interface CompletedTask {
   id: string;
@@ -27,7 +27,7 @@ interface Reflection {
 }
 
 interface HabitAnalyticsSummary {
-  habit: UserHabitRecord;
+  habit: ProcessedUserHabit; // Use ProcessedUserHabit here
   dailyProgress: number; // Added
   isComplete: boolean;   // Added
   totalCompletions: number;
@@ -74,7 +74,7 @@ const fetchAnalyticsData = async (userId: string): Promise<AnalyticsData> => {
     { data: bestTime, error: bestTimeError }, // Fetch bestTime
   ] = await Promise.all([
     supabase.from('profiles').select('neurodivergent_mode, timezone, first_name, last_name, daily_streak').eq('id', userId).single(),
-    supabase.from('user_habits').select('*, dependent_on_habit_id, anchor_practice').eq('user_id', userId),
+    supabase.from('user_habits').select('*, dependent_on_habit_id, anchor_practice, carryover_value').eq('user_id', userId), // Fetch carryover_value
     supabase.from('completedtasks').select('*').eq('user_id', userId).gte('completed_at', eightWeeksAgo.toISOString()),
     supabase.from('habit_capsules').select('*').eq('user_id', userId).gte('created_at', format(eightWeeksAgo, 'yyyy-MM-dd')),
     supabase.from('reflections').select('*').eq('user_id', userId).order('reflection_date', { ascending: false }).limit(1),
@@ -199,11 +199,30 @@ const fetchAnalyticsData = async (userId: string): Promise<AnalyticsData> => {
         dailyProgress += 1; // For count-based habits without specific xp_per_unit
       }
     });
-    const isComplete = dailyProgress >= habit.current_daily_goal;
+    
+    // Apply carryover to the daily goal for display and chunking
+    const adjustedDailyGoal = habit.current_daily_goal + (habit.carryover_value || 0);
+    const isComplete = dailyProgress >= adjustedDailyGoal;
 
 
     return {
-      habit,
+      habit: {
+        ...habit,
+        key: habit.habit_key, // Add key property
+        dailyGoal: habit.current_daily_goal, // Base daily goal
+        adjustedDailyGoal: adjustedDailyGoal, // Daily goal including carryover
+        xpPerUnit: habit.xp_per_unit,
+        energyCostPerUnit: habit.energy_cost_per_unit,
+        weekly_goal: habit.current_daily_goal * habit.frequency_per_week,
+        growth_stats: {
+          completions: habit.completions_in_plateau,
+          required: habit.plateau_days_required,
+          daysRemaining: Math.max(0, habit.plateau_days_required - habit.completions_in_plateau),
+          phase: habit.growth_phase
+        },
+        isLockedByDependency: false, // Analytics doesn't need this, but for type consistency
+        carryoverValue: habit.carryover_value || 0,
+      },
       dailyProgress, // Added
       isComplete,    // Added
       totalCompletions,

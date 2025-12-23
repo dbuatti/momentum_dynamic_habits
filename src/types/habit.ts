@@ -56,6 +56,26 @@ export interface UserHabitRecord {
   carryover_value: number; // New: carryover from previous day's surplus
 }
 
+export interface ProcessedUserHabit extends UserHabitRecord {
+  key: string; // habit_key is renamed to key in processed data
+  dailyGoal: number; // Base daily goal from DB
+  adjustedDailyGoal: number; // dailyGoal + carryover
+  dailyProgress: number; // Current progress today
+  isComplete: boolean; // Is daily goal met
+  weekly_completions: number; // Number of times completed this week
+  weekly_goal: number; // Target weekly goal
+  xpPerUnit: number; // Renamed from xp_per_unit
+  energyCostPerUnit: number; // Renamed from energy_cost_per_unit
+  growth_stats: {
+    completions: number;
+    required: number;
+    daysRemaining: number;
+    phase: 'frequency' | 'duration';
+  };
+  isLockedByDependency: boolean;
+  carryoverValue: number; // Renamed from carryover_value
+}
+
 export interface PianoHabit extends Habit {
   targetSongs: string[];
   songsCompletedToday: string[];

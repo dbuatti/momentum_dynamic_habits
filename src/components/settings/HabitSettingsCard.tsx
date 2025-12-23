@@ -15,10 +15,10 @@ import {
 } from 'lucide-react';
 import { UserHabitRecord } from '@/types/habit';
 import { useUpdateHabitVisibility } from '@/hooks/useUpdateHabitVisibility';
-import { initialHabits } from '@/lib/habit-data';
-import { habitIcons, habitCategories, habitUnits, habitModes } from '@/lib/habit-templates';
+import { habitIcons, habitModes } from '@/lib/habit-templates'; // Removed initialHabits import
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useJourneyData } from '@/hooks/useJourneyData';
+import { habitIconMap } from '@/lib/habit-utils'; // Import from centralized utility
 
 interface HabitSettingsCardProps {
   habit: UserHabitRecord;
@@ -31,19 +31,7 @@ const days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const timeOptions = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0') + ':00');
 
 const getHabitIcon = (habitKey: string) => {
-  const foundIcon = habitIcons.find(i => i.value === habitKey);
-  if (foundIcon) return foundIcon.icon;
-
-  // Fallback to initialHabits if habitKey is not directly an icon name
-  const initialHabitConfig = initialHabits.find(h => h.id === habitKey);
-  if (initialHabitConfig) {
-    const initialHabitIconMap: { [key: string]: React.ElementType } = {
-      pushups: Dumbbell, meditation: Wind, kinesiology: BookOpen, piano: Music,
-      housework: Home, projectwork: Code, teeth_brushing: Sparkles, medication: Pill,
-    };
-    return initialHabitIconMap[habitKey] || Target;
-  }
-  return Target;
+  return habitIconMap[habitKey] || habitIconMap.custom_habit; // Use centralized map with fallback
 };
 
 export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
@@ -52,7 +40,7 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
   onToggleDay,
   isActiveHabit,
 }) => {
-  const Icon = getHabitIcon(habit.habit_key) || Target;
+  const Icon = getHabitIcon(habit.habit_key);
   const { mutate: updateHabitVisibility } = useUpdateHabitVisibility();
   const { data: journeyData } = useJourneyData();
 

@@ -13,26 +13,7 @@ import HabitHeatmap from '@/components/dashboard/HabitHeatmap';
 import { useHabitHeatmapData } from '@/hooks/useHabitHeatmapData';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useDashboardData } from '@/hooks/useDashboardData'; // Import useDashboardData
-
-const habitIconMap: { [key: string]: React.ElementType } = {
-  pushups: Dumbbell,
-  meditation: Wind,
-  kinesiology: BookOpen,
-  piano: Music,
-  housework: Home,
-  projectwork: Code,
-  teeth_brushing: Sparkles,
-  medication: Pill,
-  // Default icon for new habits
-  study_generic: BookOpen,
-  exercise_generic: Dumbbell,
-  mindfulness_generic: Wind,
-  creative_practice_generic: Music,
-  daily_task_generic: Home,
-  fixed_medication: Pill,
-  fixed_teeth_brushing: Sparkles,
-  custom_habit: Target,
-};
+import { habitIconMap } from '@/lib/habit-utils'; // Import from centralized utility
 
 const History = () => {
   const { data: completedTasks, isLoading, isError } = useCompletedTasks();
@@ -134,7 +115,7 @@ const History = () => {
               <CardContent className="p-5 pt-0">
                 <div className="space-y-4">
                   {tasks.map((task, index) => {
-                    const Icon = habitIconMap[task.original_source];
+                    const Icon = habitIconMap[task.original_source] || habitIconMap.custom_habit; // Fallback icon
                     const userHabit = dashboardData?.habits.find(h => h.key === task.original_source);
                     const unit = userHabit?.unit || 'reps'; // Default to reps if not found
                     

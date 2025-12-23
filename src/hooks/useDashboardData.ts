@@ -4,6 +4,7 @@ import { useSession } from '@/contexts/SessionContext';
 import { startOfDay, differenceInDays, startOfWeek, endOfWeek, subWeeks, addMonths, subDays, formatDistanceToNowStrict, isWithinInterval, parse } from 'date-fns';
 import { initialHabits } from '@/lib/habit-data';
 import { useEffect, useRef } from 'react';
+import { ProcessedUserHabit } from '@/types/habit'; // Import ProcessedUserHabit
 
 const fetchDashboardData = async (userId: string) => {
   const { data: profile, error: profileError } = await supabase
@@ -69,7 +70,7 @@ const fetchDashboardData = async (userId: string) => {
     dailyProgressMap.set(key, (dailyProgressMap.get(key) || 0) + progress);
   });
 
-  const processedHabits = (habits || [])
+  const processedHabits: ProcessedUserHabit[] = (habits || [])
     .filter(h => h.is_visible)
     .map(h => {
     const initialHabit = initialHabitsMap.get(h.habit_key);
@@ -103,45 +104,26 @@ const fetchDashboardData = async (userId: string) => {
     const isLockedByDependency = isDependent && !isDependencyMet;
 
     return {
-      id: h.id, // Explicitly include id
-      key: h.habit_key,
-      name: h.name || initialHabit?.name || h.habit_key.charAt(0).toUpperCase() + h.habit_key.slice(1), // Use name from DB
-      dailyGoal: h.current_daily_goal, // Keep original daily goal for surplus calculation
+      ...h, // Spread all properties from UserHabitRecord
+      key: h.habit_key, // Add key property
+      dailyGoal: h.current_daily_goal, // Base daily goal
       adjustedDailyGoal: adjustedDailyGoal, // New: daily goal including carryover
       carryoverValue: h.carryover_value || 0, // New: carryover value
       dailyProgress, 
       isComplete: dailyProgress >= adjustedDailyGoal, // Check against adjusted goal
-      momentum: h.momentum_level, 
-      longTermGoal: h.long_term_goal,
-      lifetimeProgress: h.unit === 'min' ? Math.round((h.lifetime_progress || 0) / 60) : (h.lifetime_progress || 0), // Use unit from DB
-      unit: h.unit || '', // Use unit from DB
       xpPerUnit: h.xp_per_unit || 0, // Use xp_per_unit from DB
       energyCostPerUnit: h.energy_cost_per_unit || 0, // Use energy_cost_per_unit from DB
-      is_frozen: h.is_frozen, 
-      is_fixed: h.is_fixed,
-      category: h.category || 'daily',
-      is_trial_mode: h.is_trial_mode,
-      frequency_per_week: h.frequency_per_week,
       weekly_completions: weeklyCompletions,
       weekly_goal: h.current_daily_goal * h.frequency_per_week, // Weekly goal based on base daily goal
-      is_visible: h.is_visible,
       isScheduledForToday: isScheduledForToday,
       isWithinWindow,
-      window_start: h.window_start,
-      window_end: h.window_end,
-      auto_chunking: h.auto_chunking ?? true,
-      enable_chunks: h.enable_chunks,
-      num_chunks: h.num_chunks,
-      chunk_duration: h.chunk_duration,
       growth_stats: {
         completions: h.completions_in_plateau,
         required: plateauRequired,
         daysRemaining: daysRemainingInPlateau,
         phase: h.growth_phase
       },
-      dependent_on_habit_id: h.dependent_on_habit_id, // Include dependency ID
       isLockedByDependency: isLockedByDependency, // New: indicates if this habit is locked
-      anchor_practice: h.anchor_practice, // Include anchor_practice
     };
   });
 
@@ -167,7 +149,7 @@ const fetchDashboardData = async (userId: string) => {
 
   return {
     daysActive: totalDaysSinceStart,
-    totalJourneyDays: processedHabits[0]?.longTermGoal || 365,
+    totalJourneyDays: processedHabits[0]?.long_term_goal || 365, // Use long_term_goal from processedHabits
     habits: processedHabits,
     neurodivergentMode: profile?.neurodivergent_mode || false,
     weeklySummary: { 

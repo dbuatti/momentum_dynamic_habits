@@ -25,36 +25,7 @@ import { TrialStatusCard } from "@/components/dashboard/TrialStatusCard";
 import { GrowthGuide } from "@/components/dashboard/GrowthGuide";
 import { Link } from "react-router-dom";
 import { showSuccess } from "@/utils/toast"; // Import showSuccess
-
-const habitIconMap: Record<string, React.ElementType> = {
-  pushups: Dumbbell,
-  meditation: Wind,
-  kinesiology: BookOpen,
-  piano: Music,
-  housework: Home,
-  projectwork: Code,
-  teeth_brushing: Sparkles,
-  medication: Pill,
-  // Add new icons for custom habits if needed, or use a default
-  study_generic: BookOpen,
-  exercise_generic: Dumbbell,
-  mindfulness_generic: Wind,
-  creative_practice_generic: Music,
-  daily_task_generic: Home,
-  fixed_medication: Pill,
-  fixed_teeth_brushing: Sparkles,
-  custom_habit: Target,
-};
-
-type HabitColor = 'orange' | 'blue' | 'green' | 'purple' | 'red' | 'indigo';
-const habitColorMap: Record<string, HabitColor> = {
-  pushups: 'orange', meditation: 'blue', kinesiology: 'green', piano: 'purple',
-  housework: 'red', projectwork: 'indigo', teeth_brushing: 'blue', medication: 'purple',
-  // Default colors for new templates/custom habits
-  study_generic: 'green', exercise_generic: 'orange', mindfulness_generic: 'blue',
-  creative_practice_generic: 'purple', daily_task_generic: 'red',
-  fixed_medication: 'purple', fixed_teeth_brushing: 'blue', custom_habit: 'indigo',
-};
+import { habitIconMap, habitColorMap } from '@/lib/habit-utils'; // Import from centralized utility
 
 const Index = () => {
   const { data, isLoading, isError } = useDashboardData();
@@ -186,7 +157,7 @@ const Index = () => {
   if (isError || !data) return null;
 
   const renderHabitItem = (habit: any) => {
-    const Icon = habitIconMap[habit.key] || Target; // Use Target as a fallback
+    const Icon = habitIconMap[habit.key] || habitIconMap.custom_habit; // Use custom_habit as a fallback
     const color = habitColorMap[habit.key] || 'blue';
     const isGrowth = !habit.is_fixed && !habit.is_trial_mode;
     const isTrial = habit.is_trial_mode;
@@ -268,7 +239,7 @@ const Index = () => {
                 </div>
                 
                 <div className="hidden sm:flex flex-col items-end text-right">
-                    <p className="text-xl font-black">{habit.dailyProgress}/{habit.adjustedDailyGoal}</p> {/* Use adjustedDailyGoal */}
+                    <p className="text-xl font-black">{Math.round(habit.dailyProgress)}/{Math.round(habit.adjustedDailyGoal)}</p> {/* Use adjustedDailyGoal */}
                     <p className="text-[10px] font-bold uppercase opacity-60 tracking-widest">{habit.unit} session</p>
                 </div>
             </div>
@@ -300,9 +271,9 @@ const Index = () => {
                     <div className="flex items-center gap-2">
                         <Target className="w-3.5 h-3.5 opacity-40" />
                         <p className="text-sm font-black">
-                          {habit.dailyGoal} {habit.unit}
+                          {Math.round(habit.dailyGoal)} {habit.unit}
                           {habit.carryoverValue > 0 && (
-                            <span className="ml-1 text-[10px] font-bold text-green-600"> (+{habit.carryoverValue} carryover)</span>
+                            <span className="ml-1 text-[10px] font-bold text-green-600"> (+{Math.round(habit.carryoverValue)} carryover)</span>
                           )}
                         </p>
                     </div>
@@ -311,7 +282,7 @@ const Index = () => {
                     <p className="text-[9px] font-black uppercase opacity-50 tracking-widest">Weekly Goal</p>
                     <div className="flex items-center gap-2">
                         <TrendingUp className="w-3.5 h-3.5 opacity-40" />
-                        <p className="text-sm font-black">{habit.weekly_goal} {habit.unit}</p>
+                        <p className="text-sm font-black">{Math.round(habit.weekly_goal)} {habit.unit}</p>
                     </div>
                 </div>
             </div>

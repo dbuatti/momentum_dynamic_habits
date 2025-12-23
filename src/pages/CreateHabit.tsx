@@ -26,6 +26,7 @@ import { useNavigate } from 'react-router-dom';
 import { UserHabitRecord, HabitCategory as HabitCategoryType } from '@/types/habit';
 import { useJourneyData } from '@/hooks/useJourneyData';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { habitIconMap } from '@/lib/habit-utils'; // Import from centralized utility
 
 interface CreateHabitParams {
   name: string;
@@ -121,8 +122,8 @@ const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: s
 
 const timeOptions = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0') + ':00');
 
-const getHabitIcon = (iconName: string) => {
-  return habitIcons.find(i => i.value === iconName)?.icon || Target;
+const getHabitIconComponent = (iconName: string) => {
+  return habitIcons.find(i => i.value === iconName)?.icon || habitIconMap.custom_habit; // Use centralized map with fallback
 };
 
 const CreateHabit = () => {
@@ -275,7 +276,7 @@ const CreateHabit = () => {
   };
 
   const renderGuidedStep = () => {
-    const IconComponent = getHabitIcon(selectedIconName);
+    const IconComponent = getHabitIconComponent(selectedIconName);
     const progress = (step / 9) * 100;
 
     return (
@@ -645,7 +646,7 @@ const CreateHabit = () => {
   };
 
   const renderCustomForm = () => {
-    const IconComponent = getHabitIcon(selectedIconName);
+    const IconComponent = getHabitIconComponent(selectedIconName);
     return (
       <form onSubmit={handleSubmit} className="space-y-8">
         <Card className="rounded-3xl shadow-sm border-0">

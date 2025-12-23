@@ -20,26 +20,7 @@ import { format, startOfWeek, endOfWeek, subWeeks } from 'date-fns';
 import { HabitPerformanceOverview } from '@/components/analytics/HabitPerformanceOverview'; // Import new component
 import { GrowthInsightsCard } from '@/components/analytics/GrowthInsightsCard'; // Import new component
 import { useDashboardData } from '@/hooks/useDashboardData'; // Import useDashboardData for bestTime
-
-// Icon map for habits, consistent with other parts of the app
-const habitIconMap: Record<string, React.ElementType> = {
-  pushups: Dumbbell,
-  meditation: Wind,
-  kinesiology: BookOpen,
-  piano: Music,
-  housework: Home,
-  projectwork: Code,
-  teeth_brushing: Sparkles,
-  medication: Pill,
-  study_generic: BookOpen,
-  exercise_generic: Dumbbell,
-  mindfulness_generic: Wind,
-  creative_practice_generic: Music,
-  daily_task_generic: Home,
-  fixed_medication: Pill,
-  fixed_teeth_brushing: Sparkles,
-  custom_habit: Target,
-};
+import { habitIconMap } from '@/lib/habit-utils'; // Import from centralized utility
 
 const Analytics = () => {
   const { data: analyticsData, isLoading, isError } = useAnalyticsData();
@@ -151,10 +132,6 @@ const Analytics = () => {
           <div className="bg-primary/5 rounded-xl p-4">
             <p className="text-2xl font-bold text-primary">{overallWeeklySummary.consistency}%</p>
             <p className="text-sm text-muted-foreground mt-1">Consistency</p>
-          </div>
-          <div className="bg-primary/5 rounded-xl p-4">
-            <p className="text-2xl font-bold text-primary">{overallWeeklySummary.totalCompletions}</p>
-            <p className="text-sm text-muted-foreground mt-1">Total Sessions</p>
           </div>
           <div className="col-span-2 bg-primary/5 rounded-xl p-4">
             <p className="text-xl font-bold text-primary flex items-center justify-center">
