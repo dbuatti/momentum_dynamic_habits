@@ -312,7 +312,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
               <div className="flex items-center gap-4 min-w-0">
                 <div className={cn(
                   "w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border border-border",
-                  habit.allCompleted ? "bg-card" : "bg-card/90"
+                  isCompleted ? "bg-card" : "bg-card/90"
                 )}>
                   {isCompleted ? (
                     <Check className="w-6 h-6 text-success" />
