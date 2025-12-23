@@ -22,7 +22,7 @@ export interface UserHabitRecord {
   user_id: string;
   habit_key: string;
   name: string; // Added name
-  unit: string; // Added unit
+  unit: 'min' | 'reps' | 'dose'; // Changed to union type
   xp_per_unit: number; // Added xp_per_unit
   energy_cost_per_unit: number; // Added energy_cost_per_unit
   current_daily_goal: number;
@@ -74,6 +74,8 @@ export interface ProcessedUserHabit extends UserHabitRecord {
   };
   isLockedByDependency: boolean;
   carryoverValue: number; // Renamed from carryover_value
+  isScheduledForToday: boolean; // Added for filtering
+  isWithinWindow: boolean; // Added for filtering
 }
 
 export interface PianoHabit extends Habit {

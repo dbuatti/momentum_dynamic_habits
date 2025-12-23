@@ -13,6 +13,7 @@ import { showSuccess, showError } from '@/utils/toast';
 import RestTimer from '@/components/habits/RestTimer';
 import { Link } from 'react-router-dom';
 import { playEndSound } from '@/utils/audio';
+import { Progress } from '@/components/ui/progress'; // Import Progress component
 
 interface TodayProgressCardProps {
   habits: ProcessedUserHabit[];
@@ -22,7 +23,7 @@ interface TodayProgressCardProps {
 
 export const TodayProgressCard: React.FC<TodayProgressCardProps> = ({ habits, neurodivergentMode, isLoading }) => {
   const { dbCapsules, isLoading: isLoadingCapsules, completeCapsule, uncompleteCapsule, resetCapsulesForToday } = useCapsules();
-  const { mutate: logHabit, isPending: isLoggingHabit } = useHabitLog();
+  const { mutate: logHabit, unlog: unlogHabit, isPending: isLoggingHabit } = useHabitLog(); // Destructure unlog
 
   const [activeTimer, setActiveTimer] = useState<{ label: string; elapsed: number; isPaused: boolean; habitKey: string; habitName: string; goalValue: number } | null>(null);
   const [showRestTimer, setShowRestTimer] = useState(false);
@@ -117,7 +118,7 @@ export const TodayProgressCard: React.FC<TodayProgressCardProps> = ({ habits, ne
     try {
       await uncompleteCapsule.mutateAsync({ habitKey, index: capsuleIndex });
       // Also unlog from completedtasks
-      await logHabit.unlog({
+      await unlogHabit({ // Corrected to unlogHabit
         habitKey,
         taskName: `${habitName} (Part ${capsuleIndex + 1})`,
       });
@@ -150,17 +151,17 @@ export const TodayProgressCard: React.FC<TodayProgressCardProps> = ({ habits, ne
 
   const handleRestComplete = () => {
     setShowRestTimer(false);
-    onStopTimer(); // Ensure any active timer is stopped
+    handleStopTimer(); // Corrected to call local handleStopTimer
   };
 
   const handleRestCancel = () => {
     setShowRestTimer(false);
-    onStopTimer(); // Ensure any active timer is stopped
+    handleStopTimer(); // Corrected to call local handleStopTimer
   };
 
   const handleSkipRest = () => {
     setShowRestTimer(false);
-    onStopTimer(); // Ensure any active timer is stopped
+    handleStopTimer(); // Corrected to call local handleStopTimer
   };
 
   if (isLoading || isLoadingCapsules) {
