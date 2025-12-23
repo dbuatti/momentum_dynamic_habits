@@ -34,7 +34,7 @@
     --success-border: 145 63.8% 70%;
 
     --info: 220 80% 50%;
-    --info-foreground: 210 40% 98%;
+    --info-foreground: 220 80% 20%; /* Changed for better contrast in light theme */
     --info-background: 220 80% 90%;
     --info-border: 220 80% 70%;
 
@@ -123,7 +123,7 @@
     --success-border: 145 63.8% 30%;
 
     --info: 220 80% 50%;
-    --info-foreground: 210 40% 98%;
+    --info-foreground: 210 40% 98%; /* Kept white for dark theme */
     --info-background: 220 80% 20%;
     --info-border: 220 80% 30%;
 
