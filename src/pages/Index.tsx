@@ -193,58 +193,54 @@ const Index = () => {
         )}
       >
         <AccordionTrigger className="px-6 py-5 hover:no-underline group">
-          <div className="flex flex-col w-full text-left gap-4">
-            <div className="flex items-center justify-between w-full">
-                <div className="flex items-center gap-4 min-w-0">
-                  <div className={cn(
-                    "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border border-black/5",
-                    habit.allCompleted ? "bg-white" : "bg-white/90"
+          <div className="flex flex-col w-full text-left gap-2">
+            <div className="flex items-center gap-5 text-left w-full">
+              <div className={cn(
+                "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border border-black/5",
+                habit.allCompleted ? "bg-white" : "bg-white/90"
+              )}>
+                <Icon className="w-6 h-6" />
+              </div>
+              <div className="min-w-0 flex-grow pr-2">
+                <h3 className="font-black text-lg flex items-center gap-2 leading-tight truncate">
+                  {habit.name}
+                  {habit.allCompleted && <CheckCircle2 className="w-5 h-5 text-green-600" />}
+                </h3>
+                <div className="flex flex-wrap items-center gap-2 mt-1">
+                  <span className={cn(
+                    "text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border",
+                    habit.allCompleted 
+                      ? "bg-green-100 text-green-700 border-green-200" 
+                      : habit.isWithinWindow 
+                        ? "bg-primary text-primary-foreground border-transparent"
+                        : "bg-muted text-muted-foreground border-transparent"
                   )}>
-                    <Icon className="w-6 h-6" />
-                  </div>
-                  <div className="min-w-0 flex-grow pr-2">
-                    <h3 className="font-black text-lg flex items-center gap-2 leading-tight truncate">
-                      {habit.name}
-                      {habit.allCompleted && <CheckCircle2 className="w-5 h-5 text-green-600" />}
-                      {isLocked && <Lock className="w-5 h-5 text-muted-foreground" />}
-                    </h3>
-                    <div className="flex flex-wrap items-center gap-2 mt-1">
-                      <span className={cn(
-                        "text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border",
-                        habit.allCompleted 
-                          ? "bg-green-100 text-green-700 border-green-200" 
-                          : habit.isWithinWindow 
-                            ? "bg-primary text-primary-foreground border-transparent"
-                            : "bg-muted text-muted-foreground border-transparent"
-                      )}>
-                        {habit.allCompleted ? "Goal Met" : (habit.isWithinWindow ? "Ready Now" : "Restricted")}
-                      </span>
-                      {isTrial && (
-                        <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-700 border border-blue-200">
-                          Trial Mode
-                        </span>
-                      )}
-                      {isGrowth && (
-                        <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-700 border border-purple-200">
-                          Growth Mode
-                        </span>
-                      )}
-                      {habit.is_fixed && (
-                        <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-gray-100 text-gray-700 border border-gray-200">
-                          Fixed Mode
-                        </span>
-                      )}
-                    </div>
-                  </div>
+                    {habit.allCompleted ? "Goal Met" : (habit.isWithinWindow ? "Ready Now" : "Restricted")}
+                  </span>
+                  {isTrial && (
+                    <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-700 border border-blue-200">
+                      Trial Mode
+                    </span>
+                  )}
+                  {isGrowth && (
+                    <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-700 border border-purple-200">
+                      Growth Mode
+                    </span>
+                  )}
+                  {habit.is_fixed && (
+                    <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-gray-100 text-gray-700 border border-gray-200">
+                      Fixed Mode
+                    </span>
+                  )}
                 </div>
-                
-                <div className="hidden sm:flex flex-col items-end text-right">
-                    <p className="text-xl font-black">{Math.round(habit.dailyProgress)}/{Math.round(habit.adjustedDailyGoal)}</p> {/* Use adjustedDailyGoal */}
-                    <p className="text-[10px] font-bold uppercase opacity-60 tracking-widest">{habit.unit} session</p>
-                </div>
+                {/* Daily Progress below name */}
+                <p className="text-sm font-bold text-foreground mt-2">
+                  Progress: {Math.round(habit.dailyProgress)}/{Math.round(habit.adjustedDailyGoal)} {habit.unit}
+                </p>
+              </div>
             </div>
 
-            {habit.dependent_on_habit_id && (
+            {habit.isLockedByDependency && (
               <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2 ml-[72px]">
                 <Lock className="w-3.5 h-3.5" />
                 <span>Locked. Complete {dependentHabitName} first.</span>
@@ -291,6 +287,13 @@ const Index = () => {
                 current={habit.weekly_completions} 
                 total={habit.frequency_per_week} 
                 label={isTrial ? "Weekly Session Log" : "Weekly Consistency"}
+              />
+            </div>
+            {/* Daily Progress Bar */}
+            <div className="w-full mt-2">
+              <Progress
+                value={(habit.dailyProgress / habit.adjustedDailyGoal) * 100}
+                className="h-1.5 [&>div]:bg-primary"
               />
             </div>
           </div>

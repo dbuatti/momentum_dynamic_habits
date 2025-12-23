@@ -288,7 +288,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                   <p className={cn("font-bold text-base leading-tight truncate", isCompleted ? "text-muted-foreground" : colors.text)}>
                     {label}
                     {initialValue > 0 && !isCompleted && (
-                      <span className="ml-2 text-[10px] bg-black/10 dark:bg-white/20 px-1.5 py-0.5 rounded-md align-middle font-black">+ {initialValue}m</span>
+                      <span className="ml-2 text-[10px] bg-black/10 dark:bg-white/20 px-1.5 py-0.5 rounded-md align-middle font-black">+ {Math.round(initialValue)} {unit}</span>
                     )}
                   </p>
                   <div className="flex items-center gap-2 mt-1">
