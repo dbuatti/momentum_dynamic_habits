@@ -3,7 +3,7 @@ import { Habit } from '@/types/habit';
 /**
  * Calculates the suggested chunks for a habit based on goal and user preferences.
  * Logic:
- * - Binary habits: ALWAYS 1 chunk.
+ * - Binary habits or disabled chunks: ALWAYS 1 chunk matching the goal.
  * - Time habits: Max 10-15 mins per chunk (smaller for neurodivergent)
  * - Count habits: Max 20-25 reps per chunk
  */
@@ -13,17 +13,26 @@ export const calculateDynamicChunks = (
   unit: string, 
   isNeurodivergent: boolean,
   autoChunking: boolean,
+  enableChunks: boolean, // Parameter to respect the enable_chunks setting
   manualNumChunks?: number,
   manualChunkDuration?: number,
-  isFixed?: boolean,
   measurementType?: string
 ) => {
-  // HARD GUARDRAIL: Binary measurement (like medication)
-  // should NEVER have more than 1 chunk/capsule.
-  if (measurementType === 'binary') {
+  // HARD GUARDRAIL 1: Binary measurement (like medication) 
+  // or explicitly disabled chunks should NEVER have more than 1 capsule.
+  if (measurementType === 'binary' || !enableChunks) {
     return {
       numChunks: 1,
-      chunkValue: 1 // Binary is always 1 unit
+      chunkValue: goal
+    };
+  }
+
+  // HARD GUARDRAIL 2: Tiny goals (e.g., 2 mins) shouldn't be chunked even if auto is on.
+  const isTinyGoal = (unit === 'min' && goal <= 5) || (unit === 'reps' && goal <= 5);
+  if (isTinyGoal) {
+    return {
+      numChunks: 1,
+      chunkValue: goal
     };
   }
 
@@ -76,15 +85,15 @@ export const calculateDailyParts = (habits: any[], isNeurodivergent: boolean) =>
       habit.unit,
       isNeurodivergent,
       habit.auto_chunking,
+      habit.enable_chunks, // Pass the toggle
       habit.num_chunks,
       habit.chunk_duration,
-      habit.is_fixed,
       habit.measurement_type
     );
 
     totalParts += numChunks;
     
-    // 2. Determine effective progress (Cap for parts calculation, but allow visual overflow)
+    // 2. Determine effective progress
     const dailyTarget = habit.adjustedDailyGoal;
     const rawProgress = habit.dailyProgress;
     
@@ -93,7 +102,6 @@ export const calculateDailyParts = (habits: any[], isNeurodivergent: boolean) =>
       const isLast = i === numChunks - 1;
       const cumulativeNeeded = isLast ? dailyTarget : (i + 1) * chunkValue;
       
-      // Use a small epsilon for float comparison
       if (rawProgress >= (cumulativeNeeded - 0.01)) {
         completedParts++;
       }

@@ -47,7 +47,6 @@ const Index = () => {
       .filter(habit => habit.is_visible)
       .map(habit => {
       const goal = habit.adjustedDailyGoal;
-      // Formula: dailyProgress is now unbounded in useDashboardData
       const progress = habit.dailyProgress;
       
       const { numChunks, chunkValue } = calculateDynamicChunks(
@@ -56,9 +55,9 @@ const Index = () => {
         habit.unit,
         data.neurodivergentMode,
         habit.auto_chunking,
+        habit.enable_chunks, // Correctly pass enable_chunks
         habit.num_chunks,
         habit.chunk_duration,
-        habit.is_fixed,
         habit.measurement_type
       );
 
@@ -67,11 +66,7 @@ const Index = () => {
       const capsules = Array.from({ length: numChunks }).map((_, i) => {
         const dbCapsule = dbCapsules?.find(c => c.habit_key === habit.key && c.capsule_index === i);
         const isCompletedByDb = dbCapsule?.is_completed || false;
-        
-        // Logical completion based on progress for UI feedback
-        // If progress >= (i + 1) * chunkValue, it's visually complete
         const isVisuallyComplete = progress >= ((i + 1) * chunkValue - 0.01);
-        
         const isCompleted = isCompletedByDb || isVisuallyComplete;
 
         return {
@@ -90,7 +85,6 @@ const Index = () => {
         };
       });
 
-      // Special case: If habit is complete and not fixed, we want to allow an "Extra" capsule
       const showExtraCapsule = isOverallComplete && !habit.is_fixed;
 
       return {
