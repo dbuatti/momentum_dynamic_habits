@@ -182,7 +182,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     startTimeRef.current = null;
     localStorage.removeItem(storageKey);
     window.dispatchEvent(new CustomEvent('habit-timer-update', { detail: null }));
-    onLogProgress(0, false); // Notify parent to reset progress
+    onUncomplete(); // Call onUncomplete to reset the capsule in the database
   };
 
   const handleFinishTiming = (mood?: string, promptMood: boolean = false) => {
