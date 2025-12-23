@@ -215,7 +215,7 @@ const Index = () => {
                   <span className={cn(
                     "text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border",
                     habit.allCompleted 
-                      ? "bg-success-background text-success-foreground border-success-border" 
+                      ? "bg-success-background border-success-border text-primary dark:text-success-foreground" // Adjusted text color for light mode
                       : habit.isWithinWindow 
                         ? "bg-primary text-primary-foreground border-transparent"
                         : "bg-muted text-muted-foreground border-transparent"
