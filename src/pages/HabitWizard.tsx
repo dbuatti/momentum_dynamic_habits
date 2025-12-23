@@ -47,8 +47,8 @@ import { Step5_TimePressureCheck } from '@/components/habits/wizard/micro/Step5_
 import { Step6_GrowthAppetite } from '@/components/habits/wizard/micro/Step6_GrowthAppetite';
 import { Step6_GrowthStyle } from '@/components/habits/wizard/micro/Step6_GrowthStyle';
 import { Step6_FailureResponse } from '@/components/habits/wizard/micro/Step6_FailureResponse';
-import { Step6_SuccessDefinition } from '@/components/habits/wizard/micro/Step6_SuccessDefinition';
-import { HabitTemplateForm } from '@/components/habits/wizard/HabitTemplateForm';
+import { Step6_SuccessDefinition } from '@/components/habits/wizard/micro/Step6_SuccessDefinition'; // Corrected syntax
+// import { HabitTemplateForm } from '@/components/habits/wizard/HabitTemplateForm'; // Removed
 import { HabitReviewStep } from '@/pages/HabitReview';
 import { WizardStepper } from '@/components/habits/wizard/WizardStepper';
 import { EditHabitDetailsModal } from '@/components/habits/wizard/EditHabitDetailsModal'; // Import the new modal
@@ -260,29 +260,13 @@ const HabitWizard = () => {
       setCurrentMicroStepIndex(0); // Reset micro-step index when loading a macro step
       setHasLoadedInitialProgress(true);
     } else if (!isLoadingWizardProgress && (isTemplateCreationMode || templateToPreFill) && !hasLoadedInitialProgress) {
-      setCurrentStep(99); // Special step for template form
-      if (templateToPreFill) {
-        setWizardData({
-          name: templateToPreFill.name,
-          habit_key: templateToPreFill.id,
-          category: templateToPreFill.category,
-          daily_goal: templateToPreFill.defaultDuration,
-          frequency_per_week: templateToPreFill.defaultFrequency,
-          is_trial_mode: templateToPreFill.defaultMode === 'Trial',
-          is_fixed: templateToPreFill.defaultMode === 'Fixed',
-          anchor_practice: templateToPreFill.anchorPractice,
-          auto_chunking: templateToPreFill.autoChunking,
-          unit: templateToPreFill.unit,
-          xp_per_unit: templateToPreFill.xpPerUnit,
-          energy_cost_per_unit: templateToPreFill.energyCostPerUnit,
-          icon_name: templateToPreFill.icon_name,
-          plateau_days_required: templateToPreFill.plateauDaysRequired,
-          short_description: templateToPreFill.shortDescription,
-        });
-      }
-      setHasLoadedInitialProgress(true);
+      // This block is now effectively unused as template creation is handled by NewHabitModal
+      // and template pre-fill is handled by NewHabitModal directly.
+      // The HabitWizard page is now exclusively for personal habit creation.
+      setHasLoadedInitialProgress(true); // Mark as loaded to prevent re-entry
+      navigate('/'); // Redirect if somehow landed here in template mode
     }
-  }, [isLoadingWizardProgress, wizardProgress, isTemplateCreationMode, templateToPreFill, hasLoadedInitialProgress]);
+  }, [isLoadingWizardProgress, wizardProgress, isTemplateCreationMode, templateToPreFill, hasLoadedInitialProgress, navigate]);
 
   useEffect(() => {
     if (!templateToPreFill && wizardData.name) {
@@ -315,25 +299,20 @@ const HabitWizard = () => {
       if (nextMacroStep > MACRO_STEPS[MACRO_STEPS.length - 1]) { // All steps completed, including review
         // This case should ideally not be reached if the final action is handled in HabitReviewStep
         // But as a fallback, if somehow we pass the review step, finalize.
-        if (isTemplateCreationMode) {
-          shouldSaveProgress = false;
-          handleSubmitFinal();
-          return;
-        } else {
-          const inferredParams = calculateHabitParams(updatedWizardData, neurodivergentMode);
-          const finalHabitData: CreateHabitParams = {
-            name: updatedWizardData.name!,
-            habit_key: updatedWizardData.habit_key!,
-            category: updatedWizardData.category as HabitCategory,
-            unit: updatedWizardData.unit || 'min',
-            icon_name: updatedWizardData.icon_name || 'Target',
-            ...inferredParams,
-          } as CreateHabitParams;
+        // This path is now only for personal habit creation.
+        const inferredParams = calculateHabitParams(updatedWizardData, neurodivergentMode);
+        const finalHabitData: CreateHabitParams = {
+          name: updatedWizardData.name!,
+          habit_key: updatedWizardData.habit_key!,
+          category: updatedWizardData.category as HabitCategory,
+          unit: updatedWizardData.unit || 'min',
+          icon_name: updatedWizardData.icon_name || 'Target',
+          ...inferredParams,
+        } as CreateHabitParams;
 
-          await createHabitMutation.mutateAsync(finalHabitData);
-          shouldSaveProgress = false;
-          return;
-        }
+        await createHabitMutation.mutateAsync(finalHabitData);
+        shouldSaveProgress = false;
+        return;
       }
 
       if (shouldSaveProgress) {
@@ -346,7 +325,7 @@ const HabitWizard = () => {
     } finally {
       setIsSaving(false);
     }
-  }, [wizardData, currentStep, currentMicroStepIndex, saveProgress, isTemplateCreationMode, createHabitMutation, handleSubmitFinal, neurodivergentMode]);
+  }, [wizardData, currentStep, currentMicroStepIndex, saveProgress, createHabitMutation, handleSubmitFinal, neurodivergentMode]);
 
   const handleBack = useCallback(async () => {
     if (currentStep === 1 && currentMicroStepIndex === 0) {
@@ -424,12 +403,9 @@ const HabitWizard = () => {
     return currentStep > stepNumber;
   }, [currentStep]);
 
-  const totalDisplaySteps = isTemplateCreationMode ? 1 : (
-    MACRO_STEPS.reduce((acc, step) => acc + (MICRO_STEPS_MAP[step]?.length || 1), 0)
-  );
+  const totalDisplaySteps = MACRO_STEPS.reduce((acc, step) => acc + (MICRO_STEPS_MAP[step]?.length || 1), 0);
   
   const currentDisplayStep = useMemo(() => {
-    if (isTemplateCreationMode) return 1;
     let count = 0;
     for (let i = 1; i <= currentStep; i++) {
       if (i < currentStep) {
@@ -439,7 +415,7 @@ const HabitWizard = () => {
       }
     }
     return count;
-  }, [currentStep, currentMicroStepIndex, isTemplateCreationMode]);
+  }, [currentStep, currentMicroStepIndex]);
 
   const progress = (currentDisplayStep / totalDisplaySteps) * 100;
 
@@ -563,25 +539,15 @@ const HabitWizard = () => {
       );
     }
 
-    if (currentStep === 99) { // Template creation mode
-      return (
-        <HabitTemplateForm
-          wizardData={wizardData}
-          setWizardData={setWizardData}
-          handleSubmitFinal={handleSubmitFinal}
-          isSaving={isSaving}
-          createHabitMutation={createHabitMutation}
-          createTemplateMutation={createTemplateMutation}
-        />
-      );
-    }
+    // This case should ideally not be reached if template creation is handled by NewHabitModal
+    // and the wizard is only for personal habits.
     return null;
   };
 
   const isLastMicroStep = currentStep >= 1 && currentStep <= 6 && currentMicroStepIndex === (MICRO_STEPS_MAP[currentStep]?.length || 0) - 1;
   const isFinalStep = currentStep === MACRO_STEPS[MACRO_STEPS.length - 1]; // Check if it's the final macro step (review)
 
-  const buttonText = isFinalStep || currentStep === 99 ? 'Create Habit' : 'Next';
+  const buttonText = isFinalStep ? 'Create Habit' : 'Next';
 
   return (
     <div className="w-full max-w-full mx-auto px-4 py-8"> {/* Changed max-w-4xl to max-w-full */}
@@ -590,29 +556,28 @@ const HabitWizard = () => {
       {/* Single clean card with fixed layout */}
       <Card className="w-full max-w-6xl mx-auto shadow-2xl rounded-3xl overflow-hidden border-0 bg-card"> {/* Changed max-w-4xl to max-w-6xl */}
         {/* Header with progress - always present and fixed height */}
-        {!isTemplateCreationMode && (
-          <CardHeader className="pb-6 pt-8 px-10 bg-gradient-to-b from-primary/5 to-transparent">
-            <WizardStepper
-              currentMacroStep={currentStep}
-              totalMacroSteps={MACRO_STEPS.length}
-              onStepClick={handleMacroStepClick}
-              isStepCompleted={isMacroStepCompleted}
-              stepLabels={MACRO_STEP_LABELS}
+        {/* Removed conditional rendering for isTemplateCreationMode as this page is now only for personal habits */}
+        <CardHeader className="pb-6 pt-8 px-10 bg-gradient-to-b from-primary/5 to-transparent">
+          <WizardStepper
+            currentMacroStep={currentStep}
+            totalMacroSteps={MACRO_STEPS.length}
+            onStepClick={handleMacroStepClick}
+            isStepCompleted={isMacroStepCompleted}
+            stepLabels={MACRO_STEP_LABELS}
+          />
+          <div className="flex justify-between items-center mb-4 mt-6"> {/* Added mt-6 for spacing */}
+            <div className="text-sm font-bold text-muted-foreground uppercase tracking-wider">
+              Step {currentDisplayStep} of {totalDisplaySteps}
+            </div>
+            <div className="text-sm font-bold text-primary">{Math.round(progress)}%</div>
+          </div>
+          <div className="w-full bg-secondary rounded-full h-2.5">
+            <div
+              className="bg-primary h-2.5 rounded-full transition-all duration-500 ease-out"
+              style={{ width: `${progress}%` }}
             />
-            <div className="flex justify-between items-center mb-4 mt-6"> {/* Added mt-6 for spacing */}
-              <div className="text-sm font-bold text-muted-foreground uppercase tracking-wider">
-                Step {currentDisplayStep} of {totalDisplaySteps}
-              </div>
-              <div className="text-sm font-bold text-primary">{Math.round(progress)}%</div>
-            </div>
-            <div className="w-full bg-secondary rounded-full h-2.5">
-              <div
-                className="bg-primary h-2.5 rounded-full transition-all duration-500 ease-out"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-          </CardHeader>
-        )}
+          </div>
+        </CardHeader>
 
         {/* Main content + fixed bottom button bar */}
         <div className="flex flex-col min-h-[600px]">
@@ -622,7 +587,7 @@ const HabitWizard = () => {
           </CardContent>
 
           {/* Fixed button bar at the bottom - never moves */}
-          {!isTemplateCreationMode && !isFinalStep && ( // Hide default buttons on final review step
+          {!isFinalStep && ( // Hide default buttons on final review step
             <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border/50 shadow-lg">
               <div className="max-w-2xl mx-auto px-10 py-6 flex justify-between items-center">
                 <Button
@@ -657,7 +622,7 @@ const HabitWizard = () => {
       </Card>
 
       {/* Reset progress button below the card */}
-      {wizardProgress && !isTemplateCreationMode && (
+      {wizardProgress && (
         <div className="flex justify-center mt-12">
           <AlertDialog>
             <AlertDialogTrigger asChild>

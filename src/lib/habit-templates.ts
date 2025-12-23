@@ -4,7 +4,7 @@ import { HabitCategory } from '@/types/habit'; // Import HabitCategory
 export interface HabitTemplate {
   id: string;
   name: string;
-  category: HabitCategory;
+  category: HabitCategory; // Changed to HabitCategory
   defaultFrequency: number;
   defaultDuration: number; // in minutes or reps/doses
   defaultMode: 'Trial' | 'Growth' | 'Fixed';

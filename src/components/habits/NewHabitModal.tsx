@@ -11,9 +11,8 @@ import { Slider } from '@/components/ui/slider';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { 
-  Target, Anchor, Zap, ShieldCheck, Brain, Clock, Layers,
-  Dumbbell, Wind, BookOpen, Music, Home, Code, Sparkles, Pill,
-  Info, X, Plus, Loader2, CheckCircle2
+  Target, Anchor, Brain, Clock, Layers,
+  Plus, Loader2, Info, X, LayoutTemplate, Zap
 } from 'lucide-react';
 import { habitCategories, habitUnits, habitModes, habitIcons, HabitTemplate } from '@/lib/habit-templates';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -22,14 +21,16 @@ import { useSession } from '@/contexts/SessionContext';
 import { showError, showSuccess } from '@/utils/toast';
 import { UserHabitRecord, HabitCategory as HabitCategoryType } from '@/types/habit';
 import { useJourneyData } from '@/hooks/useJourneyData';
+import { useCreateTemplate } from '@/hooks/useCreateTemplate'; // Import useCreateTemplate
 
 interface NewHabitModalProps {
   isOpen: boolean;
   onClose: () => void;
   templateToPreFill?: HabitTemplate | null;
+  isTemplateMode?: boolean; // New prop to indicate template creation mode
 }
 
-interface CreateHabitParams {
+export interface CreateHabitParams {
   name: string;
   habit_key: string;
   category: HabitCategoryType;
@@ -47,6 +48,8 @@ interface CreateHabitParams {
   plateau_days_required: number;
   window_start: string | null;
   window_end: string | null;
+  carryover_enabled: boolean; // Added carryover_enabled
+  short_description?: string; // For templates
 }
 
 const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: string; habit: CreateHabitParams; neurodivergentMode: boolean }) => {
@@ -54,27 +57,25 @@ const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: s
   const oneYearFromNow = new Date(today.setFullYear(today.getFullYear() + 1));
   const oneYearDateString = oneYearFromNow.toISOString().split('T')[0];
 
-  const { name, habit_key, category, current_daily_goal, frequency_per_week, is_trial_mode, is_fixed, anchor_practice, auto_chunking, unit, xp_per_unit, energy_cost_per_unit, icon_name, dependent_on_habit_id, window_start, window_end } = habit;
+  const { name, habit_key, category, current_daily_goal, frequency_per_week, is_trial_mode, is_fixed, anchor_practice, auto_chunking, unit, xp_per_unit, energy_cost_per_unit, icon_name, dependent_on_habit_id, window_start, window_end, carryover_enabled } = habit;
 
-  // Determine plateau days based on mode and neurodivergent setting
   let calculatedPlateauDays = habit.plateau_days_required;
   if (is_trial_mode) {
-    calculatedPlateauDays = neurodivergentMode ? 14 : 7; // Longer trial for ND
+    calculatedPlateauDays = neurodivergentMode ? 14 : 7;
   } else if (is_fixed) {
-    calculatedPlateauDays = 7; // Fixed habits still have a plateau for consistency tracking
+    calculatedPlateauDays = 7;
   } else {
-    calculatedPlateauDays = neurodivergentMode ? 10 : 5; // Longer growth plateau for ND
+    calculatedPlateauDays = neurodivergentMode ? 10 : 5;
   }
 
-  // Calculate chunking parameters
   let numChunks = 1;
   let chunkDuration = current_daily_goal;
   if (auto_chunking && unit === 'min' && current_daily_goal > (neurodivergentMode ? 5 : 10)) {
-    const targetChunkSize = neurodivergentMode ? 5 : 10; // 5 min for ND, 10 for standard
+    const targetChunkSize = neurodivergentMode ? 5 : 10;
     numChunks = Math.max(1, Math.ceil(current_daily_goal / targetChunkSize));
     chunkDuration = Number((current_daily_goal / numChunks).toFixed(1));
   } else if (auto_chunking && unit === 'reps' && current_daily_goal > (neurodivergentMode ? 10 : 20)) {
-    const targetChunkSize = neurodivergentMode ? 10 : 20; // 10 reps for ND, 20 for standard
+    const targetChunkSize = neurodivergentMode ? 10 : 20;
     numChunks = Math.max(1, Math.ceil(current_daily_goal / targetChunkSize));
     chunkDuration = Number((current_daily_goal / numChunks).toFixed(1));
   }
@@ -87,7 +88,7 @@ const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: s
     xp_per_unit: xp_per_unit,
     energy_cost_per_unit: energy_cost_per_unit,
     current_daily_goal: current_daily_goal,
-    long_term_goal: current_daily_goal * (unit === 'min' ? 365 * 60 : 365), // Example: 1 year goal in seconds or reps
+    long_term_goal: current_daily_goal * (unit === 'min' ? 365 * 60 : 365),
     target_completion_date: oneYearDateString,
     momentum_level: 'Building',
     lifetime_progress: 0,
@@ -104,15 +105,15 @@ const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: s
     growth_phase: 'duration',
     window_start: window_start,
     window_end: window_end,
-    days_of_week: [0, 1, 2, 3, 4, 5, 6], // Default to all days
+    days_of_week: [0, 1, 2, 3, 4, 5, 6],
     auto_chunking: auto_chunking,
-    enable_chunks: auto_chunking, // enable_chunks follows auto_chunking for new habits
+    enable_chunks: auto_chunking,
     num_chunks: numChunks,
     chunk_duration: chunkDuration,
     is_visible: true,
     dependent_on_habit_id: dependent_on_habit_id,
     anchor_practice: anchor_practice,
-    carryover_value: 0, // Initialize carryover_value
+    carryover_value: carryover_enabled ? 1 : 0,
   };
 
   const { error } = await supabase.from('user_habits').upsert(habitToInsert, { onConflict: 'user_id, habit_key' });
@@ -127,7 +128,7 @@ const getHabitIconComponent = (iconName: string) => {
   return habitIcons.find(i => i.value === iconName)?.icon || Target;
 };
 
-export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, templateToPreFill }) => {
+export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, templateToPreFill, isTemplateMode = false }) => {
   const { session } = useSession();
   const queryClient = useQueryClient();
   const { data: journeyData } = useJourneyData();
@@ -151,13 +152,15 @@ export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, t
   const [plateauDaysRequired, setPlateauDaysRequired] = useState(7);
   const [windowStart, setWindowStart] = useState<string | null>(null);
   const [windowEnd, setWindowEnd] = useState<string | null>(null);
+  const [carryoverEnabled, setCarryoverEnabled] = useState(false); // New state for carryover
+  const [shortDescription, setShortDescription] = useState(''); // For templates
 
   // Calculate estimated weekly total
   const estimatedWeeklyTotal = useMemo(() => dailyGoal * frequency, [dailyGoal, frequency]);
 
   // Get other habits for dependency dropdown
   const otherHabits = useMemo(() => {
-    return (journeyData?.allHabits || []).filter(h => h.id !== habitKey);
+    return (journeyData?.allHabits || []).filter(h => h.habit_key !== habitKey);
   }, [journeyData?.allHabits, habitKey]);
 
   const selectedDependentHabit = useMemo(() => {
@@ -182,6 +185,9 @@ export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, t
       setEnergyCostPerUnit(templateToPreFill.energyCostPerUnit);
       setSelectedIconName(templateToPreFill.icon_name);
       setPlateauDaysRequired(templateToPreFill.plateauDaysRequired);
+      setShortDescription(templateToPreFill.shortDescription || '');
+      // Carryover is not part of template, so default to false or infer if needed
+      setCarryoverEnabled(false); 
     } else {
       // Reset form when modal closes or opens without template
       setHabitName('');
@@ -201,6 +207,8 @@ export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, t
       setPlateauDaysRequired(7);
       setWindowStart(null);
       setWindowEnd(null);
+      setCarryoverEnabled(false);
+      setShortDescription('');
     }
   }, [templateToPreFill, isOpen]);
 
@@ -228,6 +236,8 @@ export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, t
     },
   });
 
+  const createTemplateMutation = useCreateTemplate(); // Use the existing hook
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -235,8 +245,12 @@ export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, t
       showError('Please fill in all required fields with valid values.');
       return;
     }
+    if (isTemplateMode && !shortDescription.trim()) {
+      showError('Please provide a short description for your template.');
+      return;
+    }
 
-    const habitData = {
+    const habitData: CreateHabitParams = {
       name: habitName,
       habit_key: habitKey.toLowerCase().replace(/\s/g, '_'),
       category: category,
@@ -254,12 +268,39 @@ export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, t
       plateau_days_required: plateauDaysRequired,
       window_start: windowStart,
       window_end: windowEnd,
+      carryover_enabled: carryoverEnabled,
+      short_description: shortDescription, // Include for templates
     };
 
-    createHabitMutation.mutate(habitData);
+    if (isTemplateMode) {
+      // Map CreateHabitParams to HabitTemplate structure for template creation
+      const templateData = { // Changed type to infer from assignment
+        id: habitData.habit_key,
+        name: habitData.name,
+        category: habitData.category, // Corrected: Use HabitCategory directly
+        default_frequency: habitData.frequency_per_week, // Corrected: snake_case
+        default_duration: habitData.current_daily_goal, // Corrected: snake_case
+        default_mode: habitData.is_fixed ? 'Fixed' : (habitData.is_trial_mode ? 'Trial' : 'Growth'), // Corrected: snake_case
+        default_chunks: 1, // Templates default to 1 chunk, auto-chunking handles more // Corrected: snake_case
+        auto_chunking: habitData.auto_chunking, // Corrected: snake_case
+        anchor_practice: habitData.anchor_practice, // Corrected: snake_case
+        unit: habitData.unit,
+        xp_per_unit: habitData.xp_per_unit, // Corrected: snake_case
+        energy_cost_per_unit: habitData.energy_cost_per_unit, // Corrected: snake_case
+        icon_name: habitData.icon_name,
+        plateau_days_required: habitData.plateau_days_required, // Corrected: snake_case
+        short_description: habitData.short_description || '', // Corrected: snake_case
+        is_public: true, // Templates are public by default
+      };
+      createTemplateMutation.mutate(templateData);
+    } else {
+      createHabitMutation.mutate(habitData);
+    }
   };
 
   const IconComponent = getHabitIconComponent(selectedIconName);
+
+  const isPending = createHabitMutation.isPending || createTemplateMutation.isPending;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -268,12 +309,12 @@ export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, t
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                <Plus className="w-6 h-6" />
+                {isTemplateMode ? <LayoutTemplate className="w-6 h-6" /> : <Plus className="w-6 h-6" />}
               </div>
               <div>
-                <DialogTitle className="text-xl font-bold">Create New Habit</DialogTitle>
+                <DialogTitle className="text-xl font-bold">{isTemplateMode ? 'Contribute New Template' : 'Create New Habit'}</DialogTitle>
                 <DialogDescription className="text-sm text-muted-foreground">
-                  Define your habit with full control over all parameters
+                  {isTemplateMode ? 'Share your successful habit with the community' : 'Define your habit with full control over all parameters'}
                 </DialogDescription>
               </div>
             </div>
@@ -288,12 +329,12 @@ export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, t
           <div className="space-y-6">
             <h3 className="text-lg font-bold flex items-center gap-2">
               <Target className="w-5 h-5 text-primary" />
-              Habit Details
+              {isTemplateMode ? 'Template Info' : 'Habit Details'}
             </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="habitName">Habit Name *</Label>
+                <Label htmlFor="habitName">{isTemplateMode ? 'Template Name' : 'Habit Name'} *</Label>
                 <Input
                   id="habitName"
                   value={habitName}
@@ -305,7 +346,7 @@ export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, t
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="habitKey">Unique Key *</Label>
+                <Label htmlFor="habitKey">{isTemplateMode ? 'Unique Template ID' : 'Unique Key'} *</Label>
                 <Input
                   id="habitKey"
                   value={habitKey}
@@ -317,6 +358,20 @@ export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, t
                 <p className="text-xs text-muted-foreground">Auto-generated from name, but editable</p>
               </div>
             </div>
+
+            {isTemplateMode && (
+              <div className="space-y-3">
+                <Label htmlFor="shortDescription">Short Description *</Label>
+                <Textarea
+                  id="shortDescription"
+                  value={shortDescription}
+                  onChange={(e) => setShortDescription(e.target.value)}
+                  placeholder="A brief description for the template list."
+                  className="min-h-[80px] rounded-xl"
+                  required
+                />
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
@@ -340,7 +395,13 @@ export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, t
 
               <div className="space-y-2">
                 <Label htmlFor="unit">Unit</Label>
-                <Select value={unit} onValueChange={(value: 'min' | 'reps' | 'dose') => setUnit(value)}>
+                <Select value={unit} onValueChange={(value: 'min' | 'reps' | 'dose') => {
+                  setUnit(value);
+                  // If changing to 'dose' and current dailyGoal is not 1, suggest 1
+                  if (value === 'dose' && dailyGoal !== 1) {
+                    setDailyGoal(1);
+                  }
+                }}>
                   <SelectTrigger id="unit" className="h-12 rounded-xl">
                     <SelectValue placeholder="Select unit" />
                   </SelectTrigger>
@@ -439,6 +500,7 @@ export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, t
                     <SelectValue placeholder="Anytime" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="none">Anytime</SelectItem>
                     {timeOptions.map((time) => (
                       <SelectItem key={time} value={time}>{time}</SelectItem>
                     ))}
@@ -456,6 +518,7 @@ export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, t
                     <SelectValue placeholder="Anytime" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="none">Anytime</SelectItem>
                     {timeOptions.map((time) => (
                       <SelectItem key={time} value={time}>{time}</SelectItem>
                     ))}
@@ -491,7 +554,7 @@ export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, t
                     )}
                   >
                     <div className={cn("p-2 rounded-lg", (isTrialMode && mode.value === 'Trial') || (isFixed && mode.value === 'Fixed') || (!isTrialMode && !isFixed && mode.value === 'Growth') ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground")}>
-                      <mode.icon className="w-5 h-5" />
+                        <mode.icon className="w-5 h-5" />
                     </div>
                     <div>
                       <p className="text-xs font-black uppercase leading-none">{mode.label}</p>
@@ -510,10 +573,13 @@ export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, t
                   </div>
                   <div>
                     <p className="text-xs font-black uppercase">Anchor Practice</p>
-                    <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">Prioritize on dashboard</p>
+                    <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">Prioritize this habit on your dashboard.</p>
                   </div>
                 </div>
-                <Switch checked={isAnchorPractice} onCheckedChange={setIsAnchorPractice} />
+                <Switch 
+                  checked={isAnchorPractice} 
+                  onCheckedChange={setIsAnchorPractice} 
+                />
               </div>
 
               <div className="flex items-center justify-between p-4 rounded-2xl bg-info-background/50 border border-info-border/50">
@@ -522,11 +588,14 @@ export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, t
                     <Layers className="w-4 h-4 text-info" />
                   </div>
                   <div>
-                    <p className="text-xs font-black uppercase">Auto-Chunking</p>
-                    <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">Break into capsules</p>
+                    <p className="text-xs font-black uppercase">Adaptive Auto-Chunking</p>
+                    <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">Automagically break sessions into capsules.</p>
                   </div>
                 </div>
-                <Switch checked={autoChunking} onCheckedChange={setAutoChunking} />
+                <Switch 
+                  checked={autoChunking} 
+                  onCheckedChange={setAutoChunking} 
+                />
               </div>
             </div>
 
@@ -536,14 +605,14 @@ export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, t
                 <Label className="text-[10px] font-black uppercase opacity-60">Growth Threshold</Label>
               </div>
               <div className="flex items-center gap-4">
-                <Input
-                  type="number"
-                  className="h-10 w-20 rounded-xl font-bold"
+                <Input 
+                  type="number" 
+                  className="h-10 w-20 rounded-xl font-bold" 
                   value={plateauDaysRequired}
                   onChange={(e) => setPlateauDaysRequired(parseInt(e.target.value))}
                 />
                 <p className="text-[10px] text-muted-foreground leading-snug">
-                  Days of consistency required before goal increase
+                  Days of 100% consistency required before the system suggests a goal increase.
                 </p>
               </div>
             </div>
@@ -571,6 +640,22 @@ export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, t
               <p className="text-[10px] text-muted-foreground leading-snug">
                 This habit will be marked as "locked" until the dependent habit is completed for the day.
               </p>
+            </div>
+
+            <div className="flex items-center justify-between p-4 rounded-2xl bg-primary/5 border border-primary/10">
+              <div className="flex gap-3">
+                <div className="bg-primary/20 p-2 rounded-xl">
+                  <Zap className="w-4 h-4 text-primary" />
+                </div>
+                <div>
+                  <p className="text-xs font-black uppercase">Carryover Enabled</p>
+                  <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">Unused progress rolls over to next day.</p>
+                </div>
+              </div>
+              <Switch 
+                checked={carryoverEnabled} 
+                onCheckedChange={setCarryoverEnabled} 
+              />
             </div>
           </div>
 
@@ -618,21 +703,21 @@ export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, t
               variant="ghost"
               className="flex-1 h-14 rounded-2xl font-semibold"
               onClick={onClose}
-              disabled={createHabitMutation.isPending}
+              disabled={isPending}
             >
               Cancel
             </Button>
             <Button
               type="submit"
               className="flex-1 h-14 rounded-2xl font-bold bg-primary hover:bg-primary/90"
-              disabled={createHabitMutation.isPending}
+              disabled={isPending}
             >
-              {createHabitMutation.isPending ? (
+              {isPending ? (
                 <Loader2 className="w-6 h-6 animate-spin" />
               ) : (
                 <>
-                  <Plus className="w-6 h-6 mr-2" />
-                  Create Habit
+                  {isTemplateMode ? <LayoutTemplate className="w-6 h-6 mr-2" /> : <Plus className="w-6 h-6 mr-2" />}
+                  {isTemplateMode ? 'Contribute Template' : 'Create Habit'}
                 </>
               )}
             </Button>

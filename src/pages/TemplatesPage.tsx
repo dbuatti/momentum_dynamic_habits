@@ -23,12 +23,14 @@ import { useTemplates } from '@/hooks/useTemplates';
 import { TemplateCard } from '@/components/templates/TemplateCard';
 import { TemplateDetailModal } from '@/components/templates/TemplateDetailModal';
 import { HabitTemplate, habitCategories } from '@/lib/habit-templates';
+import { NewHabitModal } from '@/components/habits/NewHabitModal'; // Import NewHabitModal
 
 const TemplatesPage = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [selectedTemplate, setSelectedTemplate] = useState<HabitTemplate | null>(null);
+  const [showContributeModal, setShowContributeModal] = useState(false); // State for the new modal
 
   const { data: templates = [], isLoading, isError, error } = useTemplates({
     category: categoryFilter === 'all' ? undefined : categoryFilter,
@@ -36,11 +38,15 @@ const TemplatesPage = () => {
   });
 
   const handleUseTemplate = (template: HabitTemplate) => {
+    // This will open the NewHabitModal pre-filled with template data
+    // For now, we'll just close the detail modal and let the user click "Create Custom Habit" in settings
+    // or navigate to the wizard if that's the intended flow for using templates.
+    // For this request, we're focusing on the "Contribute" button.
     navigate('/create-habit', { state: { templateToPreFill: template } });
   };
 
   const handleContributeTemplate = () => {
-    navigate('/create-habit', { state: { mode: 'template' } });
+    setShowContributeModal(true); // Open the NewHabitModal in template mode
   };
 
   // Memoized filtered count for better performance
@@ -187,6 +193,13 @@ const TemplatesPage = () => {
         isOpen={!!selectedTemplate}
         onClose={() => setSelectedTemplate(null)}
         onUseTemplate={handleUseTemplate}
+      />
+
+      {/* New Habit Modal for Contribution */}
+      <NewHabitModal
+        isOpen={showContributeModal}
+        onClose={() => setShowContributeModal(false)}
+        isTemplateMode={true}
       />
     </div>
   );
