@@ -256,9 +256,8 @@ const Index = () => {
                     e.stopPropagation(); // Prevent accordion from toggling
                     handleOverrideDependency(habit.key);
                   }}
-                  asChild // Added asChild prop
                 >
-                  <span>(Override)</span> {/* Wrapped content in a span */}
+                  (Override)
                 </Button>
               </div>
             )}
