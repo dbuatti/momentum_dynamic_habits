@@ -260,58 +260,13 @@ const HabitWizard = () => {
   const isTemplateCreationMode = location.state?.mode === 'template';
   const templateToPreFill: HabitTemplate | undefined = location.state?.templateToPreFill;
 
-  const [currentStep, setCurrentStep] = useState(1); // 1, 2, or 99 (template)
-  const [currentMicroStep, setCurrentMicroStep] = useState(0); // Index in MICRO_STEPS
+  const [currentStep, setCurrentStep] = useState(1); // 1, 2, or 3 (macro steps) or 99 (template form)
+  const [currentMicroStep, setCurrentMicroStep] = useState(0); // Index in MICRO_STEPS if currentStep is 3
   const [wizardData, setWizardData] = useState<Partial<WizardHabitData>>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [hasLoadedInitialProgress, setHasLoadedInitialProgress] = useState(false); // New flag
 
-  // Load existing wizard progress on mount
-  useEffect(() => {
-    if (!isLoadingWizardProgress && wizardProgress && !isTemplateCreationMode && !templateToPreFill) {
-      setCurrentStep(wizardProgress.current_step);
-      setWizardData(wizardProgress.habit_data);
-      // If step is > 2, we are in micro-steps. We need to find the index.
-      // For simplicity, we'll reset micro-step to 0 if loading a saved state that is in micro-steps.
-      // A more robust solution would save the micro-step index too.
-      if (wizardProgress.current_step > 2) {
-        // This is a simplification. In a real app, you'd save the exact micro-step index.
-        // We'll just start from the beginning of the micro-steps if they are in that range.
-        setCurrentMicroStep(0);
-      }
-    } else if (isTemplateCreationMode || templateToPreFill) {
-      setCurrentStep(99);
-      if (templateToPreFill) {
-        // Pre-fill form fields from template
-        setWizardData({
-          name: templateToPreFill.name,
-          habit_key: templateToPreFill.id,
-          category: templateToPreFill.category,
-          daily_goal: templateToPreFill.defaultDuration,
-          frequency_per_week: templateToPreFill.defaultFrequency,
-          is_trial_mode: templateToPreFill.defaultMode === 'Trial',
-          is_fixed: templateToPreFill.defaultMode === 'Fixed',
-          anchor_practice: templateToPreFill.anchorPractice,
-          auto_chunking: templateToPreFill.autoChunking,
-          unit: templateToPreFill.unit,
-          xp_per_unit: templateToPreFill.xpPerUnit,
-          energy_cost_per_unit: templateToPreFill.energyCostPerUnit,
-          icon_name: templateToPreFill.icon_name,
-          plateau_days_required: templateToPreFill.plateauDaysRequired,
-          short_description: templateToPreFill.shortDescription,
-        });
-      }
-    }
-  }, [isLoadingWizardProgress, wizardProgress, isTemplateCreationMode, templateToPreFill]);
-
-  // Auto-generate habit key from name
-  useEffect(() => {
-    if (!templateToPreFill && wizardData.name) {
-      const key = wizardData.name.toLowerCase().replace(/\s/g, '_').replace(/[^a-z0-9_]/g, '');
-      setWizardData(prev => ({ ...prev, habit_key: key }));
-    }
-  }, [wizardData.name, wizardData.habit_key, templateToPreFill]);
-
-  // Define createHabitMutation here to avoid circular dependency in handleSaveAndNext
+  // Define createHabitMutation and createTemplateMutation before handleSubmitFinal
   const createHabitMutation = useMutation({
     mutationFn: (habit: CreateHabitParams) => {
       if (!session?.user?.id) throw new Error('User not authenticated');
@@ -328,103 +283,6 @@ const HabitWizard = () => {
       showError(`Failed to create habit: ${error.message}`);
     },
   });
-
-  const handleSaveAndNext = useCallback(async (dataToSave: Partial<WizardHabitData>) => {
-    setIsSaving(true);
-    try {
-      const updatedWizardData = { ...wizardData, ...dataToSave };
-      
-      // Determine next step
-      let nextStep = currentStep;
-      let nextMicroIndex = currentMicroStep;
-      let shouldSaveProgress = true;
-
-      if (currentStep === 1) {
-        nextStep = 2;
-      } else if (currentStep === 2) {
-        nextStep = 3; // Start micro-steps
-        nextMicroIndex = 0;
-      } else if (currentStep === 3) {
-        // In micro-steps
-        if (currentMicroStep < MICRO_STEPS.length - 1) {
-          nextMicroIndex = currentMicroStep + 1;
-        } else {
-          // End of micro-steps, go to template form or finish
-          if (isTemplateCreationMode) {
-            // Should not happen as template mode skips micro-steps, but for safety
-            shouldSaveProgress = false;
-            handleSubmitFinal();
-            return;
-          } else {
-            // Calculate final parameters and submit
-            const calculatedParams = calculateHabitParams(updatedWizardData);
-            const finalHabitData: CreateHabitParams = {
-              name: updatedWizardData.name!,
-              habit_key: updatedWizardData.habit_key!,
-              category: updatedWizardData.category as HabitCategoryType,
-              unit: updatedWizardData.unit || 'min',
-              icon_name: updatedWizardData.icon_name || 'Target',
-              ...calculatedParams,
-            } as CreateHabitParams;
-
-            await createHabitMutation.mutateAsync(finalHabitData);
-            shouldSaveProgress = false; // Don't save progress if we are finishing
-            return;
-          }
-        }
-      }
-
-      if (shouldSaveProgress) {
-        await saveProgress({ current_step: nextStep, habit_data: updatedWizardData });
-        setWizardData(updatedWizardData);
-        setCurrentStep(nextStep);
-        setCurrentMicroStep(nextMicroIndex);
-      }
-    } catch (error) {
-      console.error("Failed to save wizard progress:", error);
-      showError("Failed to save progress. Please try again.");
-    } finally {
-      setIsSaving(false);
-    }
-  }, [saveProgress, wizardData, currentStep, currentMicroStep, isTemplateCreationMode, createHabitMutation]);
-
-  const handleBack = useCallback(async () => {
-    if (currentStep === 1) {
-      await deleteProgress();
-      navigate('/');
-      return;
-    }
-
-    let prevStep = currentStep;
-    let prevMicroIndex = currentMicroStep;
-
-    if (currentStep === 2) {
-      prevStep = 1;
-    } else if (currentStep === 3) {
-      if (currentMicroStep > 0) {
-        prevMicroIndex = currentMicroStep - 1;
-      } else {
-        prevStep = 2;
-        prevMicroIndex = 0;
-      }
-    }
-
-    setCurrentStep(prevStep);
-    setCurrentMicroStep(prevMicroIndex);
-    // No need to save on back, just update UI
-  }, [currentStep, currentMicroStep, deleteProgress, navigate]);
-
-  const handleResetProgress = useCallback(async () => {
-    try {
-      await deleteProgress();
-      setWizardData({});
-      setCurrentStep(1);
-      setCurrentMicroStep(0);
-      showSuccess('Wizard progress reset.');
-    } catch (error) {
-      showError('Failed to reset progress.');
-    }
-  }, [deleteProgress]);
 
   const createTemplateMutation = useCreateTemplate();
 
@@ -487,13 +345,156 @@ const HabitWizard = () => {
     }
   };
 
-  // Calculate progress for micro-steps
-  const totalDisplaySteps = isTemplateCreationMode ? 1 : (2 + MICRO_STEPS.length);
+  // Load existing wizard progress on mount
+  useEffect(() => {
+    if (!isLoadingWizardProgress && wizardProgress && !hasLoadedInitialProgress && !isTemplateCreationMode && !templateToPreFill) {
+      setCurrentStep(wizardProgress.current_step);
+      setWizardData(wizardProgress.habit_data);
+      if (wizardProgress.current_step > 2) {
+        // If loading into micro-steps, we'll start from the beginning of micro-steps.
+        // A more robust solution would save the micro-step index too.
+        setCurrentMicroStep(0); 
+      }
+      setHasLoadedInitialProgress(true); // Mark as loaded
+    } else if (!isLoadingWizardProgress && (isTemplateCreationMode || templateToPreFill) && !hasLoadedInitialProgress) {
+      setCurrentStep(99);
+      if (templateToPreFill) {
+        // Pre-fill form fields from template
+        setWizardData({
+          name: templateToPreFill.name,
+          habit_key: templateToPreFill.id,
+          category: templateToPreFill.category,
+          daily_goal: templateToPreFill.defaultDuration,
+          frequency_per_week: templateToPreFill.defaultFrequency,
+          is_trial_mode: templateToPreFill.defaultMode === 'Trial',
+          is_fixed: templateToPreFill.defaultMode === 'Fixed',
+          anchor_practice: templateToPreFill.anchorPractice,
+          auto_chunking: templateToPreFill.autoChunking,
+          unit: templateToPreFill.unit,
+          xp_per_unit: templateToPreFill.xpPerUnit,
+          energy_cost_per_unit: templateToPreFill.energyCostPerUnit,
+          icon_name: templateToPreFill.icon_name,
+          plateau_days_required: templateToPreFill.plateauDaysRequired,
+          short_description: templateToPreFill.shortDescription,
+        });
+      }
+      setHasLoadedInitialProgress(true); // Mark as loaded for template mode too
+    }
+  }, [isLoadingWizardProgress, wizardProgress, isTemplateCreationMode, templateToPreFill, hasLoadedInitialProgress]);
+
+  // Auto-generate habit key from name
+  useEffect(() => {
+    if (!templateToPreFill && wizardData.name) {
+      const key = wizardData.name.toLowerCase().replace(/\s/g, '_').replace(/[^a-z0-9_]/g, '');
+      setWizardData(prev => ({ ...prev, habit_key: key }));
+    }
+  }, [wizardData.name, wizardData.habit_key, templateToPreFill]);
+
+  const handleSaveAndNext = useCallback(async (dataToSave: Partial<WizardHabitData>) => {
+    setIsSaving(true);
+    try {
+      const updatedWizardData = { ...wizardData, ...dataToSave };
+      
+      // Determine next step
+      let nextStep = currentStep;
+      let nextMicroIndex = currentMicroStep;
+      let shouldSaveProgress = true;
+
+      if (currentStep === 1) {
+        nextStep = 2;
+      } else if (currentStep === 2) {
+        nextStep = 3; // Start micro-steps
+        nextMicroIndex = 0;
+      } else if (currentStep === 3) {
+        // In micro-steps
+        if (currentMicroStep < MICRO_STEPS.length - 1) {
+          nextMicroIndex = currentMicroStep + 1;
+        } else {
+          // End of micro-steps, go to template form or finish
+          if (isTemplateCreationMode) {
+            // Should not happen as template mode skips micro-steps, but for safety
+            shouldSaveProgress = false;
+            handleSubmitFinal();
+            return;
+          } else {
+            // Calculate final parameters and submit
+            const calculatedParams = calculateHabitParams(updatedWizardData);
+            const finalHabitData: CreateHabitParams = {
+              name: updatedWizardData.name!,
+              habit_key: updatedWizardData.habit_key!,
+              category: updatedWizardData.category as HabitCategoryType,
+              unit: updatedWizardData.unit || 'min',
+              icon_name: updatedWizardData.icon_name || 'Target',
+              ...calculatedParams,
+            } as CreateHabitParams;
+
+            await createHabitMutation.mutateAsync(finalHabitData);
+            shouldSaveProgress = false; // Don't save progress if we are finishing
+            return;
+          }
+        }
+      }
+
+      if (shouldSaveProgress) {
+        await saveProgress({ current_step: nextStep, habit_data: updatedWizardData });
+        setWizardData(updatedWizardData);
+        setCurrentStep(nextStep);
+        setCurrentMicroStep(nextMicroIndex);
+      }
+    } catch (error) {
+      console.error("Failed to save wizard progress:", error);
+      showError("Failed to save progress. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
+  }, [saveProgress, wizardData, currentStep, currentMicroStep, isTemplateCreationMode, createHabitMutation, handleSubmitFinal]);
+
+  const handleBack = useCallback(async () => {
+    if (currentStep === 1) {
+      await deleteProgress();
+      navigate('/');
+      return;
+    }
+
+    let prevStep = currentStep;
+    let prevMicroIndex = currentMicroStep;
+
+    if (currentStep === 2) {
+      prevStep = 1;
+    } else if (currentStep === 3) {
+      if (currentMicroStep > 0) {
+        prevMicroIndex = currentMicroStep - 1;
+      } else {
+        prevStep = 2;
+        prevMicroIndex = 0;
+      }
+    }
+
+    setCurrentStep(prevStep);
+    setCurrentMicroStep(prevMicroIndex);
+    // No need to save on back, just update UI
+  }, [currentStep, currentMicroStep, deleteProgress, navigate]);
+
+  const handleResetProgress = useCallback(async () => {
+    try {
+      await deleteProgress();
+      setWizardData({});
+      setCurrentStep(1);
+      setCurrentMicroStep(0);
+      setHasLoadedInitialProgress(false); // Reset flag so it can load fresh if needed
+      showSuccess('Wizard progress reset.');
+    } catch (error) {
+      showError('Failed to reset progress.');
+    }
+  }, [deleteProgress]);
+
+  // Calculate total and current display steps for consistent numbering
+  const totalDisplaySteps = isTemplateCreationMode ? 1 : (2 + MICRO_STEPS.length); // 2 macro steps + all micro steps
   const currentDisplayStep = useMemo(() => {
     if (isTemplateCreationMode) return 1;
     if (currentStep === 1) return 1;
     if (currentStep === 2) return 2;
-    if (currentStep === 3) return 2 + currentMicroStep + 1;
+    if (currentStep === 3) return 2 + currentMicroStep + 1; // Micro-steps start after macro step 2
     return 1; // Fallback
   }, [currentStep, currentMicroStep, isTemplateCreationMode]);
   const progress = (currentDisplayStep / totalDisplaySteps) * 100;
@@ -510,7 +511,7 @@ const HabitWizard = () => {
       if (stepId === '3.2' && !wizardData.consistency_reality) return true;
       if (stepId === '3.3' && !wizardData.emotional_cost) return true;
       if (stepId === '3.4' && !wizardData.confidence_check) return true;
-      if (stepId === '4.1' && (!wizardData.barriers || wizardData.barriers.length === 0)) return true; // Added check for barriers
+      if (stepId === '4.1' && (!wizardData.barriers || wizardData.barriers.length === 0)) return true;
       if (stepId === '4.2' && !wizardData.missed_day_response) return true;
       if (stepId === '4.3' && !wizardData.sensitivity_setting) return true;
       if (stepId === '5.1' && !wizardData.time_of_day_fit) return true;
