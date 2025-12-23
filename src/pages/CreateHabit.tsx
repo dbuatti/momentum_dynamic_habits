@@ -187,6 +187,12 @@ const CreateHabit = () => {
     return habitTemplates.find(t => t.id === selectedTemplateId);
   }, [selectedTemplateId]);
 
+  // Moved this useMemo outside of renderCustomForm
+  const selectedDependentHabit = useMemo(() => {
+    if (!dependentOnHabitId) return null;
+    return otherHabits.find(h => h.id === dependentOnHabitId);
+  }, [dependentOnHabitId, otherHabits]);
+
   useEffect(() => {
     if (selectedTemplate) {
       setHabitName(selectedTemplate.name);
@@ -497,10 +503,7 @@ const CreateHabit = () => {
 
   const renderCustomForm = () => {
     const IconComponent = getHabitIconComponent(selectedIconName);
-    const selectedDependentHabit = useMemo(() => {
-      if (!dependentOnHabitId) return null;
-      return otherHabits.find(h => h.id === dependentOnHabitId);
-    }, [dependentOnHabitId, otherHabits]);
+    // selectedDependentHabit is now available from the outer scope
 
     return (
       <form onSubmit={handleSubmit} className="space-y-8 max-w-md mx-auto">
