@@ -388,8 +388,8 @@ const HabitWizard = () => {
     if (currentStep === 2) {
       prevStep = 1;
     } else if (currentStep === 3) {
-      if (currentMicroIndex > 0) {
-        prevMicroIndex = currentMicroIndex - 1;
+      if (currentMicroStep > 0) { // Fixed: changed currentMicroIndex to currentMicroStep
+        prevMicroIndex = currentMicroStep - 1; // Fixed: changed currentMicroIndex to currentMicroStep
       } else {
         prevStep = 2;
         prevMicroIndex = 0;
