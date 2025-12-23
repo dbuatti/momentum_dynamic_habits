@@ -1,36 +1,69 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
   AlertCircle, Loader2, BarChart3, Calendar, Target, Zap, TrendingUp,
   Clock, Layers, ShieldCheck, Info, Dumbbell, Wind, BookOpen, Music, Home, Code, Sparkles, Pill,
-  CheckCircle2, Filter, MessageSquare // Added MessageSquare
+  CheckCircle2, Filter, MessageSquare
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PageHeader } from '@/components/layout/PageHeader';
 import HabitHeatmap from '@/components/dashboard/HabitHeatmap';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
-import { useAnalyticsData } from '@/hooks/useAnalyticsData'; // Import the new hook
-import { ReflectionCard } from '@/components/analytics/ReflectionCard'; // Import ReflectionCard
+import { useAnalyticsData } from '@/hooks/useAnalyticsData';
+import { ReflectionCard } from '@/components/analytics/ReflectionCard';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { format, startOfWeek, endOfWeek, subWeeks } from 'date-fns';
-import { HabitPerformanceOverview } from '@/components/analytics/HabitPerformanceOverview'; // Import new component
-import { GrowthInsightsCard } from '@/components/analytics/GrowthInsightsCard'; // Import new component
-import { useDashboardData } from '@/hooks/useDashboardData'; // Import useDashboardData for bestTime
-import { habitIconMap } from '@/lib/habit-utils'; // Import from centralized utility
+import { format } from 'date-fns';
+import { HabitPerformanceOverview } from '@/components/analytics/HabitPerformanceOverview';
+import { GrowthInsightsCard } from '@/components/analytics/GrowthInsightsCard';
+import { useDashboardData } from '@/hooks/useDashboardData';
 
 const Analytics = () => {
   const { data: analyticsData, isLoading, isError } = useAnalyticsData();
-  const { data: dashboardData, isLoading: isDashboardDataLoading } = useDashboardData(); // Fetch dashboard data for bestTime
+  const { data: dashboardData, isLoading: isDashboardDataLoading } = useDashboardData();
   const [habitFilter, setHabitFilter] = useState<string>('all');
-  const [timeframeFilter, setTimeframeFilter] = useState<string>('8_weeks'); // Default to 8 weeks
+  const [timeframeFilter, setTimeframeFilter] = useState<string>('8_weeks');
+
+  // Filter habits based on selection
+  const filteredHabits = useMemo(() => {
+    if (!analyticsData?.habits) return [];
+    return habitFilter === 'all'
+      ? analyticsData.habits
+      : analyticsData.habits.filter(h => h.habit.habit_key === habitFilter);
+  }, [habitFilter, analyticsData]);
+
+  // Generate heatmap data based on the current filter
+  const habitCompletions = useMemo(() => {
+    if (!filteredHabits.length) return [];
+    
+    const completionsMap = new Map<string, number>();
+    
+    filteredHabits.forEach(h => {
+      Object.entries(h.weeklyCompletions).forEach(([weekStart, count]) => {
+        const start = new Date(weekStart);
+        for (let i = 0; i < 7; i++) {
+          const day = new Date(start);
+          day.setDate(start.getDate() + i);
+          const dateStr = format(day, 'yyyy-MM-dd');
+          // Add normalized daily counts
+          const current = completionsMap.get(dateStr) || 0;
+          completionsMap.set(dateStr, current + (Number(count) / 7));
+        }
+      });
+    });
+
+    return Array.from(completionsMap.entries()).map(([date, count]) => ({
+      date,
+      count: Math.round(count)
+    }));
+  }, [filteredHabits]);
 
   if (isLoading || isDashboardDataLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen flex items-center justify-center bg-white">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
       </div>
     );
@@ -38,123 +71,113 @@ const Analytics = () => {
 
   if (isError || !analyticsData || !dashboardData) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center text-center p-4 bg-background">
+      <div className="min-h-screen flex flex-col items-center justify-center text-center p-4 bg-white">
         <AlertCircle className="w-12 h-12 text-destructive mb-4" />
-        <h2 className="text-2xl font-bold mb-2 text-foreground">Could not load Analytics Data</h2>
-        <p className="text-lg text-muted-foreground">There was an error fetching your progress. Please try again later.</p>
-        <Link to="/"><Button variant="outline" className="mt-4">Go Home</Button></Link>
+        <h2 className="text-2xl font-black text-slate-900 mb-2">Sync Error</h2>
+        <p className="text-slate-500 font-medium">We couldn't retrieve your growth data.</p>
+        <Link to="/"><Button variant="outline" className="mt-6 rounded-xl">Return to Dashboard</Button></Link>
       </div>
     );
   }
 
-  const { profile, habits, overallWeeklySummary, latestReflection, reflectionPrompt } = analyticsData;
-  const { neurodivergent_mode: neurodivergentMode } = profile;
-  const { patterns } = dashboardData; // Get patterns from dashboardData
-
-  // Filter habits based on selected filter
-  const filteredHabits = habitFilter === 'all'
-    ? habits
-    : habits.filter(h => h.habit.habit_key === habitFilter);
-
-  // Prepare heatmap data (currently from useHabitHeatmapData, but will be integrated into useAnalyticsData)
-  // For now, let's create a dummy heatmap data from the analyticsData for all habits
-  const allHabitCompletions = habits.flatMap(h => {
-    const completionsMap = new Map<string, number>();
-    Object.entries(h.weeklyCompletions).forEach(([weekStart, count]) => {
-      // Distribute weekly completions across days for heatmap visualization
-      // This is a simplification; a real heatmap needs daily data
-      const start = new Date(weekStart);
-      for (let i = 0; i < 7; i++) {
-        const day = new Date(start);
-        day.setDate(start.getDate() + i);
-        const dateStr = format(day, 'yyyy-MM-dd');
-        completionsMap.set(dateStr, (completionsMap.get(dateStr) || 0) + (count / 7)); // Average per day
-      }
-    });
-    return Array.from(completionsMap.entries()).map(([date, count]) => ({ date, count: Math.round(count) }));
-  });
-
+  const { overallWeeklySummary, latestReflection, reflectionPrompt } = analyticsData;
+  const { patterns } = dashboardData;
 
   return (
-    <div className="w-full max-w-lg mx-auto px-4 py-6 space-y-8 pb-32">
-      <PageHeader title="Your Analytics" backLink="/" />
+    // Updated width to max-w-2xl for better desktop visibility
+    <div className="w-full max-w-2xl mx-auto px-4 py-8 space-y-10 pb-32">
+      <PageHeader title="Growth Analytics" backLink="/" />
 
-      {/* Filter Controls */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
-        <div className="flex items-center space-x-2">
-          <Filter className="w-4 h-4 text-muted-foreground" />
+      {/* Filter Toolbar */}
+      <section className="bg-slate-50 p-2 rounded-2xl border border-slate-100 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2 pl-2">
+          <Filter className="w-4 h-4 text-slate-400" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Filter By</span>
+        </div>
+        <div className="flex items-center gap-3">
           <Select value={habitFilter} onValueChange={setHabitFilter}>
-            <SelectTrigger className="w-32 h-9 text-sm">
+            <SelectTrigger className="w-[140px] h-10 rounded-xl bg-white border-slate-200 font-bold text-xs">
               <SelectValue placeholder="All Habits" />
             </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Habits</SelectItem>
-              {habits.map(h => (
+            <SelectContent className="rounded-xl border-slate-200">
+              <SelectItem value="all">All Practices</SelectItem>
+              {analyticsData.habits.map(h => (
                 <SelectItem key={h.habit.id} value={h.habit.habit_key}>
                   {h.habit.name}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Clock className="w-4 h-4 text-muted-foreground" />
+
           <Select value={timeframeFilter} onValueChange={setTimeframeFilter}>
-            <SelectTrigger className="w-32 h-9 text-sm">
-              <SelectValue placeholder="Last 8 Weeks" />
+            <SelectTrigger className="w-[140px] h-10 rounded-xl bg-white border-slate-200 font-bold text-xs">
+              <SelectValue placeholder="Timeframe" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="rounded-xl border-slate-200">
               <SelectItem value="4_weeks">Last 4 Weeks</SelectItem>
               <SelectItem value="8_weeks">Last 8 Weeks</SelectItem>
               <SelectItem value="12_weeks">Last 12 Weeks</SelectItem>
             </SelectContent>
           </Select>
         </div>
+      </section>
+
+      {/* High-Level KPIs */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {[
+          { label: 'Days Active', val: overallWeeklySummary.activeDays, icon: Calendar, color: 'text-indigo-600' },
+          { label: 'Current Streak', val: overallWeeklySummary.streak, icon: Zap, color: 'text-orange-500' },
+          { label: 'Consistency', val: `${overallWeeklySummary.consistency}%`, icon: TrendingUp, color: 'text-emerald-600' }
+        ].map((stat) => (
+          <Card key={stat.label} className="border-0 shadow-xl shadow-slate-200/50 rounded-3xl">
+            <CardContent className="p-6 flex flex-col items-center text-center">
+              <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-slate-50", stat.color)}>
+                <stat.icon className="w-5 h-5" />
+              </div>
+              <p className="text-2xl font-black text-slate-900 tabular-nums">{stat.val}</p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">{stat.label}</p>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      {/* Overall Summary */}
-      <Card className="rounded-2xl shadow-sm border-0">
-        <CardHeader className="p-5 pb-3">
-          <CardTitle className="font-semibold text-lg flex items-center">
-            <BarChart3 className="w-5 h-5 mr-2 text-primary" />
-            Overall Progress
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-5 pt-0 grid grid-cols-2 gap-4 text-center">
-          <div className="bg-primary/5 rounded-xl p-4">
-            <p className="text-2xl font-bold text-primary">{overallWeeklySummary.activeDays}</p>
-            <p className="text-sm text-muted-foreground mt-1">Days Active</p>
+      {/* Focus Pattern Card */}
+      <Card className="border-0 shadow-xl shadow-slate-200/50 rounded-[2rem] bg-slate-900 text-white overflow-hidden">
+        <CardContent className="p-8 flex items-center justify-between">
+          <div className="space-y-2">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400">Peak Performance Window</p>
+            <h3 className="text-2xl font-black italic uppercase tracking-tight">
+              {patterns.bestTime !== '—' ? patterns.bestTime : 'Calculating...'}
+            </h3>
+            <p className="text-xs font-medium text-slate-400">This is when your brain is most primed for deep work.</p>
           </div>
-          <div className="bg-primary/5 rounded-xl p-4">
-            <p className="text-2xl font-bold text-primary">{overallWeeklySummary.streak}</p>
-            <p className="text-sm text-muted-foreground mt-1">Day Streak</p>
-          </div>
-          <div className="bg-primary/5 rounded-xl p-4">
-            <p className="text-2xl font-bold text-primary">{overallWeeklySummary.consistency}%</p>
-            <p className="text-sm text-muted-foreground mt-1">Consistency</p>
-          </div>
-          <div className="col-span-2 bg-primary/5 rounded-xl p-4">
-            <p className="text-xl font-bold text-primary flex items-center justify-center">
-              <Clock className="w-5 h-5 mr-2" />
-              {patterns.bestTime !== '—' ? patterns.bestTime : 'Log more tasks to discover your best time!'}
-            </p>
-            <p className="text-sm text-muted-foreground mt-1">Best Time to Focus</p>
+          <div className="bg-white/10 p-4 rounded-3xl backdrop-blur-md">
+            <Clock className="w-8 h-8 text-white" />
           </div>
         </CardContent>
       </Card>
 
-      {/* Habit Consistency Heatmap */}
-      <div className="mb-6">
-        <HabitHeatmap completions={allHabitCompletions} habitName="All Habits" />
+      {/* Consistency Visualization */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 ml-1">
+          <Layers className="w-4 h-4 text-slate-400" />
+          <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Momentum Heatmap</h2>
+        </div>
+        <Card className="border-0 shadow-xl shadow-slate-200/50 rounded-[2rem] p-6">
+          <HabitHeatmap 
+            completions={habitCompletions} 
+            habitName={habitFilter === 'all' ? 'Overall Consistency' : 'Practice Consistency'} 
+          />
+        </Card>
       </div>
 
-      {/* Habit Performance Overview */}
-      <HabitPerformanceOverview habits={filteredHabits} />
+      {/* Performance Grid */}
+      <div className="space-y-6">
+        <HabitPerformanceOverview habits={filteredHabits} />
+        <GrowthInsightsCard habits={analyticsData.habits} />
+      </div>
 
-      {/* Growth Insights (Trial-to-Growth Transition) */}
-      <GrowthInsightsCard habits={habits} />
-
-      {/* Reflection Card */}
+      {/* Reflection & Bonus */}
       <ReflectionCard
         prompt={reflectionPrompt}
         initialNotes={latestReflection?.notes || null}
