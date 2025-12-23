@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
+import { useHabitLog } from './useHabitLog'; // Import useHabitLog
 
 export interface Capsule {
   id?: string;
@@ -13,6 +14,7 @@ export interface Capsule {
   mood?: string | null;
   scheduled_time?: string | null;
   created_at: string;
+  completed_task_id?: string | null; // New field
 }
 
 export const useCapsules = () => {
@@ -47,19 +49,26 @@ export const useCapsules = () => {
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
+  const { mutateAsync: logHabit } = useHabitLog(); // Get logHabit from useHabitLog
+
   const completeCapsule = useMutation({
     mutationFn: async ({
       habitKey,
       index,
       value,
       mood,
+      taskName, // Added taskName for logging
     }: {
       habitKey: string;
       index: number;
       value: number;
       mood?: string;
+      taskName: string; // Required for logging
     }) => {
       if (!userId) throw new Error('User not authenticated');
+
+      // First, log the habit and get the completedTaskId
+      const completedTaskId = await logHabit({ habitKey, value, taskName, note: mood });
 
       const upsertData: Partial<Capsule> = {
         user_id: userId,
@@ -70,6 +79,7 @@ export const useCapsules = () => {
         mood: mood || null,
         created_at: today,
         label: `Part ${index + 1}`,
+        completed_task_id: completedTaskId, // Store the completed task ID
       };
 
       const { error } = await supabase
@@ -89,15 +99,21 @@ export const useCapsules = () => {
     mutationFn: async ({
       habitKey,
       index,
+      completedTaskId, // Accept completedTaskId
     }: {
       habitKey: string;
       index: number;
+      completedTaskId: string; // Required for unlogging
     }) => {
       if (!userId) throw new Error('User not authenticated');
 
+      // First, unlog the habit using the completedTaskId
+      const { unlog } = useHabitLog();
+      unlog({ completedTaskId });
+
       const { error } = await supabase
         .from('habit_capsules')
-        .update({ is_completed: false, mood: null })
+        .update({ is_completed: false, mood: null, completed_task_id: null }) // Set completed_task_id to null
         .eq('user_id', userId)
         .eq('habit_key', habitKey)
         .eq('capsule_index', index)
@@ -132,6 +148,8 @@ export const useCapsules = () => {
             scheduled_time: time,
             created_at: today,
             value: 0,
+            is_completed: false, // Ensure it's not marked complete on schedule
+            completed_task_id: null, // Ensure no completed_task_id on schedule
           },
           {
             onConflict: 'user_id,habit_key,capsule_index,created_at',
@@ -148,6 +166,15 @@ export const useCapsules = () => {
   const resetCapsulesForToday = useMutation({
     mutationFn: async () => {
       if (!userId) return;
+
+      // Before deleting capsules, unlog any associated completed tasks
+      const currentCapsules = await fetchCapsules();
+      const { unlog } = useHabitLog();
+      for (const capsule of currentCapsules) {
+        if (capsule.is_completed && capsule.completed_task_id) {
+          unlog({ completedTaskId: capsule.completed_task_id });
+        }
+      }
 
       const { error } = await supabase
         .from('habit_capsules')

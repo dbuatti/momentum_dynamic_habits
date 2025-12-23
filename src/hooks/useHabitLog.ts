@@ -60,14 +60,14 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
   console.log(`[XP Debug]   durationUsedForDB: ${durationUsedForDB}`);
   console.log(`[XP Debug]   energyCost: ${energyCost}`);
 
-  const { error: insertError } = await supabase.from('completedtasks').insert({
+  const { data: insertedTask, error: insertError } = await supabase.from('completedtasks').insert({
     user_id: userId, original_source: habitKey, task_name: taskName,
     duration_used: durationUsedForDB,
     xp_earned: xpEarned,
     energy_cost: energyCost, difficulty_rating: difficultyRating || null,
     completed_at: new Date().toISOString(),
     note: note || null,
-  });
+  }).select('id').single(); // Select the ID of the inserted task
 
   if (insertError) throw insertError;
 
@@ -207,14 +207,24 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
     level: calculateLevel(newXp),
   }).eq('id', userId);
 
-  return { success: true, taskName, xpEarned }; // Return taskName and xpEarned for success message
+  return { success: true, taskName, xpEarned, completedTaskId: insertedTask.id }; // Return taskName, xpEarned, and completedTaskId
 };
 
-const unlogHabit = async ({ userId, habitKey, taskName }: { userId: string, habitKey: string, taskName: string }) => {
+const unlogHabit = async ({ userId, completedTaskId }: { userId: string, completedTaskId: string }) => {
+  // Fetch the completed task to get its details before deleting
+  const { data: task, error: fetchTaskError } = await supabase
+    .from('completedtasks')
+    .select('*')
+    .eq('id', completedTaskId)
+    .eq('user_id', userId)
+    .single();
+
+  if (fetchTaskError || !task) throw fetchTaskError || new Error('Completed task not found');
+
   // Fetch profile to get timezone for RPC call
   const { data: profileData, error: profileFetchError } = await supabase
     .from('profiles')
-    .select('timezone')
+    .select('timezone, xp, tasks_completed_today')
     .eq('id', userId)
     .single();
 
@@ -224,27 +234,15 @@ const unlogHabit = async ({ userId, habitKey, taskName }: { userId: string, habi
   }
   const timezone = profileData?.timezone || 'UTC';
 
-  const { data: task, error: findError } = await supabase
-    .from('completedtasks')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('original_source', habitKey)
-    .eq('task_name', taskName)
-    .order('completed_at', { ascending: false })
-    .limit(1)
-    .single();
-
-  if (findError || !task) throw findError || new Error('Task not found');
-
   // Fetch user_habit data to get dynamic properties, including carryover_value
   const { data: userHabitDataResult, error: userHabitFetchError } = await supabase
     .from('user_habits')
     .select('id, unit, xp_per_unit, current_daily_goal, completions_in_plateau, last_plateau_start_date, carryover_value')
     .eq('user_id', userId)
-    .eq('habit_key', habitKey)
+    .eq('habit_key', task.original_source) // Use original_source from the fetched task
     .single();
 
-  if (!userHabitDataResult || userHabitFetchError) throw userHabitFetchError || new Error(`Habit data not found for key: ${habitKey}`);
+  if (!userHabitDataResult || userHabitFetchError) throw userHabitFetchError || new Error(`Habit data not found for key: ${task.original_source}`);
   const userHabitData: Pick<UserHabitRecord, 'id' | 'unit' | 'xp_per_unit' | 'current_daily_goal' | 'completions_in_plateau' | 'last_plateau_start_date' | 'carryover_value'> = userHabitDataResult;
 
   let lifetimeProgressDecrementValue;
@@ -254,21 +252,20 @@ const unlogHabit = async ({ userId, habitKey, taskName }: { userId: string, habi
     lifetimeProgressDecrementValue = (task.xp_earned || 0) / (userHabitData.xp_per_unit || 1); // Convert XP back to reps/doses
   }
 
-  console.log(`[XP Debug] Unlogging habit: ${habitKey}, task_id: ${task.id}`);
+  console.log(`[XP Debug] Unlogging habit: ${task.original_source}, task_id: ${task.id}`);
   console.log(`[XP Debug]   xp_earned to revert: ${task.xp_earned}`);
   console.log(`[XP Debug]   lifetimeProgressDecrementValue: ${lifetimeProgressDecrementValue}`);
 
   await supabase.rpc('increment_lifetime_progress', {
-    p_user_id: userId, p_habit_key: habitKey, p_increment_value: -Math.round(lifetimeProgressDecrementValue),
+    p_user_id: userId, p_habit_key: task.original_source, p_increment_value: -Math.round(lifetimeProgressDecrementValue),
   });
 
-  const { data: profile } = await supabase.from('profiles').select('xp, tasks_completed_today').eq('id', userId).single();
-  if (profile) {
-    const newXp = Math.max(0, (profile.xp || 0) - (task.xp_earned || 0));
+  if (profileData) {
+    const newXp = Math.max(0, (profileData.xp || 0) - (task.xp_earned || 0));
     await supabase.from('profiles').update({
       xp: newXp,
       level: calculateLevel(newXp),
-      tasks_completed_today: Math.max(0, (profile.tasks_completed_today || 0) - 1)
+      tasks_completed_today: Math.max(0, (profileData.tasks_completed_today || 0) - 1)
     }).eq('id', userId);
   }
 
@@ -277,7 +274,7 @@ const unlogHabit = async ({ userId, habitKey, taskName }: { userId: string, habi
     p_user_id: userId, p_timezone: timezone 
   });
   let totalDailyProgressAfterUnlog = 0;
-  (completedTodayAfterUnlog || []).filter((t: any) => t.original_source === habitKey && t.id !== task.id).forEach((t: any) => {
+  (completedTodayAfterUnlog || []).filter((t: any) => t.original_source === task.original_source && t.id !== task.id).forEach((t: any) => {
     if (userHabitData.unit === 'min') totalDailyProgressAfterUnlog += (t.duration_used || 0) / 60;
     else if (userHabitData.unit === 'reps' || userHabitData.unit === 'dose') totalDailyProgressAfterUnlog += (t.xp_earned || 0) / (userHabitData.xp_per_unit || 1);
     else totalDailyProgressAfterUnlog += 1;
@@ -299,7 +296,7 @@ const unlogHabit = async ({ userId, habitKey, taskName }: { userId: string, habi
     }).eq('id', userHabitData.id);
   }
 
-  const { error: deleteError } = await supabase.from('completedtasks').delete().eq('id', task.id);
+  const { error: deleteError } = await supabase.from('completedtasks').delete().eq('id', completedTaskId);
   if (deleteError) throw deleteError;
 
   return { success: true };
@@ -322,12 +319,14 @@ export const useHabitLog = () => {
       queryClient.invalidateQueries({ queryKey: ['dailyHabitCompletion', session?.user?.id] });
       queryClient.invalidateQueries({ queryKey: ['habitHeatmapData', session?.user?.id] });
       queryClient.invalidateQueries({ queryKey: ['habitCapsules', session?.user?.id] });
+      // Return the completedTaskId for further use in the UI or other mutations
+      return data.completedTaskId;
     },
     onError: (error) => showError(`Failed: ${error.message}`),
   });
 
   const unlogMutation = useMutation({
-    mutationFn: (params: { habitKey: string, taskName: string }) => {
+    mutationFn: (params: { completedTaskId: string }) => { // Changed to accept completedTaskId
       if (!session?.user?.id) throw new Error('User not authenticated');
       return unlogHabit({ ...params, userId: session.user.id });
     },
@@ -343,7 +342,7 @@ export const useHabitLog = () => {
   });
 
   return {
-    mutate: logMutation.mutate,
+    mutate: logMutation.mutateAsync, // Changed to mutateAsync to await the result
     isPending: logMutation.isPending,
     unlog: unlogMutation.mutate,
     isUnlogging: unlogMutation.isPending,

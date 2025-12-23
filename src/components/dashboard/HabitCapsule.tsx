@@ -19,8 +19,9 @@ interface HabitCapsuleProps {
   isCompleted: boolean;
   initialValue?: number;
   scheduledTime?: string;
+  completedTaskId?: string | null; // New prop
   onLogProgress: (actualValue: number, isComplete: boolean, mood?: string) => void;
-  onUncomplete: () => void;
+  onUncomplete: (completedTaskId: string) => void; // Now accepts completedTaskId
   color: 'orange' | 'blue' | 'green' | 'purple' | 'red' | 'indigo';
   showMood?: boolean;
 }
@@ -34,6 +35,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   isCompleted,
   initialValue = 0,
   scheduledTime,
+  completedTaskId: initialCompletedTaskId, // Use initialCompletedTaskId from props
   onLogProgress,
   onUncomplete,
   color,
@@ -44,6 +46,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [goalReachedAlerted, setGoalReachedAlerted] = useState(false);
+  const [completedTaskIdState, setCompletedTaskIdState] = useState<string | null>(initialCompletedTaskId || null); // State for completedTaskId
   
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number | null>(null);
@@ -99,6 +102,9 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   }, [elapsedSeconds, isTiming, isTimeBased, value, initialValue, goalReachedAlerted]);
 
   useEffect(() => {
+    // Update internal state if prop changes
+    setCompletedTaskIdState(initialCompletedTaskId || null);
+
     if (isCompleted) {
       localStorage.removeItem(storageKey);
       setIsTiming(false);
@@ -130,7 +136,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     }
 
     return () => stopInterval();
-  }, [storageKey, isCompleted, startInterval, label, initialValue, habitKey, habitName, value]);
+  }, [storageKey, isCompleted, startInterval, label, initialValue, habitKey, habitName, value, initialCompletedTaskId]);
 
   useEffect(() => {
     if (!isCompleted && (isTiming || elapsedSeconds > 0)) {
@@ -182,7 +188,10 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     startTimeRef.current = null;
     localStorage.removeItem(storageKey);
     window.dispatchEvent(new CustomEvent('habit-timer-update', { detail: null }));
-    onUncomplete(); // Call onUncomplete to reset the capsule in the database
+    if (completedTaskIdState) { // Only uncomplete if there's a task ID
+      onUncomplete(completedTaskIdState); // Call onUncomplete to reset the capsule in the database
+      setCompletedTaskIdState(null); // Clear the state
+    }
   };
 
   const handleFinishTiming = (mood?: string, promptMood: boolean = false) => {
@@ -208,7 +217,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     localStorage.removeItem(storageKey);
     window.dispatchEvent(new CustomEvent('habit-timer-update', { detail: null }));
     
-    onLogProgress(totalSessionMinutes, true, mood);
+    onLogProgress(totalSessionMinutes, true, mood); // This will trigger the parent to update completedTaskIdState
     setIsTiming(false);
     setElapsedSeconds(0);
     setShowMoodPicker(false);
@@ -230,7 +239,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     localStorage.removeItem(storageKey);
     window.dispatchEvent(new CustomEvent('habit-timer-update', { detail: null }));
     
-    onLogProgress(value, true);
+    onLogProgress(value, true); // This will trigger the parent to update completedTaskIdState
   };
 
   const currentTotalMinutes = isTimeBased ? initialValue + (elapsedSeconds / 60) : initialValue;
@@ -409,7 +418,10 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                   className="h-10 px-4 rounded-xl text-sm font-bold text-muted-foreground hover:bg-secondary/80"
                   onClick={(e) => {
                     e.stopPropagation();
-                    onUncomplete();
+                    if (completedTaskIdState) {
+                      onUncomplete(completedTaskIdState);
+                      setCompletedTaskIdState(null); // Clear the state after uncompleting
+                    }
                   }}
                 >
                   <Undo2 className="w-4 h-4 mr-1.5" />

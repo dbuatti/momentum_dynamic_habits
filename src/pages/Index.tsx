@@ -33,7 +33,7 @@ const Index = () => {
   const { data, isLoading, isError } = useDashboardData();
   const { dbCapsules, isLoading: isCapsulesLoading, completeCapsule, uncompleteCapsule } = useCapsules();
   const { isLoading: isOnboardingLoading } = useOnboardingCheck();
-  const { mutate: logHabit, unlog } = useHabitLog();
+  const { mutateAsync: logHabit, unlog } = useHabitLog(); // Use mutateAsync
   const { session } = useSession(); // Get session for queryClient invalidation
   const queryClient = useQueryClient(); // Initialize useQueryClient
   
@@ -78,6 +78,7 @@ const Index = () => {
           unit: habit.unit,
           isCompleted,
           scheduledTime: dbCapsule?.scheduled_time,
+          completedTaskId: dbCapsule?.completed_task_id, // Pass completed_task_id
         };
       });
 
@@ -138,14 +139,19 @@ const Index = () => {
     }
   }, [habitGroups]); // Only depend on habitGroups
 
-  // Renamed from handleCapsuleComplete to handleCapsuleProgress
-  const handleCapsuleProgress = (habit: any, capsule: any, actualValue: number, isComplete: boolean, mood?: string) => {
+  const handleCapsuleProgress = async (habit: any, capsule: any, actualValue: number, isComplete: boolean, mood?: string) => {
     if (isComplete) {
-      logHabit({ habitKey: habit.key, value: actualValue, taskName: `${habit.name} session` });
-      completeCapsule.mutate({ habitKey: habit.key, index: capsule.index, value: actualValue, mood });
+      // When a capsule is completed, log the habit and then update the capsule with the returned completedTaskId
+      await completeCapsule.mutateAsync({ 
+        habitKey: habit.key, 
+        index: capsule.index, 
+        value: actualValue, 
+        mood, 
+        taskName: `${habit.name} session` 
+      });
     } else {
       // Log partial progress without marking capsule as complete
-      logHabit({ habitKey: habit.key, value: actualValue, taskName: `${habit.name} partial session` });
+      await logHabit({ habitKey: habit.key, value: actualValue, taskName: `${habit.name} partial session` });
       // Invalidate dashboard data to refetch and update dailyProgress for the habit
       // This will cause the HabitCapsule to re-render with an updated initialValue
       queryClient.invalidateQueries({ queryKey: ['dashboardData', session?.user?.id] });
@@ -153,8 +159,13 @@ const Index = () => {
   };
 
   const handleCapsuleUncomplete = (habit: any, capsule: any) => {
-    uncompleteCapsule.mutate({ habitKey: habit.key, index: capsule.index });
-    unlog({ habitKey: habit.key, taskName: `${habit.name} session` });
+    if (capsule.completedTaskId) {
+      uncompleteCapsule.mutate({ habitKey: habit.key, index: capsule.index, completedTaskId: capsule.completedTaskId });
+    } else {
+      // Fallback or error handling if completedTaskId is missing
+      console.error("Cannot uncomplete capsule: completedTaskId is missing.");
+      showError("Failed to undo task. Please try again.");
+    }
   };
 
   const toggleShowAll = (habitKey: string) => {
@@ -361,7 +372,7 @@ const Index = () => {
                       habitName={habit.name}
                       color={color}
                       onLogProgress={(actual, isComplete, mood) => handleCapsuleProgress(habit, nextCapsule, actual, isComplete, mood)} // Updated prop name
-                      onUncomplete={() => handleCapsuleUncomplete(habit, nextCapsule)}
+                      onUncomplete={(completedTaskId) => handleCapsuleUncomplete(habit, nextCapsule)}
                       showMood={data.neurodivergentMode}
                     />
                 </div>
@@ -384,7 +395,7 @@ const Index = () => {
                     habitName={habit.name}
                     color={color}
                     onLogProgress={(actual, isComplete, mood) => handleCapsuleProgress(habit, capsule, actual, isComplete, mood)} // Updated prop name
-                    onUncomplete={() => handleCapsuleUncomplete(habit, capsule)}
+                    onUncomplete={(completedTaskId) => handleCapsuleUncomplete(habit, capsule)}
                     showMood={data.neurodivergentMode}
                   />
                 ))}
