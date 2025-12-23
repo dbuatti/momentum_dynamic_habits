@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -61,7 +63,7 @@ const habitColorMap: Record<string, string> = {
   custom_habit: 'bg-habit-indigo',
 };
 
-export const OnboardingFlow = ({ onComplete }: { onComplete: () => void }) => {
+const OnboardingFlow = ({ onComplete }: { onComplete: () => void }) => {
   const [step, setStep] = useState(1);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');

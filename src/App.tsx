@@ -9,7 +9,7 @@ import Settings from "./pages/Settings";
 import LogHabit from "./pages/LogHabit";
 import Journey from "./pages/Journey";
 import History from "./pages/History";
-import Onboarding from "./pages/Onboarding"; // Changed to default import
+import OnboardingFlow from "./pages/Onboarding"; // Changed to named import
 import NotFound from "./pages/NotFound";
 import HelpPage from "./pages/HelpPage";
 import LandingPage from "./pages/LandingPage";
@@ -129,7 +129,7 @@ const AppRoutes = () => {
         path="/onboarding"
         element={
           <OnboardingRoute>
-            <Onboarding onComplete={handleOnboardingComplete} />
+            <OnboardingFlow onComplete={handleOnboardingComplete} />
           </OnboardingRoute>
         }
       />

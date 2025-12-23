@@ -52,7 +52,7 @@ const LandingPage = () => {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
             <Link to="/login">
               <Button size="lg" className="h-16 px-10 text-lg rounded-2xl font-black bg-indigo-600 hover:bg-indigo-500 text-white shadow-[0_0_40px_-10px_rgba(79,70,229,0.4)] transition-all hover:scale-105 active:scale-95">
-                Start Free Trial <ArrowRight className="ml-2 h-6 w-6" />
+                Get Started <ArrowRight className="ml-2 h-6 w-6" />
               </Button>
             </Link>
             <Link to="/help">
@@ -91,7 +91,7 @@ const LandingPage = () => {
                 <div>
                   <h3 className="text-2xl font-black text-white mb-3 uppercase tracking-tight">Anchor Practices</h3>
                   <p className="text-slate-400 font-medium leading-relaxed">
-                    Foundation first. Designate core habits that keep you grounded during chaotic days.
+                    Designate core habits that keep you grounded and consistent, even on chaotic days.
                   </p>
                 </div>
               </div>
@@ -106,7 +106,7 @@ const LandingPage = () => {
                 <div>
                   <h3 className="text-2xl font-black text-white mb-3 uppercase tracking-tight">Trial Mode</h3>
                   <p className="text-indigo-100/70 font-medium leading-relaxed">
-                    Test new habits in a low-pressure sandbox before they impact your main stats.
+                    Start new habits in a low-pressure phase, focusing on consistency until it feels routine.
                   </p>
                 </div>
               </div>
@@ -121,7 +121,7 @@ const LandingPage = () => {
                 <div>
                   <h3 className="text-2xl font-black text-white mb-3 uppercase tracking-tight">Modular Capsules</h3>
                   <p className="text-slate-400 font-medium leading-relaxed">
-                    Break big habits into smaller, manageable "capsules" to reduce overwhelm and build consistency.
+                    Break down larger goals into smaller, manageable "capsules" to reduce overwhelm and build momentum.
                   </p>
                 </div>
               </div>
@@ -136,7 +136,7 @@ const LandingPage = () => {
                 <div>
                   <h3 className="text-2xl font-black text-white mb-3 uppercase tracking-tight">Adaptive Growth</h3>
                   <p className="text-slate-400 font-medium leading-relaxed">
-                    Your goals adjust dynamically to your progress, preventing burnout and ensuring sustainable growth.
+                    Your goals adjust dynamically to your actual progress, preventing burnout and ensuring sustainable growth.
                   </p>
                 </div>
               </div>
@@ -249,10 +249,6 @@ const LandingPage = () => {
               <p className="text-4xl font-black text-orange-400">30<span className="text-xl">reps</span></p>
               <p className="text-xs text-slate-500 uppercase tracking-widest mt-1">Daily Goal</p>
             </div>
-            <div className="flex items-center justify-between text-sm text-slate-400">
-              <span>Progress: 15/30 reps</span>
-              <span className="text-orange-400 font-semibold">50%</span>
-            </div>
             <div className="w-full bg-slate-800 rounded-full h-2">
               <div className="bg-orange-500 h-full rounded-full w-1/2"></div>
             </div>
@@ -348,7 +344,9 @@ const LandingPage = () => {
               Is there a Neurodivergent Mode?
             </AccordionTrigger>
             <AccordionContent className="text-slate-400 leading-relaxed pb-4">
-              Yes! Our Neurodivergent Mode optimizes the app for individuals with ADHD and other neurodivergent profiles. It enables smaller habit increments, longer stabilization plateaus, and modular task capsules to reduce overwhelm, support consistent engagement, and make habit building more accessible.
+              <p>
+                Yes! Our Neurodivergent Mode optimizes the app for individuals with ADHD and other neurodivergent profiles. It enables smaller habit increments, longer stabilization plateaus, and modular task capsules to reduce overwhelm, support consistent engagement, and make habit building more accessible.
+              </p>
             </AccordionContent>
           </AccordionItem>
         </Accordion>
