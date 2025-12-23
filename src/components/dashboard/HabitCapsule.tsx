@@ -19,7 +19,7 @@ interface HabitCapsuleProps {
   isCompleted: boolean;
   initialValue?: number; // This is the progress already made towards THIS CAPSULE's value
   scheduledTime?: string;
-  onComplete: (actualValue: number, mood?: string) => void;
+  onLogProgress: (actualValue: number, isComplete: boolean, mood?: string) => void; // Changed prop name and signature
   onUncomplete: () => void;
   color: 'orange' | 'blue' | 'green' | 'purple' | 'red' | 'indigo';
   showMood?: boolean;
@@ -34,7 +34,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   isCompleted,
   initialValue = 0, // Progress already made towards this capsule's value
   scheduledTime,
-  onComplete,
+  onLogProgress, // Changed prop name
   onUncomplete,
   color,
   showMood,
@@ -202,7 +202,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     localStorage.removeItem(storageKey);
     window.dispatchEvent(new CustomEvent('habit-timer-update', { detail: null }));
     
-    onComplete(totalSessionMinutes, mood); // Pass total minutes logged for this capsule
+    onLogProgress(totalSessionMinutes, true, mood); // Pass total minutes logged for this capsule, mark as complete
     setIsTiming(false);
     setElapsedSeconds(0);
     setShowMoodPicker(false);
@@ -224,8 +224,8 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     localStorage.removeItem(storageKey);
     window.dispatchEvent(new CustomEvent('habit-timer-update', { detail: null }));
     
-    // For quick complete, log the full capsule value
-    onComplete(value); 
+    // For quick complete, log the full capsule value and mark as complete
+    onLogProgress(value, true); 
   };
 
   const currentTotalMinutes = isTimeBased ? initialValue + (elapsedSeconds / 60) : initialValue;
@@ -275,7 +275,22 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
             : cn(colors.bg, colors.border, "shadow-sm hover:shadow-md"),
           isTiming && "ring-4 ring-primary/20 shadow-xl scale-[1.01]"
         )}
-        onClick={isTiming ? () => handleFinishTiming(undefined, false) : (!isCompleted && !showMoodPicker) ? (isTimeBased ? handleStartTimer : handleQuickComplete) : undefined}
+        onClick={isTiming ? () => {
+          const totalSessionMinutes = (initialValue * 60 + elapsedSeconds) / 60;
+          if (totalSessionMinutes >= value) { // Capsule goal met by clicking card
+            handleFinishTiming(undefined, false); // Marks complete, no mood prompt
+          } else { // Partial progress, save and collapse
+            stopInterval();
+            window.dispatchEvent(new CustomEvent('habit-timer-update', { detail: null }));
+            localStorage.removeItem(storageKey);
+            onLogProgress(elapsedSeconds / 60, false); // Log only the elapsed time from this session, NOT complete
+            setIsTiming(false);
+            setElapsedSeconds(0);
+            setIsPaused(false);
+            setGoalReachedAlerted(false);
+            startTimeRef.current = null;
+          }
+        } : (!isCompleted && !showMoodPicker) ? (isTimeBased ? handleStartTimer : handleQuickComplete) : undefined}
       >
         <AnimatePresence>
           {(!isCompleted && (isTiming || initialValue > 0)) && (

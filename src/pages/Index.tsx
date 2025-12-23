@@ -26,13 +26,17 @@ import { GrowthGuide } from "@/components/dashboard/GrowthGuide";
 import { Link } from "react-router-dom";
 import { showSuccess } from "@/utils/toast";
 import { habitIconMap, habitColorMap } from '@/lib/habit-utils';
+import { useSession } from "@/contexts/SessionContext"; // Import useSession for queryClient invalidation
+import { useQueryClient } from "@tanstack/react-query"; // Import useQueryClient
 
 const Index = () => {
   const { data, isLoading, isError } = useDashboardData();
   const { dbCapsules, isLoading: isCapsulesLoading, completeCapsule, uncompleteCapsule } = useCapsules();
   const { isLoading: isOnboardingLoading } = useOnboardingCheck();
   const { mutate: logHabit, unlog } = useHabitLog();
-
+  const { session } = useSession(); // Get session for queryClient invalidation
+  const queryClient = useQueryClient(); // Initialize useQueryClient
+  
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [showAllMomentum, setShowAllMomentum] = useState<Record<string, boolean>>({});
 
@@ -134,9 +138,18 @@ const Index = () => {
     }
   }, [habitGroups]); // Only depend on habitGroups
 
-  const handleCapsuleComplete = (habit: any, capsule: any, actualValue: number, mood?: string) => {
-    logHabit({ habitKey: habit.key, value: actualValue, taskName: `${habit.name} session` });
-    completeCapsule.mutate({ habitKey: habit.key, index: capsule.index, value: actualValue, mood });
+  // Renamed from handleCapsuleComplete to handleCapsuleProgress
+  const handleCapsuleProgress = (habit: any, capsule: any, actualValue: number, isComplete: boolean, mood?: string) => {
+    if (isComplete) {
+      logHabit({ habitKey: habit.key, value: actualValue, taskName: `${habit.name} session` });
+      completeCapsule.mutate({ habitKey: habit.key, index: capsule.index, value: actualValue, mood });
+    } else {
+      // Log partial progress without marking capsule as complete
+      logHabit({ habitKey: habit.key, value: actualValue, taskName: `${habit.name} partial session` });
+      // Invalidate dashboard data to refetch and update dailyProgress for the habit
+      // This will cause the HabitCapsule to re-render with an updated initialValue
+      queryClient.invalidateQueries({ queryKey: ['dashboardData', session?.user?.id] });
+    }
   };
 
   const handleCapsuleUncomplete = (habit: any, capsule: any) => {
@@ -347,7 +360,7 @@ const Index = () => {
                       {...nextCapsule}
                       habitName={habit.name}
                       color={color}
-                      onComplete={(actual, mood) => handleCapsuleComplete(habit, nextCapsule, actual, mood)}
+                      onLogProgress={(actual, isComplete, mood) => handleCapsuleProgress(habit, nextCapsule, actual, isComplete, mood)} // Updated prop name
                       onUncomplete={() => handleCapsuleUncomplete(habit, nextCapsule)}
                       showMood={data.neurodivergentMode}
                     />
@@ -370,7 +383,7 @@ const Index = () => {
                     {...capsule}
                     habitName={habit.name}
                     color={color}
-                    onComplete={(actual, mood) => handleCapsuleComplete(habit, capsule, actual, mood)}
+                    onLogProgress={(actual, isComplete, mood) => handleCapsuleProgress(habit, capsule, actual, isComplete, mood)} // Updated prop name
                     onUncomplete={() => handleCapsuleUncomplete(habit, capsule)}
                     showMood={data.neurodivergentMode}
                   />
