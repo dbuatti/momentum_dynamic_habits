@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, RotateCcw } from 'lucide-react';
+import { Loader2, RotateCcw, X } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -109,7 +109,7 @@ const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: s
   const roundedPlateauDaysRequired = Math.round(calculatedPlateauDays);
   const roundedLongTermGoal = Math.round(current_daily_goal * (unit === 'min' ? 365 * 60 : 365));
   const roundedNumChunks = Math.round(numChunks);
-  const roundedLifetimeProgress = Math.round(0); // Lifetime progress starts at 0, ensure it's an integer
+  const roundedLifetimeProgress = Math.round(0); 
 
   // Ensure dependent_on_habit_id is null if empty string
   const finalDependentOnHabitId = dependent_on_habit_id === '' ? null : dependent_on_habit_id;
@@ -123,34 +123,34 @@ const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: s
     p_habit_key: habit_key,
     p_name: name,
     p_category: category,
-    p_current_daily_goal: roundedCurrentDailyGoal, // Use rounded value
-    p_frequency_per_week: roundedFrequencyPerWeek, // Use rounded value
+    p_current_daily_goal: roundedCurrentDailyGoal,
+    p_frequency_per_week: roundedFrequencyPerWeek,
     p_is_trial_mode: is_trial_mode,
     p_is_fixed: is_fixed,
     p_anchor_practice: anchor_practice,
     p_auto_chunking: auto_chunking,
     p_unit: unit,
-    p_xp_per_unit: roundedXpPerUnit, // Use rounded value
+    p_xp_per_unit: roundedXpPerUnit,
     p_energy_cost_per_unit: energy_cost_per_unit,
     p_icon_name: icon_name,
-    p_dependent_on_habit_id: finalDependentOnHabitId, // Use final value
-    p_plateau_days_required: roundedPlateauDaysRequired, // Use rounded value
-    p_window_start: finalWindowStart, // Use final value
-    p_window_end: finalWindowEnd, // Use final value
+    p_dependent_on_habit_id: finalDependentOnHabitId,
+    p_plateau_days_required: roundedPlateauDaysRequired,
+    p_window_start: finalWindowStart,
+    p_window_end: finalWindowEnd,
     p_carryover_enabled: carryover_enabled,
-    p_long_term_goal: roundedLongTermGoal, // Use rounded value
+    p_long_term_goal: roundedLongTermGoal,
     p_target_completion_date: oneYearDateString,
     p_momentum_level: 'Building',
-    p_lifetime_progress: roundedLifetimeProgress, // Use rounded value
+    p_lifetime_progress: roundedLifetimeProgress,
     p_last_goal_increase_date: today.toISOString().split('T')[0],
     p_is_frozen: false,
     p_max_goal_cap: null,
     p_last_plateau_start_date: today.toISOString().split('T')[0],
-    p_completions_in_plateau: 0, // This is an integer, ensure it's 0 or rounded
+    p_completions_in_plateau: 0,
     p_growth_phase: 'duration',
     p_days_of_week: [0, 1, 2, 3, 4, 5, 6],
     p_enable_chunks: auto_chunking,
-    p_num_chunks: roundedNumChunks, // Use rounded value
+    p_num_chunks: roundedNumChunks,
     p_chunk_duration: chunkDuration,
     p_is_visible: true,
   });
@@ -159,7 +159,7 @@ const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: s
   return { success: true };
 };
 
-const MACRO_STEPS = [1, 2, 3, 4, 5, 6, 7]; // Added step 7 for review
+const MACRO_STEPS = [1, 2, 3, 4, 5, 6, 7];
 const MACRO_STEP_LABELS = [
   "Category",
   "Motivation",
@@ -174,7 +174,7 @@ const MICRO_STEPS_MAP: { [key: number]: string[] } = {
   4: ['4.1', '4.2', '4.3'],
   5: ['5.1', '5.2', '5.3'],
   6: ['6.1', '6.2', '6.3', '6.4'],
-  7: ['review'], // Single micro-step for review
+  7: ['review'],
 };
 
 const HabitWizard = () => {
@@ -197,7 +197,7 @@ const HabitWizard = () => {
   const [hasLoadedInitialProgress, setHasLoadedInitialProgress] = useState(false);
   const [showEditDetailsModal, setShowEditDetailsModal] = useState(false);
   const [editableHabitData, setEditableHabitData] = useState<Partial<CreateHabitParams>>({});
-
+  const [showExitDialog, setShowExitDialog] = useState(false);
 
   const createHabitMutation = useMutation({
     mutationFn: (habit: CreateHabitParams) => {
@@ -247,11 +247,11 @@ const HabitWizard = () => {
       createTemplateMutation.mutate({
         id: habitData.habit_key,
         name: habitData.name,
-        category: habitData.category, // Removed .toString()
+        category: habitData.category,
         default_frequency: habitData.frequency_per_week,
         default_duration: habitData.current_daily_goal,
         default_mode: habitData.is_fixed ? 'Fixed' : (habitData.is_trial_mode ? 'Trial' : 'Growth'),
-        default_chunks: 1, // Templates default to 1 chunk, auto-chunking handles more
+        default_chunks: 1,
         auto_chunking: habitData.auto_chunking,
         anchor_practice: habitData.anchor_practice,
         unit: habitData.unit,
@@ -271,14 +271,11 @@ const HabitWizard = () => {
     if (!isLoadingWizardProgress && wizardProgress && !hasLoadedInitialProgress && !isTemplateCreationMode && !templateToPreFill) {
       setCurrentStep(wizardProgress.current_step);
       setWizardData(wizardProgress.habit_data);
-      setCurrentMicroStepIndex(0); // Reset micro-step index when loading a macro step
+      setCurrentMicroStepIndex(0);
       setHasLoadedInitialProgress(true);
     } else if (!isLoadingWizardProgress && (isTemplateCreationMode || templateToPreFill) && !hasLoadedInitialProgress) {
-      // This block is now effectively unused as template creation is handled by NewHabitModal
-      // and template pre-fill is handled by NewHabitModal directly.
-      // The HabitWizard page is now exclusively for personal habit creation.
-      setHasLoadedInitialProgress(true); // Mark as loaded to prevent re-entry
-      navigate('/'); // Redirect if somehow landed here in template mode
+      setHasLoadedInitialProgress(true);
+      navigate('/');
     }
   }, [isLoadingWizardProgress, wizardProgress, isTemplateCreationMode, templateToPreFill, hasLoadedInitialProgress, navigate]);
 
@@ -293,27 +290,23 @@ const HabitWizard = () => {
     setIsSaving(true);
     try {
       const updatedWizardData = { ...wizardData, ...dataToSave };
-      setWizardData(updatedWizardData); // Update local state immediately
+      setWizardData(updatedWizardData);
 
       let nextMacroStep = currentStep;
       let nextMicroStepIdx = currentMicroStepIndex;
       let shouldSaveProgress = true;
 
-      if (currentStep >= 1 && currentStep <= 6) { // Handle micro-steps within macro steps 1-6
+      if (currentStep >= 1 && currentStep <= 6) {
         const microStepsForCurrentMacro = MICRO_STEPS_MAP[currentStep];
         if (microStepsForCurrentMacro && nextMicroStepIdx < microStepsForCurrentMacro.length - 1) {
           nextMicroStepIdx++;
         } else {
-          // Move to next macro step
           nextMacroStep++;
           nextMicroStepIdx = 0;
         }
       }
 
-      if (nextMacroStep > MACRO_STEPS[MACRO_STEPS.length - 1]) { // All steps completed, including review
-        // This case should ideally not be reached if the final action is handled in HabitReviewStep
-        // But as a fallback, if somehow we pass the review step, finalize.
-        // This path is now only for personal habit creation.
+      if (nextMacroStep > MACRO_STEPS[MACRO_STEPS.length - 1]) {
         const inferredParams = calculateHabitParams(updatedWizardData, neurodivergentMode);
         const finalHabitData: CreateHabitParams = {
           name: updatedWizardData.name!,
@@ -343,8 +336,7 @@ const HabitWizard = () => {
 
   const handleBack = useCallback(async () => {
     if (currentStep === 1 && currentMicroStepIndex === 0) {
-      await deleteProgress();
-      navigate('/');
+      setShowExitDialog(true);
       return;
     }
 
@@ -355,7 +347,6 @@ const HabitWizard = () => {
       prevMicroStepIdx--;
     } else if (prevMacroStep > 1) {
       prevMacroStep--;
-      // When going back to a macro step, set micro-step index to the last one of that macro step
       const microStepsForPrevMacro = MICRO_STEPS_MAP[prevMacroStep];
       if (microStepsForPrevMacro) {
         prevMicroStepIdx = microStepsForPrevMacro.length - 1;
@@ -366,7 +357,7 @@ const HabitWizard = () => {
 
     setCurrentStep(prevMacroStep);
     setCurrentMicroStepIndex(prevMicroStepIdx);
-  }, [currentStep, currentMicroStepIndex, deleteProgress, navigate]);
+  }, [currentStep, currentMicroStepIndex]);
 
   const handleResetProgress = useCallback(async () => {
     try {
@@ -391,11 +382,12 @@ const HabitWizard = () => {
       showError('Failed to save progress.');
     } finally {
       setIsSaving(false);
+      setShowExitDialog(false);
     }
   }, [currentStep, wizardData, saveProgress, navigate]);
 
   const handleCancelWizard = useCallback(async () => {
-    setIsSaving(true); // Use isSaving to disable buttons during deletion
+    setIsSaving(true);
     try {
       await deleteProgress();
       showSuccess('Wizard progress discarded.');
@@ -404,13 +396,13 @@ const HabitWizard = () => {
       showError('Failed to discard progress.');
     } finally {
       setIsSaving(false);
+      setShowExitDialog(false);
     }
   }, [deleteProgress, navigate]);
 
   const handleMacroStepClick = useCallback((stepNumber: number) => {
-    // Allow navigating to any macro step, forward or backward
     setCurrentStep(stepNumber);
-    setCurrentMicroStepIndex(0); // Always start from the first micro-step of the chosen macro step
+    setCurrentMicroStepIndex(0);
   }, []);
 
   const isMacroStepCompleted = useCallback((stepNumber: number) => {
@@ -471,8 +463,6 @@ const HabitWizard = () => {
         default: return true;
       }
     }
-    // For the review step (Step 7), the "Create Habit" button is handled by HabitReviewStep itself
-    // and its disabled state is based on form validity.
     if (currentStep === 7) {
       return !wizardData.name?.trim() || !wizardData.habit_key?.trim() || !wizardData.category;
     }
@@ -482,14 +472,11 @@ const HabitWizard = () => {
   const handleUpdateHabitFromModal = useCallback(async (updatedData: Partial<CreateHabitParams>) => {
     setIsSaving(true);
     try {
-      // Update wizardData with the changes from the modal
       setWizardData(prev => ({
         ...prev,
         ...updatedData,
-        // Ensure category is correctly typed if it comes from CreateHabitParams
         category: updatedData.category as HabitCategory,
       }));
-      // Also save this updated state to Supabase temp storage
       await saveProgress({ current_step: currentStep, habit_data: { ...wizardData, ...updatedData } });
       showSuccess('Habit details updated!');
       setShowEditDetailsModal(false);
@@ -533,7 +520,7 @@ const HabitWizard = () => {
       }
     }
 
-    if (currentStep === 7) { // New review step
+    if (currentStep === 7) {
       const inferredParams = calculateHabitParams(wizardData, neurodivergentMode);
       const fullWizardData = { ...wizardData, ...inferredParams };
       return (
@@ -545,7 +532,7 @@ const HabitWizard = () => {
           }}
           onSaveAndFinishLater={handleSaveAndFinishLater}
           onCreateHabit={handleSubmitFinal}
-          onCancel={handleCancelWizard}
+          onCancel={() => setShowExitDialog(true)}
           isSaving={isSaving}
           isCreating={createHabitMutation.isPending || createTemplateMutation.isPending}
           isTemplateMode={isTemplateCreationMode}
@@ -553,25 +540,24 @@ const HabitWizard = () => {
       );
     }
 
-    // This case should ideally not be reached if template creation is handled by NewHabitModal
-    // and the wizard is only for personal habits.
     return null;
   };
 
-  const isLastMicroStep = currentStep >= 1 && currentStep <= 6 && currentMicroStepIndex === (MICRO_STEPS_MAP[currentStep]?.length || 0) - 1;
-  const isFinalStep = currentStep === MACRO_STEPS[MACRO_STEPS.length - 1]; // Check if it's the final macro step (review)
-
-  const buttonText = isFinalStep ? 'Create Habit' : 'Next';
+  const isFinalStep = currentStep === MACRO_STEPS[MACRO_STEPS.length - 1];
 
   return (
-    <div className="w-full max-w-full mx-auto px-4 py-8"> {/* Changed max-w-4xl to max-w-full */}
-      {/* Removed PageHeader */}
+    <div className="w-full max-w-full mx-auto px-4 py-8">
+      <Card className="w-full max-w-6xl mx-auto shadow-2xl rounded-3xl overflow-hidden border-0 bg-card">
+        <CardHeader className="pb-6 pt-8 px-10 bg-gradient-to-b from-primary/5 to-transparent relative">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="absolute top-4 right-4 rounded-full text-muted-foreground hover:text-foreground"
+            onClick={() => setShowExitDialog(true)}
+          >
+            <X className="w-5 h-5" />
+          </Button>
 
-      {/* Single clean card with fixed layout */}
-      <Card className="w-full max-w-6xl mx-auto shadow-2xl rounded-3xl overflow-hidden border-0 bg-card"> {/* Changed max-w-4xl to max-w-6xl */}
-        {/* Header with progress - always present and fixed height */}
-        {/* Removed conditional rendering for isTemplateCreationMode as this page is now only for personal habits */}
-        <CardHeader className="pb-6 pt-8 px-10 bg-gradient-to-b from-primary/5 to-transparent">
           <WizardStepper
             currentMacroStep={currentStep}
             totalMacroSteps={MACRO_STEPS.length}
@@ -579,7 +565,7 @@ const HabitWizard = () => {
             isStepCompleted={isMacroStepCompleted}
             stepLabels={MACRO_STEP_LABELS}
           />
-          <div className="flex justify-between items-center mb-4 mt-6"> {/* Added mt-6 for spacing */}
+          <div className="flex justify-between items-center mb-4 mt-6">
             <div className="text-sm font-bold text-muted-foreground uppercase tracking-wider">
               Step {currentDisplayStep} of {totalDisplaySteps}
             </div>
@@ -593,22 +579,19 @@ const HabitWizard = () => {
           </div>
         </CardHeader>
 
-        {/* Main content + fixed bottom button bar */}
         <div className="flex flex-col min-h-[600px]">
-          {/* Scrollable content area */}
           <CardContent className="flex-1 px-10 pt-6 pb-32 overflow-y-auto">
             {renderWizardStepContent()}
           </CardContent>
 
-          {/* Fixed button bar at the bottom - never moves */}
-          {!isFinalStep && ( // Hide default buttons on final review step
+          {!isFinalStep && (
             <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border/50 shadow-lg">
               <div className="max-w-2xl mx-auto px-10 py-6 flex justify-between items-center">
                 <Button
                   variant="outline"
                   size="lg"
                   onClick={handleBack}
-                  disabled={isSaving || (currentStep === 1 && currentMicroStepIndex === 0)}
+                  disabled={isSaving}
                   className="rounded-2xl px-10 py-6 text-base"
                 >
                   Back
@@ -626,7 +609,7 @@ const HabitWizard = () => {
                       Saving...
                     </>
                   ) : (
-                    buttonText
+                    'Next'
                   )}
                 </Button>
               </div>
@@ -635,7 +618,43 @@ const HabitWizard = () => {
         </div>
       </Card>
 
-      {/* Reset progress button below the card */}
+      <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
+        <AlertDialogContent className="rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Exit Habit Wizard?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Would you like to save your progress as a draft and finish later, or discard your current habit draft?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              className="rounded-xl w-full sm:w-auto"
+              onClick={() => setShowExitDialog(false)}
+              disabled={isSaving}
+            >
+              Continue Editing
+            </Button>
+            <Button
+              variant="secondary"
+              className="rounded-xl w-full sm:w-auto"
+              onClick={handleSaveAndFinishLater}
+              disabled={isSaving}
+            >
+              Save & Finish Later
+            </Button>
+            <Button
+              variant="destructive"
+              className="rounded-xl w-full sm:w-auto"
+              onClick={handleCancelWizard}
+              disabled={isSaving}
+            >
+              Discard Draft
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {wizardProgress && (
         <div className="flex justify-center mt-12">
           <AlertDialog>
@@ -663,7 +682,6 @@ const HabitWizard = () => {
         </div>
       )}
 
-      {/* Edit Habit Details Modal */}
       <EditHabitDetailsModal
         isOpen={showEditDetailsModal}
         onClose={() => setShowEditDetailsModal(false)}
