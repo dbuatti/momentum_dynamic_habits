@@ -15,6 +15,7 @@ export interface HabitTemplate {
   xpPerUnit: number; // Added XP per unit
   energyCostPerUnit: number; // Added energy cost per unit
   icon: React.ElementType; // Added icon for display
+  plateauDaysRequired?: number; // Added this property
 }
 
 export const habitTemplates: HabitTemplate[] = [
@@ -32,6 +33,7 @@ export const habitTemplates: HabitTemplate[] = [
     xpPerUnit: 42,
     energyCostPerUnit: 9,
     icon: BookOpen,
+    plateauDaysRequired: 7,
   },
   {
     id: "exercise_generic",
@@ -47,6 +49,7 @@ export const habitTemplates: HabitTemplate[] = [
     xpPerUnit: 30,
     energyCostPerUnit: 6,
     icon: Dumbbell,
+    plateauDaysRequired: 7,
   },
   {
     id: "mindfulness_generic",
@@ -62,6 +65,7 @@ export const habitTemplates: HabitTemplate[] = [
     xpPerUnit: 30,
     energyCostPerUnit: 6,
     icon: Wind,
+    plateauDaysRequired: 7,
   },
   {
     id: "creative_practice_generic",
@@ -77,6 +81,7 @@ export const habitTemplates: HabitTemplate[] = [
     xpPerUnit: 36,
     energyCostPerUnit: 7.2,
     icon: Music,
+    plateauDaysRequired: 7,
   },
   {
     id: "daily_task_generic",
@@ -92,6 +97,7 @@ export const habitTemplates: HabitTemplate[] = [
     xpPerUnit: 24,
     energyCostPerUnit: 4.8,
     icon: Home,
+    plateauDaysRequired: 7,
   },
   {
     id: "fixed_medication",
@@ -107,6 +113,7 @@ export const habitTemplates: HabitTemplate[] = [
     xpPerUnit: 10,
     energyCostPerUnit: 0,
     icon: Pill,
+    plateauDaysRequired: 7,
   },
   {
     id: "fixed_teeth_brushing",
@@ -122,6 +129,7 @@ export const habitTemplates: HabitTemplate[] = [
     xpPerUnit: 5,
     energyCostPerUnit: 0,
     icon: Sparkles,
+    plateauDaysRequired: 7,
   },
   {
     id: "custom_habit",
@@ -137,6 +145,7 @@ export const habitTemplates: HabitTemplate[] = [
     xpPerUnit: 30,
     energyCostPerUnit: 6,
     icon: Target,
+    plateauDaysRequired: 7,
   },
 ];
 
