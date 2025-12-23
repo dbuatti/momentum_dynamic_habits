@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Check, Clock, Smile, Meh, Frown, Undo2, Play, Pause, Square, Edit2, RotateCcw } from 'lucide-react';
+import { Check, Clock, Smile, Meh, Frown, Undo2, Play, Pause, Square, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
@@ -111,10 +111,10 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
       }
     }
     return () => stopInterval();
-  }, [isCompleted, storageKey, initialValue]);
+  }, [isCompleted, storageKey, initialValue, initialCompletedTaskId, startInterval]);
 
   const handleStartTimer = (e: React.MouseEvent | React.PointerEvent) => {
-    e.stopPropagation(); // Stop propagation
+    e.stopPropagation();
     if (ignoreClicksRef.current || isResetting) return;
     
     playStartSound();
@@ -125,7 +125,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   };
 
   const handleResetTimer = async (e: React.MouseEvent | React.PointerEvent) => {
-    // 1. Kill the event immediately so the Accordion never wakes up
     e.preventDefault();
     e.stopPropagation();
     
@@ -135,7 +134,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     stopInterval();
     localStorage.removeItem(storageKey);
     setElapsedSeconds(0);
-    setCurrentSessionInitialValue(0); // Hard reset to 0:00
+    setCurrentSessionInitialValue(0); 
     setIsTiming(false);
     setIsPaused(false);
     setGoalReachedAlerted(false);
@@ -146,7 +145,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
       setCompletedTaskIdState(null);
     }
 
-    // Hold the shield long enough for the browser interaction cycle to finish
     setTimeout(() => {
       ignoreClicksRef.current = false;
       setIsResetting(false);
@@ -154,7 +152,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   };
 
   const handlePauseTimer = (e: React.MouseEvent | React.PointerEvent) => {
-    e.stopPropagation(); // Stop propagation
+    e.stopPropagation();
     if (isPaused) {
       playStartSound();
       setIsPaused(false);
@@ -167,8 +165,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   };
 
   const handleFinishTiming = (mood?: string, promptMood: boolean = false) => {
-    // This function is called from the onClick of the "Done" button,
-    // which now explicitly calls e.stopPropagation() before calling this.
     stopInterval();
     const totalSessionMinutes = Math.max(1, Math.ceil((currentSessionInitialValue * 60 + elapsedSeconds) / 60));
     if (promptMood && showMood && mood === undefined) {
@@ -201,9 +197,8 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
         className={cn(
           'relative overflow-hidden transition-all duration-500 border-2 rounded-[28px] shadow-lg',
           isCompleted ? 'bg-muted/40 border-muted opacity-70' : cn('bg-card/80 backdrop-blur-sm', colors.border),
-          isTiming && 'ring-4 ring-primary/30 shadow-2xl scale-[1.02]'
+          isTiming && 'ring-4 ring-primary/30 shadow-2xl scale-[1.01]'
         )}
-        // Removed direct click handlers from the Card itself
       >
         <AnimatePresence>
           {!isCompleted && (isTiming || currentSessionInitialValue > 0 || elapsedSeconds > 0) && (
@@ -222,13 +217,12 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
           {!isTiming ? (
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-4 min-w-0">
-                {/* Make this a button to start the timer */}
                 <Button
                   size="icon"
-                  variant="ghost" // Use ghost variant to make it look like the original div
+                  variant="ghost" 
                   className={cn('w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border border-border/50', isCompleted ? 'bg-card/80' : 'bg-card/95')}
-                  onClick={handleStartTimer} // Attach handler here
-                  disabled={isCompleted} // Disable if already completed
+                  onClick={handleStartTimer}
+                  disabled={isCompleted}
                 >
                   {isCompleted ? <Check className="w-7 h-7 text-success" /> : <Play className={cn('w-6 h-6 ml-0.5 fill-current', colors.text)} />}
                 </Button>
@@ -236,12 +230,12 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                   <p className={cn('font-bold text-lg leading-tight truncate', isCompleted ? 'text-muted-foreground' : colors.text)}>
                     {label}
                     {currentSessionInitialValue > 0 && !isCompleted && (
-                      <span className={cn('ml-2 text-xs bg-white/20 dark:bg-black/20 px-2 py-0.5 rounded-md font-black', colors.text)}>
+                      <span className={cn('ml-2 text-[10px] bg-white/20 dark:bg-black/20 px-2 py-0.5 rounded-md font-black', colors.text)}>
                         +{currentSessionInitialValue.toFixed(1)} {unit}
                       </span>
                     )}
                   </p>
-                  <div className="flex items-center gap-2 mt-1.5 text-sm font-bold opacity-70">
+                  <div className="flex items-center gap-2 mt-1 text-sm font-bold opacity-70">
                     {value} {unit}
                   </div>
                 </div>
@@ -253,42 +247,67 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
               )}
             </div>
           ) : (
-            <div className={cn('space-y-6 py-3', colors.text)}>
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-xs font-black uppercase opacity-60 tracking-widest">Active • {label}</p>
-                  <p className="text-5xl font-black tabular-nums mt-2">{formatTime(currentSessionInitialValue * 60 + elapsedSeconds)}</p>
+            <div className={cn('flex flex-col sm:flex-row justify-between items-center gap-4', colors.text)}>
+                <div className="flex items-center gap-4 w-full sm:w-auto">
+                    <div className="pl-1">
+                        <p className="text-[10px] font-black uppercase opacity-60 tracking-widest leading-none">Active • {label}</p>
+                        <p className="text-4xl font-black tabular-nums mt-1 leading-none">
+                            {formatTime(currentSessionInitialValue * 60 + elapsedSeconds)}
+                        </p>
+                    </div>
                 </div>
-                {/* Captured at the pointer level to block parent accordion triggers */}
-                <div className="flex gap-3" onPointerDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
+                
+                <div className="flex items-center gap-3 w-full sm:w-auto justify-end" onPointerDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="h-14 w-14 rounded-full bg-card/90 shadow-lg border border-border/30"
-                    onPointerDown={(e) => handleResetTimer(e)}
-                    onClick={(e) => handleResetTimer(e)}
+                    className="h-12 w-12 rounded-full bg-card/90 shadow-md border border-border/30"
+                    onClick={handleResetTimer}
+                    disabled={isResetting}
                   >
-                    <RotateCcw className="w-6 h-6" />
+                    <RotateCcw className="w-5 h-5" />
                   </Button>
                   <Button
                     size="icon"
-                    className="h-14 w-14 rounded-full bg-card/90 shadow-lg border border-border/30"
+                    className="h-12 w-12 rounded-full bg-card/90 shadow-md border border-border/30"
                     onClick={handlePauseTimer}
+                    disabled={isResetting}
                   >
-                    {isPaused ? <Play className="w-7 h-7 ml-0.5 fill-current" /> : <Pause className="w-7 h-7 fill-current" />}
+                    {isPaused ? <Play className="w-6 h-6 ml-0.5 fill-current" /> : <Pause className="w-6 h-6 fill-current" />}
                   </Button>
                   <Button
                     size="lg"
-                    className="h-14 px-8 rounded-full font-black shadow-xl bg-primary text-primary-foreground border-2 border-primary-foreground/30"
-                    onClick={(e) => { e.stopPropagation(); handleFinishTiming(undefined, true); }} // Add stopPropagation here
+                    className="h-12 px-6 rounded-full font-black shadow-lg bg-primary text-primary-foreground border-2 border-primary-foreground/30"
+                    onClick={(e) => { e.stopPropagation(); handleFinishTiming(undefined, true); }}
+                    disabled={isResetting}
                   >
-                    <Square className="w-5 h-5 mr-2 fill-current" /> Done
+                    <Square className="w-4 h-4 mr-2 fill-current" /> Done
                   </Button>
                 </div>
-              </div>
             </div>
           )}
         </div>
+
+        {/* Mood Picker Overlay */}
+        <AnimatePresence>
+          {showMoodPicker && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              className="absolute inset-0 z-50 bg-card/95 backdrop-blur-md flex flex-col items-center justify-center p-4 gap-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+                <p className="text-sm font-black uppercase tracking-widest opacity-60">Session Complete! How was it?</p>
+                <div className="flex gap-4">
+                  <Button variant="ghost" className="h-14 w-14 rounded-full text-3xl" onClick={() => handleFinishTiming('sad', false)}><Frown className="w-8 h-8 text-red-500" /></Button>
+                  <Button variant="ghost" className="h-14 w-14 rounded-full text-3xl" onClick={() => handleFinishTiming('neutral', false)}><Meh className="w-8 h-8 text-yellow-500" /></Button>
+                  <Button variant="ghost" className="h-14 w-14 rounded-full text-3xl" onClick={() => handleFinishTiming('happy', false)}><Smile className="w-8 h-8 text-green-500" /></Button>
+                </div>
+                <Button variant="link" size="sm" onClick={() => handleFinishTiming(undefined, false)} className="text-muted-foreground">Skip</Button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </Card>
     </motion.div>
   );
