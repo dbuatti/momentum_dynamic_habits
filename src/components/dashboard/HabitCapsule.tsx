@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Check, Clock, Smile, Meh, Frown, Undo2, Play, Pause, Square, Edit2, Zap } from 'lucide-react';
+import { Check, Clock, Smile, Meh, Frown, Undo2, Play, Pause, Square, Edit2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
@@ -14,12 +14,12 @@ interface HabitCapsuleProps {
   habitKey: string;
   habitName: string;
   label: string;
-  value: number; // This is the target value for THIS CAPSULE
+  value: number;
   unit: string;
   isCompleted: boolean;
-  initialValue?: number; // This is the progress already made towards THIS CAPSULE's value
+  initialValue?: number;
   scheduledTime?: string;
-  onLogProgress: (actualValue: number, isComplete: boolean, mood?: string) => void; // Changed prop name and signature
+  onLogProgress: (actualValue: number, isComplete: boolean, mood?: string) => void;
   onUncomplete: () => void;
   color: 'orange' | 'blue' | 'green' | 'purple' | 'red' | 'indigo';
   showMood?: boolean;
@@ -29,19 +29,19 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   habitKey,
   habitName,
   label,
-  value, // Target value for this specific capsule
+  value,
   unit,
   isCompleted,
-  initialValue = 0, // Progress already made towards this capsule's value
+  initialValue = 0,
   scheduledTime,
-  onLogProgress, // Changed prop name
+  onLogProgress,
   onUncomplete,
   color,
   showMood,
 }) => {
   const [showMoodPicker, setShowMoodPicker] = useState(false);
   const [isTiming, setIsTiming] = useState(false);
-  const [elapsedSeconds, setElapsedSeconds] = useState(0); // Elapsed time for the current timer session
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [goalReachedAlerted, setGoalReachedAlerted] = useState(false);
   
@@ -49,14 +49,12 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   const startTimeRef = useRef<number | null>(null);
   const isTimeBased = unit === 'min';
   
-  // Unique storage key for each capsule for the current day
   const storageKey = `timer_${habitKey}_${label}_${new Date().toISOString().split('T')[0]}`;
 
-  // Helper function for formatting time
   const formatTime = (totalSeconds: number) => {
-    const roundedTotalSeconds = Math.round(totalSeconds); // Round the total seconds first
-    const mins = Math.floor(roundedTotalSeconds / 60);
-    const secs = roundedTotalSeconds % 60;
+    const rounded = Math.round(totalSeconds);
+    const mins = Math.floor(rounded / 60);
+    const secs = rounded % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
@@ -75,13 +73,12 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
         const totalElapsed = Math.floor((now - startTimeRef.current) / 1000);
         setElapsedSeconds(totalElapsed);
         
-        // Dispatch event for floating timer
         window.dispatchEvent(new CustomEvent('habit-timer-update', { 
           detail: { 
             label, 
             habitName,
             goalValue: value,
-            elapsed: initialValue * 60 + totalElapsed, // Total elapsed including initial progress
+            elapsed: initialValue * 60 + totalElapsed,
             isPaused: false,
             habitKey 
           } 
@@ -90,7 +87,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     }, 1000);
   }, [label, initialValue, habitKey, habitName, value]);
 
-  // Alert when capsule goal is reached
   useEffect(() => {
     if (isTiming && isTimeBased && !goalReachedAlerted) {
       const totalMinutes = (initialValue * 60 + elapsedSeconds) / 60;
@@ -102,7 +98,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     }
   }, [elapsedSeconds, isTiming, isTimeBased, value, initialValue, goalReachedAlerted]);
 
-  // Load state from local storage on mount
   useEffect(() => {
     if (isCompleted) {
       localStorage.removeItem(storageKey);
@@ -134,12 +129,9 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
       }
     }
 
-    return () => {
-      stopInterval();
-    };
+    return () => stopInterval();
   }, [storageKey, isCompleted, startInterval, label, initialValue, habitKey, habitName, value]);
 
-  // Save state to local storage on changes
   useEffect(() => {
     if (!isCompleted && (isTiming || elapsedSeconds > 0)) {
       localStorage.setItem(storageKey, JSON.stringify({
@@ -159,7 +151,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     setIsTiming(true);
     setIsPaused(false);
     const now = Date.now();
-    startTimeRef.current = now - (elapsedSeconds * 1000); // Adjust start time based on already elapsed seconds
+    startTimeRef.current = now - (elapsedSeconds * 1000);
     startInterval();
   };
 
@@ -179,19 +171,18 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     }
   };
 
-  // This function is now only called by the "Done" button, not by clicking the capsule itself.
   const handleFinishTiming = (mood?: string, promptMood: boolean = false) => {
     stopInterval();
     const totalSessionMinutes = Math.max(1, Math.ceil((initialValue * 60 + elapsedSeconds) / 60));
     
-    if (promptMood && showMood && mood === undefined) { // Only prompt if explicitly asked AND showMood is true
+    if (promptMood && showMood && mood === undefined) {
       setShowMoodPicker(true);
       return;
     }
 
     playEndSound();
     
-    if (totalSessionMinutes >= value) { // Check against capsule's value
+    if (totalSessionMinutes >= value) {
       confetti({
         particleCount: 100,
         spread: 70,
@@ -203,7 +194,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     localStorage.removeItem(storageKey);
     window.dispatchEvent(new CustomEvent('habit-timer-update', { detail: null }));
     
-    onLogProgress(totalSessionMinutes, true, mood); // Pass total minutes logged for this capsule, mark as complete
+    onLogProgress(totalSessionMinutes, true, mood);
     setIsTiming(false);
     setElapsedSeconds(0);
     setShowMoodPicker(false);
@@ -225,44 +216,72 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     localStorage.removeItem(storageKey);
     window.dispatchEvent(new CustomEvent('habit-timer-update', { detail: null }));
     
-    // For quick complete, log the full capsule value and mark as complete
-    onLogProgress(value, true); 
+    onLogProgress(value, true);
   };
 
   const currentTotalMinutes = isTimeBased ? initialValue + (elapsedSeconds / 60) : initialValue;
   const progressPercent = Math.min(100, (currentTotalMinutes / value) * 100);
 
-  // Use the custom habit- colors defined in globals.css and tailwind.config.ts
   const colors = {
     orange: { 
-      light: 'from-habit-orange/50', dark: 'to-habit-orange', wave: 'hsl(var(--habit-orange))', 
-      bg: 'bg-habit-orange', border: 'border-habit-orange-border', 
-      text: 'text-habit-orange-foreground', iconBg: 'bg-habit-orange/20' 
+      light: 'from-habit-orange/40', 
+      mid: 'to-habit-orange/70', 
+      dark: 'to-habit-orange', 
+      wave: 'hsl(var(--habit-orange))', 
+      bg: 'bg-habit-orange', 
+      border: 'border-habit-orange-border', 
+      text: 'text-habit-orange-foreground', 
+      iconBg: 'bg-habit-orange/20' 
     },
     blue: { 
-      light: 'from-habit-blue/50', dark: 'to-habit-blue', wave: 'hsl(var(--habit-blue))', 
-      bg: 'bg-habit-blue', border: 'border-habit-blue-border', 
-      text: 'text-habit-blue-foreground', iconBg: 'bg-habit-blue/20' 
+      light: 'from-habit-blue/40', 
+      mid: 'to-habit-blue/70', 
+      dark: 'to-habit-blue', 
+      wave: 'hsl(var(--habit-blue))', 
+      bg: 'bg-habit-blue', 
+      border: 'border-habit-blue-border', 
+      text: 'text-habit-blue-foreground', 
+      iconBg: 'bg-habit-blue/20' 
     },
     green: { 
-      light: 'from-habit-green/50', dark: 'to-habit-green', wave: 'hsl(var(--habit-green))', 
-      bg: 'bg-habit-green', border: 'border-habit-green-border', 
-      text: 'text-habit-green-foreground', iconBg: 'bg-habit-green/20' 
+      light: 'from-habit-green/40', 
+      mid: 'to-habit-green/70', 
+      dark: 'to-habit-green', 
+      wave: 'hsl(var(--habit-green))', 
+      bg: 'bg-habit-green', 
+      border: 'border-habit-green-border', 
+      text: 'text-habit-green-foreground', 
+      iconBg: 'bg-habit-green/20' 
     },
     purple: { 
-      light: 'from-habit-purple/50', dark: 'to-habit-purple', wave: 'hsl(var(--habit-purple))', 
-      bg: 'bg-habit-purple', border: 'border-habit-purple-border', 
-      text: 'text-habit-purple-foreground', iconBg: 'bg-habit-purple/20' 
+      light: 'from-habit-purple/40', 
+      mid: 'to-habit-purple/70', 
+      dark: 'to-habit-purple', 
+      wave: 'hsl(var(--habit-purple))', 
+      bg: 'bg-habit-purple', 
+      border: 'border-habit-purple-border', 
+      text: 'text-habit-purple-foreground', 
+      iconBg: 'bg-habit-purple/20' 
     },
     red: { 
-      light: 'from-habit-red/50', dark: 'to-habit-red', wave: 'hsl(var(--habit-red))', 
-      bg: 'bg-habit-red', border: 'border-habit-red-border', 
-      text: 'text-habit-red-foreground', iconBg: 'bg-habit-red/20' 
+      light: 'from-habit-red/40', 
+      mid: 'to-habit-red/70', 
+      dark: 'to-habit-red', 
+      wave: 'hsl(var(--habit-red))', 
+      bg: 'bg-habit-red', 
+      border: 'border-habit-red-border', 
+      text: 'text-habit-red-foreground', 
+      iconBg: 'bg-habit-red/20' 
     },
     indigo: { 
-      light: 'from-habit-indigo/50', dark: 'to-habit-indigo', wave: 'hsl(var(--habit-indigo))', 
-      bg: 'bg-habit-indigo', border: 'border-habit-indigo-border', 
-      text: 'text-habit-indigo-foreground', iconBg: 'bg-habit-indigo/20' 
+      light: 'from-habit-indigo/40', 
+      mid: 'to-habit-indigo/70', 
+      dark: 'to-habit-indigo', 
+      wave: 'hsl(var(--habit-indigo))', 
+      bg: 'bg-habit-indigo', 
+      border: 'border-habit-indigo-border', 
+      text: 'text-habit-indigo-foreground', 
+      iconBg: 'bg-habit-indigo/20' 
     },
   }[color];
 
@@ -270,21 +289,21 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     <motion.div layout className="relative">
       <Card 
         className={cn(
-          "relative overflow-hidden transition-all duration-500 border-2 rounded-[24px]",
+          "relative overflow-hidden transition-all duration-500 border-2 rounded-[28px] shadow-lg",
           isCompleted 
-            ? "bg-muted/30 border-muted opacity-70" 
-            : cn("bg-card", colors.border, "shadow-sm hover:shadow-md"), // Changed: bg-card for base, color for fill
-          isTiming && "ring-4 ring-primary/20 shadow-xl scale-[1.01]"
+            ? "bg-muted/40 border-muted opacity-70" 
+            : cn("bg-card/80 backdrop-blur-sm", colors.border, "hover:shadow-xl"),
+          isTiming && "ring-4 ring-primary/30 shadow-2xl scale-[1.02]"
         )}
         onClick={isTiming ? () => {
           const totalSessionMinutes = (initialValue * 60 + elapsedSeconds) / 60;
-          if (totalSessionMinutes >= value) { // Capsule goal met by clicking card
-            handleFinishTiming(undefined, false); // Marks complete, no mood prompt
-          } else { // Partial progress, save and collapse
+          if (totalSessionMinutes >= value) {
+            handleFinishTiming(undefined, false);
+          } else {
             stopInterval();
             window.dispatchEvent(new CustomEvent('habit-timer-update', { detail: null }));
             localStorage.removeItem(storageKey);
-            onLogProgress(elapsedSeconds / 60, false); // Log only the elapsed time from this session, NOT complete
+            onLogProgress(elapsedSeconds / 60, false);
             setIsTiming(false);
             setElapsedSeconds(0);
             setIsPaused(false);
@@ -293,51 +312,77 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
           }
         } : (!isCompleted && !showMoodPicker) ? (isTimeBased ? handleStartTimer : handleQuickComplete) : undefined}
       >
+        {/* Enhanced liquid fill with multi-stop gradient + subtle wave effect */}
         <AnimatePresence>
           {(!isCompleted && (isTiming || initialValue > 0)) && (
             <motion.div 
-              className="absolute inset-x-0 bottom-0 z-0"
+              className="absolute inset-x-0 bottom-0 z-0 pointer-events-none"
               initial={{ height: "0%" }}
               animate={{ height: `${progressPercent}%` }}
-              transition={{ type: "tween", ease: isTiming ? "linear" : "easeOut", duration: isTiming ? 1 : 0.6 }}
+              transition={{ type: "spring", stiffness: 80, damping: 20 }}
             >
-              {/* Reinstated and enhanced progress fill with habit-specific gradient */}
-              <div className={cn("absolute inset-0 bg-gradient-to-t", colors.light, colors.dark)} />
+              {/* Main gradient fill */}
+              <div className={cn("absolute inset-0 bg-gradient-to-t", colors.light, colors.mid, colors.dark)} />
+              
+              {/* Glossy highlight */}
+              <div className="absolute inset-0 bg-gradient-to-t from-transparent via-white/20 to-transparent opacity-60" />
+              
+              {/* Subtle animated waves */}
+              <div className="absolute inset-0 overflow-hidden">
+                <div className="absolute bottom-0 w-full h-12 opacity-40">
+                  <motion.div
+                    className={cn("absolute inset-x-0 h-16 bg-gradient-to-r from-transparent via-white/30 to-transparent")}
+                    animate={{ x: ["-100%", "100%"] }}
+                    transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+                    style={{ transform: "translateY(4px) rotate(2deg)" }}
+                  />
+                  <motion.div
+                    className={cn("absolute inset-x-0 h-16 bg-gradient-to-r from-transparent via-white/20 to-transparent")}
+                    animate={{ x: ["100%", "-100%"] }}
+                    transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
+                    style={{ transform: "translateY(-2px) rotate(-1deg)" }}
+                  />
+                </div>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        <div className="relative z-10 p-4">
+        <div className="relative z-10 p-5">
           {!isTiming ? (
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-4 min-w-0">
                 <div className={cn(
-                  "w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border border-border",
-                  isCompleted ? "bg-card" : "bg-card/90"
+                  "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-md border border-border/50 backdrop-blur",
+                  isCompleted ? "bg-card/80" : "bg-card/95"
                 )}>
                   {isCompleted ? (
-                    <Check className="w-6 h-6 text-success" />
+                    <Check className="w-7 h-7 text-success" />
                   ) : (
                     isTimeBased ? (
-                      <Play className={cn("w-5 h-5 ml-0.5 fill-current", colors.text)} />
+                      <Play className={cn("w-6 h-6 ml-0.5 fill-current", colors.text)} />
                     ) : (
-                      <span className={cn("text-base font-black", colors.text)}>{value}</span>
+                      <span className={cn("text-xl font-black", colors.text)}>{value}</span>
                     )
                   )}
                 </div>
                 
                 <div className="min-w-0">
-                  <p className={cn("font-bold text-base leading-tight truncate", isCompleted ? "text-muted-foreground" : colors.text)}>
+                  <p className={cn("font-bold text-lg leading-tight truncate", isCompleted ? "text-muted-foreground" : colors.text)}>
                     {label}
                     {initialValue > 0 && !isCompleted && (
-                      <span className={cn("ml-2 text-[10px] bg-black/10 dark:bg-white/20 px-1.5 py-0.5 rounded-md align-middle font-black", isCompleted ? "text-muted-foreground" : colors.text)}>+ {initialValue.toFixed(1)} {unit}</span>
+                      <span className={cn("ml-2 text-xs bg-white/20 dark:bg-black/20 px-2 py-0.5 rounded-md font-black", colors.text)}>
+                        +{initialValue.toFixed(1)} {unit}
+                      </span>
                     )}
                   </p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className={cn("text-xs font-bold", isCompleted ? "text-muted-foreground opacity-40" : colors.text)}>{value} {unit}</span>
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <span className={cn("text-sm font-bold", isCompleted ? "text-muted-foreground" : colors.text)}>
+                      {value} {unit}
+                    </span>
                     {scheduledTime && (
-                      <span className="flex items-center gap-1 text-[10px] font-bold opacity-70 bg-secondary px-2 py-0.5 rounded-full">
-                        <Clock className="w-3 h-3" />
+                      <span className="flex items-center gap-1 text-xs font-bold opacity-70 bg-secondary/70 px-2.5 py-1 rounded-full">
+                        <Clock className="w-3.5 h-3.5" />
                         {scheduledTime}
                       </span>
                     )}
@@ -349,13 +394,13 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-9 px-3 rounded-xl text-xs font-bold text-muted-foreground hover:bg-secondary"
+                  className="h-10 px-4 rounded-xl text-sm font-bold text-muted-foreground hover:bg-secondary/80"
                   onClick={(e) => {
                     e.stopPropagation();
                     onUncomplete();
                   }}
                 >
-                  <Undo2 className="w-4 h-4 mr-1" />
+                  <Undo2 className="w-4 h-4 mr-1.5" />
                   Undo
                 </Button>
               ) : (
@@ -364,40 +409,40 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                     <Button 
                       size="icon" 
                       variant="ghost" 
-                      className="h-10 w-10 rounded-full hover:bg-secondary" 
+                      className="h-11 w-11 rounded-full hover:bg-secondary/70" 
                       onClick={handleQuickComplete}
                     >
-                      <Edit2 className="w-4 h-4 opacity-40" />
+                      <Edit2 className="w-5 h-5 opacity-50" />
                     </Button>
                   )}
                 </div>
               )}
             </div>
           ) : (
-            <div className={cn("space-y-5 py-2", colors.text)}>
+            <div className={cn("space-y-6 py-3", colors.text)}>
               <div className="flex justify-between items-start">
                 <div className="pl-1">
-                  <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Active {label}</p>
-                  <p className="text-4xl font-black tabular-nums mt-1">{formatTime(initialValue * 60 + elapsedSeconds)}</p>
-                  <p className="text-[10px] opacity-60 mt-1 font-bold">
-                    Goal: {value} min {initialValue > 0 && `(incl. ${initialValue.toFixed(1)}m surplus)`}
+                  <p className="text-xs font-black uppercase tracking-widest opacity-60">Active • {label}</p>
+                  <p className="text-5xl font-black tabular-nums mt-2">{formatTime(initialValue * 60 + elapsedSeconds)}</p>
+                  <p className="text-xs opacity-60 mt-2 font-bold">
+                    Goal: {value} min {initialValue > 0 && `(incl. +${initialValue.toFixed(1)}m)`}
                   </p>
                 </div>
                 
-                <div className="flex gap-2">
+                <div className="flex gap-3">
                   <Button 
                     size="icon" 
-                    className="h-12 w-12 rounded-full bg-card text-foreground hover:bg-secondary shadow-md border-0"
+                    className="h-14 w-14 rounded-full bg-card/90 text-foreground hover:bg-secondary shadow-lg border border-border/30"
                     onClick={handlePauseTimer}
                   >
-                    {isPaused ? <Play className="w-6 h-6 ml-0.5 fill-current" /> : <Pause className="w-6 h-6 fill-current" />}
+                    {isPaused ? <Play className="w-7 h-7 ml-0.5 fill-current" /> : <Pause className="w-7 h-7 fill-current" />}
                   </Button>
                   <Button 
                     size="lg" 
-                    className="h-12 px-6 rounded-full font-black shadow-lg bg-primary text-primary-foreground hover:bg-primary/90 border border-primary-foreground/20"
+                    className="h-14 px-8 rounded-full font-black shadow-xl bg-primary text-primary-foreground hover:bg-primary/90 border-2 border-primary-foreground/30"
                     onClick={() => handleFinishTiming(undefined, true)}
                   >
-                    <Square className="w-4 h-4 mr-2 fill-current" />
+                    <Square className="w-5 h-5 mr-2 fill-current" />
                     Done
                   </Button>
                 </div>
@@ -412,22 +457,24 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="bg-card/95 backdrop-blur border-t border-border"
+              className="bg-card/95 backdrop-blur-md border-t-2 border-border/50"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="py-4 px-4 flex items-center justify-center gap-6">
-                <span className="text-xs font-black uppercase tracking-wider opacity-60">Feeling?</span>
-                <div className="flex gap-4">
-                  <Button size="icon" variant="ghost" className="h-10 w-10 rounded-full hover:bg-destructive/10" onClick={() => handleFinishTiming('sad', false)}>
-                    <Frown className="w-6 h-6 text-destructive" />
+              <div className="py-5 px-6 flex items-center justify-center gap-8">
+                <span className="text-sm font-black uppercase tracking-wider opacity-60">How do you feel?</span>
+                <div className="flex gap-6">
+                  <Button size="icon" variant="ghost" className="h-12 w-12 rounded-full hover:bg-destructive/10" onClick={() => handleFinishTiming('sad', false)}>
+                    <Frown className="w-7 h-7 text-destructive" />
                   </Button>
-                  <Button size="icon" variant="ghost" className="h-10 w-10 rounded-full hover:bg-warning-background/10" onClick={() => handleFinishTiming('neutral', false)}>
-                    <Meh className="w-6 h-6 text-warning" />
+                  <Button size="icon" variant="ghost" className="h-12 w-12 rounded-full hover:bg-muted" onClick={() => handleFinishTiming('neutral', false)}>
+                    <Meh className="w-7 h-7 text-muted-foreground" />
                   </Button>
-                  <Button size="icon" variant="ghost" className="h-10 w-10 rounded-full hover:bg-success-background/10" onClick={() => handleFinishTiming('happy', false)}>
-                    <Smile className="w-6 h-6 text-success" />
+                  <Button size="icon" variant="ghost" className="h-12 w-12 rounded-full hover:bg-success/10" onClick={() => handleFinishTiming('happy', false)}>
+                    <Smile className="w-7 h-7 text-success" />
                   </Button>
-                  <Button variant="ghost" size="sm" className="font-bold text-muted-foreground" onClick={() => handleFinishTiming(undefined, false)}>Skip</Button>
+                  <Button variant="ghost" size="sm" className="font-bold text-muted-foreground px-4" onClick={() => handleFinishTiming(undefined, false)}>
+                    Skip
+                  </Button>
                 </div>
               </div>
             </motion.div>
