@@ -113,8 +113,8 @@ const Index = () => {
         return aProgressRatio - bProgressRatio;
       }
 
-      // 5. Name
-      return a.name.localeCompare(b.name);
+      // 5. Name - Ensure names are strings before comparison
+      return (a.name || '').localeCompare(b.name || '');
     });
   }, [data?.habits, dbCapsules, data?.neurodivergentMode]);
 
