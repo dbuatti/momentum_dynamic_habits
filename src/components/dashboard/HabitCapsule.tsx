@@ -49,7 +49,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   const [completedTaskIdState, setCompletedTaskIdState] = useState<string | null>(initialCompletedTaskId || null);
   const [isResetting, setIsResetting] = useState(false);
   
-  // CRITICAL: This ref stops the "Ghost Click" from collapsing the accordion
+  // The Shield: Prevents any parent (Accordion) from seeing the interaction
   const ignoreClicksRef = useRef(false);
 
   const [currentSessionInitialValue, setCurrentSessionInitialValue] = useState(initialValue);
@@ -114,9 +114,8 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     return () => stopInterval();
   }, [isCompleted, storageKey, initialValue]);
 
-  const handleStartTimer = (e: React.MouseEvent) => {
+  const handleStartTimer = (e: React.MouseEvent | React.PointerEvent) => {
     e.stopPropagation();
-    // If we just reset, ignore this click to prevent immediate re-expansion
     if (ignoreClicksRef.current || isResetting) return;
     
     playStartSound();
@@ -126,20 +125,18 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     startInterval();
   };
 
-  const handleResetTimer = async (e: React.MouseEvent) => {
-    // 1. Aggressively stop all propagation
+  const handleResetTimer = async (e: React.MouseEvent | React.PointerEvent) => {
+    // 1. Kill the event immediately so the Accordion never wakes up
     e.preventDefault();
     e.stopPropagation();
     
-    // 2. Set the lock
     ignoreClicksRef.current = true;
     setIsResetting(true);
     
-    // 3. Reset all logic to 0:00
     stopInterval();
     localStorage.removeItem(storageKey);
     setElapsedSeconds(0);
-    setCurrentSessionInitialValue(0); 
+    setCurrentSessionInitialValue(0); // Hard reset to 0:00
     setIsTiming(false);
     setIsPaused(false);
     setGoalReachedAlerted(false);
@@ -150,14 +147,14 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
       setCompletedTaskIdState(null);
     }
 
-    // 4. Hold the lock briefly to swallow the "MouseUp" event that causes collapse
+    // Hold the shield long enough for the browser interaction cycle to finish
     setTimeout(() => {
       ignoreClicksRef.current = false;
       setIsResetting(false);
-    }, 400);
+    }, 500);
   };
 
-  const handlePauseTimer = (e: React.MouseEvent) => {
+  const handlePauseTimer = (e: React.MouseEvent | React.PointerEvent) => {
     e.stopPropagation();
     if (isPaused) {
       playStartSound();
@@ -205,12 +202,16 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
           isCompleted ? 'bg-muted/40 border-muted opacity-70' : cn('bg-card/80 backdrop-blur-sm', colors.border),
           isTiming && 'ring-4 ring-primary/30 shadow-2xl scale-[1.02]'
         )}
-        onClick={(e) => {
-          // If we just clicked reset, don't let the Card onClick fire
+        // onPointerDown is more aggressive than onClick and kills the accordion toggle before it starts
+        onPointerDown={(e) => {
           if (ignoreClicksRef.current) {
+            e.preventDefault();
             e.stopPropagation();
             return;
           }
+        }}
+        onClick={(e) => {
+          if (ignoreClicksRef.current) return;
           if (!isTiming && !isCompleted && !showMoodPicker) handleStartTimer(e);
         }}
       >
@@ -261,12 +262,14 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                   <p className="text-xs font-black uppercase opacity-60 tracking-widest">Active • {label}</p>
                   <p className="text-5xl font-black tabular-nums mt-2">{formatTime(currentSessionInitialValue * 60 + elapsedSeconds)}</p>
                 </div>
-                <div className="flex gap-3" onClick={(e) => e.stopPropagation()}>
+                {/* Captured at the pointer level to block parent accordion triggers */}
+                <div className="flex gap-3" onPointerDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
                   <Button
                     size="icon"
                     variant="ghost"
                     className="h-14 w-14 rounded-full bg-card/90 shadow-lg border border-border/30"
-                    onClick={handleResetTimer}
+                    onPointerDown={(e) => handleResetTimer(e)}
+                    onClick={(e) => handleResetTimer(e)}
                   >
                     <RotateCcw className="w-6 h-6" />
                   </Button>
