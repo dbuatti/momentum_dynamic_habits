@@ -5,14 +5,14 @@ import { useNavigate } from 'react-router-dom';
 import { showSuccess, showError } from '@/utils/toast';
 import { initialHabits } from '@/lib/habit-data';
 import { calculateLevel } from '@/utils/leveling';
-import { differenceInDays } from 'date-fns';
+import { differenceInDays, startOfWeek, endOfWeek } from 'date-fns';
 
 interface LogHabitParams {
   habitKey: string;
   value: number;
   taskName: string;
   difficultyRating?: number;
-  note?: string; // Added optional note field
+  note?: string;
 }
 
 const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, note }: LogHabitParams & { userId: string }) => {
@@ -46,7 +46,7 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
     duration_used: habitConfig.type === 'time' ? actualValue : null,
     xp_earned: xpEarned, energy_cost: energyCost, difficulty_rating: difficultyRating || null,
     completed_at: new Date().toISOString(),
-    note: note || null, // Inserting the optional note
+    note: note || null,
   });
 
   if (insertError) throw insertError;
@@ -68,6 +68,8 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
   // Adaptive logic
   const isFixedGoalHabit = userHabitData.is_fixed || ['teeth_brushing', 'medication'].includes(habitKey);
   let newDailyGoal = userHabitData.current_daily_goal;
+  let newFrequency = userHabitData.frequency_per_week;
+  let newGrowthPhase = userHabitData.growth_phase;
   
   const todayDate = new Date();
   const todayDateString = todayDate.toISOString().split('T')[0];
@@ -75,31 +77,48 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
   const isHabitCompletedToday = totalDailyProgress >= userHabitData.current_daily_goal;
   const newCompletionsInPlateau = userHabitData.completions_in_plateau + (isHabitCompletedToday ? 1 : 0);
 
-  if (!isFixedGoalHabit && !userHabitData.is_frozen) {
-    const plateauRequired = profileData.neurodivergent_mode ? 7 : 5;
+  // Growth mode logic
+  if (!isFixedGoalHabit && !userHabitData.is_frozen && !userHabitData.is_trial_mode) {
+    const plateauRequired = profileData.neurodivergent_mode ? 14 : 7; // Longer for growth mode
+    
     if (daysInPlateau >= plateauRequired) {
       const completionRate = newCompletionsInPlateau / (daysInPlateau + 1);
+      
       if (completionRate >= 0.8) {
-        if (habitConfig.type === 'time') newDailyGoal = parseFloat((userHabitData.current_daily_goal + 0.25).toFixed(2));
-        else newDailyGoal = userHabitData.current_daily_goal + 1;
-        
-        if (!userHabitData.max_goal_cap || newDailyGoal <= userHabitData.max_goal_cap) {
-          await supabase.from('user_habits').update({
-            last_plateau_start_date: todayDateString,
-            completions_in_plateau: 0,
-            last_goal_increase_date: todayDateString
-          }).eq('id', userHabitData.id);
-        } else {
-          newDailyGoal = userHabitData.max_goal_cap;
+        if (userHabitData.growth_phase === 'frequency' && userHabitData.frequency_per_week < 7) {
+          newFrequency = userHabitData.frequency_per_week + 1;
+          newGrowthPhase = 'duration';
+          showSuccess(`Dynamic Growth: Frequency increased to ${newFrequency}x per week!`);
+        } else if (userHabitData.growth_phase === 'duration') {
+          if (habitConfig.type === 'time') newDailyGoal = userHabitData.current_daily_goal + 5;
+          else newDailyGoal = userHabitData.current_daily_goal + 1;
+          
+          if (!userHabitData.max_goal_cap || newDailyGoal <= userHabitData.max_goal_cap) {
+            newGrowthPhase = userHabitData.frequency_per_week < 7 ? 'frequency' : 'duration';
+            showSuccess(`Dynamic Growth: Duration increased to ${newDailyGoal} ${habitConfig.unit}!`);
+          } else {
+            newDailyGoal = userHabitData.max_goal_cap;
+          }
         }
+
+        await supabase.from('user_habits').update({
+          last_plateau_start_date: todayDateString,
+          completions_in_plateau: 0,
+          last_goal_increase_date: todayDateString,
+          current_daily_goal: newDailyGoal,
+          frequency_per_week: newFrequency,
+          growth_phase: newGrowthPhase,
+        }).eq('id', userHabitData.id);
       }
     }
   }
 
-  await supabase.from('user_habits').update({
-    current_daily_goal: newDailyGoal,
-    completions_in_plateau: isHabitCompletedToday ? newCompletionsInPlateau : userHabitData.completions_in_plateau,
-  }).eq('id', userHabitData.id);
+  // Basic update if not growing
+  if (isHabitCompletedToday) {
+     await supabase.from('user_habits').update({
+      completions_in_plateau: newCompletionsInPlateau,
+    }).eq('id', userHabitData.id);
+  }
 
   const newXp = (profileData.xp || 0) + xpEarned;
   await supabase.from('profiles').update({
@@ -113,7 +132,6 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
 };
 
 const unlogHabit = async ({ userId, habitKey, taskName }: { userId: string, habitKey: string, taskName: string }) => {
-  // 1. Find the most recent task with this name and habit key completed today
   const { data: task, error: findError } = await supabase
     .from('completedtasks')
     .select('*')
@@ -126,7 +144,6 @@ const unlogHabit = async ({ userId, habitKey, taskName }: { userId: string, habi
 
   if (findError || !task) throw findError || new Error('Task not found');
 
-  // 2. Decrement lifetime progress
   const habitConfig = initialHabits.find(h => h.id === habitKey);
   const valueToRevert = habitConfig?.type === 'time' ? (task.duration_used || 0) : task.xp_earned;
   
@@ -134,7 +151,6 @@ const unlogHabit = async ({ userId, habitKey, taskName }: { userId: string, habi
     p_user_id: userId, p_habit_key: habitKey, p_increment_value: -valueToRevert,
   });
 
-  // 3. Update profile XP and task count
   const { data: profile } = await supabase.from('profiles').select('xp, tasks_completed_today').eq('id', userId).single();
   if (profile) {
     const newXp = Math.max(0, (profile.xp || 0) - (task.xp_earned || 0));
@@ -145,7 +161,6 @@ const unlogHabit = async ({ userId, habitKey, taskName }: { userId: string, habi
     }).eq('id', userId);
   }
 
-  // 4. Delete the task record
   const { error: deleteError } = await supabase.from('completedtasks').delete().eq('id', task.id);
   if (deleteError) throw deleteError;
 

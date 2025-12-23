@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
-import { startOfDay, differenceInDays, startOfWeek, endOfWeek, subWeeks, addMonths, subDays, formatDistanceToNowStrict } from 'date-fns';
+import { startOfDay, differenceInDays, startOfWeek, endOfWeek, subWeeks, addMonths, subDays, formatDistanceToNowStrict, isWithinInterval, parse } from 'date-fns';
 import { initialHabits } from '@/lib/habit-data';
 import { useInitializeMissingHabits } from './useInitializeMissingHabits';
 import { useEffect, useRef } from 'react';
@@ -19,8 +19,6 @@ const fetchDashboardData = async (userId: string) => {
 
   const [
     { data: habits, error: habitsError },
-    { data: allBadges, error: allBadgesError },
-    { data: achievedBadges, error: achievedBadgesError },
     { data: completedToday, error: completedTodayError },
     { data: completedThisWeek, error: completedThisWeekError },
     { data: completedLastWeek, error: completedLastWeekError },
@@ -30,8 +28,6 @@ const fetchDashboardData = async (userId: string) => {
     { data: randomTip, error: randomTipError },
   ] = await Promise.all([
     supabase.from('user_habits').select('*').eq('user_id', userId),
-    supabase.from('badges').select('*'),
-    supabase.from('user_badges').select('badge_id').eq('user_id', userId),
     supabase.rpc('get_completed_tasks_today', { p_user_id: userId, p_timezone: timezone }),
     supabase.from('completedtasks').select('original_source, duration_used, xp_earned, completed_at').eq('user_id', userId).gte('completed_at', startOfWeek(today).toISOString()).lte('completed_at', endOfWeek(today).toISOString()),
     supabase.from('completedtasks').select('original_source, duration_used, xp_earned').eq('user_id', userId).gte('completed_at', startOfWeek(subWeeks(today, 1)).toISOString()).lte('completed_at', endOfWeek(subWeeks(today, 1)).toISOString()),
@@ -44,22 +40,15 @@ const fetchDashboardData = async (userId: string) => {
   if (habitsError || completedTodayError) throw new Error('Failed to fetch essential data');
 
   const initialHabitsMap = new Map(initialHabits.map(h => [h.id, h]));
-  const sevenDaysAgo = subDays(today, 6);
+  const weeklyCompletionMap = new Map<string, number>();
   
-  const habitCompletionHistoryPromises = (habits || []).map(async (h) => {
-    const { data: completions } = await supabase.from('completedtasks')
-      .select('completed_at')
-      .eq('user_id', userId)
-      .eq('original_source', h.habit_key)
-      .gte('completed_at', startOfDay(sevenDaysAgo).toISOString());
-    const distinctDaysCount = new Set(completions?.map(c => startOfDay(new Date(c.completed_at)).toISOString())).size;
-    return { habitKey: h.habit_key, daysCompletedLast7Days: distinctDaysCount };
+  (completedThisWeek || []).forEach(task => {
+    const day = startOfDay(new Date(task.completed_at)).toISOString();
+    const key = `${task.original_source}_${day}`;
+    weeklyCompletionMap.set(key, 1);
   });
 
-  const habitCompletionHistory = await Promise.all(habitCompletionHistoryPromises);
-  const habitCompletionMap = new Map(habitCompletionHistory.map(item => [item.habitKey, item.daysCompletedLast7Days]));
   const dailyProgressMap = new Map<string, number>();
-  
   (completedToday || []).forEach((task: any) => {
     const key = task.original_source;
     const habitConfig = initialHabitsMap.get(key);
@@ -74,20 +63,34 @@ const fetchDashboardData = async (userId: string) => {
     const initialHabit = initialHabitsMap.get(h.habit_key);
     const dailyProgress = dailyProgressMap.get(h.habit_key) || 0;
     const dailyGoal = h.current_daily_goal;
-    const rawLifetimeProgress = h.lifetime_progress || 0;
-    const uiLifetimeProgress = initialHabit?.type === 'time' && initialHabit?.unit === 'min' ? 
-      Math.round(rawLifetimeProgress / 60) : rawLifetimeProgress;
-      
+    
+    // Check if within availability window
+    let isVisible = true;
+    if (h.window_start && h.window_end) {
+      const now = new Date();
+      const start = parse(h.window_start, 'HH:mm', now);
+      const end = parse(h.window_end, 'HH:mm', now);
+      isVisible = isWithinInterval(now, { start, end });
+    }
+
+    // Weekly progress calculation
+    const weeklyCompletions = Array.from(weeklyCompletionMap.keys())
+      .filter(k => k.startsWith(`${h.habit_key}_`)).length;
+
     return {
       key: h.habit_key,
       name: initialHabit?.name || h.habit_key.charAt(0).toUpperCase() + h.habit_key.slice(1),
       dailyGoal, dailyProgress, isComplete: dailyProgress >= dailyGoal,
       momentum: h.momentum_level, longTermGoal: h.long_term_goal,
-      lifetimeProgress: uiLifetimeProgress, rawLifetimeProgress, unit: initialHabit?.unit || '',
+      lifetimeProgress: initialHabit?.type === 'time' && initialHabit?.unit === 'min' ? Math.round((h.lifetime_progress || 0) / 60) : (h.lifetime_progress || 0),
+      unit: initialHabit?.unit || '',
       xpPerUnit: initialHabit?.xpPerUnit || 0, energyCostPerUnit: initialHabit?.energyCostPerUnit || 0,
-      daysCompletedLast7Days: habitCompletionMap.get(h.habit_key) || 0,
       is_frozen: h.is_frozen, is_fixed: h.is_fixed,
-      category: h.category || 'daily', // Fetching from DB
+      category: h.category || 'daily',
+      is_trial_mode: h.is_trial_mode,
+      frequency_per_week: h.frequency_per_week,
+      weekly_completions: weeklyCompletions,
+      isVisible,
     };
   });
 
@@ -110,7 +113,6 @@ const fetchDashboardData = async (userId: string) => {
   return {
     daysActive: totalDaysSinceStart,
     totalJourneyDays: processedHabits[0]?.longTermGoal || 365,
-    daysToNextMonth: differenceInDays(addMonths(startDate, 1), new Date()),
     habits: processedHabits,
     neurodivergentMode: profile?.neurodivergent_mode || false,
     weeklySummary: { 
@@ -119,7 +121,7 @@ const fetchDashboardData = async (userId: string) => {
       meditation: { current: currentWeekTotals.meditation, previous: previousWeekTotals.meditation },
     },
     patterns: { streak: profile?.daily_streak || 0, totalSessions: totalSessions || 0, consistency, bestTime: bestTime || '—' },
-    nextBadge: null, lastActiveText: profile?.last_active_at ? formatDistanceToNowStrict(new Date(profile.last_active_at), { addSuffix: true }) : 'Never',
+    lastActiveText: profile?.last_active_at ? formatDistanceToNowStrict(new Date(profile.last_active_at), { addSuffix: true }) : 'Never',
     firstName: profile?.first_name || null, lastName: profile?.last_name || null,
     tip: randomTip || null, xp: profile?.xp || 0, level: profile?.level || 1, averageDailyTasks: totalSessions && totalDaysSinceStart > 0 ? (totalSessions / totalDaysSinceStart).toFixed(1) : '0.0',
   };

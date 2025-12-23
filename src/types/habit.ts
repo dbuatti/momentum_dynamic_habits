@@ -1,6 +1,7 @@
 export type HabitType = 'count' | 'time';
 export type MomentumLevel = 'Struggling' | 'Building' | 'Strong' | 'Crushing';
 export type HabitCategory = 'anchor' | 'daily';
+export type GrowthPhase = 'frequency' | 'duration';
 
 export interface Habit {
   id: string;
@@ -33,7 +34,12 @@ export interface UserHabitRecord {
   plateau_days_required: number;
   completions_in_plateau: number;
   is_fixed: boolean;
-  category: HabitCategory; // Added category field
+  category: HabitCategory;
+  is_trial_mode: boolean;
+  frequency_per_week: number;
+  growth_phase: GrowthPhase;
+  window_start: string | null;
+  window_end: string | null;
 }
 
 export interface PianoHabit extends Habit {

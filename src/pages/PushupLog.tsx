@@ -207,7 +207,7 @@ const PushupLog = () => {
             <div className="text-sm">
               <p className="font-semibold text-blue-700">Adaptive Projection</p>
               <p className="text-blue-600/80 leading-relaxed">
-                Next goal increase estimated in <strong>{Math.max(0, 5 - (pushupHabit?.daysCompletedLast7Days || 0))} days</strong> of consistency. Keep focus on the sets!
+                Next goal increase estimated in <strong>{Math.max(0, 5 - (pushupHabit?.weekly_completions || 0))} days</strong> of consistency. Keep focus on the sets!
               </p>
             </div>
           </div>
