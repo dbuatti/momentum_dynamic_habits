@@ -60,8 +60,9 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
     lifetimeProgressIncrementValue = value; // Already in reps or doses
   }
 
-  const xpEarned = Math.round(xpBaseValue * userHabitData.xp_per_unit);
-  const energyCost = Math.round(xpBaseValue * userHabitData.energy_cost_per_unit);
+  // Safely use xp_per_unit, defaulting to 1 if null/undefined
+  const xpEarned = Math.round(xpBaseValue * (userHabitData.xp_per_unit ?? 1));
+  const energyCost = Math.round(xpBaseValue * (userHabitData.energy_cost_per_unit ?? 0)); // Default energy cost to 0 if null
 
   console.log(`[XP Debug] Logging habit: ${habitKey}, value: ${value} ${userHabitData.unit}`);
   console.log(`[XP Debug]   xpBaseValue: ${xpBaseValue}, xpPerUnit: ${userHabitData.xp_per_unit}, xpEarned: ${xpEarned}`);
@@ -96,7 +97,7 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
   let totalDailyProgressAfterLog = 0;
   (completedTodayAfterLog || []).filter((task: any) => task.original_source === habitKey).forEach((task: any) => {
     if (userHabitData.unit === 'min') totalDailyProgressAfterLog += (task.duration_used || 0) / 60;
-    else if (userHabitData.unit === 'reps' || userHabitData.unit === 'dose') totalDailyProgressAfterLog += (task.xp_earned || 0) / (userHabitData.xp_per_unit || 1);
+    else if (userHabitData.unit === 'reps' || userHabitData.unit === 'dose') totalDailyProgressAfterLog += (task.xp_earned || 0) / (userHabitData.xp_per_unit ?? 1); // Safely use xp_per_unit
     else totalDailyProgressAfterLog += 1; // Fallback for unknown units
   });
   console.log(`[useHabitLog:logHabit] Total daily progress after log for ${habitKey}: ${totalDailyProgressAfterLog}`);
@@ -289,7 +290,8 @@ const unlogHabit = async ({ userId, completedTaskId }: { userId: string, complet
   if (userHabitData.unit === 'min') {
     lifetimeProgressDecrementValue = task.duration_used || 0; // In seconds
   } else {
-    lifetimeProgressDecrementValue = (task.xp_earned || 0) / (userHabitData.xp_per_unit || 1); // Convert XP back to reps/doses
+    // Safely use xp_per_unit, defaulting to 1 if null/undefined
+    lifetimeProgressDecrementValue = (task.xp_earned || 0) / (userHabitData.xp_per_unit ?? 1); 
   }
 
   console.log(`[XP Debug] Unlogging habit: ${task.original_source}, task_id: ${task.id}`);
@@ -318,7 +320,7 @@ const unlogHabit = async ({ userId, completedTaskId }: { userId: string, complet
   let totalDailyProgressAfterUnlog = 0;
   (completedTodayAfterUnlog || []).filter((t: any) => t.original_source === task.original_source && t.id !== task.id).forEach((t: any) => {
     if (userHabitData.unit === 'min') totalDailyProgressAfterUnlog += (t.duration_used || 0) / 60;
-    else if (userHabitData.unit === 'reps' || userHabitData.unit === 'dose') totalDailyProgressAfterUnlog += (t.xp_earned || 0) / (userHabitData.xp_per_unit || 1);
+    else if (userHabitData.unit === 'reps' || userHabitData.unit === 'dose') totalDailyProgressAfterUnlog += (t.xp_earned || 0) / (userHabitData.xp_per_unit ?? 1); // Safely use xp_per_unit
     else totalDailyProgressAfterUnlog += 1;
   });
   console.log(`[useHabitLog:unlogHabit] Total daily progress after unlog for ${task.original_source}: ${totalDailyProgressAfterUnlog}`);
