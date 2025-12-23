@@ -23,7 +23,7 @@ export const calculateDynamicChunks = (
   if (isFixed && measurementType === 'binary') {
     return {
       numChunks: 1,
-      chunkValue: goal
+      chunkValue: 1 // Binary is always 1 unit
     };
   }
 
@@ -69,7 +69,7 @@ export const calculateDailyParts = (habits: any[], isNeurodivergent: boolean) =>
   let completedParts = 0;
 
   habits.forEach(habit => {
-    // Use adjustedDailyGoal for chunk calculation
+    // 1. Calculate chunks
     const { numChunks, chunkValue } = calculateDynamicChunks(
       habit.key,
       habit.adjustedDailyGoal,
@@ -84,12 +84,24 @@ export const calculateDailyParts = (habits: any[], isNeurodivergent: boolean) =>
 
     totalParts += numChunks;
     
-    // Calculate completed parts for this habit
+    // 2. Determine effective progress (Cap at target)
+    // Formula: progressToday = min(loggedAmount, dailyTarget)
+    const dailyTarget = habit.adjustedDailyGoal;
+    let effectiveProgress = Math.min(habit.dailyProgress, dailyTarget);
+    
+    // Special handling for Fixed / Binary:
+    // progressToday = completed ? 1 : 0
+    if (habit.is_fixed && habit.measurement_type === 'binary') {
+        effectiveProgress = habit.isComplete ? 1 : 0;
+    }
+
+    // 3. Calculate completed parts for this habit based on effective progress
     for (let i = 0; i < numChunks; i++) {
-      const cumulativeNeeded = (i + 1) * chunkValue;
       const isLast = i === numChunks - 1;
-      // Ensure we check against the actual adjusted goal for the last capsule to handle rounding
-      if (habit.dailyProgress >= (isLast ? habit.adjustedDailyGoal : cumulativeNeeded)) {
+      const cumulativeNeeded = isLast ? dailyTarget : (i + 1) * chunkValue;
+      
+      // Use a small epsilon for float comparison to avoid "0/2" logic errors
+      if (effectiveProgress >= (cumulativeNeeded - 0.01)) {
         completedParts++;
       }
     }

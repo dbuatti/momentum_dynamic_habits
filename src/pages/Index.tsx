@@ -47,7 +47,9 @@ const Index = () => {
       .filter(habit => habit.is_visible)
       .map(habit => {
       const goal = habit.adjustedDailyGoal;
-      const progress = habit.dailyProgress;
+      // Formula: progressToday = min(loggedAmount, dailyTarget)
+      const rawProgress = habit.dailyProgress;
+      const progress = Math.min(rawProgress, goal);
       
       const { numChunks, chunkValue } = calculateDynamicChunks(
         habit.key,
@@ -61,13 +63,12 @@ const Index = () => {
         habit.measurement_type
       );
 
-      const isOverallComplete = progress >= goal;
+      const isOverallComplete = habit.isComplete;
 
       const capsules = Array.from({ length: numChunks }).map((_, i) => {
         const dbCapsule = dbCapsules?.find(c => c.habit_key === habit.key && c.capsule_index === i);
         const isCompletedByDb = dbCapsule?.is_completed || false;
         
-        const initialValueForCapsule = isCompletedByDb ? chunkValue : 0;
         const isCompleted = isCompletedByDb;
 
         return {
@@ -76,12 +77,11 @@ const Index = () => {
           index: i,
           label: habit.auto_chunking ? `Part ${i + 1}` : (habit.enable_chunks ? `Part ${i + 1}` : (habit.is_trial_mode ? 'Trial Session' : 'Daily Goal')),
           value: chunkValue,
-          initialValue: initialValueForCapsule,
           unit: habit.unit,
           measurementType: habit.measurement_type,
           isCompleted,
-          isHabitComplete: isOverallComplete, // Pass overall status
-          isFixed: habit.is_fixed, // Pass fixed status
+          isHabitComplete: isOverallComplete,
+          isFixed: habit.is_fixed,
           scheduledTime: dbCapsule?.scheduled_time,
           completedTaskId: dbCapsule?.completed_task_id,
         };
@@ -89,6 +89,7 @@ const Index = () => {
 
       return {
         ...habit,
+        displayProgress: progress, // Use capped progress for display
         capsules,
         allCompleted: isOverallComplete,
         numChunks,
@@ -102,8 +103,8 @@ const Index = () => {
       }
       if (a.category === 'anchor' && b.category !== 'anchor') return -1;
       if (a.category !== 'anchor' && b.category === 'anchor') return 1;
-      const aProgressRatio = a.adjustedDailyGoal > 0 ? a.dailyProgress / a.adjustedDailyGoal : 0;
-      const bProgressRatio = b.adjustedDailyGoal > 0 ? b.dailyProgress / b.adjustedDailyGoal : 0;
+      const aProgressRatio = a.adjustedDailyGoal > 0 ? a.displayProgress / a.adjustedDailyGoal : 0;
+      const bProgressRatio = b.adjustedDailyGoal > 0 ? b.displayProgress / b.adjustedDailyGoal : 0;
       if (aProgressRatio !== bProgressRatio) {
         return aProgressRatio - bProgressRatio;
       }
@@ -230,7 +231,7 @@ const Index = () => {
                   )}
                 </div>
                 <p className={cn("text-sm font-bold mt-2", habit.allCompleted ? "text-muted-foreground" : "text-foreground")}>
-                  Progress: {Math.round(habit.dailyProgress)}/{Math.round(habit.adjustedDailyGoal)} {habit.unit}
+                  Progress: {Math.round(habit.displayProgress)}/{Math.round(habit.adjustedDailyGoal)} {habit.unit}
                 </p>
               </div>
             </div>
@@ -289,7 +290,7 @@ const Index = () => {
           <div className="w-full mt-4">
             <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">Daily Progress</p>
             <Progress
-              value={(habit.dailyProgress / habit.adjustedDailyGoal) * 100}
+              value={(habit.displayProgress / habit.adjustedDailyGoal) * 100}
               className="h-1.5 [&>div]:bg-primary"
             />
           </div>

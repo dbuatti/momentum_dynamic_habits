@@ -91,6 +91,12 @@ const fetchDashboardData = async (userId: string) => {
     const isDependencyMet = isDependent ? completedHabitKeysToday.has(dependentHabit?.habit_key || '') : true;
     const isLockedByDependency = isDependent && !isDependencyMet;
 
+    // Robust completion logic
+    // Fixed / Binary: progressToday = completed ? 1 : 0
+    const isComplete = h.measurement_type === 'binary' 
+        ? completedHabitKeysToday.has(h.habit_key)
+        : dailyProgress >= (adjustedDailyGoal - 0.01); // Use epsilon for float precision
+
     return {
       ...h,
       key: h.habit_key,
@@ -99,14 +105,14 @@ const fetchDashboardData = async (userId: string) => {
       adjustedDailyGoal: adjustedDailyGoal,
       carryoverValue: h.carryover_value || 0,
       dailyProgress, 
-      isComplete: dailyProgress >= adjustedDailyGoal,
+      isComplete: isComplete,
       xpPerUnit: h.xp_per_unit || 0,
       energyCostPerUnit: h.energy_cost_per_unit || 0,
       weekly_completions: weeklyCompletions,
       weekly_goal: h.current_daily_goal * h.frequency_per_week,
       isScheduledForToday: isScheduledForToday,
       isWithinWindow,
-      measurement_type: h.measurement_type || 'timer', // Default
+      measurement_type: h.measurement_type || 'timer', 
       growth_stats: {
         completions: h.completions_in_plateau,
         required: plateauRequired,
