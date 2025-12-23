@@ -14,10 +14,10 @@ interface HabitCapsuleProps {
   habitKey: string;
   habitName: string;
   label: string;
-  value: number;
+  value: number; // This is the target value for THIS CAPSULE
   unit: string;
   isCompleted: boolean;
-  initialValue?: number;
+  initialValue?: number; // This is the progress already made towards THIS CAPSULE's value
   scheduledTime?: string;
   onComplete: (actualValue: number, mood?: string) => void;
   onUncomplete: () => void;
@@ -29,10 +29,10 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   habitKey,
   habitName,
   label,
-  value,
+  value, // Target value for this specific capsule
   unit,
   isCompleted,
-  initialValue = 0,
+  initialValue = 0, // Progress already made towards this capsule's value
   scheduledTime,
   onComplete,
   onUncomplete,
@@ -41,7 +41,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
 }) => {
   const [showMoodPicker, setShowMoodPicker] = useState(false);
   const [isTiming, setIsTiming] = useState(false);
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0); // Elapsed time for the current timer session
   const [isPaused, setIsPaused] = useState(false);
   const [goalReachedAlerted, setGoalReachedAlerted] = useState(false);
   
@@ -49,6 +49,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   const startTimeRef = useRef<number | null>(null);
   const isTimeBased = unit === 'min';
   
+  // Unique storage key for each capsule for the current day
   const storageKey = `timer_${habitKey}_${label}_${new Date().toISOString().split('T')[0]}`;
 
   const stopInterval = () => {
@@ -66,12 +67,13 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
         const totalElapsed = Math.floor((now - startTimeRef.current) / 1000);
         setElapsedSeconds(totalElapsed);
         
+        // Dispatch event for floating timer
         window.dispatchEvent(new CustomEvent('habit-timer-update', { 
           detail: { 
             label, 
             habitName,
             goalValue: value,
-            elapsed: initialValue * 60 + totalElapsed, 
+            elapsed: initialValue * 60 + totalElapsed, // Total elapsed including initial progress
             isPaused: false,
             habitKey 
           } 
@@ -80,6 +82,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     }, 1000);
   }, [label, initialValue, habitKey, habitName, value]);
 
+  // Alert when capsule goal is reached
   useEffect(() => {
     if (isTiming && isTimeBased && !goalReachedAlerted) {
       const totalMinutes = (initialValue * 60 + elapsedSeconds) / 60;
@@ -91,9 +94,20 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     }
   }, [elapsedSeconds, isTiming, isTimeBased, value, initialValue, goalReachedAlerted]);
 
+  // Load state from local storage on mount
   useEffect(() => {
+    if (isCompleted) {
+      localStorage.removeItem(storageKey);
+      setIsTiming(false);
+      setElapsedSeconds(0);
+      setIsPaused(false);
+      setGoalReachedAlerted(false);
+      startTimeRef.current = null;
+      return;
+    }
+
     const saved = localStorage.getItem(storageKey);
-    if (saved && !isCompleted) {
+    if (saved) {
       const { start, elapsed, paused, timing } = JSON.parse(saved);
       setIsPaused(paused);
       setIsTiming(timing);
@@ -117,6 +131,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     };
   }, [storageKey, isCompleted, startInterval, label, initialValue, habitKey, habitName, value]);
 
+  // Save state to local storage on changes
   useEffect(() => {
     if (!isCompleted && (isTiming || elapsedSeconds > 0)) {
       localStorage.setItem(storageKey, JSON.stringify({
@@ -136,7 +151,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     setIsTiming(true);
     setIsPaused(false);
     const now = Date.now();
-    startTimeRef.current = now - (elapsedSeconds * 1000);
+    startTimeRef.current = now - (elapsedSeconds * 1000); // Adjust start time based on already elapsed seconds
     startInterval();
   };
 
@@ -164,7 +179,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
 
   const handleFinishTiming = (mood?: string) => {
     stopInterval();
-    const sessionMinutes = Math.max(1, Math.ceil(elapsedSeconds / 60));
+    const totalSessionMinutes = Math.max(1, Math.ceil((initialValue * 60 + elapsedSeconds) / 60));
     
     if (showMood && mood === undefined) {
       setShowMoodPicker(true);
@@ -173,7 +188,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
 
     playEndSound();
     
-    if ((initialValue * 60 + elapsedSeconds) / 60 >= value) {
+    if (totalSessionMinutes >= value) { // Check against capsule's value
       confetti({
         particleCount: 100,
         spread: 70,
@@ -185,7 +200,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     localStorage.removeItem(storageKey);
     window.dispatchEvent(new CustomEvent('habit-timer-update', { detail: null }));
     
-    onComplete(sessionMinutes, mood);
+    onComplete(totalSessionMinutes, mood); // Pass total minutes logged for this capsule
     setIsTiming(false);
     setElapsedSeconds(0);
     setShowMoodPicker(false);
@@ -207,11 +222,11 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     localStorage.removeItem(storageKey);
     window.dispatchEvent(new CustomEvent('habit-timer-update', { detail: null }));
     
-    const remaining = Math.max(1, value - initialValue);
-    onComplete(remaining);
+    // For quick complete, log the full capsule value
+    onComplete(value); 
   };
 
-  const currentTotalMinutes = isTiming ? initialValue + (elapsedSeconds / 60) : initialValue;
+  const currentTotalMinutes = isTimeBased ? initialValue + (elapsedSeconds / 60) : initialValue;
   const progressPercent = Math.min(100, (currentTotalMinutes / value) * 100);
 
   const colorMap = {
@@ -259,7 +274,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                   colors.iconBg
                 )}>
                   {isCompleted ? (
-                    <Check className={cn("w-6 h-6", colors.text)} />
+                    <Check className="w-6 h-6 text-green-600" />
                   ) : (
                     isTimeBased ? (
                       <Play className={cn("w-5 h-5 ml-0.5 fill-current", colors.text)} />

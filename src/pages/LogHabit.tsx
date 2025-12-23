@@ -28,7 +28,7 @@ const LogHabit = () => {
         return <HouseworkLog />;
       case 'projectwork':
         return <ProjectWorkLog />;
-      case 'teeth-brushing':
+      case 'teeth_brushing': // Corrected habit key
         return <TeethBrushingLog />;
       case 'medication':
         return <MedicationLog />;

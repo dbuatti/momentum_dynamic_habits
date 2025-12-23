@@ -1,305 +1,53 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React from 'react';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Play, Pause, RotateCcw, Loader2, Check, Sparkles } from 'lucide-react';
-import { useHabitLog } from '@/hooks/useHabitLog';
+import { Sparkles, BarChart3, ArrowLeft } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { Card, CardContent } from '@/components/ui/card';
-import { showError } from '@/utils/toast';
-import { playStartSound, playEndSound } from '@/utils/audio';
-import { useDashboardData } from '@/hooks/useDashboardData'; // Import useDashboardData
-import { useMemo } from 'react'; // Import useMemo
-
-interface TimerState {
-  timeRemaining: number;
-  isActive: boolean;
-  isFinished: boolean;
-  startTime: number | null;
-}
-
-const HABIT_KEY = 'teeth_brushing';
-const FIXED_DURATION_MINUTES = 2;
-const LOCAL_STORAGE_KEY = 'teethBrushingTimerState';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const TeethBrushingLog = () => {
-  const { data: dashboardData, isLoading: isDashboardLoading } = useDashboardData();
-
-  const teethBrushingHabit = useMemo(() => 
-    dashboardData?.habits.find(h => h.key === HABIT_KEY), 
-  [dashboardData]);
-
-  const adjustedDailyGoal = teethBrushingHabit?.adjustedDailyGoal || FIXED_DURATION_MINUTES;
-  const initialTimeInSeconds = adjustedDailyGoal * 60;
-
-  // Initialize state from localStorage or defaults
-  const getInitialState = useCallback((): TimerState => {
-    if (typeof window !== 'undefined') {
-      const savedState = localStorage.getItem(LOCAL_STORAGE_KEY);
-      if (savedState) {
-        const parsedState: TimerState & { selectedDuration?: number } = JSON.parse(savedState);
-        
-        // Recalculate time if timer was active when user left
-        if (parsedState.isActive && parsedState.startTime) {
-          const elapsedTime = Math.floor((Date.now() - parsedState.startTime) / 1000);
-          const newTimeRemaining = parsedState.timeRemaining - elapsedTime;
-          
-          if (newTimeRemaining <= 0) {
-            return {
-              ...parsedState,
-              timeRemaining: 0,
-              isActive: false,
-              isFinished: true,
-              startTime: null,
-            };
-          }
-          
-          return {
-            ...parsedState,
-            timeRemaining: newTimeRemaining,
-            startTime: Date.now(),
-          };
-        }
-        
-        // If state exists but timer was paused/finished, return saved state
-        return {
-            timeRemaining: parsedState.timeRemaining,
-            isActive: parsedState.isActive,
-            isFinished: parsedState.isFinished,
-            startTime: parsedState.startTime,
-        };
-      }
-    }
-    
-    return {
-      timeRemaining: initialTimeInSeconds,
-      isActive: false,
-      isFinished: false,
-      startTime: null,
-    };
-  }, [initialTimeInSeconds]);
-
-  const [timerState, setTimerState] = useState<TimerState>(getInitialState());
-  const { timeRemaining, isActive, isFinished } = timerState;
-  const { mutate: logHabit, isPending } = useHabitLog();
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Save state to localStorage whenever it changes
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(timerState));
-    }
-  }, [timerState]);
-
-  // Timer logic
-  useEffect(() => {
-    if (isActive && timeRemaining > 0) {
-      intervalRef.current = setInterval(() => {
-        setTimerState(prevState => {
-          const newTime = prevState.timeRemaining - 1;
-          
-          if (newTime <= 0) {
-            if (intervalRef.current) clearInterval(intervalRef.current);
-            playEndSound();
-            return {
-              ...prevState,
-              timeRemaining: 0,
-              isActive: false,
-              isFinished: true,
-              startTime: null,
-            };
-          }
-          
-          return {
-            ...prevState,
-            timeRemaining: newTime,
-          };
-        });
-      }, 1000);
-    } else if (timeRemaining === 0 && isActive) {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-      setTimerState(prevState => ({
-        ...prevState,
-        isActive: false,
-        isFinished: true,
-        startTime: null,
-      }));
-      playEndSound();
-    }
-    
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [isActive, timeRemaining]);
-
-  // Handle visibility changes
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        setTimerState(getInitialState());
-      } else {
-        if (intervalRef.current) clearInterval(intervalRef.current);
-      }
-    };
-    
-    window.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    return () => {
-      window.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [getInitialState]);
-
-  const handleToggle = () => {
-    if (isFinished) return;
-    
-    if (!isActive) {
-      playStartSound();
-    }
-
-    setTimerState(prevState => ({
-      ...prevState,
-      isActive: !prevState.isActive,
-      startTime: !prevState.isActive ? Date.now() : null,
-    }));
-  };
-
-  const handleReset = () => {
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    setTimerState({
-      timeRemaining: initialTimeInSeconds,
-      isActive: false,
-      isFinished: false,
-      startTime: null,
-    });
-    localStorage.removeItem(LOCAL_STORAGE_KEY);
-  };
-
-  const durationSpentSeconds = initialTimeInSeconds - timeRemaining;
-  const durationToLogMinutes = Math.floor(durationSpentSeconds / 60);
-
-  const handleLogSession = () => {
-    if (isActive) {
-      showError('Please pause the timer before logging a partial session.');
-      return;
-    }
-    
-    let minutesToLog = 0;
-    
-    if (isFinished) {
-      minutesToLog = adjustedDailyGoal; // Log the adjusted daily goal
-    } else if (durationToLogMinutes > 0) {
-      minutesToLog = durationToLogMinutes;
-    } else {
-      // Timer is not active, not finished, and no time spent yet.
-      // Log the full fixed duration, assuming manual completion.
-      minutesToLog = adjustedDailyGoal; // Log the adjusted daily goal
-    }
-    
-    if (minutesToLog > 0) {
-      playEndSound();
-      logHabit({ 
-        habitKey: HABIT_KEY, 
-        value: minutesToLog, 
-        taskName: 'Brush Teeth' 
-      });
-      localStorage.removeItem(LOCAL_STORAGE_KEY);
-    }
-  };
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
-    const secs = (seconds % 60).toString().padStart(2, '0');
-    return `${mins}:${secs}`;
-  };
-  
-  let logButtonText;
-  if (isFinished) {
-    logButtonText = `Log ${adjustedDailyGoal} minute session`;
-  } else if (durationToLogMinutes > 0) {
-    logButtonText = `Log ${durationToLogMinutes} min session`;
-  } else {
-    logButtonText = `Log ${adjustedDailyGoal} min session`;
-  }
-
-  if (isDashboardLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col items-center w-full max-w-md mx-auto px-4 py-6">
       <div className="w-full space-y-8">
-        <PageHeader title="Brush Teeth" backLink="/" />
+        <PageHeader title="Teeth Brushing Analytics" backLink="/" />
         
-        <div className="space-y-6">
-          <Card className="rounded-2xl shadow-lg border-4 border-blue-200 overflow-hidden">
-            <CardContent className="p-8">
-              <div className="flex flex-col items-center">
-                <div className="bg-blue-50 rounded-full w-24 h-24 flex items-center justify-center mb-6">
-                  <Sparkles className="w-12 h-12 text-blue-500" />
-                </div>
-                
-                <div className="p-10 bg-card rounded-full w-56 h-56 flex items-center justify-center mx-auto border-4 border-blue-100">
-                  <p className="text-6xl font-extrabold tracking-tighter text-blue-500">
-                    {formatTime(timeRemaining)}
-                  </p>
-                </div>
-                
-                <div className="flex items-center justify-center space-x-6 mt-8">
-                  <Button 
-                    size="lg" 
-                    className="w-36 h-16 rounded-full bg-blue-500 hover:bg-blue-600"
-                    onClick={handleToggle}
-                    disabled={isFinished || isPending}
-                  >
-                    {isActive ? (
-                      <Pause className="w-8 h-8" />
-                    ) : (
-                      <Play className="w-8 h-8" />
-                    )}
-                  </Button>
-                  
-                  {(isActive || isFinished || timeRemaining < initialTimeInSeconds) && (
-                    <Button 
-                      size="icon" 
-                      variant="outline" 
-                      className="w-14 h-14 rounded-full"
-                      onClick={handleReset}
-                      disabled={isPending}
-                    >
-                      <RotateCcw className="w-6 h-6" />
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-        
-        <div className="space-y-4">
-          <Button 
-            className="w-full bg-blue-500 hover:bg-blue-600 text-white text-lg py-6 rounded-2xl"
-            onClick={handleLogSession}
-            disabled={isPending}
-          >
-            {isPending ? (
-              <Loader2 className="w-6 h-6 animate-spin" />
-            ) : (
-              <>
-                <Check className="w-6 h-6 mr-2" />
-                {logButtonText}
-              </>
-            )}
-          </Button>
-        </div>
-        
-        <div className="p-4 bg-accent rounded-md border border-border">
-          <p className="text-sm font-medium text-accent-foreground flex items-center justify-center">
-            <Sparkles className="w-4 h-4 mr-2" />
-            Completion Prompt: Brush for 2 full minutes for healthy teeth!
-          </p>
-        </div>
+        <Card className="rounded-2xl shadow-lg border-4 border-blue-200 overflow-hidden">
+          <CardHeader className="p-8 text-center">
+            <div className="bg-blue-50 rounded-full w-24 h-24 flex items-center justify-center mb-6 mx-auto">
+              <Sparkles className="w-12 h-12 text-blue-500" />
+            </div>
+            <CardTitle className="text-2xl font-bold text-blue-700">
+              Teeth Brushing Historical Data
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-8 pt-0 text-center space-y-4">
+            <p className="text-muted-foreground">
+              This page will soon display detailed historical data, trends, and insights for your Teeth Brushing habit.
+              For daily tracking, please use the main dashboard.
+            </p>
+            <div className="flex justify-center">
+              <Link to="/">
+                <Button className="bg-blue-500 hover:bg-blue-600 text-white text-lg py-6 rounded-2xl">
+                  <ArrowLeft className="w-5 h-5 mr-2" />
+                  Return to Dashboard
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Placeholder for future charts/data */}
+        <Card className="rounded-2xl shadow-sm border-0">
+          <CardHeader className="p-5 pb-3">
+            <CardTitle className="font-semibold text-lg flex items-center">
+              <BarChart3 className="w-5 h-5 mr-2 text-muted-foreground" />
+              Coming Soon: Performance Graphs
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-5 pt-0 text-muted-foreground">
+            Detailed charts showing your progress over time, weekly averages, and more will appear here.
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
