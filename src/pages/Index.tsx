@@ -2,7 +2,7 @@
 
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import HomeHeader from "@/components/HomeHeader";
-import { BookOpen, Dumbbell, Music, Wind, Home, Code, Sparkles, Pill, LayoutGrid, ListTodo, Zap, Lock, CheckCircle2, Timer, Sparkle, Target, Calendar, Anchor, Clock } from "lucide-react";
+import { BookOpen, Dumbbell, Music, Wind, Home, Code, Sparkles, Pill, LayoutGrid, ListTodo, Zap, Lock, CheckCircle2, Timer, Sparkle, Target, Calendar, Anchor, Clock, BarChart3 } from "lucide-react";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { DashboardSkeleton } from "@/components/dashboard/DashboardSkeleton";
 import { HabitCapsule } from "@/components/dashboard/HabitCapsule";
@@ -62,7 +62,6 @@ const Index = () => {
       const capsules = Array.from({ length: numChunks }).map((_, i) => {
         const dbCapsule = dbCapsules?.find(c => c.habit_key === habit.key && c.capsule_index === i);
         
-        // Progress based completion
         const threshold = (i + 1) * chunkValue;
         const isCompleted = dbCapsule?.is_completed || progress >= (i === numChunks - 1 ? goal : threshold);
 
@@ -147,12 +146,16 @@ const Index = () => {
               <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center shrink-0 shadow-sm border border-black/5">
                 <Icon className="w-6 h-6" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <h3 className="font-black text-lg flex items-center gap-2">
                   {habit.name}
                   {habit.allCompleted && <CheckCircle2 className="w-5 h-5 text-green-600" />}
                 </h3>
-                <div className="flex items-center gap-2 mt-1">
+                <div className="flex flex-wrap items-center gap-2 mt-1">
+                  <div className="flex items-center gap-1 text-[10px] font-black uppercase opacity-60 tracking-wider bg-black/5 dark:bg-white/10 px-2 py-0.5 rounded-md">
+                    <BarChart3 className="w-3 h-3" />
+                    {habit.frequency_per_week} sessions/week
+                  </div>
                   <p className="text-sm opacity-80 font-bold">
                     {habit.numChunks > 1 ? `${completedChunksCount}/${habit.numChunks} parts` : (habit.is_trial_mode ? `Trial Session` : `${habit.dailyGoal} ${habit.unit} goal`)}
                   </p>
@@ -192,7 +195,7 @@ const Index = () => {
                 <p className="text-[10px] font-black uppercase tracking-widest opacity-60 flex items-center gap-1.5">
                     <Target className="w-3 h-3" /> Entry Stabilization Phase
                 </p>
-                <p className="text-xs font-medium mt-1">Focus on showing up. Dynamic growth unlocks after stabilization.</p>
+                <p className="text-xs font-medium mt-1">Focus on showing up. Total weekly targets are set in App Settings.</p>
               </div>
           )}
         </AccordionContent>

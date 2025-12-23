@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -17,9 +17,9 @@ import { SettingsSkeleton } from '@/components/dashboard/SettingsSkeleton';
 import { Switch } from '@/components/ui/switch';
 import { 
   Brain, LogOut, Anchor, Target, Sparkles, 
-  ChevronDown, Settings2, Shield, Calendar, 
+  Settings2, Shield, Calendar, 
   Clock, Dumbbell, Wind, BookOpen, Music, 
-  Home, Code, Sparkle, Pill, Timer
+  Home, Code, Pill, Timer, BarChart3
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { 
@@ -38,7 +38,7 @@ const habitIconMap: { [key: string]: React.ElementType } = {
   piano: Music,
   housework: Home,
   projectwork: Code,
-  teeth_brushing: Sparkle,
+  teeth_brushing: Sparkles,
   medication: Pill,
 };
 
@@ -48,13 +48,11 @@ const Settings = () => {
   const queryClient = useQueryClient();
   const { mutate: updateProfile } = useUpdateProfile();
   
-  // Track which habit is currently expanded to prevent re-sorting mid-edit
   const [activeHabitId, setActiveHabitId] = useState<string | null>(null);
 
   const habits = useMemo(() => data?.habits || [], [data]);
   const profile = useMemo(() => data?.profile, [data]);
 
-  // Stable grouping
   const anchors = useMemo(() => habits.filter(h => h.category === 'anchor'), [habits]);
   const daily = useMemo(() => habits.filter(h => h.category !== 'anchor'), [habits]);
 
@@ -63,10 +61,9 @@ const Settings = () => {
   const updateHabitField = async (habitId: string, updates: any) => {
     const { error } = await supabase.from('user_habits').update(updates).eq('id', habitId);
     if (error) {
-      showError('Failed to update');
+      showError('Failed to update settings');
     } else {
       showSuccess('Settings saved');
-      // Invalidate queries but the UI state (activeHabitId) will keep the view stable
       queryClient.invalidateQueries({ queryKey: ['journeyData'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardData'] });
     }
@@ -85,6 +82,7 @@ const Settings = () => {
   const renderHabitSettings = (habit: any) => {
     const Icon = habitIconMap[habit.habit_key] || Timer;
     const isExpanded = activeHabitId === habit.id;
+    const weeklyTotal = habit.current_daily_goal * habit.frequency_per_week;
 
     return (
       <AccordionItem 
@@ -103,21 +101,61 @@ const Settings = () => {
             )}>
               <Icon className="w-5 h-5" />
             </div>
-            <div className="flex-grow">
-              <h4 className="font-bold text-base uppercase tracking-tight">{habit.habit_key.replace('_', ' ')}</h4>
-              <p className="text-[10px] font-black uppercase opacity-60 tracking-widest">
-                {habit.is_fixed ? 'Fixed' : (habit.is_trial_mode ? 'Trial' : 'Growth')} • {habit.frequency_per_week}x week
+            <div className="flex-grow min-w-0">
+              <h4 className="font-bold text-base uppercase tracking-tight truncate">
+                {habit.habit_key.replace('_', ' ')}
+              </h4>
+              <p className="text-[10px] font-black uppercase opacity-60 tracking-widest truncate">
+                {habit.is_fixed ? 'Fixed' : (habit.is_trial_mode ? 'Trial' : 'Growth')} • {habit.frequency_per_week} sessions/week
               </p>
             </div>
           </div>
         </AccordionTrigger>
         <AccordionContent className="px-5 pb-6 pt-2 space-y-6">
+          {/* Macro Goal Section */}
+          <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10 space-y-4">
+            <div className="flex items-center gap-2 mb-1">
+              <BarChart3 className="w-4 h-4 text-primary" />
+              <Label className="text-[10px] font-black uppercase tracking-widest">Macro Goal Configuration</Label>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-[9px] font-black uppercase opacity-60">Frequency (Sessions/Week)</Label>
+                <div className="flex items-center gap-2">
+                  <Input 
+                    type="number" 
+                    min="1" max="7" 
+                    className="h-9 rounded-xl text-sm font-bold" 
+                    defaultValue={habit.frequency_per_week} 
+                    onBlur={(e) => updateHabitField(habit.id, { frequency_per_week: parseInt(e.target.value) })} 
+                  />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-[9px] font-black uppercase opacity-60">Session Duration ({habit.unit})</Label>
+                <Input 
+                  type="number" 
+                  min="1" 
+                  className="h-9 rounded-xl text-sm font-bold" 
+                  defaultValue={habit.current_daily_goal} 
+                  onBlur={(e) => updateHabitField(habit.id, { current_daily_goal: parseInt(e.target.value) })} 
+                />
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-primary/10 flex justify-between items-center">
+              <span className="text-[10px] font-bold text-muted-foreground uppercase">Estimated Weekly Total</span>
+              <span className="text-sm font-black text-primary">{weeklyTotal} {habit.unit}</span>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Core Strategy */}
+            {/* Mode Selection */}
             <div className="space-y-3">
               <div className="flex items-center gap-2 mb-1">
                 <Target className="w-4 h-4 text-primary" />
-                <Label className="text-[10px] font-black uppercase tracking-widest">Growth Strategy</Label>
+                <Label className="text-[10px] font-black uppercase tracking-widest">Operating Mode</Label>
               </div>
               <div className="flex flex-wrap gap-2">
                 {[
@@ -138,7 +176,7 @@ const Settings = () => {
               </div>
             </div>
 
-            {/* Anchoring */}
+            {/* Anchoring Toggle */}
             <div className="space-y-3">
               <div className="flex items-center gap-2 mb-1">
                 <Anchor className="w-4 h-4 text-primary" />
@@ -153,11 +191,11 @@ const Settings = () => {
               </div>
             </div>
 
-            {/* Schedule */}
+            {/* Active Days Selection */}
             <div className="space-y-3">
               <div className="flex items-center gap-2 mb-1">
                 <Calendar className="w-4 h-4 text-primary" />
-                <Label className="text-[10px] font-black uppercase tracking-widest">Active Days</Label>
+                <Label className="text-[10px] font-black uppercase tracking-widest">Availability Schedule</Label>
               </div>
               <div className="flex justify-between gap-1">
                 {days.map((day, idx) => {
@@ -177,11 +215,11 @@ const Settings = () => {
               </div>
             </div>
 
-            {/* Time Window */}
+            {/* Time Window Settings */}
             <div className="space-y-3">
               <div className="flex items-center gap-2 mb-1">
                 <Clock className="w-4 h-4 text-primary" />
-                <Label className="text-[10px] font-black uppercase tracking-widest">Time Window</Label>
+                <Label className="text-[10px] font-black uppercase tracking-widest">Window (Start - End)</Label>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <Input 
@@ -199,15 +237,15 @@ const Settings = () => {
               </div>
             </div>
 
-            {/* Dynamic Chunking */}
+            {/* Auto-Chunking (Session Granularity) */}
             <div className="col-span-full">
-              <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10 space-y-4">
+              <div className="p-4 bg-muted/50 rounded-2xl border border-black/5 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-blue-500" />
                     <div>
-                        <Label className="text-[10px] font-black uppercase">Auto-chunking</Label>
-                        <p className="text-[9px] text-muted-foreground leading-tight">Calculates parts based on goal size</p>
+                        <Label className="text-[10px] font-black uppercase">Local Auto-chunking</Label>
+                        <p className="text-[9px] text-muted-foreground leading-tight">Breaks current session into manageable parts</p>
                     </div>
                   </div>
                   <Switch 
@@ -228,7 +266,7 @@ const Settings = () => {
                     {habit.enable_chunks && (
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-1.5">
-                                <Label className="text-[9px] font-black uppercase opacity-60"># of Parts</Label>
+                                <Label className="text-[9px] font-black uppercase opacity-60">Parts per Session</Label>
                                 <Input 
                                   type="number" 
                                   min="1" max="10" 
@@ -238,7 +276,7 @@ const Settings = () => {
                                 />
                             </div>
                             <div className="space-y-1.5">
-                                <Label className="text-[9px] font-black uppercase opacity-60">Value per Part</Label>
+                                <Label className="text-[9px] font-black uppercase opacity-60">Duration per Part</Label>
                                 <Input 
                                   type="number" 
                                   min="1" 
@@ -263,7 +301,7 @@ const Settings = () => {
     <div className="w-full max-w-2xl mx-auto px-4 py-6 space-y-8 pb-32">
       <PageHeader title="App Settings" backLink="/" />
       
-      {/* Profile & Neurodivergent Mode */}
+      {/* Profile Header */}
       <div className="space-y-4">
         <Card className="rounded-3xl shadow-sm border-0">
           <CardContent className="p-6 flex items-center space-x-4">
@@ -282,6 +320,7 @@ const Settings = () => {
           </CardContent>
         </Card>
 
+        {/* Global neurodivergent toggle */}
         <Card className="rounded-3xl shadow-sm border-2 border-purple-100 bg-purple-50/50 dark:bg-purple-950/10">
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
@@ -291,7 +330,7 @@ const Settings = () => {
                 </div>
                 <div>
                   <p className="font-black uppercase tracking-tight">Neurodivergent Mode</p>
-                  <p className="text-xs text-muted-foreground">ADHD-friendly increments and modularity.</p>
+                  <p className="text-xs text-muted-foreground">ADHD-optimized stabilization and chunks.</p>
                 </div>
               </div>
               <Switch 
@@ -303,9 +342,8 @@ const Settings = () => {
         </Card>
       </div>
 
-      {/* Habit Sections */}
       <div className="space-y-10">
-        {/* Anchor Practices */}
+        {/* Anchor Habits Section */}
         {anchors.length > 0 && (
           <div className="space-y-4">
             <div className="flex items-center gap-2 px-1">
@@ -324,11 +362,11 @@ const Settings = () => {
           </div>
         )}
 
-        {/* Daily Momentum */}
+        {/* Daily Habits Section */}
         {daily.length > 0 && (
           <div className="space-y-4">
             <div className="flex items-center gap-2 px-1">
-              <Target className="w-5 h-5 text-muted-foreground" />
+              <Settings2 className="w-5 h-5 text-muted-foreground" />
               <h2 className="text-sm font-black uppercase tracking-[0.2em] text-muted-foreground">Daily Momentum</h2>
             </div>
             <Accordion 
