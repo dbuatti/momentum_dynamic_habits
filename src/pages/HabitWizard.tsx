@@ -29,7 +29,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { habitIconMap } from '@/lib/habit-utils';
 import { useCreateTemplate } from '@/hooks/useCreateTemplate';
 import { useUserHabitWizardTemp, WizardHabitData } from '@/hooks/useUserHabitWizardTemp';
-import { HabitWizardStep1, HabitWizardStep2, HabitTemplateForm } from '@/components/habits/wizard'; // Import new components
+import { HabitWizardStep1, HabitWizardStep2, HabitWizardStep3, HabitTemplateForm } from '@/components/habits/wizard'; // Import Step 3
 
 export interface CreateHabitParams {
   name: string;
@@ -289,7 +289,7 @@ const HabitWizard = () => {
   const isNextDisabled = useMemo(() => {
     if (currentStep === 1 && !wizardData.category) return true;
     if (currentStep === 2 && !wizardData.motivation_type) return true;
-    // Add more validation for future steps
+    if (currentStep === 3 && (!wizardData.session_duration || !wizardData.weekly_frequency)) return true;
     return false;
   }, [currentStep, wizardData]);
 
@@ -307,8 +307,9 @@ const HabitWizard = () => {
         return <HabitWizardStep1 wizardData={wizardData} setWizardData={setWizardData} />;
       case 2:
         return <HabitWizardStep2 wizardData={wizardData} setWizardData={setWizardData} />;
+      case 3:
+        return <HabitWizardStep3 wizardData={wizardData} setWizardData={setWizardData} />;
       // Placeholder for other steps
-      case 3: return <div className="text-center text-muted-foreground">Step 3: Current Capacity (Coming Soon!)</div>;
       case 4: return <div className="text-center text-muted-foreground">Step 4: Barriers (Coming Soon!)</div>;
       case 5: return <div className="text-center text-muted-foreground">Step 5: Timing & Dependencies (Coming Soon!)</div>;
       case 6: return <div className="text-center text-muted-foreground">Step 6: Confidence & Growth (Coming Soon!)</div>;

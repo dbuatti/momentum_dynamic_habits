@@ -25,10 +25,12 @@ export interface WizardHabitData {
   window_start: string | null;
   window_end: string | null;
   short_description: string;
-  // Add any other fields that will be collected during the wizard
-  motivation_type: 'stress_reduction' | 'skill_development' | 'health_improvement' | 'routine_building' | null;
-  confidence_level: number | null; // 1-5
+  // Step 3 fields
+  session_duration: number; // Minutes per session
+  weekly_frequency: number; // Days per week (redundant with frequency_per_week but clearer for user)
   barriers: string[]; // e.g., ['time', 'energy', 'focus']
+  confidence_level: number; // 1-10
+  motivation_type: 'stress_reduction' | 'skill_development' | 'health_improvement' | 'routine_building' | null;
 }
 
 export interface UserHabitWizardTemp {
@@ -76,7 +78,7 @@ const saveWizardProgress = async ({ userId, current_step, habit_data }: SaveWiza
 
   const { error } = await supabase
     .from('user_habits_wizard_temp')
-    .upsert(existingProgress ? { ...upsertData, id: existingProgress.id } : upsertData, { onConflict: 'user_id' });
+    .upsert(upsertData); // Removed onConflict, relying on PRIMARY KEY
 
   if (error) {
     console.error('Error saving wizard progress:', error);
