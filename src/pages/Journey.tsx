@@ -102,7 +102,7 @@ const Journey = () => {
   const NextBadgeIcon = nextBadgeData ? (iconMap[nextBadgeData.icon_name] || Star) : Star;
 
   return (
-    <div className="w-full max-w-lg mx-auto space-y-8 px-4 py-6">
+  <div className="w-full max-w-2xl mx-auto space-y-8 px-4 py-6">
       <PageHeader title="Your Growth Journey" />
       
       <div className="text-center">
