@@ -29,7 +29,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { habitIconMap } from '@/lib/habit-utils';
 import { useCreateTemplate } from '@/hooks/useCreateTemplate';
 import { useUserHabitWizardTemp, WizardHabitData } from '@/hooks/useUserHabitWizardTemp';
-import { HabitWizardStep1, HabitWizardStep2, HabitWizardStep3, HabitWizardStep4, HabitWizardStep5, HabitTemplateForm } from '@/components/habits/wizard'; // Import Step 5
+import { HabitWizardStep1, HabitWizardStep2, HabitWizardStep3, HabitWizardStep4, HabitWizardStep5, HabitWizardStep6, HabitTemplateForm } from '@/components/habits/wizard'; // Import Step 6
 
 export interface CreateHabitParams {
   name: string;
@@ -292,6 +292,7 @@ const HabitWizard = () => {
     if (currentStep === 3 && (!wizardData.session_duration || !wizardData.weekly_frequency)) return true;
     // Step 4 is optional, so no validation needed
     // Step 5 is optional, so no validation needed
+    // Step 6 is optional, so no validation needed
     return false;
   }, [currentStep, wizardData]);
 
@@ -315,8 +316,8 @@ const HabitWizard = () => {
         return <HabitWizardStep4 wizardData={wizardData} setWizardData={setWizardData} />;
       case 5:
         return <HabitWizardStep5 wizardData={wizardData} setWizardData={setWizardData} />;
-      // Placeholder for other steps
-      case 6: return <div className="text-center text-muted-foreground">Step 6: Growth & Safeguards (Coming Soon!)</div>;
+      case 6:
+        return <HabitWizardStep6 wizardData={wizardData} setWizardData={setWizardData} />;
       case 99: // Template creation form
         return (
           <HabitTemplateForm

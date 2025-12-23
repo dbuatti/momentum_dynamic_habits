@@ -38,6 +38,15 @@ export interface WizardHabitData {
   soft_lock?: boolean;
   carryover_enabled?: boolean;
   safety_net_choice?: 'none' | 'rollover' | 'gentle';
+  // Step 6 fields
+  confidence?: {
+    baseline?: 'low' | 'medium' | 'high';
+    growth_appetite?: 'fixed' | 'suggested' | 'auto';
+    growth_style?: string[]; // ['frequency', 'duration', 'hybrid', 'flexible']
+    failure_protection?: string[]; // ['pause', 'reduce', 'pressure', 'ask']
+    abandon_reasons?: string[]; // ['overwhelm', 'shame', 'chaos', 'purpose', 'interest']
+    success_definition?: 'sometimes' | 'mostly' | 'automatic' | 'unknown';
+  };
 }
 
 export interface UserHabitWizardTemp {
