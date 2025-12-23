@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Sidebar } from './Sidebar';
-import { NavigationProgressToast } from './NavigationProgressToast';
+// import { NavigationProgressToast } from './NavigationProgressToast'; // Removed
 import { useTabProgress } from '@/hooks/useTabProgress';
 import { FloatingTimer } from './FloatingTimer';
 
@@ -19,7 +19,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       <Sidebar>
         {children}
       </Sidebar>
-      <NavigationProgressToast />
+      {/* <NavigationProgressToast /> */}
       <FloatingTimer />
     </div>
   );
