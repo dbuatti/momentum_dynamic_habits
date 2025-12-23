@@ -21,7 +21,7 @@ import { useSession } from '@/contexts/SessionContext';
 import { showError, showSuccess } from '@/utils/toast';
 import { UserHabitRecord, HabitCategory as HabitCategoryType } from '@/types/habit';
 import { useJourneyData } from '@/hooks/useJourneyData';
-import { useCreateTemplate } from '@/hooks/useCreateTemplate'; // Import useCreateTemplate
+import { useCreateTemplate, CreateTemplateParams } from '@/hooks/useCreateTemplate'; // Import CreateTemplateParams
 
 interface NewHabitModalProps {
   isOpen: boolean;
@@ -89,7 +89,7 @@ const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: s
     energy_cost_per_unit: energy_cost_per_unit,
     current_daily_goal: current_daily_goal,
     long_term_goal: current_daily_goal * (unit === 'min' ? 365 * 60 : 365),
-    target_completion_date: oneYearDateString,
+    target_completion_date: oneYearFromNow.toISOString().split('T')[0],
     momentum_level: 'Building',
     lifetime_progress: 0,
     last_goal_increase_date: today.toISOString().split('T')[0],
@@ -273,23 +273,23 @@ export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, t
     };
 
     if (isTemplateMode) {
-      // Map CreateHabitParams to HabitTemplate structure for template creation
-      const templateData = { // Changed type to infer from assignment
+      // Map CreateHabitParams to CreateTemplateParams structure for template creation
+      const templateData: CreateTemplateParams = { // Explicitly type templateData
         id: habitData.habit_key,
         name: habitData.name,
-        category: habitData.category, // Corrected: Use HabitCategory directly
-        default_frequency: habitData.frequency_per_week, // Corrected: snake_case
-        default_duration: habitData.current_daily_goal, // Corrected: snake_case
-        default_mode: habitData.is_fixed ? 'Fixed' : (habitData.is_trial_mode ? 'Trial' : 'Growth'), // Corrected: snake_case
-        default_chunks: 1, // Templates default to 1 chunk, auto-chunking handles more // Corrected: snake_case
-        auto_chunking: habitData.auto_chunking, // Corrected: snake_case
-        anchor_practice: habitData.anchor_practice, // Corrected: snake_case
+        category: habitData.category,
+        default_frequency: habitData.frequency_per_week,
+        default_duration: habitData.current_daily_goal,
+        default_mode: habitData.is_fixed ? 'Fixed' : (habitData.is_trial_mode ? 'Trial' : 'Growth'),
+        default_chunks: 1, // Templates default to 1 chunk, auto-chunking handles more
+        auto_chunking: habitData.auto_chunking,
+        anchor_practice: habitData.anchor_practice,
         unit: habitData.unit,
-        xp_per_unit: habitData.xp_per_unit, // Corrected: snake_case
-        energy_cost_per_unit: habitData.energy_cost_per_unit, // Corrected: snake_case
+        xp_per_unit: habitData.xp_per_unit,
+        energy_cost_per_unit: habitData.energy_cost_per_unit,
         icon_name: habitData.icon_name,
-        plateau_days_required: habitData.plateau_days_required, // Corrected: snake_case
-        short_description: habitData.short_description || '', // Corrected: snake_case
+        plateau_days_required: habitData.plateau_days_required,
+        short_description: habitData.short_description || '',
         is_public: true, // Templates are public by default
       };
       createTemplateMutation.mutate(templateData);

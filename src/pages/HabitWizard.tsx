@@ -47,7 +47,7 @@ import { Step5_TimePressureCheck } from '@/components/habits/wizard/micro/Step5_
 import { Step6_GrowthAppetite } from '@/components/habits/wizard/micro/Step6_GrowthAppetite';
 import { Step6_GrowthStyle } from '@/components/habits/wizard/micro/Step6_GrowthStyle';
 import { Step6_FailureResponse } from '@/components/habits/wizard/micro/Step6_FailureResponse';
-import { Step6_SuccessDefinition } from '@/components/habits/wizard/micro/Step6_SuccessDefinition'; // Corrected syntax
+import { Step6_SuccessDefinition } from '@/components/habits/wizard/micro/Step6_SuccessDefinition';
 // import { HabitTemplateForm } from '@/components/habits/wizard/HabitTemplateForm'; // Removed
 import { HabitReviewStep } from '@/pages/HabitReview';
 import { WizardStepper } from '@/components/habits/wizard/WizardStepper';
@@ -233,7 +233,7 @@ const HabitWizard = () => {
       createTemplateMutation.mutate({
         id: habitData.habit_key,
         name: habitData.name,
-        category: habitData.category.toString(),
+        category: habitData.category, // Removed .toString()
         default_frequency: habitData.frequency_per_week,
         default_duration: habitData.current_daily_goal,
         default_mode: habitData.is_fixed ? 'Fixed' : (habitData.is_trial_mode ? 'Trial' : 'Growth'),

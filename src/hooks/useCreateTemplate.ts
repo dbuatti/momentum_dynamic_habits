@@ -1,19 +1,15 @@
-"use client";
-
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useSession } from '@/contexts/SessionContext';
-import { showError, showSuccess } from '@/utils/toast';
-import { HabitTemplate } from '@/lib/habit-templates';
-import { UserHabitRecord } from '@/types/habit'; // Import UserHabitRecord for type consistency
+import { showSuccess, showError } from '@/utils/toast';
+import { HabitCategory } from '@/types/habit'; // Import HabitCategory
 
-interface CreateTemplateParams {
-  id: string; // Template ID (habit_key)
+export interface CreateTemplateParams {
+  id: string;
   name: string;
-  category: string;
+  category: HabitCategory; // Changed to HabitCategory
   default_frequency: number;
   default_duration: number;
-  default_mode: 'Trial' | 'Growth' | 'Fixed';
+  default_mode: 'Trial' | 'Growth' | 'Fixed'; // Corrected to union type
   default_chunks: number;
   auto_chunking: boolean;
   anchor_practice: boolean;
@@ -26,30 +22,19 @@ interface CreateTemplateParams {
   is_public: boolean;
 }
 
-const createTemplate = async ({ userId, template }: { userId: string; template: CreateTemplateParams }) => {
-  const templateToInsert = {
-    ...template,
-    creator_id: userId,
-  };
-
-  const { error } = await supabase.from('habit_templates').insert(templateToInsert);
-
+const createTemplate = async (template: CreateTemplateParams) => {
+  const { error } = await supabase.from('habit_templates').insert(template);
   if (error) throw error;
   return { success: true };
 };
 
 export const useCreateTemplate = () => {
-  const { session } = useSession();
   const queryClient = useQueryClient();
-
   return useMutation({
-    mutationFn: (template: CreateTemplateParams) => {
-      if (!session?.user?.id) throw new Error('User not authenticated');
-      return createTemplate({ userId: session.user.id, template });
-    },
+    mutationFn: createTemplate,
     onSuccess: () => {
       showSuccess('Template contributed successfully!');
-      queryClient.invalidateQueries({ queryKey: ['habitTemplates'] }); // Invalidate all templates to show new one
+      queryClient.invalidateQueries({ queryKey: ['templates'] });
     },
     onError: (error) => {
       showError(`Failed to contribute template: ${error.message}`);
