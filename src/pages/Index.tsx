@@ -269,7 +269,7 @@ const Index = () => {
               label={isTrial ? "Weekly Session Log" : "Weekly Consistency"}
             />
           </div>
-          <div className="w-full mt-4">
+          <div className="w-full mt-4 mb-6">
             <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">Daily Progress</p>
             <Progress
               value={Math.min(100, (habit.displayProgress / habit.adjustedDailyGoal) * 100)}
