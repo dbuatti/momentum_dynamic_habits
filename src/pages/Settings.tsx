@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -15,12 +15,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
 import { SettingsSkeleton } from '@/components/dashboard/SettingsSkeleton';
 import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   Brain, LogOut, Anchor, Target, Sparkles, 
   Settings2, Shield, ShieldCheck, Calendar, 
   Clock, Dumbbell, Wind, BookOpen, Music, 
   Home, Code, Pill, Timer, BarChart3, Layers, Zap, Info, Eye, EyeOff, Plus,
-  Volume2, Smartphone, Trophy
+  Volume2, Smartphone, Trophy, User, CheckCircle2, Globe, Loader2
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { 
@@ -35,18 +36,36 @@ import { ResetEverythingCard } from '@/components/settings/ResetEverythingCard';
 import { ResetExperienceCard } from '@/components/settings/ResetExperienceCard';
 import { useDashboardData } from '@/hooks/useDashboardData';
 
+const commonTimezones = [
+  'UTC', 'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles',
+  'Europe/London', 'Europe/Paris', 'Europe/Berlin', 'Asia/Tokyo', 'Asia/Shanghai', 'Australia/Sydney',
+];
+
 const Settings = () => {
   const { session, signOut } = useSession();
   const { data, isLoading } = useJourneyData();
   const { data: dashboardData } = useDashboardData();
   const queryClient = useQueryClient();
-  const { mutate: updateProfile } = useUpdateProfile();
+  const { mutate: updateProfile, isPending: isUpdatingProfile } = useUpdateProfile();
   
   const [activeHabitId, setActiveHabitId] = useState<string | null>(null);
   const [showNewHabitModal, setShowNewHabitModal] = useState(false);
 
+  // Profile Edit State
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [timezone, setTimezone] = useState('UTC');
+
   const habits = useMemo(() => data?.habits || [], [data]);
   const profile = useMemo(() => data?.profile, [data]);
+
+  useEffect(() => {
+    if (profile) {
+      setFirstName(profile.first_name || '');
+      setLastName(profile.last_name || '');
+      setTimezone(profile.timezone || 'UTC');
+    }
+  }, [profile]);
 
   const enableSound = (dashboardData as any)?.enable_sound ?? true;
   const enableHaptics = (dashboardData as any)?.enable_haptics ?? true;
@@ -56,6 +75,14 @@ const Settings = () => {
   const daily = useMemo(() => habits.filter(h => h.category !== 'anchor'), [habits]);
 
   if (isLoading || !data) return <SettingsSkeleton />;
+
+  const handleUpdateProfile = () => {
+    updateProfile({
+      first_name: firstName,
+      last_name: lastName,
+      timezone: timezone
+    });
+  };
 
   const updateHabitField = async (habitId: string, updates: any) => {
     const { error } = await supabase.from('user_habits').update(updates).eq('id', habitId);
@@ -83,12 +110,12 @@ const Settings = () => {
       <PageHeader title="Growth Settings" backLink="/" />
       
       {/* Profile Header */}
-      <div className="space-y-4">
+      <div className="space-y-6">
         <Card className="rounded-3xl shadow-sm border-0">
           <CardContent className="p-6 flex items-center space-x-4">
             <Avatar className="w-16 h-16 border-4 border-primary/10">
               <AvatarFallback className="bg-primary text-primary-foreground font-bold">
-                {session?.user?.email?.charAt(0).toUpperCase()}
+                {(profile?.first_name || session?.user?.email)?.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div className="flex-grow">
@@ -97,6 +124,63 @@ const Settings = () => {
             </div>
             <Button variant="ghost" size="icon" onClick={() => signOut()} className="rounded-full hover:bg-destructive/10 hover:text-destructive">
               <LogOut className="w-5 h-5" />
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Profile Information Edit */}
+        <Card className="rounded-3xl shadow-sm border border-border bg-card">
+          <CardHeader className="p-6 pb-0">
+            <CardTitle className="text-sm font-black uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2">
+              <User className="w-4 h-4" /> Profile Information
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6 space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="firstName" className="text-xs font-bold">First Name</Label>
+                <Input 
+                  id="firstName" 
+                  value={firstName} 
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className="rounded-xl h-11"
+                  placeholder="First"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lastName" className="text-xs font-bold">Last Name</Label>
+                <Input 
+                  id="lastName" 
+                  value={lastName} 
+                  onChange={(e) => setLastName(e.target.value)}
+                  className="rounded-xl h-11"
+                  placeholder="Last"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="timezone" className="text-xs font-bold">Current Timezone</Label>
+              <div className="flex items-center gap-2">
+                <Globe className="w-4 h-4 text-muted-foreground" />
+                <Select value={timezone} onValueChange={setTimezone}>
+                  <SelectTrigger id="timezone" className="h-11 rounded-xl flex-grow">
+                    <SelectValue placeholder="Select timezone" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {commonTimezones.map((tz) => <SelectItem key={tz} value={tz}>{tz}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <Button 
+              className="w-full h-11 rounded-xl font-bold mt-2" 
+              onClick={handleUpdateProfile}
+              disabled={isUpdatingProfile}
+            >
+              {isUpdatingProfile ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
+              Save Profile Changes
             </Button>
           </CardContent>
         </Card>

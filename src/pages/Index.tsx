@@ -5,7 +5,8 @@ import HomeHeader from "@/components/HomeHeader";
 import { 
   CheckCircle2, Target, Anchor, Zap, 
   Layers, PlusCircle, Lock, ChevronRight,
-  AlertCircle, Sparkles, TrendingUp, Clock, Play
+  AlertCircle, Sparkles, TrendingUp, Clock, Play,
+  Check
 } from "lucide-react";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { DashboardSkeleton } from "@/components/dashboard/DashboardSkeleton";
@@ -136,6 +137,20 @@ const Index = () => {
     });
   };
 
+  const handleLogRemaining = async (habit: any) => {
+    const remaining = Math.max(0, habit.adjustedDailyGoal - habit.displayProgress);
+    if (remaining <= 0) return;
+
+    // Log the remaining as one single entry
+    await logCapsuleProgress.mutateAsync({
+      habitKey: habit.key,
+      index: 999, // Specialty index for "Log Remaining"
+      value: remaining,
+      taskName: `${habit.name} completion`,
+      isComplete: true
+    });
+  };
+
   const handleCapsuleUncomplete = (habit: any, capsule: any) => {
     if (capsule.completedTaskId) {
       uncompleteCapsule.mutate({ habitKey: habit.key, index: capsule.index, completedTaskId: capsule.completedTaskId });
@@ -169,7 +184,9 @@ const Index = () => {
     const showOnlyNext = !showAllMomentum[habit.key] && habit.numChunks > 1;
     const isLocked = habit.isLockedByDependency;
     const dependentHabitName = data.habits.find(h => h.id === habit.dependent_on_habit_id)?.name || 'previous habit';
-    const canQuickLog = !habit.allCompleted && !isLocked && habit.numChunks === 1 && habit.measurement_type !== 'timer';
+    
+    // Quick log is possible if not completed and not locked
+    const canQuickFinish = !habit.allCompleted && !isLocked;
 
     return (
       <AccordionItem
@@ -197,12 +214,12 @@ const Index = () => {
                     {habit.name}
                     {habit.allCompleted && <CheckCircle2 className="w-5 h-5 text-success" />}
                   </h3>
-                  {canQuickLog && (
+                  {canQuickFinish && (
                     <Button 
                       size="sm" variant="secondary" className="h-8 px-3 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm hover:scale-105 transition-transform"
-                      onClick={(e) => { e.stopPropagation(); handleCapsuleProgress(habit, habit.capsules[0], habit.capsules[0].value, true); }}
+                      onClick={(e) => { e.stopPropagation(); handleLogRemaining(habit); }}
                     >
-                      Log {habit.capsules[0].value} {habit.unit}
+                      <Check className="w-3 h-3 mr-1" /> Finish Practice
                     </Button>
                   )}
                 </div>
@@ -336,7 +353,9 @@ const Index = () => {
                     <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/60">Practice Focus</span>
                   </div>
                   <h2 className="text-2xl font-black tracking-tight leading-tight uppercase italic">{suggestedAction.name}</h2>
-                  <p className="text-sm font-medium text-muted-foreground">Ready for your next session? Let's keep the momentum going.</p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    {suggestedAction.isWithinWindow ? "Perfect timing for this practice." : "Ready for your next session?"} Let's keep the momentum going.
+                  </p>
                 </div>
                 <Button 
                    className="w-full sm:w-auto h-16 px-8 rounded-2xl font-black text-lg shadow-lg hover:scale-105 transition-transform"
