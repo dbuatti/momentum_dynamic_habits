@@ -61,9 +61,27 @@ interface AnalyticsData {
   bestTime: string; // Added bestTime
 }
 
-const fetchAnalyticsData = async (userId: string): Promise<AnalyticsData> => {
+interface FetchAnalyticsDataParams {
+  userId: string;
+  timeframe: string; // Add timeframe parameter
+}
+
+const fetchAnalyticsData = async ({ userId, timeframe }: FetchAnalyticsDataParams): Promise<AnalyticsData> => {
   const today = new Date();
-  const eightWeeksAgo = subWeeks(today, 8); // Data for last 8 weeks
+  let startDateFilter: Date;
+
+  switch (timeframe) {
+    case '4_weeks':
+      startDateFilter = subWeeks(today, 4);
+      break;
+    case '12_weeks':
+      startDateFilter = subWeeks(today, 12);
+      break;
+    case '8_weeks': // Default
+    default:
+      startDateFilter = subWeeks(today, 8);
+      break;
+  }
 
   const [
     { data: profile, error: profileError },
@@ -75,8 +93,8 @@ const fetchAnalyticsData = async (userId: string): Promise<AnalyticsData> => {
   ] = await Promise.all([
     supabase.from('profiles').select('neurodivergent_mode, timezone, first_name, last_name, daily_streak').eq('id', userId).single(),
     supabase.from('user_habits').select('*, dependent_on_habit_id, anchor_practice, carryover_value').eq('user_id', userId), // Fetch carryover_value
-    supabase.from('completedtasks').select('*').eq('user_id', userId).gte('completed_at', eightWeeksAgo.toISOString()),
-    supabase.from('habit_capsules').select('*').eq('user_id', userId).gte('created_at', format(eightWeeksAgo, 'yyyy-MM-dd')),
+    supabase.from('completedtasks').select('*').eq('user_id', userId).gte('completed_at', startDateFilter.toISOString()), // Use startDateFilter
+    supabase.from('habit_capsules').select('*').eq('user_id', userId).gte('created_at', format(startDateFilter, 'yyyy-MM-dd')), // Use startDateFilter
     supabase.from('reflections').select('*').eq('user_id', userId).order('reflection_date', { ascending: false }).limit(1),
     supabase.rpc('get_best_time', { p_user_id: userId }), // Fetch bestTime
   ]);
@@ -136,7 +154,7 @@ const fetchAnalyticsData = async (userId: string): Promise<AnalyticsData> => {
     const scheduledDays: Date[] = [];
     const completedDays: Date[] = [];
 
-    const intervalStart = startOfDay(eightWeeksAgo);
+    const intervalStart = startOfDay(startDateFilter); // Use startDateFilter
     const intervalEnd = startOfDay(today);
     
     eachDayOfInterval({ start: intervalStart, end: intervalEnd }).forEach(day => {
@@ -159,7 +177,7 @@ const fetchAnalyticsData = async (userId: string): Promise<AnalyticsData> => {
     const weeklyCapsuleCompletions: { [weekStart: string]: number } = {};
     const weeklyCapsuleTotals: { [weekStart: string]: number } = {};
 
-    eachDayOfInterval({ start: eightWeeksAgo, end: today }).forEach(day => {
+    eachDayOfInterval({ start: startDateFilter, end: today }).forEach(day => { // Use startDateFilter
       const weekStart = format(startOfWeek(day, { weekStartsOn: 0 }), 'yyyy-MM-dd'); // Sunday as start of week
       if (!weeklyCompletions[weekStart]) {
         weeklyCompletions[weekStart] = 0;
@@ -265,13 +283,13 @@ const fetchAnalyticsData = async (userId: string): Promise<AnalyticsData> => {
   };
 };
 
-export const useAnalyticsData = () => {
+export const useAnalyticsData = (timeframe: string) => { // Update hook signature
   const { session } = useSession();
   const userId = session?.user?.id;
 
   return useQuery<AnalyticsData, Error>({
-    queryKey: ['analyticsData', userId],
-    queryFn: () => fetchAnalyticsData(userId!),
+    queryKey: ['analyticsData', userId, timeframe], // Add timeframe to queryKey
+    queryFn: () => fetchAnalyticsData({ userId: userId!, timeframe }), // Pass timeframe
     enabled: !!userId,
     staleTime: 1000 * 60 * 5, // 5 minutes
   });

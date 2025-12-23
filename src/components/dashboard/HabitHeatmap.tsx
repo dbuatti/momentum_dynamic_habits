@@ -1,5 +1,5 @@
 import React from 'react';
-import { format, subMonths, startOfDay, isSameDay } from 'date-fns';
+import { format, subMonths, startOfDay, isSameDay, subWeeks } from 'date-fns'; // Add subWeeks
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -13,6 +13,7 @@ interface HabitCompletion {
 interface HabitHeatmapProps {
   completions: HabitCompletion[];
   habitName?: string;
+  timeframe?: string; // Add timeframe prop
 }
 
 interface HeatmapDay {
@@ -21,11 +22,26 @@ interface HeatmapDay {
   count: number;
 }
 
-const HabitHeatmap: React.FC<HabitHeatmapProps> = ({ completions, habitName }) => {
-  // Generate last 90 days
+const HabitHeatmap: React.FC<HabitHeatmapProps> = ({ completions, habitName, timeframe = '8_weeks' }) => { // Default timeframe
   const today = new Date();
-  const startDate = subMonths(today, 3);
+  let startDate: Date;
+
+  switch (timeframe) {
+    case '4_weeks':
+      startDate = subWeeks(today, 4);
+      break;
+    case '12_weeks':
+      startDate = subWeeks(today, 12);
+      break;
+    case '8_weeks': // Default
+    default:
+      startDate = subWeeks(today, 8); // Changed from subMonths(today, 3) to match analytics data fetch
+      break;
+  }
   
+  // Ensure startDate is at the beginning of the day
+  startDate = startOfDay(startDate);
+
   // Create a map for quick lookup
   const completionMap = new Map<string, number>();
   completions.forEach(completion => {
@@ -49,6 +65,12 @@ const HabitHeatmap: React.FC<HabitHeatmapProps> = ({ completions, habitName }) =
   const weeks: HeatmapDay[][] = [];
   let currentWeek: HeatmapDay[] = [];
   
+  // Fill the first week with leading empty days if startDate is not a Sunday (0)
+  const firstDayOfWeek = startDate.getDay(); // 0 for Sunday, 1 for Monday, etc.
+  for (let i = 0; i < firstDayOfWeek; i++) {
+    currentWeek.push({ date: new Date(0), dateStr: '', count: 0 }); // Placeholder for empty days
+  }
+
   days.forEach(day => {
     currentWeek.push(day);
     if (currentWeek.length === 7) {
@@ -59,6 +81,10 @@ const HabitHeatmap: React.FC<HabitHeatmapProps> = ({ completions, habitName }) =
   
   // Add remaining days to the last week
   if (currentWeek.length > 0) {
+    // Pad the last week with empty days if it's not full
+    while (currentWeek.length < 7) {
+      currentWeek.push({ date: new Date(0), dateStr: '', count: 0 });
+    }
     weeks.push(currentWeek);
   }
 
@@ -98,14 +124,18 @@ const HabitHeatmap: React.FC<HabitHeatmapProps> = ({ completions, habitName }) =
                         <div 
                           className={cn(
                             "w-6 h-6 rounded-sm border border-border",
-                            getIntensityClass(day.count)
+                            day.dateStr === '' ? 'bg-transparent border-transparent' : getIntensityClass(day.count) // Handle empty days
                           )} 
                         />
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>
-                          {day.count} {habitName ? 'completions' : 'habits'} on {format(day.date, 'MMM d, yyyy')}
-                        </p>
+                        {day.dateStr === '' ? (
+                          <p>No data</p>
+                        ) : (
+                          <p>
+                            {day.count} {habitName ? 'completions' : 'habits'} on {format(day.date, 'MMM d, yyyy')}
+                          </p>
+                        )}
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>

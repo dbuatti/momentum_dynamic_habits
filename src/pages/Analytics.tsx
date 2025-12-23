@@ -22,10 +22,11 @@ import { GrowthInsightsCard } from '@/components/analytics/GrowthInsightsCard';
 import { useDashboardData } from '@/hooks/useDashboardData';
 
 const Analytics = () => {
-  const { data: analyticsData, isLoading, isError } = useAnalyticsData();
+  const [timeframeFilter, setTimeframeFilter] = useState<string>('8_weeks'); // Default to 8 weeks
+  const { data: analyticsData, isLoading, isError } = useAnalyticsData(timeframeFilter); // Pass timeframeFilter
   const { data: dashboardData, isLoading: isDashboardDataLoading } = useDashboardData();
   const [habitFilter, setHabitFilter] = useState<string>('all');
-  const [timeframeFilter, setTimeframeFilter] = useState<string>('8_weeks');
+  
 
   // Filter habits based on selection
   const filteredHabits = useMemo(() => {
@@ -102,7 +103,7 @@ const Analytics = () => {
             <SelectContent className="rounded-xl border-slate-200">
               <SelectItem value="all">All Practices</SelectItem>
               {analyticsData.habits.map(h => (
-                <SelectItem key={h.habit.id} value={h.habit.habit_key}>
+                <SelectItem key={h.habit.habit_key} value={h.habit.habit_key}> {/* Fixed: Use habit_key */}
                   {h.habit.name}
                 </SelectItem>
               ))}
@@ -167,6 +168,7 @@ const Analytics = () => {
           <HabitHeatmap 
             completions={habitCompletions} 
             habitName={habitFilter === 'all' ? 'Overall Consistency' : 'Practice Consistency'} 
+            timeframe={timeframeFilter} // Pass timeframe to HabitHeatmap
           />
         </Card>
       </div>
