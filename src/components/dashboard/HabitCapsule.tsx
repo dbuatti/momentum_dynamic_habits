@@ -173,7 +173,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
 
   // New: Reset timer function
   const handleResetTimer = (e: React.MouseEvent) => {
-    e.stopPropagation();
+    e.stopPropagation(); // Prevent event propagation
     stopInterval();
     setElapsedSeconds(0);
     setIsTiming(false);

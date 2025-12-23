@@ -31,6 +31,7 @@ import {
 import { useUpdateHabitVisibility } from '@/hooks/useUpdateHabitVisibility';
 import { HabitSettingsCard } from '@/components/settings/HabitSettingsCard';
 import { NewHabitModal } from '@/components/habits/NewHabitModal';
+import { ResetProgressCard } from '@/components/settings/ResetProgressCard'; // Import ResetProgressCard
 
 const Settings = () => {
   const { session, signOut } = useSession();
@@ -192,6 +193,9 @@ const Settings = () => {
           "Build the floor first. The ceiling will take care of itself."
         </p>
       </div>
+
+      {/* Reset Progress Card */}
+      <ResetProgressCard />
 
       {/* New Habit Modal */}
       <NewHabitModal 
