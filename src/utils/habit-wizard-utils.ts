@@ -16,37 +16,43 @@ export const calculateHabitParams = (data: Partial<WizardHabitData>, neurodiverg
   let frequency = 3; // Default
 
   // 1. Determine Daily Goal based on energy_per_session and unit
+  const energyPerSession = data.energy_per_session_skipped ? 'moderate' : data.energy_per_session;
   if (data.unit === 'min') {
-    if (data.energy_per_session === 'very_little') dailyGoal = 5;
-    else if (data.energy_per_session === 'a_bit') dailyGoal = 10;
-    else if (data.energy_per_session === 'moderate') dailyGoal = 20;
-    else if (data.energy_per_session === 'plenty') dailyGoal = 30;
+    if (energyPerSession === 'very_little') dailyGoal = 5;
+    else if (energyPerSession === 'a_bit') dailyGoal = 10;
+    else if (energyPerSession === 'moderate') dailyGoal = 20;
+    else if (energyPerSession === 'plenty') dailyGoal = 30;
   } else if (data.unit === 'reps') {
-    if (data.energy_per_session === 'very_little') dailyGoal = 5;
-    else if (data.energy_per_session === 'a_bit') dailyGoal = 10;
-    else if (data.energy_per_session === 'moderate') dailyGoal = 20;
-    else if (data.energy_per_session === 'plenty') dailyGoal = 30;
+    if (energyPerSession === 'very_little') dailyGoal = 5;
+    else if (energyPerSession === 'a_bit') dailyGoal = 10;
+    else if (energyPerSession === 'moderate') dailyGoal = 20;
+    else if (energyPerSession === 'plenty') dailyGoal = 30;
   } else if (data.unit === 'dose') {
     dailyGoal = 1; // Doses are typically 1
   }
 
   // 2. Determine Weekly Frequency based on consistency_reality
-  if (data.consistency_reality === '1-2_days') frequency = 2;
-  else if (data.consistency_reality === '3-4_days') frequency = 3;
-  else if (data.consistency_reality === 'most_days') frequency = 5;
-  else if (data.consistency_reality === 'daily') frequency = 7;
+  const consistencyReality = data.consistency_reality_skipped ? '3-4_days' : data.consistency_reality;
+  if (consistencyReality === '1-2_days') frequency = 2;
+  else if (consistencyReality === '3-4_days') frequency = 3;
+  else if (consistencyReality === 'most_days') frequency = 5;
+  else if (consistencyReality === 'daily') frequency = 7;
 
   // 3. Determine Habit Mode (Trial/Fixed/Growth)
   let isTrial = false;
   let isFixed = false;
-  if (data.emotional_cost === 'heavy') isTrial = true; // High emotional cost suggests trial mode
-  if (data.growth_appetite === 'steady') isFixed = true; // User wants no growth
+  const emotionalCost = data.emotional_cost_skipped ? 'light' : data.emotional_cost;
+  if (emotionalCost === 'heavy') isTrial = true; // High emotional cost suggests trial mode
+  
+  const growthAppetite = data.growth_appetite_skipped ? 'suggest' : data.growth_appetite;
+  if (growthAppetite === 'steady') isFixed = true; // User wants no growth
 
   // 4. Determine Anchor Practice
-  const anchorPractice = data.motivation_type === 'routine_building' || data.motivation_type === 'stress_reduction';
+  const motivationType = data.motivation_type_skipped ? 'personal_growth' : data.motivation_type;
+  const anchorPractice = motivationType === 'routine_building' || motivationType === 'stress_reduction';
 
   // 5. Determine Auto-Chunking
-  const autoChunking = data.energy_per_session === 'plenty' || data.energy_per_session === 'moderate';
+  const autoChunking = energyPerSession === 'plenty' || energyPerSession === 'moderate';
 
   // 6. Determine XP and Energy Cost per Unit
   let xpPerUnit = 30;
@@ -56,28 +62,30 @@ export const calculateHabitParams = (data: Partial<WizardHabitData>, neurodiverg
 
   // 7. Determine Plateau Days Required
   let plateauDays = 7; // Default
+  const confidenceCheck = data.confidence_check_skipped ? 5 : data.confidence_check;
   if (isTrial) {
     plateauDays = neurodivergentMode ? 14 : 7;
   } else if (isFixed) {
     plateauDays = 7; // Fixed habits still track consistency for 7 days
   } else { // Adaptive Growth mode
-    const confidence = data.confidence_check || 5;
-    if (confidence < 4) plateauDays = neurodivergentMode ? 10 : 7; // Longer for ND if low confidence
-    else if (confidence > 7) plateauDays = neurodivergentMode ? 7 : 5; // Shorter for ND if high confidence
+    if (confidenceCheck && confidenceCheck < 4) plateauDays = neurodivergentMode ? 10 : 7; // Longer for ND if low confidence
+    else if (confidenceCheck && confidenceCheck > 7) plateauDays = neurodivergentMode ? 7 : 5; // Shorter for ND if high confidence
     else plateauDays = neurodivergentMode ? 10 : 7; // Default for ND growth
   }
 
   // 8. Determine Time Window
   let windowStart: string | null = null;
   let windowEnd: string | null = null;
-  const selectedTimeOfDay = timeOfDayOptions.find(opt => opt.id === data.time_of_day_fit);
+  const timeOfDayFit = data.time_of_day_fit_skipped ? 'anytime' : data.time_of_day_fit;
+  const selectedTimeOfDay = timeOfDayOptions.find(opt => opt.id === timeOfDayFit);
   if (selectedTimeOfDay) {
     windowStart = selectedTimeOfDay.start;
     windowEnd = selectedTimeOfDay.end;
   }
 
   // 9. Determine Carryover Enabled
-  const carryoverEnabled = data.safety_net_choice === 'rollover' || data.safety_net_choice === 'gentle';
+  const safetyNetChoice = data.safety_net_choice_skipped ? 'none' : data.safety_net_choice;
+  const carryoverEnabled = safetyNetChoice === 'rollover' || safetyNetChoice === 'gentle';
 
   return {
     name: data.name!,
@@ -95,7 +103,7 @@ export const calculateHabitParams = (data: Partial<WizardHabitData>, neurodiverg
     auto_chunking: autoChunking,
     xp_per_unit: xpPerUnit,
     energy_cost_per_unit: energyCostPerUnit,
-    dependent_on_habit_id: data.dependent_on_habit_id || null,
+    dependent_on_habit_id: data.dependent_on_habit_id || null, // Dependency is handled separately
     plateau_days_required: plateauDays,
     window_start: windowStart,
     window_end: windowEnd,

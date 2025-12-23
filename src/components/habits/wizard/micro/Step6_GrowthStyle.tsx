@@ -4,20 +4,29 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { Calendar, Clock, Shuffle } from 'lucide-react';
+import { Calendar, Clock, Shuffle, ChevronRight } from 'lucide-react'; // Added ChevronRight
 import { WizardHabitData } from '@/hooks/useUserHabitWizardTemp';
 
 interface Props {
   wizardData: Partial<WizardHabitData>;
   setWizardData: React.Dispatch<React.SetStateAction<Partial<WizardHabitData>>>;
+  onSkip: (field: keyof WizardHabitData, defaultValue: any) => void; // Added onSkip prop
 }
 
-export const Step6_GrowthStyle: React.FC<Props> = ({ wizardData, setWizardData }) => {
+export const Step6_GrowthStyle: React.FC<Props> = ({ wizardData, setWizardData, onSkip }) => {
   const options = [
     { id: 'frequency', label: 'More days', icon: Calendar, desc: 'Increase frequency' },
     { id: 'duration', label: 'Longer sessions', icon: Clock, desc: 'Increase duration' },
     { id: 'both', label: 'Both slowly', icon: Shuffle, desc: 'Balanced growth' },
   ];
+
+  const handleSelect = (id: 'frequency' | 'duration' | 'both') => {
+    setWizardData(prev => ({ ...prev, growth_style: id, growth_style_skipped: false }));
+  };
+
+  const handleSkip = () => {
+    onSkip('growth_style', 'duration'); // Default to 'duration' if skipped
+  };
 
   return (
     <Card className="border-border">
@@ -40,7 +49,7 @@ export const Step6_GrowthStyle: React.FC<Props> = ({ wizardData, setWizardData }
                   "w-full justify-start gap-3",
                   isSelected && "bg-primary text-primary-foreground border-primary hover:bg-primary/90"
                 )}
-                onClick={() => setWizardData(prev => ({ ...prev, growth_style: opt.id as any }))}
+                onClick={() => handleSelect(opt.id as 'frequency' | 'duration' | 'both')}
               >
                 <Icon className="w-5 h-5" />
                 <div className="flex flex-col items-start">
@@ -51,6 +60,14 @@ export const Step6_GrowthStyle: React.FC<Props> = ({ wizardData, setWizardData }
             );
           })}
         </div>
+        <Button 
+          variant="ghost" 
+          className="w-full text-muted-foreground hover:text-primary justify-center mt-4"
+          onClick={handleSkip}
+        >
+          <ChevronRight className="w-4 h-4 mr-2" />
+          Skip / I don't mind
+        </Button>
       </CardContent>
     </Card>
   );

@@ -4,20 +4,29 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { Pause, MinusCircle, HelpCircle } from 'lucide-react';
+import { Pause, MinusCircle, HelpCircle, ChevronRight } from 'lucide-react'; // Added ChevronRight
 import { WizardHabitData } from '@/hooks/useUserHabitWizardTemp';
 
 interface Props {
   wizardData: Partial<WizardHabitData>;
   setWizardData: React.Dispatch<React.SetStateAction<Partial<WizardHabitData>>>;
+  onSkip: (field: keyof WizardHabitData, defaultValue: any) => void; // Added onSkip prop
 }
 
-export const Step6_FailureResponse: React.FC<Props> = ({ wizardData, setWizardData }) => {
+export const Step6_FailureResponse: React.FC<Props> = ({ wizardData, setWizardData, onSkip }) => {
   const options = [
     { id: 'pause', label: 'Pause growth', icon: Pause, desc: 'Freeze if struggling' },
     { id: 'reduce', label: 'Reduce goals', icon: MinusCircle, desc: 'Lower the bar' },
     { id: 'ask', label: 'Ask me', icon: HelpCircle, desc: 'Don\'t assume' },
   ];
+
+  const handleSelect = (id: 'pause' | 'reduce' | 'ask') => {
+    setWizardData(prev => ({ ...prev, failure_response: id, failure_response_skipped: false }));
+  };
+
+  const handleSkip = () => {
+    onSkip('failure_response', 'pause'); // Default to 'pause' if skipped
+  };
 
   return (
     <Card className="border-border">
@@ -40,7 +49,7 @@ export const Step6_FailureResponse: React.FC<Props> = ({ wizardData, setWizardDa
                   "w-full justify-start gap-3",
                   isSelected && "bg-primary text-primary-foreground border-primary hover:bg-primary/90"
                 )}
-                onClick={() => setWizardData(prev => ({ ...prev, failure_response: opt.id as any }))}
+                onClick={() => handleSelect(opt.id as 'pause' | 'reduce' | 'ask')}
               >
                 <Icon className="w-5 h-5" />
                 <div className="flex flex-col items-start">
@@ -51,6 +60,14 @@ export const Step6_FailureResponse: React.FC<Props> = ({ wizardData, setWizardDa
             );
           })}
         </div>
+        <Button 
+          variant="ghost" 
+          className="w-full text-muted-foreground hover:text-primary justify-center mt-4"
+          onClick={handleSkip}
+        >
+          <ChevronRight className="w-4 h-4 mr-2" />
+          Skip / I don't mind
+        </Button>
       </CardContent>
     </Card>
   );

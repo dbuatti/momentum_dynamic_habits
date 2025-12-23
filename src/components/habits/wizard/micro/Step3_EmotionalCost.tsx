@@ -4,20 +4,29 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { Heart, Meh, Frown, Smile } from 'lucide-react';
+import { Heart, Meh, Frown, Smile, ChevronRight } from 'lucide-react'; // Added ChevronRight
 import { WizardHabitData } from '@/hooks/useUserHabitWizardTemp';
 
 interface Props {
   wizardData: Partial<WizardHabitData>;
   setWizardData: React.Dispatch<React.SetStateAction<Partial<WizardHabitData>>>;
+  onSkip: (field: keyof WizardHabitData, defaultValue: any) => void; // Added onSkip prop
 }
 
-export const Step3_EmotionalCost: React.FC<Props> = ({ wizardData, setWizardData }) => {
+export const Step3_EmotionalCost: React.FC<Props> = ({ wizardData, setWizardData, onSkip }) => {
   const options = [
     { id: 'light', label: 'Light / Neutral', icon: Smile, desc: 'Easy to start' },
     { id: 'some_resistance', label: 'Some Resistance', icon: Meh, desc: 'Needs a push' },
     { id: 'heavy', label: 'Heavy / Draining', icon: Frown, desc: 'High friction' },
   ];
+
+  const handleSelect = (id: 'light' | 'some_resistance' | 'heavy') => {
+    setWizardData(prev => ({ ...prev, emotional_cost: id, emotional_cost_skipped: false }));
+  };
+
+  const handleSkip = () => {
+    onSkip('emotional_cost', 'light'); // Default to 'light' if skipped
+  };
 
   return (
     <Card className="border-border">
@@ -27,7 +36,7 @@ export const Step3_EmotionalCost: React.FC<Props> = ({ wizardData, setWizardData
           <h3 className="font-bold text-lg">How does this habit *feel* to start?</h3>
         </div>
         <p className="text-sm text-muted-foreground mb-3">Select an option to continue.</p>
-        <div className="grid grid-cols-1 gap-3">
+        <div className="space-y-2">
           {options.map((opt) => {
             const isSelected = wizardData.emotional_cost === opt.id;
             const Icon = opt.icon;
@@ -37,10 +46,10 @@ export const Step3_EmotionalCost: React.FC<Props> = ({ wizardData, setWizardData
                 type="button"
                 variant="outline"
                 className={cn(
-                  "h-14 justify-start gap-3",
+                  "w-full justify-start gap-3",
                   isSelected && "bg-primary text-primary-foreground border-primary hover:bg-primary/90"
                 )}
-                onClick={() => setWizardData(prev => ({ ...prev, emotional_cost: opt.id as any }))}
+                onClick={() => handleSelect(opt.id as 'light' | 'some_resistance' | 'heavy')}
               >
                 <Icon className="w-5 h-5" />
                 <div className="flex flex-col items-start">
@@ -51,6 +60,14 @@ export const Step3_EmotionalCost: React.FC<Props> = ({ wizardData, setWizardData
             );
           })}
         </div>
+        <Button 
+          variant="ghost" 
+          className="w-full text-muted-foreground hover:text-primary justify-center mt-4"
+          onClick={handleSkip}
+        >
+          <ChevronRight className="w-4 h-4 mr-2" />
+          Skip / I don't mind
+        </Button>
       </CardContent>
     </Card>
   );

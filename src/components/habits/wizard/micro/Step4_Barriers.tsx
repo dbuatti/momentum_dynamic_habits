@@ -4,15 +4,16 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { AlertCircle, Clock, Zap, Heart, BookOpen, Coffee } from 'lucide-react';
+import { AlertCircle, Clock, Zap, Heart, BookOpen, Coffee, ChevronRight } from 'lucide-react'; // Added ChevronRight
 import { WizardHabitData } from '@/hooks/useUserHabitWizardTemp';
 
 interface Props {
   wizardData: Partial<WizardHabitData>;
   setWizardData: React.Dispatch<React.SetStateAction<Partial<WizardHabitData>>>;
+  onSkip: (field: keyof WizardHabitData, defaultValue: any) => void; // Added onSkip prop
 }
 
-export const Step4_Barriers: React.FC<Props> = ({ wizardData, setWizardData }) => {
+export const Step4_Barriers: React.FC<Props> = ({ wizardData, setWizardData, onSkip }) => {
   const options = [
     { id: 'forgetting', label: 'Forgetting', icon: AlertCircle },
     { id: 'time_pressure', label: 'Time Pressure', icon: Clock },
@@ -26,8 +27,12 @@ export const Step4_Barriers: React.FC<Props> = ({ wizardData, setWizardData }) =
     setWizardData(prev => {
       const current = prev.barriers || [];
       const next = current.includes(id) ? current.filter(b => b !== id) : [...current, id];
-      return { ...prev, barriers: next };
+      return { ...prev, barriers: next, barriers_skipped: false };
     });
+  };
+
+  const handleSkip = () => {
+    onSkip('barriers', ['time_pressure']); // Default to 'time_pressure' if skipped
   };
 
   return (
@@ -59,6 +64,14 @@ export const Step4_Barriers: React.FC<Props> = ({ wizardData, setWizardData }) =
             );
           })}
         </div>
+        <Button 
+          variant="ghost" 
+          className="w-full text-muted-foreground hover:text-primary justify-center mt-4"
+          onClick={handleSkip}
+        >
+          <ChevronRight className="w-4 h-4 mr-2" />
+          Skip / I don't know
+        </Button>
       </CardContent>
     </Card>
   );

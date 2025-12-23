@@ -4,21 +4,30 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { Zap, BatteryLow, BatteryMedium, Battery, BatteryFull } from 'lucide-react';
+import { Zap, BatteryLow, BatteryMedium, Battery, BatteryFull, ChevronRight } from 'lucide-react'; // Added ChevronRight
 import { WizardHabitData } from '@/hooks/useUserHabitWizardTemp';
 
 interface Props {
   wizardData: Partial<WizardHabitData>;
   setWizardData: React.Dispatch<React.SetStateAction<Partial<WizardHabitData>>>;
+  onSkip: (field: keyof WizardHabitData, defaultValue: any) => void; // Added onSkip prop
 }
 
-export const Step3_EnergyPerSession: React.FC<Props> = ({ wizardData, setWizardData }) => {
+export const Step3_EnergyPerSession: React.FC<Props> = ({ wizardData, setWizardData, onSkip }) => {
   const options = [
     { id: 'very_little', label: 'Very Little', icon: BatteryLow, desc: '5-10 min / small reps' },
     { id: 'a_bit', label: 'A Bit', icon: BatteryMedium, desc: '10-20 min / moderate reps' },
     { id: 'moderate', label: 'Moderate', icon: Battery, desc: '20-30 min / standard reps' },
     { id: 'plenty', label: 'Plenty', icon: BatteryFull, desc: '30+ min / high reps' },
   ];
+
+  const handleSelect = (id: 'very_little' | 'a_bit' | 'moderate' | 'plenty') => {
+    setWizardData(prev => ({ ...prev, energy_per_session: id, energy_per_session_skipped: false }));
+  };
+
+  const handleSkip = () => {
+    onSkip('energy_per_session', 'moderate'); // Default to 'moderate' if skipped
+  };
 
   return (
     <Card className="border-border">
@@ -41,7 +50,7 @@ export const Step3_EnergyPerSession: React.FC<Props> = ({ wizardData, setWizardD
                   "h-16 flex-col items-start gap-1 p-3",
                   isSelected && "bg-primary text-primary-foreground border-primary hover:bg-primary/90"
                 )}
-                onClick={() => setWizardData(prev => ({ ...prev, energy_per_session: opt.id as any }))}
+                onClick={() => handleSelect(opt.id as 'very_little' | 'a_bit' | 'moderate' | 'plenty')}
               >
                 <div className="flex items-center gap-2">
                   <Icon className="w-4 h-4" />
@@ -52,6 +61,14 @@ export const Step3_EnergyPerSession: React.FC<Props> = ({ wizardData, setWizardD
             );
           })}
         </div>
+        <Button 
+          variant="ghost" 
+          className="w-full text-muted-foreground hover:text-primary justify-center mt-4"
+          onClick={handleSkip}
+        >
+          <ChevronRight className="w-4 h-4 mr-2" />
+          Skip / I don't know
+        </Button>
       </CardContent>
     </Card>
   );

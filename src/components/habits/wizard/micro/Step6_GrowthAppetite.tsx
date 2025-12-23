@@ -4,20 +4,29 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { ShieldCheck, Zap, X } from 'lucide-react';
+import { ShieldCheck, Zap, X, ChevronRight } from 'lucide-react'; // Added ChevronRight
 import { WizardHabitData } from '@/hooks/useUserHabitWizardTemp';
 
 interface Props {
   wizardData: Partial<WizardHabitData>;
   setWizardData: React.Dispatch<React.SetStateAction<Partial<WizardHabitData>>>;
+  onSkip: (field: keyof WizardHabitData, defaultValue: any) => void; // Added onSkip prop
 }
 
-export const Step6_GrowthAppetite: React.FC<Props> = ({ wizardData, setWizardData }) => {
+export const Step6_GrowthAppetite: React.FC<Props> = ({ wizardData, setWizardData, onSkip }) => {
   const options = [
     { id: 'auto', label: 'Automatically', icon: Zap, desc: 'Grow it for me' },
     { id: 'suggest', label: 'Suggest changes', icon: ShieldCheck, desc: 'Ask me first' },
     { id: 'steady', label: 'Keep it steady', icon: X, desc: 'No growth' },
   ];
+
+  const handleSelect = (id: 'auto' | 'suggest' | 'steady') => {
+    setWizardData(prev => ({ ...prev, growth_appetite: id, growth_appetite_skipped: false }));
+  };
+
+  const handleSkip = () => {
+    onSkip('growth_appetite', 'suggest'); // Default to 'suggest' if skipped
+  };
 
   return (
     <Card className="border-border">
@@ -40,7 +49,7 @@ export const Step6_GrowthAppetite: React.FC<Props> = ({ wizardData, setWizardDat
                   "w-full justify-start gap-3",
                   isSelected && "bg-primary text-primary-foreground border-primary hover:bg-primary/90"
                 )}
-                onClick={() => setWizardData(prev => ({ ...prev, growth_appetite: opt.id as any }))}
+                onClick={() => handleSelect(opt.id as 'auto' | 'suggest' | 'steady')}
               >
                 <Icon className="w-5 h-5" />
                 <div className="flex flex-col items-start">
@@ -51,6 +60,14 @@ export const Step6_GrowthAppetite: React.FC<Props> = ({ wizardData, setWizardDat
             );
           })}
         </div>
+        <Button 
+          variant="ghost" 
+          className="w-full text-muted-foreground hover:text-primary justify-center mt-4"
+          onClick={handleSkip}
+        >
+          <ChevronRight className="w-4 h-4 mr-2" />
+          Skip / I don't mind
+        </Button>
       </CardContent>
     </Card>
   );

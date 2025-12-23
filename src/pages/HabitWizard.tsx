@@ -444,29 +444,41 @@ const HabitWizard = () => {
 
   const progress = (currentDisplayStep / totalDisplaySteps) * 100;
 
+  const handleSkipMicroStep = useCallback((field: keyof WizardHabitData, defaultValue: any) => {
+    setWizardData(prev => ({
+      ...prev,
+      [field]: defaultValue,
+      [`${String(field)}_skipped`]: true,
+    }));
+    handleSaveAndNext({
+      [field]: defaultValue,
+      [`${String(field)}_skipped`]: true,
+    });
+  }, [handleSaveAndNext]);
+
   const isNextDisabled = useMemo(() => {
     if (currentStep === 1 && !wizardData.category) return true;
-    if (currentStep === 2 && !wizardData.motivation_type) return true;
+    if (currentStep === 2 && (!wizardData.motivation_type && !wizardData.motivation_type_skipped)) return true;
 
     if (currentStep >= 3 && currentStep <= 6) {
       const microStepId = MICRO_STEPS_MAP[currentStep]?.[currentMicroStepIndex];
       if (!microStepId) return true;
 
       switch (microStepId) {
-        case '3.1': return !wizardData.energy_per_session;
-        case '3.2': return !wizardData.consistency_reality;
-        case '3.3': return !wizardData.emotional_cost;
-        case '3.4': return !wizardData.confidence_check;
-        case '4.1': return !wizardData.barriers || wizardData.barriers.length === 0;
-        case '4.2': return !wizardData.missed_day_response;
-        case '4.3': return !wizardData.sensitivity_setting;
-        case '5.1': return !wizardData.time_of_day_fit;
-        case '5.2': return !wizardData.dependency_check;
-        case '5.3': return !wizardData.time_pressure_check;
-        case '6.1': return !wizardData.growth_appetite;
-        case '6.2': return !wizardData.growth_style;
-        case '6.3': return !wizardData.failure_response;
-        case '6.4': return !wizardData.success_definition;
+        case '3.1': return (!wizardData.energy_per_session && !wizardData.energy_per_session_skipped);
+        case '3.2': return (!wizardData.consistency_reality && !wizardData.consistency_reality_skipped);
+        case '3.3': return (!wizardData.emotional_cost && !wizardData.emotional_cost_skipped);
+        case '3.4': return (!wizardData.confidence_check && !wizardData.confidence_check_skipped);
+        case '4.1': return (!wizardData.barriers || wizardData.barriers.length === 0) && !wizardData.barriers_skipped;
+        case '4.2': return (!wizardData.missed_day_response && !wizardData.missed_day_response_skipped);
+        case '4.3': return (!wizardData.sensitivity_setting && !wizardData.sensitivity_setting_skipped);
+        case '5.1': return (!wizardData.time_of_day_fit && !wizardData.time_of_day_fit_skipped);
+        case '5.2': return (!wizardData.dependency_check && !wizardData.dependency_check_skipped);
+        case '5.3': return (!wizardData.time_pressure_check && !wizardData.time_pressure_check_skipped);
+        case '6.1': return (!wizardData.growth_appetite && !wizardData.growth_appetite_skipped);
+        case '6.2': return (!wizardData.growth_style && !wizardData.growth_style_skipped);
+        case '6.3': return (!wizardData.failure_response && !wizardData.failure_response_skipped);
+        case '6.4': return (!wizardData.success_definition && !wizardData.success_definition_skipped);
         default: return true;
       }
     }
@@ -509,25 +521,25 @@ const HabitWizard = () => {
 
   const renderWizardStepContent = () => {
     if (currentStep === 1) return <HabitWizardStep1 wizardData={wizardData} setWizardData={setWizardData} />;
-    if (currentStep === 2) return <HabitWizardStep2 wizardData={wizardData} setWizardData={setWizardData} />;
+    if (currentStep === 2) return <HabitWizardStep2 wizardData={wizardData} setWizardData={setWizardData} onSkip={handleSkipMicroStep} />;
 
     if (currentStep >= 3 && currentStep <= 6) {
       const microStepId = MICRO_STEPS_MAP[currentStep]?.[currentMicroStepIndex];
       switch (microStepId) {
-        case '3.1': return <Step3_EnergyPerSession wizardData={wizardData} setWizardData={setWizardData} />;
-        case '3.2': return <Step3_ConsistencyReality wizardData={wizardData} setWizardData={setWizardData} />;
-        case '3.3': return <Step3_EmotionalCost wizardData={wizardData} setWizardData={setWizardData} />;
-        case '3.4': return <Step3_ConfidenceCheck wizardData={wizardData} setWizardData={setWizardData} />;
-        case '4.1': return <Step4_Barriers wizardData={wizardData} setWizardData={setWizardData} />;
-        case '4.2': return <Step4_MissedDayResponse wizardData={wizardData} setWizardData={setWizardData} />;
-        case '4.3': return <Step4_SensitivitySetting wizardData={wizardData} setWizardData={setWizardData} />;
-        case '5.1': return <Step5_TimeOfDayFit wizardData={wizardData} setWizardData={setWizardData} />;
-        case '5.2': return <Step5_DependencyCheck wizardData={wizardData} setWizardData={setWizardData} />;
-        case '5.3': return <Step5_TimePressureCheck wizardData={wizardData} setWizardData={setWizardData} />;
-        case '6.1': return <Step6_GrowthAppetite wizardData={wizardData} setWizardData={setWizardData} />;
-        case '6.2': return <Step6_GrowthStyle wizardData={wizardData} setWizardData={setWizardData} />;
-        case '6.3': return <Step6_FailureResponse wizardData={wizardData} setWizardData={setWizardData} />;
-        case '6.4': return <Step6_SuccessDefinition wizardData={wizardData} setWizardData={setWizardData} />;
+        case '3.1': return <Step3_EnergyPerSession wizardData={wizardData} setWizardData={setWizardData} onSkip={handleSkipMicroStep} />;
+        case '3.2': return <Step3_ConsistencyReality wizardData={wizardData} setWizardData={setWizardData} onSkip={handleSkipMicroStep} />;
+        case '3.3': return <Step3_EmotionalCost wizardData={wizardData} setWizardData={setWizardData} onSkip={handleSkipMicroStep} />;
+        case '3.4': return <Step3_ConfidenceCheck wizardData={wizardData} setWizardData={setWizardData} onSkip={handleSkipMicroStep} />;
+        case '4.1': return <Step4_Barriers wizardData={wizardData} setWizardData={setWizardData} onSkip={handleSkipMicroStep} />;
+        case '4.2': return <Step4_MissedDayResponse wizardData={wizardData} setWizardData={setWizardData} onSkip={handleSkipMicroStep} />;
+        case '4.3': return <Step4_SensitivitySetting wizardData={wizardData} setWizardData={setWizardData} onSkip={handleSkipMicroStep} />;
+        case '5.1': return <Step5_TimeOfDayFit wizardData={wizardData} setWizardData={setWizardData} onSkip={handleSkipMicroStep} />;
+        case '5.2': return <Step5_DependencyCheck wizardData={wizardData} setWizardData={setWizardData} onSkip={handleSkipMicroStep} />;
+        case '5.3': return <Step5_TimePressureCheck wizardData={wizardData} setWizardData={setWizardData} onSkip={handleSkipMicroStep} />;
+        case '6.1': return <Step6_GrowthAppetite wizardData={wizardData} setWizardData={setWizardData} onSkip={handleSkipMicroStep} />;
+        case '6.2': return <Step6_GrowthStyle wizardData={wizardData} setWizardData={setWizardData} onSkip={handleSkipMicroStep} />;
+        case '6.3': return <Step6_FailureResponse wizardData={wizardData} setWizardData={setWizardData} onSkip={handleSkipMicroStep} />;
+        case '6.4': return <Step6_SuccessDefinition wizardData={wizardData} setWizardData={setWizardData} onSkip={handleSkipMicroStep} />;
         default: return <div className="text-center text-muted-foreground">Unknown Micro Step</div>;
       }
     }

@@ -17,28 +17,43 @@ export interface WizardHabitData {
   
   // Step 1 & 2 (Macro)
   motivation_type: 'stress_reduction' | 'skill_development' | 'health_improvement' | 'routine_building' | null;
+  motivation_type_skipped?: boolean; // Added skipped flag
 
   // Step 3: Current Capacity (Micro)
   energy_per_session: 'very_little' | 'a_bit' | 'moderate' | 'plenty' | null;
+  energy_per_session_skipped?: boolean; // Added skipped flag
   consistency_reality: '1-2_days' | '3-4_days' | 'most_days' | 'daily' | null;
+  consistency_reality_skipped?: boolean; // Added skipped flag
   emotional_cost: 'light' | 'some_resistance' | 'heavy' | null;
+  emotional_cost_skipped?: boolean; // Added skipped flag
   confidence_check: number | null; // 1-10
+  confidence_check_skipped?: boolean; // Added skipped flag
 
   // Step 4: Barriers (Micro)
   barriers: string[]; // ['forgetting', 'time_pressure', 'overwhelm', 'perfectionism', 'mood', 'boredom']
+  barriers_skipped?: boolean; // Added skipped flag
   missed_day_response: 'keep_going' | 'discouraged' | 'stop_completely' | null;
+  missed_day_response_skipped?: boolean; // Added skipped flag
   sensitivity_setting: 'gentle' | 'neutral' | 'direct' | null;
+  sensitivity_setting_skipped?: boolean; // Added skipped flag
 
   // Step 5: Timing & Dependencies (Micro)
   time_of_day_fit: 'morning' | 'midday' | 'afternoon' | 'evening' | 'anytime' | null; // Updated options
+  time_of_day_fit_skipped?: boolean; // Added skipped flag
   dependency_check: 'after_waking' | 'after_work' | 'after_another_habit' | 'none' | null;
+  dependency_check_skipped?: boolean; // Added skipped flag
   time_pressure_check: 'always' | 'only_if_time' | 'decide_later' | null;
+  time_pressure_check_skipped?: boolean; // Added skipped flag
 
   // Step 6: Confidence & Growth (Micro)
   growth_appetite: 'auto' | 'suggest' | 'steady' | null;
+  growth_appetite_skipped?: boolean; // Added skipped flag
   growth_style: 'duration' | 'frequency' | 'both' | null;
+  growth_style_skipped?: boolean; // Added skipped flag
   failure_response: 'reduce' | 'pause' | 'ask' | null;
+  failure_response_skipped?: boolean; // Added skipped flag
   success_definition: 'sometimes' | 'most_weeks' | 'automatic' | null;
+  success_definition_skipped?: boolean; // Added skipped flag
 
   // Calculated/Inferred Fields (for final habit creation)
   daily_goal: number;
@@ -54,6 +69,7 @@ export interface WizardHabitData {
   window_start: string | null;
   window_end: string | null;
   carryover_enabled: boolean; // New field
+  safety_net_choice_skipped?: boolean; // Added missing skipped flag
   
   // Additional fields for micro-step flow (these are temporary and not directly mapped to DB)
   timing_preference?: string; // This is the ID from timeOfDayOptions, not window_start/end

@@ -4,20 +4,29 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { Clock, Calendar, HelpCircle } from 'lucide-react';
+import { Clock, Calendar, HelpCircle, ChevronRight } from 'lucide-react'; // Added ChevronRight
 import { WizardHabitData } from '@/hooks/useUserHabitWizardTemp';
 
 interface Props {
   wizardData: Partial<WizardHabitData>;
   setWizardData: React.Dispatch<React.SetStateAction<Partial<WizardHabitData>>>;
+  onSkip: (field: keyof WizardHabitData, defaultValue: any) => void; // Added onSkip prop
 }
 
-export const Step5_TimePressureCheck: React.FC<Props> = ({ wizardData, setWizardData }) => {
+export const Step5_TimePressureCheck: React.FC<Props> = ({ wizardData, setWizardData, onSkip }) => {
   const options = [
     { id: 'always', label: 'Yes, always', icon: Calendar, desc: 'Show it no matter what' },
     { id: 'only_if_time', label: 'Only if there’s time', icon: Clock, desc: 'Hide if busy' },
     { id: 'decide_later', label: 'Let me decide', icon: HelpCircle, desc: 'Flexible visibility' },
   ];
+
+  const handleSelect = (id: 'always' | 'only_if_time' | 'decide_later') => {
+    setWizardData(prev => ({ ...prev, time_pressure_check: id, time_pressure_check_skipped: false }));
+  };
+
+  const handleSkip = () => {
+    onSkip('time_pressure_check', 'decide_later'); // Default to 'decide_later' if skipped
+  };
 
   return (
     <Card className="border-border">
@@ -40,7 +49,7 @@ export const Step5_TimePressureCheck: React.FC<Props> = ({ wizardData, setWizard
                   "w-full justify-start gap-3",
                   isSelected && "bg-primary text-primary-foreground border-primary hover:bg-primary/90"
                 )}
-                onClick={() => setWizardData(prev => ({ ...prev, time_pressure_check: opt.id as any }))}
+                onClick={() => handleSelect(opt.id as 'always' | 'only_if_time' | 'decide_later')}
               >
                 <Icon className="w-5 h-5" />
                 <div className="flex flex-col items-start">
@@ -51,6 +60,14 @@ export const Step5_TimePressureCheck: React.FC<Props> = ({ wizardData, setWizard
             );
           })}
         </div>
+        <Button 
+          variant="ghost" 
+          className="w-full text-muted-foreground hover:text-primary justify-center mt-4"
+          onClick={handleSkip}
+        >
+          <ChevronRight className="w-4 h-4 mr-2" />
+          Skip / I don't mind
+        </Button>
       </CardContent>
     </Card>
   );
