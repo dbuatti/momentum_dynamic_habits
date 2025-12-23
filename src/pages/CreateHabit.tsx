@@ -15,7 +15,7 @@ import {
   Target, Anchor, Zap, ShieldCheck, Brain, Clock, Layers,
   Dumbbell, Wind, BookOpen, Music, Home, Code, Sparkles, Pill,
   Plus, Loader2, Check, Info, Eye, EyeOff, ArrowRight, FlaskConical,
-  Calendar, Timer
+  Calendar, Timer, Settings // Added Settings
 } from 'lucide-react';
 import { habitTemplates, habitCategories, habitUnits, habitModes, habitIcons, HabitTemplate } from '@/lib/habit-templates';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -134,7 +134,7 @@ const CreateHabit = () => {
   const neurodivergentMode = journeyData?.profile?.neurodivergent_mode || false;
 
   const [flowType, setFlowType] = useState<'entry' | 'guided' | 'custom'>('entry');
-  const [step, setStep] = useState(1); // For guided flow
+  const [step, setStep] = useState(0); // Start at 0 for "Choose Mode"
 
   // Habit state for both flows
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
@@ -157,6 +157,9 @@ const CreateHabit = () => {
   const [windowEnd, setWindowEnd] = useState<string | null>(null);
   const [notes, setNotes] = useState(''); // For custom flow description
 
+  // New state for guided flow: selected category group
+  const [selectedCategoryGroup, setSelectedCategoryGroup] = useState<string | null>(null);
+
   const otherHabits = useMemo(() => {
     return (journeyData?.allHabits || []).filter(h => h.id !== habitKey); // Filter out the habit being created
   }, [journeyData?.allHabits, habitKey]);
@@ -178,6 +181,7 @@ const CreateHabit = () => {
         energyCostPerUnit: 6,
         icon: Target,
         plateauDaysRequired: 7,
+        shortDescription: "Design a habit tailored to your unique needs.",
       } as HabitTemplate;
     }
     return habitTemplates.find(t => t.id === selectedTemplateId);
@@ -231,8 +235,8 @@ const CreateHabit = () => {
       return;
     }
 
-    if (!selectedTemplateId) {
-      showError('Please select a habit template or choose custom.');
+    if (!selectedTemplateId && flowType === 'guided') {
+      showError('Please select a habit template.');
       return;
     }
 
@@ -252,392 +256,238 @@ const CreateHabit = () => {
       icon_name: selectedIconName,
       dependent_on_habit_id: dependentOnHabitId,
       plateau_days_required: plateauDaysRequired,
-      window_start: windowStart, // Corrected from window_start
-      window_end: windowEnd,     // Corrected from window_end
+      window_start: windowStart,
+      window_end: windowEnd,
     });
   };
 
   const handleGuidedNext = () => {
-    if (step === 1 && !selectedTemplateId) {
-      showError('Please select a habit template.');
-      return;
+    if (step === 4) { // Finalize step
+      handleSubmit();
+    } else {
+      setStep(step + 1);
     }
-    if (step === 9 && (!habitName.trim() || !habitKey.trim())) {
-      showError('Please provide a habit name and key.');
-      return;
-    }
-    if (step < 9) setStep(step + 1);
-    else handleSubmit();
   };
 
   const handleGuidedBack = () => {
-    if (step > 1) setStep(step - 1);
-    else setFlowType('entry');
+    if (step === 1) { // If on first step of guided flow, go back to mode selection
+      setFlowType('entry');
+      setStep(0); // Reset step for entry screen
+      setSelectedCategoryGroup(null); // Clear any selections
+      setSelectedTemplateId(null);
+    } else if (step === 2) { // If on Template Selection, go back to Focus Area
+      setSelectedTemplateId(null);
+      setStep(step - 1);
+    } else { // For other steps in guided flow
+      setStep(step - 1);
+    }
   };
 
   const renderGuidedStep = () => {
     const IconComponent = getHabitIconComponent(selectedIconName);
-    const progress = (step / 9) * 100;
+    const totalGuidedSteps = 4; // Excluding initial mode selection
+    const currentGuidedStep = step; // Step 1-4
+    const progress = (currentGuidedStep / totalGuidedSteps) * 100;
+
+    // Group templates by the requested categories
+    const groupedTemplates = useMemo(() => {
+      const groups: { [key: string]: { label: string; icon: React.ElementType; templates: HabitTemplate[] } } = {
+        'learning_growth': { label: 'Learning & Growth', icon: BookOpen, templates: [] },
+        'wellbeing_movement': { label: 'Wellbeing & Movement', icon: Wind, templates: [] },
+        'daily_essentials': { label: 'Daily Essentials', icon: Home, templates: [] },
+      };
+
+      habitTemplates.filter(t => t.id !== 'custom_habit').forEach(template => {
+        if (template.category === 'cognitive' && (template.id === 'study_generic' || template.id === 'creative_practice_generic')) {
+          groups['learning_growth'].templates.push(template);
+        } else if (template.category === 'physical' || template.category === 'wellness') {
+          if (template.id === 'exercise_generic' || template.id === 'mindfulness_generic') {
+            groups['wellbeing_movement'].templates.push(template);
+          }
+        } else if (template.category === 'daily' || template.defaultMode === 'Fixed') {
+          if (template.id === 'daily_task_generic' || template.id === 'fixed_medication' || template.id === 'fixed_teeth_brushing') {
+            groups['daily_essentials'].templates.push(template);
+          }
+        }
+      });
+      return groups;
+    }, []);
 
     return (
-      <Card className="w-full shadow-xl rounded-3xl overflow-hidden border-0">
+      <Card className="w-full max-w-md shadow-xl rounded-3xl overflow-hidden border-0">
         <CardHeader className="pb-0">
           <div className="flex justify-between items-center mb-4">
-            <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Step {step} of 9</div>
+            <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Step {currentGuidedStep} of {totalGuidedSteps}</div>
             <div className="text-xs font-bold text-primary">{Math.round(progress)}%</div>
           </div>
           <div className="w-full bg-secondary rounded-full h-1.5"><div className="bg-primary h-1.5 rounded-full transition-all duration-300" style={{ width: `${progress}%` }}></div></div>
         </CardHeader>
         <CardContent className="py-8">
+          {/* Step 1: Focus Area */}
           {step === 1 && (
             <div className="space-y-6">
               <div className="text-center">
                 <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
                   <Layers className="w-8 h-8 text-primary" />
                 </div>
-                <h2 className="text-2xl font-bold mb-2">Choose a Starting Point</h2>
-                <p className="text-muted-foreground">Select a template or start from scratch.</p>
+                <h2 className="text-2xl font-bold mb-2">What type of habit do you want to focus on?</h2>
+                <p className="text-muted-foreground">Choose a category to see suggested templates.</p>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                {habitTemplates.map((template) => {
-                  const TemplateIcon = template.icon;
-                  const isSelected = selectedTemplateId === template.id;
+              <div className="grid grid-cols-1 gap-3">
+                {Object.entries(groupedTemplates).map(([key, group]) => {
+                  const GroupIcon = group.icon;
+                  const isSelected = selectedCategoryGroup === key;
                   return (
-                    <Button
-                      key={template.id}
+                    <button
+                      key={key}
                       type="button"
-                      variant="outline"
                       className={cn(
-                        "h-auto p-4 rounded-2xl flex flex-col items-center justify-center text-center space-y-2 transition-all",
-                        isSelected ? "border-primary ring-2 ring-primary/20 bg-primary/5" : "border-border hover:bg-muted/50"
+                        "border rounded-xl p-4 cursor-pointer transition-all text-left",
+                        isSelected ? 'border-primary ring-2 ring-primary/20 bg-primary/5' : 'border-border hover:bg-muted/50'
                       )}
-                      onClick={() => setSelectedTemplateId(template.id)}
+                      onClick={() => setSelectedCategoryGroup(key)}
                     >
-                      <TemplateIcon className="w-6 h-6 text-primary" />
-                      <span className="text-sm font-semibold">{template.name}</span>
-                      <span className="text-xs text-muted-foreground">{template.defaultDuration} {template.unit} • {template.defaultFrequency}x/week</span>
-                    </Button>
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-primary/10 text-primary"><GroupIcon className="w-5 h-5" /></div>
+                        <span className="text-base font-bold">{group.label}</span>
+                      </div>
+                    </button>
                   );
                 })}
               </div>
             </div>
           )}
 
-          {step === 2 && selectedTemplate && (
+          {/* Step 2: Template Selection */}
+          {step === 2 && selectedCategoryGroup && (
             <div className="space-y-6">
               <div className="text-center">
                 <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
                   <Target className="w-8 h-8 text-primary" />
                 </div>
-                <h2 className="text-2xl font-bold mb-2">Habit Focus</h2>
-                <p className="text-muted-foreground">What area of your life is this habit for?</p>
+                <h2 className="text-2xl font-bold mb-2">Select a Template</h2>
+                <p className="text-muted-foreground">Choose a habit to get started quickly.</p>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                {habitCategories.filter(cat => cat.value !== 'anchor').map((cat) => {
-                  const Icon = cat.icon;
-                  const isSelected = category === cat.value;
+              <div className="grid grid-cols-1 gap-3">
+                {groupedTemplates[selectedCategoryGroup]?.templates.map((template) => {
+                  const TemplateIcon = template.icon;
+                  const isSelected = selectedTemplateId === template.id;
                   return (
-                    <div key={cat.value} className={cn(
-                      "border rounded-xl p-3 cursor-pointer transition-all",
-                      isSelected ? 'border-primary ring-2 ring-primary/20 bg-primary/5' : 'border-border hover:bg-muted/50'
-                    )} onClick={() => setCategory(cat.value)}>
-                      <div className="flex flex-col items-center space-y-1">
-                        <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-primary/10 text-primary"><Icon className="w-5 h-5" /></div>
-                        <span className="text-xs font-bold text-center leading-tight">{cat.label}</span>
+                    <button
+                      key={template.id}
+                      type="button"
+                      className={cn(
+                        "h-auto p-4 rounded-2xl flex items-start gap-4 text-left transition-all border-2",
+                        isSelected ? "border-primary ring-2 ring-primary/20 bg-primary/5" : "border-border hover:bg-muted/50"
+                      )}
+                      onClick={() => setSelectedTemplateId(template.id)}
+                    >
+                      <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 bg-primary/10 text-primary">
+                        <TemplateIcon className="w-6 h-6" />
                       </div>
-                    </div>
+                      <div>
+                        <h3 className="font-bold text-lg">{template.name}</h3>
+                        <p className="text-sm text-muted-foreground mt-1">{template.shortDescription}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {template.defaultDuration} {template.unit} • {template.defaultFrequency}x/week
+                        </p>
+                      </div>
+                    </button>
                   );
                 })}
               </div>
             </div>
           )}
 
-          {step === 3 && (
+          {/* Step 3: Customize */}
+          {step === 3 && selectedTemplate && (
             <div className="space-y-6">
               <div className="text-center">
                 <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                  <Anchor className="w-8 h-8 text-primary" />
+                  <Settings className="w-8 h-8 text-primary" />
                 </div>
-                <h2 className="text-2xl font-bold mb-2">Priority & Importance</h2>
-                <p className="text-muted-foreground">How important is this habit to your daily routine?</p>
-              </div>
-              <div className="space-y-4">
-                <button
-                  type="button"
-                  onClick={() => setIsAnchorPractice(true)}
-                  className={cn(
-                    "flex items-start gap-4 p-4 rounded-2xl border-2 text-left w-full transition-all",
-                    isAnchorPractice ? "border-primary bg-primary/[0.02] shadow-sm" : "border-transparent bg-muted/30 opacity-60 hover:opacity-100"
-                  )}
-                >
-                  <div className={cn("p-2 rounded-lg", isAnchorPractice ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground")}>
-                    <Anchor className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-black uppercase leading-none">Core / Anchor (Recommended)</p>
-                    <p className="text-[10px] text-muted-foreground mt-1.5 leading-relaxed">Essential, non-negotiable habits that keep you grounded.</p>
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsAnchorPractice(false)}
-                  className={cn(
-                    "flex items-start gap-4 p-4 rounded-2xl border-2 text-left w-full transition-all",
-                    !isAnchorPractice ? "border-primary bg-primary/[0.02] shadow-sm" : "border-transparent bg-muted/30 opacity-60 hover:opacity-100"
-                  )}
-                >
-                  <div className={cn("p-2 rounded-lg", !isAnchorPractice ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground")}>
-                    <Zap className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-black uppercase leading-none">Supporting / Experimental</p>
-                    <p className="text-[10px] text-muted-foreground mt-1.5 leading-relaxed">Nice-to-have habits or new experiments.</p>
-                  </div>
-                </button>
-              </div>
-            </div>
-          )}
-
-          {step === 4 && (
-            <div className="space-y-6">
-              <div className="text-center">
-                <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                  <Calendar className="w-8 h-8 text-primary" />
-                </div>
-                <h2 className="text-2xl font-bold mb-2">Frequency</h2>
-                <p className="text-muted-foreground">How often do you want to do this habit per week?</p>
-              </div>
-              <div className="space-y-4">
-                <Slider
-                  min={1}
-                  max={7}
-                  step={1}
-                  value={[frequency]}
-                  onValueChange={(val) => setFrequency(val[0])}
-                  className="w-full"
-                />
-                <div className="flex justify-between text-sm text-muted-foreground">
-                  <span>1x/week</span>
-                  <span className="font-bold text-foreground">{frequency} times per week</span>
-                  <span>7x/week</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {step === 5 && (
-            <div className="space-y-6">
-              <div className="text-center">
-                <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                  <Timer className="w-8 h-8 text-primary" />
-                </div>
-                <h2 className="text-2xl font-bold mb-2">Duration</h2>
-                <p className="text-muted-foreground">How long do you want each session to last?</p>
-              </div>
-              <div className="space-y-3">
-                <Label htmlFor="dailyGoal">Daily Goal ({unit})</Label>
-                <Input
-                  id="dailyGoal"
-                  type="number"
-                  value={dailyGoal}
-                  onChange={(e) => setDailyGoal(Number(e.target.value))}
-                  className="h-12 rounded-xl"
-                  min={1}
-                  required
-                />
-              </div>
-              <div className="space-y-3">
-                <Label htmlFor="unit">Unit</Label>
-                <Select value={unit} onValueChange={(value: 'min' | 'reps' | 'dose') => setUnit(value)}>
-                  <SelectTrigger id="unit" className="h-12 rounded-xl">
-                    <SelectValue placeholder="Select unit" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {habitUnits.map((u) => (
-                      <SelectItem key={u.value} value={u.value}>
-                        {u.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          )}
-
-          {step === 6 && (
-            <div className="space-y-6">
-              <div className="text-center">
-                <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                  <FlaskConical className="w-8 h-8 text-primary" />
-                </div>
-                <h2 className="text-2xl font-bold mb-2">Mode Selection</h2>
-                <p className="text-muted-foreground">Start with a low-pressure trial or jump into growth?</p>
-              </div>
-              <div className="space-y-4">
-                {habitModes.map((mode) => (
-                  <button
-                    key={mode.value}
-                    type="button"
-                    onClick={() => {
-                      setIsTrialMode(mode.value === 'Trial');
-                      setIsFixed(mode.value === 'Fixed');
-                    }}
-                    className={cn(
-                      "flex items-start gap-4 p-4 rounded-2xl border-2 text-left w-full transition-all",
-                      (isTrialMode && mode.value === 'Trial') || (isFixed && mode.value === 'Fixed') || (!isTrialMode && !isFixed && mode.value === 'Growth')
-                        ? "border-primary bg-primary/[0.02] shadow-sm"
-                        : "border-transparent bg-muted/30 opacity-60 hover:opacity-100"
-                    )}
-                  >
-                    <div className={cn("p-2 rounded-lg", (isTrialMode && mode.value === 'Trial') || (isFixed && mode.value === 'Fixed') || (!isTrialMode && !isFixed && mode.value === 'Growth') ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground")}>
-                      <mode.icon className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-black uppercase leading-none">{mode.label}</p>
-                      <p className="text-[10px] text-muted-foreground mt-1.5 leading-relaxed">{mode.description}</p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {step === 7 && (
-            <div className="space-y-6">
-              <div className="text-center">
-                <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                  <Layers className="w-8 h-8 text-primary" />
-                </div>
-                <h2 className="text-2xl font-bold mb-2">Chunking Preferences</h2>
-                <p className="text-muted-foreground">Do you want your session broken into smaller chunks?</p>
-              </div>
-              <div className="p-4 bg-muted/50 rounded-2xl border border-primary/10 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Layers className="w-5 h-5 text-blue-500" />
-                    <Label className="font-bold">Adaptive Auto-Chunking</Label>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Info className="w-4 h-4 text-muted-foreground cursor-help" />
-                        </TooltipTrigger>
-                        <TooltipContent className="max-w-xs">
-                          <p className="text-xs">Automatically breaks longer sessions into smaller, more manageable "capsules" to reduce overwhelm.</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                  <Switch checked={autoChunking} onCheckedChange={setAutoChunking} />
-                </div>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  If enabled, longer sessions will be automatically broken into smaller parts.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {step === 8 && (
-            <div className="space-y-6">
-              <div className="text-center">
-                <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                  <Clock className="w-8 h-8 text-primary" />
-                </div>
-                <h2 className="text-2xl font-bold mb-2">Time Windows</h2>
-                <p className="text-muted-foreground">When do you usually want to complete this habit?</p>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-3">
-                  <Label htmlFor="windowStart">Window Start</Label>
-                  <Select value={windowStart || ''} onValueChange={setWindowStart}>
-                    <SelectTrigger id="windowStart" className="h-12 rounded-xl"><SelectValue placeholder="Anytime" /></SelectTrigger>
-                    <SelectContent>{timeOptions.map((time) => <SelectItem key={time} value={time}>{time}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-3">
-                  <Label htmlFor="windowEnd">Window End</Label>
-                  <Select value={windowEnd || ''} onValueChange={setWindowEnd}>
-                    <SelectTrigger id="windowEnd" className="h-12 rounded-xl"><SelectValue placeholder="Anytime" /></SelectTrigger>
-                    <SelectContent>{timeOptions.map((time) => <SelectItem key={time} value={time}>{time}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {step === 9 && (
-            <div className="space-y-6">
-              <div className="text-center">
-                <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                  <IconComponent className="w-8 h-8 text-primary" />
-                </div>
-                <h2 className="text-2xl font-bold mb-2">Custom Naming & Icon</h2>
-                <p className="text-muted-foreground">Give your habit a unique name and choose an icon.</p>
+                <h2 className="text-2xl font-bold mb-2">Customize Your Habit</h2>
+                <p className="text-muted-foreground">Adjust the details to fit your needs. (Optional)</p>
               </div>
               <div className="space-y-4">
                 <div className="space-y-3">
-                  <Label htmlFor="habitName">Habit Name</Label>
+                  <Label htmlFor="dailyGoal">Daily Goal ({unit})</Label>
                   <Input
-                    id="habitName"
-                    value={habitName}
-                    onChange={(e) => {
-                      setHabitName(e.target.value);
-                      setHabitKey(e.target.value.toLowerCase().replace(/\s/g, '_'));
-                    }}
-                    placeholder="e.g., Daily Reading, Morning Run"
+                    id="dailyGoal"
+                    type="number"
+                    value={dailyGoal}
+                    onChange={(e) => setDailyGoal(Number(e.target.value))}
                     className="h-12 rounded-xl"
+                    min={1}
                     required
                   />
                 </div>
                 <div className="space-y-3">
-                  <Label htmlFor="habitKey">Unique Habit Key (auto-generated)</Label>
-                  <Input
-                    id="habitKey"
-                    value={habitKey}
-                    readOnly
-                    className="h-12 rounded-xl bg-muted/50"
+                  <Label htmlFor="frequency">Weekly Frequency</Label>
+                  <Slider
+                    id="frequency"
+                    min={1}
+                    max={7}
+                    step={1}
+                    value={[frequency]}
+                    onValueChange={(val) => setFrequency(val[0])}
+                    className="w-full"
                   />
+                  <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>1x</span>
+                    <span>{frequency} times per week</span>
+                    <span>7x</span>
+                  </div>
                 </div>
-                <div className="space-y-3">
-                  <Label htmlFor="icon">Icon</Label>
-                  <Select value={selectedIconName} onValueChange={setSelectedIconName}>
-                    <SelectTrigger id="icon" className="h-12 rounded-xl">
-                      <SelectValue>
-                        <div className="flex items-center gap-2">
-                          <IconComponent className="w-4 h-4" />
-                          {habitIcons.find(i => i.value === selectedIconName)?.label}
-                        </div>
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {habitIcons.map((icon) => (
-                        <SelectItem key={icon.value} value={icon.value}>
-                          <div className="flex items-center gap-2">
-                            <icon.icon className="w-4 h-4" />
-                            {icon.label}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 ml-1">
+                        <Clock className="w-3.5 h-3.5 text-primary" />
+                        <Label className="text-[10px] font-black uppercase opacity-60">Window Start</Label>
+                    </div>
+                    <Select value={windowStart || ''} onValueChange={setWindowStart}>
+                        <SelectTrigger id="windowStart" className="h-12 rounded-xl"><SelectValue placeholder="Anytime" /></SelectTrigger>
+                        <SelectContent>{timeOptions.map((time) => <SelectItem key={time} value={time}>{time}</SelectItem>)}</SelectContent>
+                      </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 ml-1">
+                        <Clock className="w-3.5 h-3.5 text-primary" />
+                        <Label className="text-[10px] font-black uppercase opacity-60">Window End</Label>
+                    </div>
+                    <Select value={windowEnd || ''} onValueChange={setWindowEnd}>
+                        <SelectTrigger id="windowEnd" className="h-12 rounded-xl"><SelectValue placeholder="Anytime" /></SelectTrigger>
+                        <SelectContent>{timeOptions.map((time) => <SelectItem key={time} value={time}>{time}</SelectItem>)}</SelectContent>
+                      </Select>
+                  </div>
                 </div>
-                <div className="space-y-3">
-                  <Label htmlFor="notes">Optional Notes/Description</Label>
-                  <Textarea
-                    id="notes"
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Add any specific details or reminders for this habit."
-                    className="rounded-xl"
-                  />
-                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 4: Finalize */}
+          {step === 4 && selectedTemplate && (
+            <div className="space-y-6 text-center">
+              <div className="mx-auto w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mb-6">
+                <IconComponent className="w-12 h-12 text-primary" />
+              </div>
+              <h2 className="text-2xl font-bold mb-2">Ready to Create "{habitName}"?</h2>
+              <p className="text-muted-foreground">Here's a summary of your new habit:</p>
+              <div className="p-4 bg-muted/50 rounded-2xl border border-primary/10 space-y-3 text-left">
+                <p className="text-sm"><span className="font-bold">Name:</span> {habitName}</p>
+                <p className="text-sm"><span className="font-bold">Goal:</span> {dailyGoal} {unit} per session</p>
+                <p className="text-sm"><span className="font-bold">Frequency:</span> {frequency} times per week</p>
+                <p className="text-sm"><span className="font-bold">Mode:</span> {isFixed ? 'Fixed' : (isTrialMode ? 'Trial' : 'Adaptive Growth')}</p>
+                <p className="text-sm"><span className="font-bold">Category:</span> {habitCategories.find(c => c.value === category)?.label || category}</p>
+                <p className="text-sm"><span className="font-bold">Chunking:</span> {autoChunking ? 'Automatic' : 'Manual'}</p>
               </div>
             </div>
           )}
 
           <div className="flex justify-between mt-8 gap-4">
-            <Button variant="ghost" onClick={handleGuidedBack} disabled={createHabitMutation.isPending} className="rounded-2xl px-8">Back</Button>
-            <Button onClick={handleGuidedNext} disabled={createHabitMutation.isPending} className="flex-1 rounded-2xl h-12 text-base font-bold">
-              {step === 9 ? 'Create Habit' : 'Next'}
+            <Button variant="ghost" onClick={handleGuidedBack} disabled={createHabitMutation.isPending || step === 0} className="rounded-2xl px-8">Back</Button>
+            <Button onClick={handleGuidedNext} disabled={createHabitMutation.isPending || (step === 1 && !selectedCategoryGroup) || (step === 2 && !selectedTemplateId)} className="flex-1 rounded-2xl h-12 text-base font-bold">
+              {step === totalGuidedSteps ? 'Create Habit' : 'Next'}
             </Button>
           </div>
         </CardContent>
@@ -667,21 +517,22 @@ const CreateHabit = () => {
               <Input
                 id="habitName"
                 value={habitName}
-                onChange={(e) => setHabitName(e.target.value)}
+                onChange={(e) => {
+                  setHabitName(e.target.value);
+                  setHabitKey(e.target.value.toLowerCase().replace(/\s/g, '_'));
+                }}
                 placeholder="e.g., Daily Reading, Morning Run"
                 className="h-12 rounded-xl"
                 required
               />
             </div>
             <div className="space-y-3">
-              <Label htmlFor="habitKey">Unique Habit Key (for internal use)</Label>
+              <Label htmlFor="habitKey">Unique Habit Key (auto-generated)</Label>
               <Input
                 id="habitKey"
                 value={habitKey}
-                onChange={(e) => setHabitKey(e.target.value)}
-                placeholder="e.g., daily_reading, morning_run"
-                className="h-12 rounded-xl"
-                required
+                readOnly
+                className="h-12 rounded-xl bg-muted/50"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -985,11 +836,11 @@ const CreateHabit = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Button
               className="h-32 rounded-3xl text-xl font-bold flex flex-col items-center justify-center space-y-2 bg-primary hover:bg-primary/90"
-              onClick={() => setFlowType('guided')}
+              onClick={() => { setFlowType('guided'); setStep(1); }} // Start guided flow at step 1
             >
               <Zap className="w-8 h-8" />
-              <span>Guided Wizard</span>
-              <span className="text-sm font-normal opacity-80">Step-by-step assistance</span>
+              <span>Template</span>
+              <span className="text-sm font-normal opacity-80">Guided through curated templates</span>
             </Button>
             <Button
               variant="outline"
@@ -997,7 +848,7 @@ const CreateHabit = () => {
               onClick={() => setFlowType('custom')}
             >
               <Brain className="w-8 h-8" />
-              <span>Custom Habit</span>
+              <span>Custom</span>
               <span className="text-sm font-normal opacity-80">Define all parameters manually</span>
             </Button>
           </div>

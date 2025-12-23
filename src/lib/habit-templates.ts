@@ -1,5 +1,5 @@
-import { HabitCategory, GrowthPhase, HabitType, MomentumLevel } from '@/types/habit';
 import { Dumbbell, Wind, BookOpen, Music, Home, Code, Sparkles, Pill, Target, Heart, Zap, Anchor, ShieldCheck, FlaskConical } from 'lucide-react'; // Added Anchor, ShieldCheck, FlaskConical
+import { HabitCategory } from '@/types/habit'; // Import HabitCategory
 
 export interface HabitTemplate {
   id: string;
@@ -16,6 +16,7 @@ export interface HabitTemplate {
   energyCostPerUnit: number;
   icon: React.ElementType;
   plateauDaysRequired: number; // New property
+  shortDescription: string; // Added shortDescription
 }
 
 export const habitTemplates: HabitTemplate[] = [
@@ -34,6 +35,7 @@ export const habitTemplates: HabitTemplate[] = [
     energyCostPerUnit: 9,
     icon: BookOpen, // Added icon
     plateauDaysRequired: 7, // Default for standard trial
+    shortDescription: "Boost your knowledge and cognitive skills.",
   },
   {
     id: "exercise_generic",
@@ -50,6 +52,7 @@ export const habitTemplates: HabitTemplate[] = [
     energyCostPerUnit: 6,
     icon: Dumbbell, // Added icon
     plateauDaysRequired: 7, // Default for standard trial
+    shortDescription: "Improve physical fitness and energy levels.",
   },
   {
     id: "mindfulness_generic",
@@ -66,6 +69,7 @@ export const habitTemplates: HabitTemplate[] = [
     energyCostPerUnit: 6,
     icon: Wind, // Added icon
     plateauDaysRequired: 7, // Default for standard trial
+    shortDescription: "Cultivate calm and mental clarity.",
   },
   {
     id: "creative_practice_generic",
@@ -82,6 +86,7 @@ export const habitTemplates: HabitTemplate[] = [
     energyCostPerUnit: 7.2,
     icon: Music,
     plateauDaysRequired: 7, // Default for standard trial
+    shortDescription: "Nurture your artistic and innovative side.",
   },
   {
     id: "daily_task_generic",
@@ -98,6 +103,7 @@ export const habitTemplates: HabitTemplate[] = [
     energyCostPerUnit: 4.8,
     icon: Home,
     plateauDaysRequired: 7, // Default for standard trial
+    shortDescription: "Stay on top of essential daily chores.",
   },
   {
     id: "fixed_medication",
@@ -114,6 +120,7 @@ export const habitTemplates: HabitTemplate[] = [
     energyCostPerUnit: 0,
     icon: Pill,
     plateauDaysRequired: 7, // Fixed habits still track consistency
+    shortDescription: "Ensure consistent medication adherence.",
   },
   {
     id: "fixed_teeth_brushing",
@@ -130,6 +137,7 @@ export const habitTemplates: HabitTemplate[] = [
     energyCostPerUnit: 0,
     icon: Sparkles,
     plateauDaysRequired: 7, // Fixed habits still track consistency
+    shortDescription: "Maintain oral hygiene daily.",
   },
   {
     id: "custom_habit",
@@ -146,6 +154,7 @@ export const habitTemplates: HabitTemplate[] = [
     energyCostPerUnit: 6,
     icon: Target,
     plateauDaysRequired: 7, // Default for custom trial
+    shortDescription: "Design a habit tailored to your unique needs.",
   },
 ];
 
