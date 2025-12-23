@@ -31,7 +31,7 @@ export interface UserHabitRecord {
   is_frozen: boolean;
   max_goal_cap: number | null;
   last_plateau_start_date: string;
-  plateau_days_required: number;
+  plateau_days_required: number; // Added
   completions_in_plateau: number;
   is_fixed: boolean;
   category: HabitCategory;

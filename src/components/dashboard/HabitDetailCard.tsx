@@ -15,7 +15,7 @@ interface HabitDetailCardProps {
   progressValue: number;
   color: 'orange' | 'blue' | 'green' | 'purple' | 'red' | 'indigo';
   isComplete: boolean;
-  daysCompletedLast7Days: number;
+  daysCompletedLast7Days: number; // This is now `completions_in_plateau`
   habitKey: string;
   dailyGoal: number;
   onCheck: () => void;
@@ -23,12 +23,13 @@ interface HabitDetailCardProps {
   isFixed?: boolean;
   plateauProgress?: number;
   neurodivergentMode?: boolean;
+  plateauDaysRequired: number; // New prop for habit-specific plateau days
 }
 
 export const HabitDetailCard: React.FC<HabitDetailCardProps> = ({ 
   icon, title, momentum, goal, progressText, progressValue, color, 
   isComplete, daysCompletedLast7Days, habitKey, dailyGoal, onCheck,
-  isFrozen, isFixed, neurodivergentMode
+  isFrozen, isFixed, neurodivergentMode, plateauDaysRequired
 }) => {
   const iconBgClass = {
     orange: 'bg-orange-100', blue: 'bg-blue-100', green: 'bg-habit-green',
@@ -40,7 +41,8 @@ export const HabitDetailCard: React.FC<HabitDetailCardProps> = ({
     purple: 'text-habit-purple-foreground', red: 'text-habit-red-foreground', indigo: 'text-habit-indigo-foreground',
   }[color];
 
-  const plateauRequired = neurodivergentMode ? 7 : 5;
+  // Use the habit-specific plateauDaysRequired
+  const actualPlateauRequired = plateauDaysRequired;
 
   return (
     <Card className="rounded-2xl shadow-sm border-0 overflow-hidden">
@@ -95,11 +97,11 @@ export const HabitDetailCard: React.FC<HabitDetailCardProps> = ({
                 <div className="p-3 bg-muted/40 rounded-xl space-y-2">
                   <div className="flex justify-between items-center text-xs">
                     <span className="flex items-center"><Clock className="w-3 h-3 mr-1" /> Plateau Status</span>
-                    <span className="font-bold">Next increase in ~{Math.max(0, plateauRequired - daysCompletedLast7Days)} days</span>
+                    <span className="font-bold">Next increase in ~{Math.max(0, actualPlateauRequired - daysCompletedLast7Days)} days</span>
                   </div>
-                  <Progress value={(daysCompletedLast7Days / plateauRequired) * 100} className="h-1.5 bg-muted" />
+                  <Progress value={(daysCompletedLast7Days / actualPlateauRequired) * 100} className="h-1.5 bg-muted" />
                   <p className="text-[11px] leading-relaxed text-muted-foreground">
-                    Stability check: {plateauRequired} days of consistency required for next increment.
+                    Stability check: {actualPlateauRequired} days of consistency required for next increment.
                   </p>
                 </div>
               </AccordionContent>

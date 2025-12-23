@@ -81,7 +81,7 @@ const fetchDashboardData = async (userId: string) => {
       .filter(k => k.startsWith(`${h.habit_key}_`)).length;
 
     // Growth Metrics
-    const plateauRequired = profile?.neurodivergent_mode ? 14 : 7;
+    const plateauRequired = h.plateau_days_required; // Use habit-specific value
     const daysInPlateau = differenceInDays(new Date(), new Date(h.last_plateau_start_date));
     const daysRemainingInPlateau = Math.max(0, plateauRequired - h.completions_in_plateau);
 
@@ -114,7 +114,7 @@ const fetchDashboardData = async (userId: string) => {
       chunk_duration: h.chunk_duration,
       growth_stats: {
         completions: h.completions_in_plateau,
-        required: plateauRequired,
+        required: plateauRequired, // Use habit-specific value
         daysRemaining: daysRemainingInPlateau,
         phase: h.growth_phase
       }

@@ -10,6 +10,7 @@ interface DefaultHabit {
   target_completion_date: string;
   current_daily_goal: number;
   is_fixed: boolean;
+  plateau_days_required: number; // Added
 }
 
 const initializeMissingHabits = async (userId: string) => {
@@ -17,16 +18,16 @@ const initializeMissingHabits = async (userId: string) => {
   const oneYearFromNow = new Date(today.setFullYear(today.getFullYear() + 1));
   const oneYearDateString = oneYearFromNow.toISOString().split('T')[0];
   
-  // Define ALL default habits
+  // Define ALL default habits with a default plateau_days_required
   const habitsToEnsure: DefaultHabit[] = [
-    { habit_key: 'pushups', long_term_goal: 200, target_completion_date: oneYearDateString, current_daily_goal: 1, is_fixed: false },
-    { habit_key: 'meditation', long_term_goal: 120, target_completion_date: oneYearDateString, current_daily_goal: 5, is_fixed: false },
-    { habit_key: 'kinesiology', long_term_goal: 60, target_completion_date: oneYearDateString, current_daily_goal: 10, is_fixed: false },
-    { habit_key: 'piano', long_term_goal: 60, target_completion_date: oneYearDateString, current_daily_goal: 10, is_fixed: false },
-    { habit_key: 'housework', long_term_goal: 30, target_completion_date: oneYearDateString, current_daily_goal: 30, is_fixed: false },
-    { habit_key: 'projectwork', long_term_goal: 1000, target_completion_date: oneYearDateString, current_daily_goal: 60, is_fixed: false },
-    { habit_key: 'teeth_brushing', long_term_goal: 365, target_completion_date: oneYearDateString, current_daily_goal: 2, is_fixed: true },
-    { habit_key: 'medication', long_term_goal: 365, target_completion_date: oneYearDateString, current_daily_goal: 1, is_fixed: true },
+    { habit_key: 'pushups', long_term_goal: 200, target_completion_date: oneYearDateString, current_daily_goal: 1, is_fixed: false, plateau_days_required: 7 },
+    { habit_key: 'meditation', long_term_goal: 120, target_completion_date: oneYearDateString, current_daily_goal: 5, is_fixed: false, plateau_days_required: 7 },
+    { habit_key: 'kinesiology', long_term_goal: 60, target_completion_date: oneYearDateString, current_daily_goal: 10, is_fixed: false, plateau_days_required: 7 },
+    { habit_key: 'piano', long_term_goal: 60, target_completion_date: oneYearDateString, current_daily_goal: 10, is_fixed: false, plateau_days_required: 7 },
+    { habit_key: 'housework', long_term_goal: 30, target_completion_date: oneYearDateString, current_daily_goal: 30, is_fixed: false, plateau_days_required: 7 },
+    { habit_key: 'projectwork', long_term_goal: 1000, target_completion_date: oneYearDateString, current_daily_goal: 60, is_fixed: false, plateau_days_required: 7 },
+    { habit_key: 'teeth_brushing', long_term_goal: 365, target_completion_date: oneYearDateString, current_daily_goal: 2, is_fixed: true, plateau_days_required: 7 },
+    { habit_key: 'medication', long_term_goal: 365, target_completion_date: oneYearDateString, current_daily_goal: 1, is_fixed: true, plateau_days_required: 7 },
   ];
 
   const habitsToUpsert = habitsToEnsure.map(habit => ({
@@ -38,6 +39,7 @@ const initializeMissingHabits = async (userId: string) => {
     momentum_level: 'Building',
     is_fixed: habit.is_fixed,
     days_of_week: [0, 1, 2, 3, 4, 5, 6], // Default to all days
+    plateau_days_required: habit.plateau_days_required, // Include new field
   }));
 
   if (habitsToUpsert.length > 0) {

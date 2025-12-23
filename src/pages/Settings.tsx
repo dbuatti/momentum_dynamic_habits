@@ -17,9 +17,9 @@ import { SettingsSkeleton } from '@/components/dashboard/SettingsSkeleton';
 import { Switch } from '@/components/ui/switch';
 import { 
   Brain, LogOut, Anchor, Target, Sparkles, 
-  Settings2, Shield, ShieldCheck, Calendar, // added ShieldCheck here
+  Settings2, Shield, ShieldCheck, Calendar, 
   Clock, Dumbbell, Wind, BookOpen, Music, 
-  Home, Code, Pill, Timer, BarChart3, Layers, Zap
+  Home, Code, Pill, Timer, BarChart3, Layers, Zap, Info
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { 
@@ -262,6 +262,24 @@ const Settings = () => {
                   onBlur={(e) => updateHabitField(habit.id, { window_end: e.target.value || null })} 
                 />
               </div>
+            </div>
+
+            {/* Plateau Days Required */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 mb-1">
+                <Info className="w-4 h-4 text-primary" />
+                <Label className="text-[10px] font-black uppercase tracking-widest">Plateau Days Required</Label>
+              </div>
+              <Input 
+                type="number" 
+                min="1" 
+                className="h-9 rounded-xl text-sm font-bold" 
+                defaultValue={habit.plateau_days_required} 
+                onBlur={(e) => updateHabitField(habit.id, { plateau_days_required: parseInt(e.target.value) })} 
+              />
+              <p className="text-[9px] text-muted-foreground italic px-1">
+                Number of consistent days needed to trigger growth or complete trial.
+              </p>
             </div>
 
             {/* Auto-Chunking (Session Granularity) */}

@@ -5,7 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import { showSuccess, showError } from '@/utils/toast';
 import { initialHabits } from '@/lib/habit-data';
 import { calculateLevel } from '@/utils/leveling';
-import { differenceInDays, startOfWeek, endOfWeek } from 'date-fns';
+import { differenceInDays, startOfWeek, endOfWeek, isSameDay, subDays } from 'date-fns'; // Added subDays
+import { UserHabitRecord } from '@/types/habit'; // Added UserHabitRecord import
 
 interface LogHabitParams {
   habitKey: string;
@@ -28,14 +29,15 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
   if (profileFetchError) throw profileFetchError;
   const timezone = profileData.timezone || 'UTC';
   
-  const { data: userHabitData, error: userHabitFetchError } = await supabase
+  const { data: userHabitDataResult, error: userHabitFetchError } = await supabase
     .from('user_habits')
     .select('*')
     .eq('user_id', userId)
     .eq('habit_key', habitKey)
     .single();
 
-  if (!userHabitData || userHabitFetchError) throw userHabitFetchError || new Error(`Habit data not found for key: ${habitKey}`);
+  if (!userHabitDataResult || userHabitFetchError) throw userHabitFetchError || new Error(`Habit data not found for key: ${habitKey}`);
+  const userHabitData: UserHabitRecord = userHabitDataResult; // Explicitly type userHabitData
 
   const actualValue = habitConfig.type === 'time' && habitConfig.unit === 'min' ? value * 60 : value;
   const xpEarned = Math.round(actualValue * habitConfig.xpPerUnit);
@@ -55,15 +57,17 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
     p_user_id: userId, p_habit_key: habitKey, p_increment_value: actualValue,
   });
 
-  const { data: completedToday } = await supabase.rpc('get_completed_tasks_today', { 
+  // Fetch current daily progress *after* this log
+  const { data: completedTodayAfterLog } = await supabase.rpc('get_completed_tasks_today', { 
     p_user_id: userId, p_timezone: timezone 
   });
-
-  let totalDailyProgress = 0;
-  (completedToday || []).filter((task: any) => task.original_source === habitKey).forEach((task: any) => {
-    if (habitConfig.type === 'time' && habitConfig.unit === 'min') totalDailyProgress += (task.duration_used || 0) / 60;
-    else if (habitConfig.type === 'count') totalDailyProgress += (task.xp_earned || 0) / (habitConfig.xpPerUnit || 1);
+  let totalDailyProgressAfterLog = 0;
+  (completedTodayAfterLog || []).filter((task: any) => task.original_source === habitKey).forEach((task: any) => {
+    if (habitConfig.type === 'time' && habitConfig.unit === 'min') totalDailyProgressAfterLog += (task.duration_used || 0) / 60;
+    else if (habitConfig.type === 'count') totalDailyProgressAfterLog += (task.xp_earned || 0) / (habitConfig.xpPerUnit || 1);
+    else totalDailyProgressAfterLog += 1; // For fixed count habits like medication
   });
+  const isGoalMetAfterLog = totalDailyProgressAfterLog >= userHabitData.current_daily_goal;
 
   // Adaptive logic
   const isFixedGoalHabit = userHabitData.is_fixed || ['teeth_brushing', 'medication'].includes(habitKey);
@@ -73,52 +77,88 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
   
   const todayDate = new Date();
   const todayDateString = todayDate.toISOString().split('T')[0];
+  
+  // Use habit-specific plateau_days_required
+  const plateauRequired = userHabitData.plateau_days_required; 
   const daysInPlateau = differenceInDays(todayDate, new Date(userHabitData.last_plateau_start_date));
-  const isHabitCompletedToday = totalDailyProgress >= userHabitData.current_daily_goal;
-  const newCompletionsInPlateau = userHabitData.completions_in_plateau + (isHabitCompletedToday ? 1 : 0);
+  
+  let newCompletionsInPlateau = userHabitData.completions_in_plateau;
+  let newLastPlateauStartDate = userHabitData.last_plateau_start_date;
 
-  // Growth mode logic
-  if (!isFixedGoalHabit && !userHabitData.is_frozen && !userHabitData.is_trial_mode) {
-    const plateauRequired = profileData.neurodivergent_mode ? 14 : 7; // Longer for growth mode
-    
-    if (daysInPlateau >= plateauRequired) {
-      const completionRate = newCompletionsInPlateau / (daysInPlateau + 1);
+  // Logic for updating completions_in_plateau and last_plateau_start_date
+  // This aims to track consecutive days of meeting the goal within the plateau period.
+  const lastPlateauDate = new Date(userHabitData.last_plateau_start_date);
+  const isNewDayForPlateau = !isSameDay(todayDate, lastPlateauDate);
+
+  if (isGoalMetAfterLog) {
+    // If goal is met today
+    if (isNewDayForPlateau) {
+      // If it's a new day, check if yesterday's goal was met to continue streak
+      const yesterday = subDays(todayDate, 1); 
+      const { data: completedYesterday } = await supabase.from('completedtasks')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('original_source', habitKey)
+        .gte('completed_at', yesterday.toISOString())
+        .lte('completed_at', todayDate.toISOString()) // Check up to start of today
+        .limit(1);
       
-      if (completionRate >= 0.8) {
-        if (userHabitData.growth_phase === 'frequency' && userHabitData.frequency_per_week < 7) {
-          newFrequency = userHabitData.frequency_per_week + 1;
-          newGrowthPhase = 'duration';
-          showSuccess(`Dynamic Growth: Frequency increased to ${newFrequency}x per week!`);
-        } else if (userHabitData.growth_phase === 'duration') {
-          if (habitConfig.type === 'time') newDailyGoal = userHabitData.current_daily_goal + 5;
-          else newDailyGoal = userHabitData.current_daily_goal + 1;
-          
-          if (!userHabitData.max_goal_cap || newDailyGoal <= userHabitData.max_goal_cap) {
-            newGrowthPhase = userHabitData.frequency_per_week < 7 ? 'frequency' : 'duration';
-            showSuccess(`Dynamic Growth: Duration increased to ${newDailyGoal} ${habitConfig.unit}!`);
-          } else {
-            newDailyGoal = userHabitData.max_goal_cap;
-          }
-        }
+      const wasCompletedYesterday = completedYesterday && completedYesterday.length > 0;
 
-        await supabase.from('user_habits').update({
-          last_plateau_start_date: todayDateString,
-          completions_in_plateau: 0,
-          last_goal_increase_date: todayDateString,
-          current_daily_goal: newDailyGoal,
-          frequency_per_week: newFrequency,
-          growth_phase: newGrowthPhase,
-        }).eq('id', userHabitData.id);
+      if (isSameDay(lastPlateauDate, yesterday) && wasCompletedYesterday) {
+        // Continue streak
+        newCompletionsInPlateau = userHabitData.completions_in_plateau + 1;
+      } else {
+        // Start new streak
+        newCompletionsInPlateau = 1;
       }
+      newLastPlateauStartDate = todayDateString;
+    } else {
+      // Same day, goal met, no change to completions_in_plateau (already counted for today)
+      // This ensures multiple logs on the same day don't inflate `completions_in_plateau`
+    }
+  } else if (isNewDayForPlateau) {
+    // If it's a new day and goal is NOT met, reset plateau progress
+    newCompletionsInPlateau = 0;
+    newLastPlateauStartDate = todayDateString;
+  }
+
+  // Only apply growth logic if not trial and not fixed/frozen
+  if (!userHabitData.is_trial_mode && !isFixedGoalHabit && !userHabitData.is_frozen) { 
+    if (newCompletionsInPlateau >= plateauRequired) { // Check against newCompletionsInPlateau
+      // Growth logic
+      if (userHabitData.growth_phase === 'frequency' && userHabitData.frequency_per_week < 7) {
+        newFrequency = userHabitData.frequency_per_week + 1;
+        newGrowthPhase = 'duration';
+        showSuccess(`Dynamic Growth: Frequency increased to ${newFrequency}x per week!`);
+      } else if (userHabitData.growth_phase === 'duration') {
+        if (habitConfig.type === 'time') newDailyGoal = userHabitData.current_daily_goal + 5;
+        else newDailyGoal = userHabitData.current_daily_goal + 1;
+        
+        if (!userHabitData.max_goal_cap || newDailyGoal <= userHabitData.max_goal_cap) {
+          newGrowthPhase = userHabitData.frequency_per_week < 7 ? 'frequency' : 'duration';
+          showSuccess(`Dynamic Growth: Duration increased to ${newDailyGoal} ${habitConfig.unit}!`);
+        } else {
+          newDailyGoal = userHabitData.max_goal_cap;
+        }
+      }
+
+      await supabase.from('user_habits').update({
+        last_plateau_start_date: todayDateString,
+        completions_in_plateau: 0, // Reset after growth
+        last_goal_increase_date: todayDateString,
+        current_daily_goal: newDailyGoal,
+        frequency_per_week: newFrequency,
+        growth_phase: newGrowthPhase,
+      }).eq('id', userHabitData.id);
     }
   }
 
-  // Basic update if not growing
-  if (isHabitCompletedToday) {
-     await supabase.from('user_habits').update({
-      completions_in_plateau: newCompletionsInPlateau,
-    }).eq('id', userHabitData.id);
-  }
+  // Update user_habits with new plateau progress
+  await supabase.from('user_habits').update({
+    completions_in_plateau: newCompletionsInPlateau,
+    last_plateau_start_date: newLastPlateauStartDate,
+  }).eq('id', userHabitData.id);
 
   const newXp = (profileData.xp || 0) + xpEarned;
   await supabase.from('profiles').update({
@@ -132,6 +172,19 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
 };
 
 const unlogHabit = async ({ userId, habitKey, taskName }: { userId: string, habitKey: string, taskName: string }) => {
+  // Fetch profile to get timezone for RPC call
+  const { data: profileData, error: profileFetchError } = await supabase
+    .from('profiles')
+    .select('timezone')
+    .eq('id', userId)
+    .single();
+
+  if (profileFetchError) {
+    console.error('Error fetching profile for unlogging:', profileFetchError);
+    // Fallback to UTC if profile fetch fails
+  }
+  const timezone = profileData?.timezone || 'UTC'; // Defined timezone here
+
   const { data: task, error: findError } = await supabase
     .from('completedtasks')
     .select('*')
@@ -161,6 +214,36 @@ const unlogHabit = async ({ userId, habitKey, taskName }: { userId: string, habi
     }).eq('id', userId);
   }
 
+  // Decrement completions_in_plateau if unlogging causes goal to be unmet for today
+  const { data: userHabitDataResult, error: userHabitFetchError } = await supabase
+    .from('user_habits')
+    .select('id, current_daily_goal, completions_in_plateau, last_plateau_start_date') // Select id explicitly
+    .eq('user_id', userId)
+    .eq('habit_key', habitKey)
+    .single();
+
+  if (userHabitDataResult && !userHabitFetchError) {
+    const userHabitData: UserHabitRecord = userHabitDataResult as UserHabitRecord; // Explicitly type it here
+    const { data: completedTodayAfterUnlog } = await supabase.rpc('get_completed_tasks_today', { 
+      p_user_id: userId, p_timezone: timezone 
+    });
+    let totalDailyProgressAfterUnlog = 0;
+    (completedTodayAfterUnlog || []).filter((t: any) => t.original_source === habitKey && t.id !== task.id).forEach((t: any) => {
+      if (habitConfig?.type === 'time' && habitConfig?.unit === 'min') totalDailyProgressAfterUnlog += (t.duration_used || 0) / 60;
+      else if (habitConfig?.type === 'count') totalDailyProgressAfterUnlog += (t.xp_earned || 0) / (habitConfig.xpPerUnit || 1);
+      else totalDailyProgressAfterUnlog += 1;
+    });
+    const isGoalMetAfterUnlog = totalDailyProgressAfterUnlog >= userHabitData.current_daily_goal;
+
+    // If goal was met before unlogging, but now isn't, decrement completions_in_plateau
+    // This is a simplification, a full re-evaluation of the plateau state would be more robust.
+    if (!isGoalMetAfterUnlog && userHabitData.completions_in_plateau > 0) {
+      await supabase.from('user_habits').update({
+        completions_in_plateau: userHabitData.completions_in_plateau - 1,
+      }).eq('id', userHabitData.id);
+    }
+  }
+
   const { error: deleteError } = await supabase.from('completedtasks').delete().eq('id', task.id);
   if (deleteError) throw deleteError;
 
@@ -180,6 +263,9 @@ export const useHabitLog = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['dashboardData', session?.user?.id] });
       queryClient.invalidateQueries({ queryKey: ['journeyData', session?.user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['dailyHabitCompletion', session?.user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['habitHeatmapData', session?.user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['habitCapsules', session?.user?.id] });
     },
     onError: (error) => showError(`Failed: ${error.message}`),
   });
@@ -193,6 +279,9 @@ export const useHabitLog = () => {
       showSuccess('Task uncompleted.');
       queryClient.invalidateQueries({ queryKey: ['dashboardData', session?.user?.id] });
       queryClient.invalidateQueries({ queryKey: ['journeyData', session?.user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['dailyHabitCompletion', session?.user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['habitHeatmapData', session?.user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['habitCapsules', session?.user?.id] });
     },
     onError: (error) => showError(`Failed to uncomplete: ${error.message}`),
   });

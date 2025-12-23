@@ -98,7 +98,7 @@ const Index = () => {
   const dailyHabits = useMemo(() => {
     return habitGroups
       .filter(h => h.category === 'daily' && h.isVisible)
-      .sort((a, b) => (a.allCompleted === b.allCompleted ? 0 : a.allCompleted ? 1 : -1));
+      .sort((a, b) => (a.allCompleted === b.allCompleted ? 0 : a.allCompleted ? 1 : -1)); // Completed habits last
   }, [habitGroups]);
 
   useEffect(() => {
@@ -152,7 +152,7 @@ const Index = () => {
         key={habit.key}
         value={habit.key}
         className={cn(
-          "border-2 rounded-[32px] shadow-sm overflow-hidden transition-all bg-card",
+          "border-2 rounded-[32px] shadow-sm overflow-hidden transition-all duration-300",
           habit.allCompleted ? "opacity-50 grayscale-[0.3] border-muted bg-muted/5" : cn(accentColor, "shadow-md"),
           !habit.isWithinWindow && !habit.allCompleted && "opacity-75"
         )}
@@ -236,6 +236,8 @@ const Index = () => {
               sessionsPerWeek={habit.frequency_per_week} 
               duration={habit.dailyGoal} 
               unit={habit.unit} 
+              completionsInPlateau={habit.growth_stats.completions}
+              plateauDaysRequired={habit.growth_stats.required}
             />
           )}
 
