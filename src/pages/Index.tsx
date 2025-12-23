@@ -41,7 +41,6 @@ const Index = () => {
   const { mutate: logHabit, unlog } = useHabitLog();
 
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
-  const prevCompletions = useRef<Record<string, boolean>>({});
 
   const habitGroups = useMemo(() => {
     if (!data?.habits) return [];
@@ -49,20 +48,24 @@ const Index = () => {
     return data.habits.map(habit => {
       const goal = habit.dailyGoal;
       const progress = habit.dailyProgress;
-      const numCapsules = 1; 
-      const capsuleValue = goal;
+      
+      const numCapsules = habit.enable_chunks ? habit.num_chunks : 1;
+      const chunkDuration = habit.enable_chunks ? habit.chunk_duration : goal;
 
       const capsules = Array.from({ length: numCapsules }).map((_, i) => {
         const dbCapsule = dbCapsules?.find(c => c.habit_key === habit.key && c.capsule_index === i);
-        const isCompleted = dbCapsule?.is_completed || progress >= goal;
+        
+        // Progress based completion
+        const threshold = (i + 1) * chunkDuration;
+        const isCompleted = dbCapsule?.is_completed || progress >= threshold;
 
         return {
           id: `${habit.key}-${i}`,
           habitKey: habit.key,
           index: i,
-          label: habit.is_trial_mode ? 'Trial Session' : 'Daily Goal',
-          value: goal,
-          initialValue: progress,
+          label: habit.enable_chunks ? `Part ${i + 1}` : (habit.is_trial_mode ? 'Trial Session' : 'Daily Goal'),
+          value: chunkDuration,
+          initialValue: Math.max(0, Math.min(chunkDuration, progress - (i * chunkDuration))),
           unit: habit.unit,
           isCompleted,
           scheduledTime: dbCapsule?.scheduled_time,
@@ -75,7 +78,6 @@ const Index = () => {
         ...habit,
         capsules,
         allCompleted,
-        totalCapsulesCount: numCapsules,
       };
     });
   }, [data?.habits, dbCapsules]);
@@ -95,10 +97,9 @@ const Index = () => {
   }, [habitGroups]);
 
   const handleCapsuleComplete = (habit: any, capsule: any, actualValue: number, mood?: string) => {
-    if (actualValue + capsule.initialValue >= capsule.value) {
-      completeCapsule.mutate({ habitKey: habit.key, index: capsule.index, value: capsule.value, mood });
-    }
+    // If it's a chunked habit, we log the duration of the chunk
     logHabit({ habitKey: habit.key, value: actualValue, taskName: `${habit.name} session` });
+    completeCapsule.mutate({ habitKey: habit.key, index: capsule.index, value: actualValue, mood });
   };
 
   const handleCapsuleUncomplete = (habit: any, capsule: any) => {
@@ -120,6 +121,8 @@ const Index = () => {
         red: 'text-red-900 bg-red-50 border-red-200',
         indigo: 'text-indigo-900 bg-indigo-50 border-indigo-200',
     }[color];
+
+    const completedChunks = habit.capsules.filter(c => c.isCompleted).length;
 
     return (
       <AccordionItem
@@ -144,7 +147,7 @@ const Index = () => {
                 </h3>
                 <div className="flex items-center gap-2 mt-1">
                   <p className="text-sm opacity-80 font-bold">
-                    {habit.is_trial_mode ? `Trial: ${habit.weekly_completions}/${habit.frequency_per_week} weekly` : `${habit.dailyGoal} ${habit.unit} goal`}
+                    {habit.enable_chunks ? `${completedChunks}/${habit.num_chunks} chunks` : (habit.is_trial_mode ? `Trial: ${habit.weekly_completions}/${habit.frequency_per_week} weekly` : `${habit.dailyGoal} ${habit.unit} goal`)}
                   </p>
                   {!habit.allCompleted && (
                     <span className={cn(
@@ -163,18 +166,20 @@ const Index = () => {
             </div>
           </div>
         </AccordionTrigger>
-        <AccordionContent className="px-6 pb-6 pt-2">
-          {habit.capsules.map(capsule => (
-            <HabitCapsule
-              key={capsule.id}
-              {...capsule}
-              habitName={habit.name}
-              color={color}
-              onComplete={(actual, mood) => handleCapsuleComplete(habit, capsule, actual, mood)}
-              onUncomplete={() => handleCapsuleUncomplete(habit, capsule)}
-              showMood={data.neurodivergentMode}
-            />
-          ))}
+        <AccordionContent className="px-6 pb-6 pt-2 space-y-4">
+          <div className="grid gap-3">
+            {habit.capsules.map(capsule => (
+              <HabitCapsule
+                key={capsule.id}
+                {...capsule}
+                habitName={habit.name}
+                color={color}
+                onComplete={(actual, mood) => handleCapsuleComplete(habit, capsule, actual, mood)}
+                onUncomplete={() => handleCapsuleUncomplete(habit, capsule)}
+                showMood={data.neurodivergentMode}
+              />
+            ))}
+          </div>
           {habit.is_trial_mode && (
               <div className="mt-4 p-4 bg-white/60 rounded-2xl border border-black/10">
                 <p className="text-[10px] font-black uppercase tracking-widest opacity-60 flex items-center gap-1.5">

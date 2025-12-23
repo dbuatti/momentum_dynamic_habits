@@ -65,10 +65,8 @@ const fetchDashboardData = async (userId: string) => {
     const dailyProgress = dailyProgressMap.get(h.habit_key) || 0;
     const dailyGoal = h.current_daily_goal;
     
-    // Check Day of Week
     const isScheduledForToday = h.days_of_week ? h.days_of_week.includes(currentDayOfWeek) : true;
 
-    // Check Time Window
     let isWithinWindow = true;
     if (h.window_start && h.window_end) {
       const now = new Date();
@@ -77,11 +75,8 @@ const fetchDashboardData = async (userId: string) => {
       isWithinWindow = isWithinInterval(now, { start, end });
     }
 
-    // Visibility: It's visible if it's scheduled for today. 
-    // It's "available" if isWithinWindow is true.
     const isVisible = isScheduledForToday;
 
-    // Weekly progress calculation
     const weeklyCompletions = Array.from(weeklyCompletionMap.keys())
       .filter(k => k.startsWith(`${h.habit_key}_`)).length;
 
@@ -102,6 +97,9 @@ const fetchDashboardData = async (userId: string) => {
       isWithinWindow,
       window_start: h.window_start,
       window_end: h.window_end,
+      enable_chunks: h.enable_chunks,
+      num_chunks: h.num_chunks,
+      chunk_duration: h.chunk_duration,
     };
   });
 

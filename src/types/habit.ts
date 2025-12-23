@@ -41,6 +41,9 @@ export interface UserHabitRecord {
   window_start: string | null;
   window_end: string | null;
   days_of_week: number[];
+  enable_chunks: boolean;
+  num_chunks: number;
+  chunk_duration: number;
 }
 
 export interface PianoHabit extends Habit {

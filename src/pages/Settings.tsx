@@ -13,7 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
 import { SettingsSkeleton } from '@/components/dashboard/SettingsSkeleton';
 import { Switch } from '@/components/ui/switch';
-import { Brain, Zap, Lock, LogOut, Heart, Volume2, Play, Bell, Trophy, Anchor, Target, Clock, Calendar } from 'lucide-react';
+import { Brain, Zap, Lock, LogOut, Heart, Volume2, Play, Bell, Trophy, Anchor, Target, Clock, Calendar, LayoutGrid } from 'lucide-react';
 import { playStartSound, playEndSound, playGoalSound } from '@/utils/audio';
 import { cn } from "@/lib/utils";
 
@@ -122,6 +122,30 @@ const Settings = () => {
                   <Label className="text-[10px] font-black uppercase opacity-60">Frequency (weekly)</Label>
                   <Input type="number" min="1" max="7" className="h-8 rounded-xl" defaultValue={habit.frequency_per_week} onBlur={(e) => updateHabitField(habit.id, { frequency_per_week: parseInt(e.target.value) })} />
                 </div>
+              </div>
+
+              {/* Chunking Configuration */}
+              <div className="p-4 bg-white/50 rounded-2xl border border-black/5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <LayoutGrid className="w-4 h-4 text-blue-500" />
+                    <Label className="text-[10px] font-black uppercase">Enable Chunks</Label>
+                  </div>
+                  <Switch checked={habit.enable_chunks} onCheckedChange={(val) => updateHabitField(habit.id, { enable_chunks: val })} />
+                </div>
+                
+                {habit.enable_chunks && (
+                  <div className="grid grid-cols-2 gap-4 pt-1">
+                    <div className="space-y-1">
+                      <Label className="text-[9px] font-black uppercase opacity-60">How many chunks?</Label>
+                      <Input type="number" min="1" max="10" className="h-7 text-xs rounded-lg" defaultValue={habit.num_chunks} onBlur={(e) => updateHabitField(habit.id, { num_chunks: parseInt(e.target.value) })} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[9px] font-black uppercase opacity-60">Min per chunk</Label>
+                      <Input type="number" min="1" className="h-7 text-xs rounded-lg" defaultValue={habit.chunk_duration} onBlur={(e) => updateHabitField(habit.id, { chunk_duration: parseInt(e.target.value) })} />
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">
