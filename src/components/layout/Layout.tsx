@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Sidebar } from './Sidebar';
-import { NavigationProgressToast } from './NavigationProgressToast'; // Uncommented
+// import { NavigationProgressToast } from './NavigationProgressToast'; // Uncommented
 import { useTabProgress } from '@/hooks/useTabProgress';
 import { FloatingTimer } from './FloatingTimer';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -30,7 +30,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       >
         {children}
       </Sidebar>
-      <NavigationProgressToast /> {/* Uncommented */}
+      {/* <NavigationProgressToast /> */} {/* Uncommented */}
       <FloatingTimer />
     </div>
   );

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Check, Clock, Smile, Meh, Frown, Undo2, Play, Pause, Square, Edit2, Zap } from 'lucide-react';
+import { Check, Clock, Smile, Meh, Frown, Undo2, Play, Pause, Square, Edit2, Zap, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
@@ -169,6 +169,18 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
         detail: { label, habitName, goalValue: value, elapsed: initialValue * 60 + elapsedSeconds, isPaused: true, habitKey } 
       }));
     }
+  };
+
+  const handleCancelTimer = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    stopInterval();
+    localStorage.removeItem(storageKey);
+    window.dispatchEvent(new CustomEvent('habit-timer-update', { detail: null }));
+    setIsTiming(false);
+    setElapsedSeconds(0);
+    setIsPaused(false);
+    setGoalReachedAlerted(false);
+    startTimeRef.current = null;
   };
 
   const formatTime = (totalSeconds: number) => {
@@ -380,6 +392,13 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                   >
                     <Square className="w-4 h-4 mr-2 fill-current" />
                     Done
+                  </Button>
+                  <Button 
+                    size="icon" 
+                    className="h-12 w-12 rounded-full bg-destructive/10 text-destructive hover:bg-destructive/20 shadow-md border-0"
+                    onClick={handleCancelTimer}
+                  >
+                    <X className="w-6 h-6" />
                   </Button>
                 </div>
               </div>
