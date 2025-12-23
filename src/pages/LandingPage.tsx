@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   Anchor, FlaskConical, Layers, Trophy, Brain, 
-  CheckCircle2, ArrowRight, Zap, Target, MousePointer2
+  CheckCircle2, ArrowRight, Zap, Target, MousePointer2,
+  Sparkles // Add this
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
