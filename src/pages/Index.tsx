@@ -221,7 +221,7 @@ const Index = () => {
           isLocked && "opacity-40 grayscale-[0.5] pointer-events-none" // Apply styles for locked habits
         )}
       >
-        <AccordionTrigger className="px-6 py-5 hover:no-underline">
+        <AccordionTrigger className="px-6 py-5 hover:no-underline group">
           <div className="flex flex-col w-full text-left gap-4">
             <div className="flex items-center justify-between w-full">
                 <div className="flex items-center gap-4 min-w-0">
@@ -285,8 +285,9 @@ const Index = () => {
                     e.stopPropagation(); // Prevent accordion from toggling
                     handleOverrideDependency(habit.key);
                   }}
+                  asChild // Added asChild prop
                 >
-                  (Override)
+                  <span>(Override)</span> {/* Wrapped content in a span */}
                 </Button>
               </div>
             )}
