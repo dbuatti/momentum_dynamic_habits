@@ -15,7 +15,7 @@ import {
   Target, Anchor, Zap, ShieldCheck, Brain, Clock, Layers,
   Dumbbell, Wind, BookOpen, Music, Home, Code, Sparkles, Pill,
   Plus, Loader2, Check, Info, Eye, EyeOff, ArrowRight, FlaskConical,
-  Calendar, Timer // Added Calendar and Timer imports
+  Calendar, Timer, ChevronRight, ChevronLeft
 } from 'lucide-react';
 import { habitTemplates, habitCategories, habitUnits, habitModes, habitIcons, HabitTemplate } from '@/lib/habit-templates';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -26,8 +26,8 @@ import { useNavigate } from 'react-router-dom';
 import { UserHabitRecord, HabitCategory as HabitCategoryType } from '@/types/habit';
 import { useJourneyData } from '@/hooks/useJourneyData';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { habitIconMap } from '@/lib/habit-utils'; // Import from centralized utility
 
+// ... (CreateHabitParams and createNewHabit function remain identical to your logic)
 interface CreateHabitParams {
   name: string;
   habit_key: string;
@@ -55,25 +55,23 @@ const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: s
 
   const { name, habit_key, category, current_daily_goal, frequency_per_week, is_trial_mode, is_fixed, anchor_practice, auto_chunking, unit, xp_per_unit, energy_cost_per_unit, icon_name, dependent_on_habit_id, window_start, window_end } = habit;
 
-  // Determine plateau days based on mode and neurodivergent setting
   let calculatedPlateauDays = habit.plateau_days_required;
   if (is_trial_mode) {
-    calculatedPlateauDays = neurodivergentMode ? 14 : 7; // Longer trial for ND
+    calculatedPlateauDays = neurodivergentMode ? 14 : 7;
   } else if (is_fixed) {
-    calculatedPlateauDays = 7; // Fixed habits still have a plateau for consistency tracking
+    calculatedPlateauDays = 7;
   } else {
-    calculatedPlateauDays = neurodivergentMode ? 10 : 5; // Longer growth plateau for ND
+    calculatedPlateauDays = neurodivergentMode ? 10 : 5;
   }
 
-  // Calculate chunking parameters
   let numChunks = 1;
   let chunkDuration = current_daily_goal;
   if (auto_chunking && unit === 'min' && current_daily_goal > (neurodivergentMode ? 5 : 10)) {
-    const targetChunkSize = neurodivergentMode ? 5 : 10; // 5 min chunks for ND, 10 for standard
+    const targetChunkSize = neurodivergentMode ? 5 : 10;
     numChunks = Math.max(1, Math.ceil(current_daily_goal / targetChunkSize));
     chunkDuration = Number((current_daily_goal / numChunks).toFixed(1));
   } else if (auto_chunking && unit === 'reps' && current_daily_goal > (neurodivergentMode ? 10 : 20)) {
-    const targetChunkSize = neurodivergentMode ? 10 : 20; // 10 reps for ND, 20 for standard
+    const targetChunkSize = neurodivergentMode ? 10 : 20;
     numChunks = Math.max(1, Math.ceil(current_daily_goal / targetChunkSize));
     chunkDuration = Number((current_daily_goal / numChunks).toFixed(1));
   }
@@ -86,7 +84,7 @@ const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: s
     xp_per_unit: xp_per_unit,
     energy_cost_per_unit: energy_cost_per_unit,
     current_daily_goal: current_daily_goal,
-    long_term_goal: current_daily_goal * (unit === 'min' ? 365 * 60 : 365), // Example: 1 year goal in seconds or reps
+    long_term_goal: current_daily_goal * (unit === 'min' ? 365 * 60 : 365),
     target_completion_date: oneYearDateString,
     momentum_level: 'Building',
     lifetime_progress: 0,
@@ -103,27 +101,26 @@ const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: s
     growth_phase: 'duration',
     window_start: window_start,
     window_end: window_end,
-    days_of_week: [0, 1, 2, 3, 4, 5, 6], // Default to all days
+    days_of_week: [0, 1, 2, 3, 4, 5, 6],
     auto_chunking: auto_chunking,
-    enable_chunks: auto_chunking, // enable_chunks follows auto_chunking for new habits
+    enable_chunks: auto_chunking,
     num_chunks: numChunks,
     chunk_duration: chunkDuration,
     is_visible: true,
     dependent_on_habit_id: dependent_on_habit_id,
     anchor_practice: anchor_practice,
-    carryover_value: 0, // Initialize carryover_value
+    carryover_value: 0,
   };
 
   const { error } = await supabase.from('user_habits').insert(habitToInsert);
-
   if (error) throw error;
   return { success: true };
 };
 
 const timeOptions = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0') + ':00');
 
-const getHabitIconComponent = (iconName: string) => {
-  return habitIcons.find(i => i.value === iconName)?.icon || habitIconMap.custom_habit; // Use centralized map with fallback
+const getHabitIcon = (iconName: string) => {
+  return habitIcons.find(i => i.value === iconName)?.icon || Target;
 };
 
 const CreateHabit = () => {
@@ -134,9 +131,8 @@ const CreateHabit = () => {
   const neurodivergentMode = journeyData?.profile?.neurodivergent_mode || false;
 
   const [flowType, setFlowType] = useState<'entry' | 'guided' | 'custom'>('entry');
-  const [step, setStep] = useState(1); // For guided flow
+  const [step, setStep] = useState(1);
 
-  // Habit state for both flows
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [habitName, setHabitName] = useState('');
   const [habitKey, setHabitKey] = useState('');
@@ -155,29 +151,19 @@ const CreateHabit = () => {
   const [plateauDaysRequired, setPlateauDaysRequired] = useState(7);
   const [windowStart, setWindowStart] = useState<string | null>(null);
   const [windowEnd, setWindowEnd] = useState<string | null>(null);
-  const [notes, setNotes] = useState(''); // For custom flow description
+  const [notes, setNotes] = useState('');
 
   const otherHabits = useMemo(() => {
-    return (journeyData?.allHabits || []).filter(h => h.id !== habitKey); // Filter out the habit being created
+    return (journeyData?.allHabits || []).filter(h => h.id !== habitKey);
   }, [journeyData?.allHabits, habitKey]);
 
   const selectedTemplate = useMemo(() => {
     if (selectedTemplateId === 'custom_habit') {
       return {
-        id: 'custom_habit',
-        name: 'Custom Habit',
-        category: 'daily',
-        defaultFrequency: 3,
-        defaultDuration: 15,
-        defaultMode: 'Trial',
-        defaultChunks: 1,
-        autoChunking: true,
-        anchorPractice: false,
-        unit: 'min',
-        xpPerUnit: 30,
-        energyCostPerUnit: 6,
-        icon: Target,
-        plateauDaysRequired: 7,
+        id: 'custom_habit', name: 'Custom Habit', category: 'daily',
+        defaultFrequency: 3, defaultDuration: 15, defaultMode: 'Trial',
+        defaultChunks: 1, autoChunking: true, anchorPractice: false,
+        unit: 'min', xpPerUnit: 30, energyCostPerUnit: 6, icon: Target, plateauDaysRequired: 7,
       } as HabitTemplate;
     }
     return habitTemplates.find(t => t.id === selectedTemplateId);
@@ -200,10 +186,6 @@ const CreateHabit = () => {
       const iconEntry = habitIcons.find(entry => entry.icon === selectedTemplate.icon);
       setSelectedIconName(iconEntry?.value || 'Target');
       setPlateauDaysRequired(selectedTemplate.plateauDaysRequired);
-      setDependentOnHabitId(null);
-      setWindowStart(null);
-      setWindowEnd(null);
-      setNotes('');
     }
   }, [selectedTemplate]);
 
@@ -214,785 +196,482 @@ const CreateHabit = () => {
     },
     onSuccess: () => {
       showSuccess('Habit created successfully!');
-      queryClient.invalidateQueries({ queryKey: ['dashboardData', session?.user?.id] });
-      queryClient.invalidateQueries({ queryKey: ['journeyData', session?.user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardData'] });
+      queryClient.invalidateQueries({ queryKey: ['journeyData'] });
       navigate('/');
     },
-    onError: (error) => {
-      showError(`Failed to create habit: ${error.message}`);
-    },
+    onError: (error: any) => showError(`Failed to create habit: ${error.message}`),
   });
 
-  const handleSubmit = (e?: React.FormEvent) => { // Made event optional
-    e?.preventDefault(); // Conditionally prevent default
-
-    if (!habitName.trim() || !habitKey.trim() || dailyGoal <= 0 || frequency <= 0 || xpPerUnit <= 0 || energyCostPerUnit < 0) {
-      showError('Please fill in all required fields with valid values.');
+  const handleSubmit = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!habitName.trim() || dailyGoal <= 0) {
+      showError('Please provide a habit name and goal.');
       return;
     }
-
-    if (!selectedTemplateId) {
-      showError('Please select a habit template or choose custom.');
-      return;
-    }
-
     createHabitMutation.mutate({
       name: habitName,
-      habit_key: habitKey.toLowerCase().replace(/\s/g, '_'),
-      category: category,
-      current_daily_goal: dailyGoal,
-      frequency_per_week: frequency,
-      is_trial_mode: isTrialMode,
-      is_fixed: isFixed,
-      anchor_practice: isAnchorPractice,
-      auto_chunking: autoChunking,
-      unit: unit,
-      xp_per_unit: xpPerUnit,
-      energy_cost_per_unit: energyCostPerUnit,
-      icon_name: selectedIconName,
-      dependent_on_habit_id: dependentOnHabitId,
-      plateau_days_required: plateauDaysRequired,
-      window_start: windowStart,
-      window_end: windowEnd,
+      habit_key: habitKey || habitName.toLowerCase().replace(/\s/g, '_'),
+      category, current_daily_goal: dailyGoal, frequency_per_week: frequency,
+      is_trial_mode: isTrialMode, is_fixed: isFixed, anchor_practice: isAnchorPractice,
+      auto_chunking: autoChunking, unit, xp_per_unit: xpPerUnit,
+      energy_cost_per_unit: energyCostPerUnit, icon_name: selectedIconName,
+      dependent_on_habit_id: dependentOnHabitId, plateau_days_required: plateauDaysRequired,
+      window_start: windowStart, window_end: windowEnd,
     });
   };
 
-  const handleGuidedNext = () => {
-    if (step === 1 && !selectedTemplateId) {
-      showError('Please select a habit template.');
-      return;
-    }
-    if (step === 9 && (!habitName.trim() || !habitKey.trim())) { // Corrected step number
-      showError('Please provide a habit name and key.');
-      return;
-    }
-    if (step < 9) setStep(step + 1);
-    else handleSubmit(); // Trigger final submission without an event
-  };
-
-  const handleGuidedBack = () => {
-    if (step > 1) setStep(step - 1);
-    else setFlowType('entry'); // Go back to entry screen from first step
-  };
-
   const renderGuidedStep = () => {
-    const IconComponent = getHabitIconComponent(selectedIconName);
+    const IconComponent = getHabitIcon(selectedIconName);
     const progress = (step / 9) * 100;
 
     return (
-      <Card className="w-full max-w-md shadow-xl rounded-3xl overflow-hidden border-0">
-        <CardHeader className="pb-0">
-          <div className="flex justify-between items-center mb-4">
-            <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Step {step} of 9</div>
-            <div className="text-xs font-bold text-primary">{Math.round(progress)}%</div>
+      <div className="space-y-6">
+        {/* Progress Tracker */}
+        <div className="space-y-2">
+          <div className="flex justify-between items-end">
+            <h3 className="text-sm font-black uppercase tracking-widest text-primary">Step {step}/9</h3>
+            <span className="text-[10px] font-bold opacity-60 uppercase">{Math.round(progress)}% Complete</span>
           </div>
-          <div className="w-full bg-secondary rounded-full h-1.5"><div className="bg-primary h-1.5 rounded-full transition-all duration-300" style={{ width: `${progress}%` }}></div></div>
-        </CardHeader>
-        <CardContent className="py-8">
-          {step === 1 && (
-            <div className="space-y-6">
-              <div className="text-center">
-                <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                  <Layers className="w-8 h-8 text-primary" />
+          <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-primary transition-all duration-500 ease-out rounded-full" 
+              style={{ width: `${progress}%` }} 
+            />
+          </div>
+        </div>
+
+        <Card className="rounded-[2rem] border-0 shadow-xl shadow-black/5 overflow-hidden">
+          <CardContent className="p-8">
+            {step === 1 && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="space-y-2">
+                  <h2 className="text-2xl font-black tracking-tight">What's the vibe?</h2>
+                  <p className="text-sm text-muted-foreground">Pick a template to start fast, or go custom.</p>
                 </div>
-                <h2 className="text-2xl font-bold mb-2">Choose a Starting Point</h2>
-                <p className="text-muted-foreground">Select a template or start from scratch.</p>
-              </div>
-              <div className="grid grid-cols-2 gap-3 max-h-[300px] overflow-y-auto pr-2">
-                {habitTemplates.map((template) => {
-                  const TemplateIcon = template.icon;
-                  const isSelected = selectedTemplateId === template.id;
-                  return (
-                    <Button
+                <div className="grid grid-cols-2 gap-3 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
+                  {habitTemplates.map((template) => (
+                    <button
                       key={template.id}
-                      type="button"
-                      variant="outline"
+                      onClick={() => {
+                        setSelectedTemplateId(template.id);
+                        setStep(2);
+                      }}
                       className={cn(
-                        "h-auto p-4 rounded-2xl flex flex-col items-center justify-center text-center space-y-2 transition-all",
-                        isSelected ? "border-primary ring-2 ring-primary/20 bg-primary/5" : "border-border hover:bg-muted/50"
+                        "p-4 rounded-2xl border-2 transition-all flex flex-col items-center text-center gap-3",
+                        selectedTemplateId === template.id 
+                          ? "border-primary bg-primary/5 ring-4 ring-primary/10" 
+                          : "border-muted bg-card hover:border-primary/40"
                       )}
-                      onClick={() => setSelectedTemplateId(template.id)}
                     >
-                      <TemplateIcon className="w-6 h-6 text-primary" />
-                      <span className="text-sm font-semibold">{template.name}</span>
-                      <span className="text-xs text-muted-foreground">{template.defaultDuration} {template.unit} • {template.defaultFrequency}x/week</span>
-                    </Button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {step === 2 && selectedTemplate && (
-            <div className="space-y-6">
-              <div className="text-center">
-                <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                  <Target className="w-8 h-8 text-primary" />
-                </div>
-                <h2 className="text-2xl font-bold mb-2">Habit Focus</h2>
-                <p className="text-muted-foreground">What area of your life is this habit for?</p>
-              </div>
-              <div className="grid grid-cols-2 gap-3 max-h-[300px] overflow-y-auto pr-2">
-                {habitCategories.filter(cat => cat.value !== 'anchor').map((cat) => {
-                  const Icon = cat.icon;
-                  const isSelected = category === cat.value;
-                  return (
-                    <div key={cat.value} className={cn(
-                      "border rounded-xl p-3 cursor-pointer transition-all",
-                      isSelected ? 'border-primary ring-2 ring-primary/20 bg-primary/5' : 'border-border hover:bg-muted/50'
-                    )} onClick={() => setCategory(cat.value)}>
-                      <div className="flex flex-col items-center space-y-1">
-                        <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-primary/10 text-primary"><Icon className="w-5 h-5" /></div>
-                        <span className="text-xs font-bold text-center leading-tight">{cat.label}</span>
+                      <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">
+                        <template.icon className="w-5 h-5 text-primary" />
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {step === 3 && (
-            <div className="space-y-6">
-              <div className="text-center">
-                <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                  <Anchor className="w-8 h-8 text-primary" />
-                </div>
-                <h2 className="text-2xl font-bold mb-2">Priority & Importance</h2>
-                <p className="text-muted-foreground">How important is this habit to your daily routine?</p>
-              </div>
-              <div className="space-y-4">
-                <button
-                  type="button"
-                  onClick={() => setIsAnchorPractice(true)}
-                  className={cn(
-                    "flex items-start gap-4 p-4 rounded-2xl border-2 text-left w-full transition-all",
-                    isAnchorPractice ? "border-primary bg-primary/[0.02] shadow-sm" : "border-transparent bg-muted/30 opacity-60 hover:opacity-100"
-                  )}
-                >
-                  <div className={cn("p-2 rounded-lg", isAnchorPractice ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground")}>
-                    <Anchor className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-black uppercase leading-none">Core / Anchor (Recommended)</p>
-                    <p className="text-[10px] text-muted-foreground mt-1.5 leading-relaxed">Essential, non-negotiable habits that keep you grounded.</p>
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsAnchorPractice(false)}
-                  className={cn(
-                    "flex items-start gap-4 p-4 rounded-2xl border-2 text-left w-full transition-all",
-                    !isAnchorPractice ? "border-primary bg-primary/[0.02] shadow-sm" : "border-transparent bg-muted/30 opacity-60 hover:opacity-100"
-                  )}
-                >
-                  <div className={cn("p-2 rounded-lg", !isAnchorPractice ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground")}>
-                    <Zap className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-black uppercase leading-none">Supporting / Experimental</p>
-                    <p className="text-[10px] text-muted-foreground mt-1.5 leading-relaxed">Nice-to-have habits or new experiments.</p>
-                  </div>
-                </button>
-              </div>
-            </div>
-          )}
-
-          {step === 4 && (
-            <div className="space-y-6">
-              <div className="text-center">
-                <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                  <Calendar className="w-8 h-8 text-primary" />
-                </div>
-                <h2 className="text-2xl font-bold mb-2">Frequency</h2>
-                <p className="text-muted-foreground">How often do you want to do this habit per week?</p>
-              </div>
-              <div className="space-y-4">
-                <Slider
-                  min={1}
-                  max={7}
-                  step={1}
-                  value={[frequency]}
-                  onValueChange={(val) => setFrequency(val[0])}
-                  className="w-full"
-                />
-                <div className="flex justify-between text-sm text-muted-foreground">
-                  <span>1x/week</span>
-                  <span className="font-bold text-foreground">{frequency} times per week</span>
-                  <span>7x/week</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {step === 5 && (
-            <div className="space-y-6">
-              <div className="text-center">
-                <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                  <Timer className="w-8 h-8 text-primary" />
-                </div>
-                <h2 className="text-2xl font-bold mb-2">Duration</h2>
-                <p className="text-muted-foreground">How long do you want each session to last?</p>
-              </div>
-              <div className="space-y-3">
-                <Label htmlFor="dailyGoal">Daily Goal ({unit})</Label>
-                <Input
-                  id="dailyGoal"
-                  type="number"
-                  value={dailyGoal}
-                  onChange={(e) => setDailyGoal(Number(e.target.value))}
-                  className="h-12 rounded-xl"
-                  min={1}
-                  required
-                />
-              </div>
-              <div className="space-y-3">
-                <Label htmlFor="unit">Unit</Label>
-                <Select value={unit} onValueChange={(value: 'min' | 'reps' | 'dose') => setUnit(value)}>
-                  <SelectTrigger id="unit" className="h-12 rounded-xl">
-                    <SelectValue placeholder="Select unit" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {habitUnits.map((u) => (
-                      <SelectItem key={u.value} value={u.value}>
-                        {u.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          )}
-
-          {step === 6 && (
-            <div className="space-y-6">
-              <div className="text-center">
-                <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                  <FlaskConical className="w-8 h-8 text-primary" />
-                </div>
-                <h2 className="text-2xl font-bold mb-2">Mode Selection</h2>
-                <p className="text-muted-foreground">Start with a low-pressure trial or jump into growth?</p>
-              </div>
-              <div className="space-y-4">
-                {habitModes.map((mode) => (
+                      <span className="text-xs font-black uppercase tracking-tight">{template.name}</span>
+                    </button>
+                  ))}
                   <button
-                    key={mode.value}
-                    type="button"
                     onClick={() => {
-                      setIsTrialMode(mode.value === 'Trial');
-                      setIsFixed(mode.value === 'Fixed');
+                      setSelectedTemplateId('custom_habit');
+                      setStep(2);
                     }}
-                    className={cn(
-                      "flex items-start gap-4 p-4 rounded-2xl border-2 text-left w-full transition-all",
-                      (isTrialMode && mode.value === 'Trial') || (isFixed && mode.value === 'Fixed') || (!isTrialMode && !isFixed && mode.value === 'Growth')
-                        ? "border-primary bg-primary/[0.02] shadow-sm"
-                        : "border-transparent bg-muted/30 opacity-60 hover:opacity-100"
-                    )}
+                    className="p-4 rounded-2xl border-2 border-dashed border-muted hover:border-primary/40 transition-all flex flex-col items-center text-center gap-3"
                   >
-                    <div className={cn("p-2 rounded-lg", (isTrialMode && mode.value === 'Trial') || (isFixed && mode.value === 'Fixed') || (!isTrialMode && !isFixed && mode.value === 'Growth') ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground")}>
-                      <mode.icon className="w-5 h-5" />
+                    <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">
+                      <Plus className="w-5 h-5" />
                     </div>
-                    <div>
-                      <p className="text-xs font-black uppercase leading-none">{mode.label}</p>
-                      <p className="text-[10px] text-muted-foreground mt-1.5 leading-relaxed">{mode.description}</p>
-                    </div>
+                    <span className="text-xs font-black uppercase tracking-tight">Custom</span>
                   </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {step === 7 && (
-            <div className="space-y-6">
-              <div className="text-center">
-                <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                  <Layers className="w-8 h-8 text-primary" />
                 </div>
-                <h2 className="text-2xl font-bold mb-2">Chunking Preferences</h2>
-                <p className="text-muted-foreground">Do you want your session broken into smaller chunks?</p>
               </div>
-              <div className="p-4 bg-muted/50 rounded-2xl border border-primary/10 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Layers className="w-5 h-5 text-blue-500" />
-                    <Label className="font-bold">Adaptive Auto-Chunking</Label>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Info className="w-4 h-4 text-muted-foreground cursor-help" />
-                        </TooltipTrigger>
-                        <TooltipContent className="max-w-xs">
-                          <p className="text-xs">Automatically breaks longer sessions into smaller, more manageable "capsules" to reduce overwhelm.</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+            )}
+
+            {step === 2 && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+                <div className="space-y-2">
+                  <h2 className="text-2xl font-black tracking-tight">Identify your habit</h2>
+                  <p className="text-sm text-muted-foreground">Give it a name. This is what you'll see on your dashboard.</p>
+                </div>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest ml-1">Habit Name</Label>
+                    <Input 
+                      value={habitName} 
+                      onChange={(e) => setHabitName(e.target.value)}
+                      placeholder="e.g., Deep Work"
+                      className="h-12 rounded-2xl border-2 focus:border-primary"
+                    />
                   </div>
-                  <Switch checked={autoChunking} onCheckedChange={setAutoChunking} />
-                </div>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  If enabled, longer sessions will be automatically broken into smaller parts.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {step === 8 && (
-            <div className="space-y-6">
-              <div className="text-center">
-                <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                  <Clock className="w-8 h-8 text-primary" />
-                </div>
-                <h2 className="text-2xl font-bold mb-2">Time Windows</h2>
-                <p className="text-muted-foreground">When do you usually want to complete this habit?</p>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-3">
-                  <Label htmlFor="windowStart">Window Start</Label>
-                  <Select value={windowStart || ''} onValueChange={setWindowStart}>
-                    <SelectTrigger id="windowStart" className="h-12 rounded-xl"><SelectValue placeholder="Anytime" /></SelectTrigger>
-                    <SelectContent>{timeOptions.map((time) => <SelectItem key={time} value={time}>{time}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-3">
-                  <Label htmlFor="windowEnd">Window End</Label>
-                  <Select value={windowEnd || ''} onValueChange={setWindowEnd}>
-                    <SelectTrigger id="windowEnd" className="h-12 rounded-xl"><SelectValue placeholder="Anytime" /></SelectTrigger>
-                    <SelectContent>{timeOptions.map((time) => <SelectItem key={time} value={time}>{time}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {step === 9 && (
-            <div className="space-y-6">
-              <div className="text-center">
-                <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                  <IconComponent className="w-8 h-8 text-primary" />
-                </div>
-                <h2 className="text-2xl font-bold mb-2">Custom Naming & Icon</h2>
-                <p className="text-muted-foreground">Give your habit a unique name and choose an icon.</p>
-              </div>
-              <div className="space-y-4">
-                <div className="space-y-3">
-                  <Label htmlFor="habitName">Habit Name</Label>
-                  <Input
-                    id="habitName"
-                    value={habitName}
-                    onChange={(e) => {
-                      setHabitName(e.target.value);
-                      setHabitKey(e.target.value.toLowerCase().replace(/\s/g, '_'));
-                    }}
-                    placeholder="e.g., Daily Reading, Morning Run"
-                    className="h-12 rounded-xl"
-                    required
-                  />
-                </div>
-                <div className="space-y-3">
-                  <Label htmlFor="habitKey">Unique Habit Key (auto-generated)</Label>
-                  <Input
-                    id="habitKey"
-                    value={habitKey}
-                    readOnly
-                    className="h-12 rounded-xl bg-muted/50"
-                  />
-                </div>
-                <div className="space-y-3">
-                  <Label htmlFor="icon">Icon</Label>
-                  <Select value={selectedIconName} onValueChange={setSelectedIconName}>
-                    <SelectTrigger id="icon" className="h-12 rounded-xl">
-                      <SelectValue>
-                        <div className="flex items-center gap-2">
-                          <IconComponent className="w-4 h-4" />
-                          {habitIcons.find(i => i.value === selectedIconName)?.label}
-                        </div>
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {habitIcons.map((icon) => (
-                        <SelectItem key={icon.value} value={icon.value}>
-                          <div className="flex items-center gap-2">
-                            <icon.icon className="w-4 h-4" />
-                            {icon.label}
-                          </div>
-                        </SelectItem>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest ml-1">Choose Icon</Label>
+                    <div className="grid grid-cols-5 gap-2">
+                      {habitIcons.slice(0, 10).map((icon) => (
+                        <button
+                          key={icon.value}
+                          onClick={() => setSelectedIconName(icon.value)}
+                          className={cn(
+                            "w-full aspect-square rounded-xl flex items-center justify-center border-2 transition-all",
+                            selectedIconName === icon.value ? "border-primary bg-primary text-primary-foreground" : "border-muted hover:bg-muted"
+                          )}
+                        >
+                          <icon.icon className="w-5 h-5" />
+                        </button>
                       ))}
-                    </SelectContent>
-                  </Select>
+                    </div>
+                  </div>
                 </div>
-                <div className="space-y-3">
-                  <Label htmlFor="notes">Optional Notes/Description</Label>
-                  <Textarea
-                    id="notes"
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Add any specific details or reminders for this habit."
-                    className="rounded-xl"
+              </div>
+            )}
+
+            {step === 3 && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
+                <div className="space-y-2 text-center">
+                  <h2 className="text-2xl font-black tracking-tight">How important is this?</h2>
+                  <p className="text-sm text-muted-foreground leading-relaxed">Prioritizing helps manage cognitive load.</p>
+                </div>
+                <div className="grid gap-3">
+                  {[
+                    { val: true, label: 'Anchor Practice', sub: 'Non-negotiable. Top of dash.', icon: Anchor },
+                    { val: false, label: 'Standard Habit', sub: 'Secondary. Builds momentum.', icon: Zap }
+                  ].map((opt) => (
+                    <button
+                      key={opt.label}
+                      onClick={() => setIsAnchorPractice(opt.val)}
+                      className={cn(
+                        "p-4 rounded-3xl border-2 flex items-center gap-4 text-left transition-all",
+                        isAnchorPractice === opt.val ? "border-primary bg-primary/5" : "border-muted"
+                      )}
+                    >
+                      <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center", isAnchorPractice === opt.val ? "bg-primary text-white" : "bg-muted")}>
+                        <opt.icon className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <p className="font-black text-sm uppercase tracking-tight">{opt.label}</p>
+                        <p className="text-[10px] opacity-60 leading-tight">{opt.sub}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {step === 4 && (
+              <div className="space-y-8 animate-in fade-in slide-in-from-right-4">
+                <div className="space-y-2 text-center">
+                  <h2 className="text-2xl font-black tracking-tight">Weekly Frequency</h2>
+                  <p className="text-sm text-muted-foreground">Don't overcommit. Aim for consistency first.</p>
+                </div>
+                <div className="space-y-10 py-4">
+                  <Slider 
+                    value={[frequency]} 
+                    min={1} max={7} step={1} 
+                    onValueChange={(v) => setFrequency(v[0])} 
+                  />
+                  <div className="flex justify-between text-[10px] font-black uppercase opacity-60 px-2">
+                    <span>Low Load (1x)</span>
+                    <span className="text-xl text-primary">{frequency}x / Week</span>
+                    <span>High Load (7x)</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {step === 5 && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
+                <div className="space-y-2 text-center">
+                  <h2 className="text-2xl font-black tracking-tight">Session Goal</h2>
+                  <p className="text-sm text-muted-foreground">How much {unit} per session?</p>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {[5, 15, 30, 45, 60, 90].map(val => (
+                    <Button 
+                      key={val} 
+                      variant={dailyGoal === val ? "default" : "outline"}
+                      onClick={() => setDailyGoal(val)}
+                      className="rounded-2xl h-14 font-black"
+                    >
+                      {val} {unit}
+                    </Button>
+                  ))}
+                </div>
+                <div className="pt-4">
+                  <Label className="text-[10px] font-black uppercase opacity-60 ml-1">Custom Amount</Label>
+                  <Input 
+                    type="number" 
+                    value={dailyGoal} 
+                    onChange={e => setDailyGoal(Number(e.target.value))} 
+                    className="h-12 rounded-2xl" 
                   />
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          <div className="flex justify-between mt-8 gap-4">
-            <Button variant="ghost" onClick={handleGuidedBack} disabled={createHabitMutation.isPending} className="rounded-2xl px-8">Back</Button>
-            <Button onClick={handleGuidedNext} disabled={createHabitMutation.isPending} className="flex-1 rounded-2xl h-12 text-base font-bold">
-              {step === 9 ? 'Create Habit' : 'Next'}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+            {step === 6 && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
+                <div className="space-y-2 text-center">
+                  <h2 className="text-2xl font-black tracking-tight">Select Logic Mode</h2>
+                  <p className="text-sm text-muted-foreground">How should the app handle your progress?</p>
+                </div>
+                <div className="grid gap-3">
+                  {habitModes.map((mode) => (
+                    <button
+                      key={mode.value}
+                      onClick={() => {
+                        setIsTrialMode(mode.value === 'Trial');
+                        setIsFixed(mode.value === 'Fixed');
+                      }}
+                      className={cn(
+                        "p-4 rounded-3xl border-2 flex items-start gap-4 text-left transition-all",
+                        (isTrialMode && mode.value === 'Trial') || (isFixed && mode.value === 'Fixed') || (!isTrialMode && !isFixed && mode.value === 'Growth')
+                          ? "border-primary bg-primary/5" : "border-muted"
+                      )}
+                    >
+                      <div className={cn("p-2 rounded-xl shrink-0 mt-1", (isTrialMode && mode.value === 'Trial') || (isFixed && mode.value === 'Fixed') || (!isTrialMode && !isFixed && mode.value === 'Growth') ? "bg-primary text-white" : "bg-muted")}>
+                        <mode.icon className="w-5 h-5" />
+                      </div>
+                      <div className="space-y-1">
+                        <p className="font-black text-xs uppercase tracking-tight">{mode.label}</p>
+                        <p className="text-[10px] opacity-60 leading-tight">{mode.description}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {step === 7 && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
+                <div className="space-y-2 text-center">
+                  <h2 className="text-2xl font-black tracking-tight">Reduce Overwhelm</h2>
+                  <p className="text-sm text-muted-foreground">Break long sessions into tiny capsules.</p>
+                </div>
+                <div className="bg-primary/5 p-6 rounded-[2rem] border border-primary/20 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3 text-primary">
+                      <Layers className="w-6 h-6" />
+                      <span className="font-black text-sm uppercase">Auto-Chunking</span>
+                    </div>
+                    <Switch checked={autoChunking} onCheckedChange={setAutoChunking} />
+                  </div>
+                  <p className="text-[10px] opacity-70 leading-relaxed font-medium italic">
+                    "Chunks help the ADHD brain bypass the barrier of entry by making the task feel smaller."
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {step === 8 && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
+                <div className="space-y-2 text-center">
+                  <h2 className="text-2xl font-black tracking-tight">Execution Window</h2>
+                  <p className="text-sm text-muted-foreground">When is your energy highest for this?</p>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black ml-1 uppercase">Start</Label>
+                    <Select value={windowStart || ''} onValueChange={setWindowStart}>
+                      <SelectTrigger className="rounded-2xl h-12"><SelectValue placeholder="Anytime" /></SelectTrigger>
+                      <SelectContent>
+                        {timeOptions.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black ml-1 uppercase">End</Label>
+                    <Select value={windowEnd || ''} onValueChange={setWindowEnd}>
+                      <SelectTrigger className="rounded-2xl h-12"><SelectValue placeholder="Anytime" /></SelectTrigger>
+                      <SelectContent>
+                        {timeOptions.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {step === 9 && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
+                <div className="text-center space-y-4">
+                  <div className="mx-auto w-20 h-20 rounded-[2rem] bg-primary flex items-center justify-center text-white shadow-xl shadow-primary/20">
+                    <IconComponent className="w-10 h-10" />
+                  </div>
+                  <div className="space-y-1">
+                    <h2 className="text-3xl font-black tracking-tight uppercase italic">{habitName || "Unnamed Habit"}</h2>
+                    <p className="text-xs font-bold text-primary tracking-widest uppercase">Configuration Ready</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-3xl border border-black/5">
+                  <div className="space-y-1">
+                    <p className="text-[8px] font-black uppercase opacity-40">Frequency</p>
+                    <p className="text-xs font-black">{frequency}x Weekly</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[8px] font-black uppercase opacity-40">Goal</p>
+                    <p className="text-xs font-black">{dailyGoal} {unit}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Navigation Buttons */}
+            <div className="flex gap-4 mt-10">
+              {step > 1 && (
+                <Button 
+                  variant="ghost" 
+                  onClick={() => setStep(step - 1)} 
+                  className="rounded-2xl h-14 w-14 shrink-0"
+                >
+                  <ChevronLeft className="w-6 h-6" />
+                </Button>
+              )}
+              <Button 
+                onClick={step === 9 ? () => handleSubmit() : () => setStep(step + 1)}
+                className="flex-grow rounded-2xl h-14 text-base font-black uppercase tracking-widest shadow-lg shadow-primary/20"
+                disabled={createHabitMutation.isPending}
+              >
+                {createHabitMutation.isPending ? <Loader2 className="w-6 h-6 animate-spin" /> : (
+                  <>
+                    {step === 9 ? 'Initialize Habit' : 'Keep Going'}
+                    {step < 9 && <ChevronRight className="w-5 h-5 ml-2" />}
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     );
   };
 
   const renderCustomForm = () => {
-    const IconComponent = getHabitIconComponent(selectedIconName);
+    const IconComponent = getHabitIcon(selectedIconName);
     return (
-      <form onSubmit={handleSubmit} className="space-y-8">
-        <Card className="rounded-3xl shadow-sm border-0">
-          <CardHeader className="p-6 pb-4">
-            <CardTitle className="flex items-center gap-3 text-lg font-bold">
-              <Target className="w-5 h-5 text-primary" />
-              Habit Details
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-6 pt-0 space-y-6">
-            <div className="space-y-3">
-              <Label htmlFor="habitName">Habit Name</Label>
-              <Input
-                id="habitName"
-                value={habitName}
-                onChange={(e) => setHabitName(e.target.value)}
-                placeholder="e.g., Daily Reading, Morning Run"
-                className="h-12 rounded-xl"
-                required
-              />
-            </div>
-            <div className="space-y-3">
-              <Label htmlFor="habitKey">Unique Habit Key (for internal use)</Label>
-              <Input
-                id="habitKey"
-                value={habitKey}
-                onChange={(e) => setHabitKey(e.target.value)}
-                placeholder="e.g., daily_reading, morning_run"
-                className="h-12 rounded-xl"
-                required
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-3">
-                <Label htmlFor="category">Category</Label>
-                <Select value={category} onValueChange={(value: HabitCategoryType) => setCategory(value)}>
-                  <SelectTrigger id="category" className="h-12 rounded-xl">
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {habitCategories.map((cat) => (
-                      <SelectItem key={cat.value} value={cat.value}>
-                        <div className="flex items-center gap-2">
-                          <cat.icon className="w-4 h-4" />
-                          {cat.label}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+      <form onSubmit={handleSubmit} className="space-y-8 animate-in fade-in duration-700">
+        {/* Core Identity */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 ml-1">
+            <Target className="w-5 h-5 text-primary" />
+            <h3 className="text-xs font-black uppercase tracking-widest opacity-60">Identity</h3>
+          </div>
+          <Card className="rounded-[2.5rem] border-0 shadow-xl shadow-black/5">
+            <CardContent className="p-8 grid gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase ml-1">Display Name</Label>
+                  <Input value={habitName} onChange={e => setHabitName(e.target.value)} className="h-12 rounded-2xl" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase ml-1">Internal Key</Label>
+                  <Input value={habitKey} onChange={e => setHabitKey(e.target.value)} className="h-12 rounded-2xl bg-muted/50" />
+                </div>
               </div>
-              <div className="space-y-3">
-                <Label htmlFor="unit">Unit</Label>
-                <Select value={unit} onValueChange={(value: 'min' | 'reps' | 'dose') => setUnit(value)}>
-                  <SelectTrigger id="unit" className="h-12 rounded-xl">
-                    <SelectValue placeholder="Select unit" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {habitUnits.map((u) => (
-                      <SelectItem key={u.value} value={u.value}>
-                        {u.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="space-y-3">
-              <Label htmlFor="icon">Icon</Label>
-              <Select value={selectedIconName} onValueChange={setSelectedIconName}>
-                <SelectTrigger id="icon" className="h-12 rounded-xl">
-                  <SelectValue>
-                    <div className="flex items-center gap-2">
-                      <IconComponent className="w-4 h-4" />
-                      {habitIcons.find(i => i.value === selectedIconName)?.label}
-                    </div>
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {habitIcons.map((icon) => (
-                    <SelectItem key={icon.value} value={icon.value}>
-                      <div className="flex items-center gap-2">
-                        <icon.icon className="w-4 h-4" />
-                        {icon.label}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-3xl shadow-sm border-0">
-          <CardHeader className="p-6 pb-4">
-            <CardTitle className="flex items-center gap-3 text-lg font-bold">
-              <Clock className="w-5 h-5 text-primary" />
-              Goals & Schedule
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-6 pt-0 space-y-6">
-            <div className="space-y-3">
-              <Label htmlFor="dailyGoal">Daily Goal ({unit})</Label>
-              <Input
-                id="dailyGoal"
-                type="number"
-                value={dailyGoal}
-                onChange={(e) => setDailyGoal(Number(e.target.value))}
-                className="h-12 rounded-xl"
-                min={1}
-                required
-              />
-            </div>
-            <div className="space-y-3">
-              <Label htmlFor="frequency">Weekly Frequency</Label>
-              <Slider
-                id="frequency"
-                min={1}
-                max={7}
-                step={1}
-                value={[frequency]}
-                onValueChange={(val) => setFrequency(val[0])}
-                className="w-full"
-              />
-              <div className="flex justify-between text-sm text-muted-foreground">
-                <span>1x</span>
-                <span>{frequency} times per week</span>
-                <span>7x</span>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-               <div className="space-y-2">
-                 <div className="flex items-center gap-2 ml-1">
-                    <Clock className="w-3.5 h-3.5 text-primary" />
-                    <Label className="text-[10px] font-black uppercase opacity-60">Window Start</Label>
-                 </div>
-                 <Select value={windowStart || ''} onValueChange={setWindowStart}>
-                    <SelectTrigger id="windowStart" className="h-12 rounded-xl"><SelectValue placeholder="Anytime" /></SelectTrigger>
-                    <SelectContent>{timeOptions.map((time) => <SelectItem key={time} value={time}>{time}</SelectItem>)}</SelectContent>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="col-span-2 space-y-2">
+                  <Label className="text-[10px] font-black uppercase ml-1">Habit Icon</Label>
+                  <Select value={selectedIconName} onValueChange={setSelectedIconName}>
+                    <SelectTrigger className="h-12 rounded-2xl"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {habitIcons.map(i => <SelectItem key={i.value} value={i.value}>{i.label}</SelectItem>)}
+                    </SelectContent>
                   </Select>
-               </div>
-               <div className="space-y-2">
-                 <div className="flex items-center gap-2 ml-1">
-                    <Clock className="w-3.5 h-3.5 text-primary" />
-                    <Label className="text-[10px] font-black uppercase opacity-60">Window End</Label>
-                 </div>
-                 <Select value={windowEnd || ''} onValueChange={setWindowEnd}>
-                    <SelectTrigger id="windowEnd" className="h-12 rounded-xl"><SelectValue placeholder="Anytime" /></SelectTrigger>
-                    <SelectContent>{timeOptions.map((time) => <SelectItem key={time} value={time}>{time}</SelectItem>)}</SelectContent>
-                  </Select>
-               </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-3xl shadow-sm border-0">
-          <CardHeader className="p-6 pb-4">
-            <CardTitle className="flex items-center gap-3 text-lg font-bold">
-              <Brain className="w-5 h-5 text-primary" />
-              Growth Logic
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-6 pt-0 space-y-6">
-            <div className="space-y-3">
-              <Label>Habit Mode</Label>
-              <div className="flex flex-col gap-2">
-                {habitModes.map((mode) => (
-                  <button
-                    key={mode.value}
-                    type="button"
-                    onClick={() => {
-                      setIsTrialMode(mode.value === 'Trial');
-                      setIsFixed(mode.value === 'Fixed');
-                    }}
-                    className={cn(
-                      "flex items-start gap-4 p-4 rounded-2xl border-2 text-left w-full transition-all",
-                      (isTrialMode && mode.value === 'Trial') || (isFixed && mode.value === 'Fixed') || (!isTrialMode && !isFixed && mode.value === 'Growth')
-                        ? "border-primary bg-primary/[0.02] shadow-sm"
-                        : "border-transparent bg-muted/30 opacity-60 hover:opacity-100"
-                    )}
-                  >
-                    <div className={cn("p-2 rounded-lg", (isTrialMode && mode.value === 'Trial') || (isFixed && mode.value === 'Fixed') || (!isTrialMode && !isFixed && mode.value === 'Growth') ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground")}>
-                      <mode.icon className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-black uppercase leading-none">{mode.label}</p>
-                      <p className="text-[10px] text-muted-foreground mt-1.5 leading-relaxed">{mode.description}</p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between p-4 rounded-2xl bg-primary/5 border border-primary/10">
-              <div className="flex gap-4">
-                <div className="bg-primary/20 p-2 rounded-xl">
-                  <Anchor className="w-5 h-5 text-primary" />
                 </div>
-                <div>
-                  <p className="text-xs font-black uppercase">Anchor Practice</p>
-                  <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">Prioritize this habit on your dashboard.</p>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase ml-1">Preview</Label>
+                  <div className="h-12 w-full bg-muted rounded-2xl flex items-center justify-center">
+                    <IconComponent className="w-6 h-6 text-primary" />
+                  </div>
                 </div>
               </div>
-              <Switch checked={isAnchorPractice} onCheckedChange={setIsAnchorPractice} />
-            </div>
+            </CardContent>
+          </Card>
+        </div>
 
-            <div className="flex items-center justify-between p-4 rounded-2xl bg-blue-500/5 border border-blue-500/10">
-              <div className="flex gap-4">
-                <div className="bg-blue-500/20 p-2 rounded-xl">
-                  <Layers className="w-5 h-5 text-blue-600" />
+        {/* Dynamic Parameters */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 ml-1">
+            <Timer className="w-5 h-5 text-indigo-500" />
+            <h3 className="text-xs font-black uppercase tracking-widest opacity-60">Dynamics</h3>
+          </div>
+          <Card className="rounded-[2.5rem] border-0 shadow-xl shadow-black/5">
+            <CardContent className="p-8 space-y-8">
+              <div className="grid grid-cols-2 gap-8">
+                <div className="space-y-4">
+                  <Label className="text-[10px] font-black uppercase">Frequency (Weekly)</Label>
+                  <Slider value={[frequency]} min={1} max={7} onValueChange={v => setFrequency(v[0])} />
+                  <p className="text-xl font-black text-indigo-500">{frequency}x</p>
                 </div>
-                <div>
-                  <p className="text-xs font-black uppercase">Adaptive Auto-Chunking</p>
-                  <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">Automagically break sessions into capsules.</p>
+                <div className="space-y-4">
+                  <Label className="text-[10px] font-black uppercase">Goal ({unit})</Label>
+                  <Input type="number" value={dailyGoal} onChange={e => setDailyGoal(Number(e.target.value))} className="h-12 rounded-2xl font-black text-lg" />
                 </div>
               </div>
-              <Switch checked={autoChunking} onCheckedChange={setAutoChunking} />
-            </div>
-
-            <div className="p-4 rounded-2xl bg-muted/30 border border-black/5 space-y-3">
-                <div className="flex items-center gap-2">
-                    <Info className="w-4 h-4 text-muted-foreground" />
-                    <Label className="text-[10px] font-black uppercase opacity-60">Growth Threshold</Label>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 bg-primary/5 rounded-3xl border border-primary/10 flex items-center justify-between">
+                  <span className="text-xs font-black uppercase">Anchor</span>
+                  <Switch checked={isAnchorPractice} onCheckedChange={setIsAnchorPractice} />
                 </div>
-                <div className="flex items-center gap-4">
-                    <Input
-                        type="number"
-                        className="h-10 w-20 rounded-xl font-bold"
-                        value={plateauDaysRequired}
-                        onChange={(e) => setPlateauDaysRequired(parseInt(e.target.value))}
-                    />
-                    <p className="text-[10px] text-muted-foreground leading-snug">
-                        Days of 100% consistency required before the system suggests a goal increase.
-                    </p>
+                <div className="p-4 bg-blue-500/5 rounded-3xl border border-blue-500/10 flex items-center justify-between">
+                  <span className="text-xs font-black uppercase">Chunking</span>
+                  <Switch checked={autoChunking} onCheckedChange={setAutoChunking} />
                 </div>
-             </div>
-
-             <div className="space-y-3">
-                <Label className="text-[10px] font-black uppercase tracking-widest opacity-60 ml-1">Dependent On</Label>
-                <Select
-                  value={dependentOnHabitId || 'none'}
-                  onValueChange={(value) => setDependentOnHabitId(value === 'none' ? null : value)}
-                >
-                  <SelectTrigger className="h-11 rounded-xl font-bold text-base">
-                    <SelectValue placeholder="No dependency" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No dependency</SelectItem>
-                    {otherHabits.map(otherHabit => (
-                      <SelectItem key={otherHabit.id} value={otherHabit.id}>
-                        {otherHabit.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-[10px] text-muted-foreground leading-snug">
-                  This habit will be marked as "locked" until the dependent habit is completed for the day.
-                </p>
-             </div>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-3xl shadow-sm border-0">
-          <CardHeader className="p-6 pb-4">
-            <CardTitle className="flex items-center gap-3 text-lg font-bold">
-              <Info className="w-5 h-5 text-primary" />
-              Advanced Settings
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-6 pt-0 space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-3">
-                <Label htmlFor="xpPerUnit">XP per {unit}</Label>
-                <Input
-                  id="xpPerUnit"
-                  type="number"
-                  value={xpPerUnit}
-                  onChange={(e) => setXpPerUnit(Number(e.target.value))}
-                  className="h-12 rounded-xl"
-                  min={0}
-                  required
-                />
               </div>
-              <div className="space-y-3">
-                <Label htmlFor="energyCostPerUnit">Energy Cost per {unit}</Label>
-                <Input
-                  id="energyCostPerUnit"
-                  type="number"
-                  value={energyCostPerUnit}
-                  onChange={(e) => setEnergyCostPerUnit(Number(e.target.value))}
-                  className="h-12 rounded-xl"
-                  min={0}
-                  step={0.1}
-                  required
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
 
-        <Button
-          type="submit"
-          className="w-full h-14 rounded-2xl text-lg font-bold"
+        <Button 
+          type="submit" 
           disabled={createHabitMutation.isPending}
+          className="w-full h-16 rounded-[2rem] text-xl font-black uppercase tracking-widest shadow-xl shadow-primary/20 transition-all hover:scale-[1.02]"
         >
-          {createHabitMutation.isPending ? (
-            <Loader2 className="w-6 h-6 animate-spin" />
-          ) : (
-            <>
-              <Plus className="w-6 h-6 mr-2" />
-              Create Habit
-            </>
-          )}
+          {createHabitMutation.isPending ? <Loader2 className="animate-spin" /> : "Finalize Habit"}
         </Button>
       </form>
     );
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto px-4 py-6 space-y-8 pb-32">
-      <PageHeader title="Create New Habit" backLink="/" />
+    <div className="w-full max-w-2xl mx-auto px-4 py-8 pb-32 space-y-10 min-h-screen flex flex-col">
+      <PageHeader title="New Practice" backLink="/" />
 
       {flowType === 'entry' && (
-        <div className="space-y-6 text-center">
-          <div className="mx-auto w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mb-6">
-            <Target className="w-12 h-12 text-primary" />
+        <div className="flex-grow flex flex-col justify-center items-center space-y-12 animate-in fade-in zoom-in-95 duration-700">
+          <div className="text-center space-y-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 rounded-full text-primary font-black text-[10px] uppercase tracking-tighter">
+              <Sparkles className="w-3 h-3" /> Growth Engine v1.0
+            </div>
+            <h2 className="text-5xl font-black tracking-tighter text-slate-900 leading-[0.9]">
+              How do we <br /><span className="text-primary">start today?</span>
+            </h2>
           </div>
-          <h2 className="text-3xl font-bold mb-4">How do you want to create your habit?</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Button
-              className="h-32 rounded-3xl text-xl font-bold flex flex-col items-center justify-center space-y-2 bg-primary hover:bg-primary/90"
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+            <button
               onClick={() => setFlowType('guided')}
+              className="group p-8 rounded-[3rem] bg-slate-900 text-white flex flex-col items-center text-center gap-6 shadow-2xl transition-all hover:translate-y-[-8px]"
             >
-              <Zap className="w-8 h-8" />
-              <span>Guided Wizard</span>
-              <span className="text-sm font-normal opacity-80">Step-by-step assistance</span>
-            </Button>
-            <Button
-              variant="outline"
-              className="h-32 rounded-3xl text-xl font-bold flex flex-col items-center justify-center space-y-2 border-2 border-muted-foreground/20 hover:bg-muted/20"
+              <div className="w-16 h-16 rounded-[1.5rem] bg-primary flex items-center justify-center group-hover:rotate-12 transition-transform">
+                <Zap className="w-8 h-8" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-2xl font-black uppercase italic">Wizard</h3>
+                <p className="text-xs opacity-60 font-medium">Guided path for ND brains.</p>
+              </div>
+            </button>
+
+            <button
               onClick={() => setFlowType('custom')}
+              className="group p-8 rounded-[3rem] bg-white border-2 border-slate-100 flex flex-col items-center text-center gap-6 transition-all hover:translate-y-[-8px] hover:border-primary/40"
             >
-              <Brain className="w-8 h-8" />
-              <span>Custom Habit</span>
-              <span className="text-sm font-normal opacity-80">Define all parameters manually</span>
-            </Button>
+              <div className="w-16 h-16 rounded-[1.5rem] bg-muted flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Brain className="w-8 h-8 text-primary" />
+              </div>
+              <div className="space-y-1 text-slate-900">
+                <h3 className="text-2xl font-black uppercase italic">Custom</h3>
+                <p className="text-xs opacity-60 font-medium">Deep tweak every variable.</p>
+              </div>
+            </button>
           </div>
         </div>
       )}
