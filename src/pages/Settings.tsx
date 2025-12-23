@@ -19,7 +19,7 @@ import {
   Brain, LogOut, Anchor, Target, Sparkles, 
   Settings2, Shield, Calendar, 
   Clock, Dumbbell, Wind, BookOpen, Music, 
-  Home, Code, Pill, Timer, BarChart3
+  Home, Code, Pill, Timer, BarChart3, Layers
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { 
@@ -84,6 +84,9 @@ const Settings = () => {
     const isExpanded = activeHabitId === habit.id;
     const weeklyTotal = habit.current_daily_goal * habit.frequency_per_week;
 
+    // Local state for immediate UI feedback on calculations
+    const calculatedParts = Math.ceil(habit.current_daily_goal / (habit.chunk_duration || 1));
+
     return (
       <AccordionItem 
         key={habit.id} 
@@ -139,7 +142,15 @@ const Settings = () => {
                   min="1" 
                   className="h-9 rounded-xl text-sm font-bold" 
                   defaultValue={habit.current_daily_goal} 
-                  onBlur={(e) => updateHabitField(habit.id, { current_daily_goal: parseInt(e.target.value) })} 
+                  onBlur={(e) => {
+                    const newGoal = parseInt(e.target.value);
+                    const updates: any = { current_daily_goal: newGoal };
+                    // If manual chunking is active, sync the parts count
+                    if (habit.enable_chunks && !habit.auto_chunking) {
+                      updates.num_chunks = Math.ceil(newGoal / (habit.chunk_duration || 1));
+                    }
+                    updateHabitField(habit.id, updates);
+                  }} 
                 />
               </div>
             </div>
@@ -264,26 +275,32 @@ const Settings = () => {
                         />
                     </div>
                     {habit.enable_chunks && (
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-2 gap-4 items-end">
                             <div className="space-y-1.5">
-                                <Label className="text-[9px] font-black uppercase opacity-60">Parts per Session</Label>
-                                <Input 
-                                  type="number" 
-                                  min="1" max="10" 
-                                  className="h-9 rounded-xl text-sm" 
-                                  defaultValue={habit.num_chunks} 
-                                  onBlur={(e) => updateHabitField(habit.id, { num_chunks: parseInt(e.target.value) })} 
-                                />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[9px] font-black uppercase opacity-60">Duration per Part</Label>
+                                <Label className="text-[9px] font-black uppercase opacity-60">Duration per Part ({habit.unit})</Label>
                                 <Input 
                                   type="number" 
                                   min="1" 
-                                  className="h-9 rounded-xl text-sm" 
+                                  className="h-10 rounded-xl text-sm font-bold" 
                                   defaultValue={habit.chunk_duration} 
-                                  onBlur={(e) => updateHabitField(habit.id, { chunk_duration: parseInt(e.target.value) })} 
+                                  onBlur={(e) => {
+                                    const val = parseInt(e.target.value);
+                                    const num = Math.ceil(habit.current_daily_goal / val);
+                                    updateHabitField(habit.id, { 
+                                      chunk_duration: val,
+                                      num_chunks: num
+                                    });
+                                  }} 
                                 />
+                            </div>
+                            <div className="bg-white/50 dark:bg-black/20 p-2.5 rounded-xl border border-black/5 flex items-center gap-3 h-10">
+                                <div className="bg-primary/10 p-1 rounded-md">
+                                    <Layers className="w-3.5 h-3.5 text-primary" />
+                                </div>
+                                <div className="flex-grow">
+                                    <p className="text-[8px] font-black uppercase opacity-60 leading-none">Result</p>
+                                    <p className="text-[11px] font-black text-primary leading-tight">{calculatedParts} parts / session</p>
+                                </div>
                             </div>
                         </div>
                     )}
