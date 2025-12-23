@@ -171,23 +171,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     }
   };
 
-  const handleCancelTimer = () => { // Removed event parameter as it's now triggered by card click
-    stopInterval();
-    localStorage.removeItem(storageKey);
-    window.dispatchEvent(new CustomEvent('habit-timer-update', { detail: null }));
-    setIsTiming(false);
-    setElapsedSeconds(0);
-    setIsPaused(false);
-    setGoalReachedAlerted(false);
-    startTimeRef.current = null;
-  };
-
-  const formatTime = (totalSeconds: number) => {
-    const mins = Math.floor(totalSeconds / 60);
-    const secs = totalSeconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
+  // This function is now only called by the "Done" button, not by clicking the capsule itself.
   const handleFinishTiming = (mood?: string) => {
     stopInterval();
     const totalSessionMinutes = Math.max(1, Math.ceil((initialValue * 60 + elapsedSeconds) / 60));
@@ -284,7 +268,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
             : cn(colors.bg, colors.border, "shadow-sm hover:shadow-md"),
           isTiming && "ring-4 ring-primary/20 shadow-xl scale-[1.01]"
         )}
-        onClick={isTiming ? handleCancelTimer : (!isCompleted && !showMoodPicker) ? (isTimeBased ? handleStartTimer : handleQuickComplete) : undefined}
+        onClick={isTiming ? () => handleFinishTiming() : (!isCompleted && !showMoodPicker) ? (isTimeBased ? handleStartTimer : handleQuickComplete) : undefined}
       >
         <AnimatePresence>
           {(!isCompleted && (isTiming || initialValue > 0)) && (
