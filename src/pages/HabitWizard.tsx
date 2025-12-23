@@ -78,6 +78,7 @@ const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: s
   const oneYearFromNow = new Date(today.setFullYear(today.getFullYear() + 1));
   const oneYearDateString = oneYearFromNow.toISOString().split('T')[0];
 
+  // Destructure habit, explicitly omitting short_description for RPC call
   const { name, habit_key, category, current_daily_goal, frequency_per_week, is_trial_mode, is_fixed, anchor_practice, auto_chunking, unit, xp_per_unit, energy_cost_per_unit, icon_name, dependent_on_habit_id, window_start, window_end, carryover_enabled } = habit;
 
   let calculatedPlateauDays = habit.plateau_days_required;
@@ -228,7 +229,7 @@ const HabitWizard = () => {
 
     const habitData: CreateHabitParams = {
       name: wizardData.name!,
-      habit_key: wizardData.habit_key.toLowerCase().replace(/\s/g, '_'),
+      habit_key: wizardData.habit_key.toLowerCase().replace(/\s/g, '_').replace(/[^a-z0-9_]/g, ''),
       category: wizardData.category as HabitCategory,
       unit: wizardData.unit || 'min',
       icon_name: wizardData.icon_name || 'Target',
