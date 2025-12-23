@@ -172,6 +172,13 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     }
   };
 
+  const handleResetTimer = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    triggerFeedback('pause');
+    setTimeLeft(value * 60);
+    // Reset back to starting position without pausing if it was timing
+  };
+
   const handleFinishTiming = (mood?: string, promptMood: boolean = false) => {
     stopInterval();
     const totalSessionMinutes = timeLeft === 0 ? value : Math.max(1, Math.ceil((value * 60 - timeLeft) / 60));
@@ -290,6 +297,15 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
+                  <Button 
+                    size="icon" 
+                    variant="ghost" 
+                    className="h-12 w-12 rounded-full bg-card/90 shadow-md border border-border/30" 
+                    onClick={handleResetTimer}
+                    title="Reset Timer"
+                  >
+                    <RotateCcw className="w-5 h-5" />
+                  </Button>
                   <Button size="icon" variant="ghost" className="h-12 w-12 rounded-full bg-card/90 shadow-md border border-border/30" onClick={handlePauseTimer}>
                     {isPaused ? <Play className="w-6 h-6 ml-0.5 fill-current" /> : <Pause className="w-6 h-6 fill-current" />}
                   </Button>
