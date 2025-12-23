@@ -22,16 +22,24 @@ interface NavLinkProps {
 }
 
 const NavLink: React.FC<NavLinkProps> = ({ to, icon: Icon, label, currentPath, onClick }) => {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const isActive = currentPath === to;
+  
+  // Theme-aware colors
+  const activeClasses = isDark 
+    ? "bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))] font-medium" 
+    : "bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))] font-medium";
+  const inactiveClasses = "text-[hsl(var(--sidebar-foreground))]";
+  const hoverClasses = "hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]";
+
   return (
     <Link 
       to={to} 
       onClick={onClick}
       className={cn(
-        "flex items-center gap-3 rounded-lg px-3 py-2.5 transition-all hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-        isActive 
-          ? "bg-sidebar-primary text-sidebar-primary-foreground font-medium" 
-          : "text-sidebar-foreground"
+        "flex items-center gap-3 rounded-lg px-3 py-2.5 transition-all",
+        isActive ? activeClasses : cn(inactiveClasses, hoverClasses)
       )}
     >
       <Icon className="h-5 w-5" />
@@ -79,7 +87,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick }) => {
     { to: "/history", icon: BarChart, label: "History" },
     { to: "/analytics", icon: BarChart3, label: "Analytics" },
     { to: "/templates", icon: LayoutTemplate, label: "Templates" },
-    { to: "/create-habit", icon: PlusCircle, label: "Habit Wizard" }, // Updated label
+    { to: "/create-habit", icon: PlusCircle, label: "Habit Wizard" },
     { to: "/settings", icon: Settings, label: "Settings" },
     { to: "/help", icon: HelpCircle, label: "Help" },
   ];
@@ -88,12 +96,16 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick }) => {
     ? `${dashboardData.firstName} ${dashboardData.lastName}` 
     : dashboardData?.firstName || session?.user?.email;
 
+  // Theme-aware sidebar styles
+  const sidebarBg = "bg-[hsl(var(--sidebar-background))] text-[hsl(var(--sidebar-foreground))]";
+  const sidebarBorder = "border-[hsl(var(--sidebar-border))]";
+
   return (
-    <div className="flex h-full max-h-screen flex-col gap-2">
-      <div className="flex h-16 items-center border-b px-4 lg:h-[60px] lg:px-6">
+    <div className={cn("flex h-full max-h-screen flex-col gap-2", sidebarBg)}>
+      <div className={cn("flex h-16 items-center border-b px-4 lg:h-[60px] lg:px-6", sidebarBorder)}>
         <Link to="/" className="flex items-center gap-2 font-semibold" onClick={onLinkClick}>
-          <div className="bg-primary w-8 h-8 rounded-lg flex items-center justify-center">
-            <Target className="h-5 w-5 text-primary-foreground" />
+          <div className="bg-[hsl(var(--sidebar-primary))] w-8 h-8 rounded-lg flex items-center justify-center">
+            <Target className="h-5 w-5 text-[hsl(var(--sidebar-primary-foreground))]" />
           </div>
           <span className="text-lg">Adaptive Growth</span>
         </Link>
@@ -112,7 +124,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick }) => {
           ))}
         </nav>
       </ScrollArea>
-      <div className="mt-auto p-4 border-t">
+      <div className={cn("mt-auto p-4 border-t", sidebarBorder)}>
         {session?.user && (
           <div className="flex items-center gap-3 mb-4">
             <Avatar className="h-10 w-10">
@@ -121,7 +133,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick }) => {
             </Avatar>
             <div className="flex-grow min-w-0">
               <p className="font-semibold text-sm truncate">{displayName}</p>
-              <p className="text-xs text-muted-foreground truncate">Logged in</p>
+              <p className="text-xs opacity-60 truncate">Logged in</p>
             </div>
           </div>
         )}
@@ -151,7 +163,7 @@ export const Sidebar: React.FC<{ children: React.ReactNode }> = ({ children }) =
             <Menu className="h-6 w-6" />
           </Button>
         </SheetTrigger>
-        <SheetContent side="left" className="flex flex-col w-[280px] p-0 bg-sidebar-background text-sidebar-foreground border-sidebar-border">
+        <SheetContent side="left" className="flex flex-col w-[280px] p-0 bg-[hsl(var(--sidebar-background))] text-[hsl(var(--sidebar-foreground))] border-[hsl(var(--sidebar-border))]">
           <SidebarContent onLinkClick={() => setOpen(false)} />
         </SheetContent>
         <main className="flex flex-1 flex-col overflow-hidden">
@@ -163,7 +175,7 @@ export const Sidebar: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
   return (
     <div className="grid min-h-screen w-full lg:grid-cols-[280px_1fr]">
-      <div className="hidden border-r bg-sidebar-background lg:block">
+      <div className={cn("hidden border-r lg:block", "bg-[hsl(var(--sidebar-background))]", "border-[hsl(var(--sidebar-border))]")}>
         <SidebarContent />
       </div>
       <main className="flex flex-1 flex-col overflow-hidden">

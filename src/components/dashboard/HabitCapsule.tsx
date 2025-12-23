@@ -4,10 +4,11 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Check, Clock, Smile, Meh, Frown, Undo2, Play, Pause, Square, Edit2, Zap } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, getHabitColorClasses, getHabitGradientClasses } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { playStartSound, playEndSound, playGoalSound } from '@/utils/audio';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface HabitCapsuleProps {
   id: string;
@@ -21,7 +22,6 @@ interface HabitCapsuleProps {
   scheduledTime?: string;
   onComplete: (actualValue: number, mood?: string) => void;
   onUncomplete: () => void;
-  color: 'orange' | 'blue' | 'green' | 'purple' | 'red' | 'indigo';
   showMood?: boolean;
 }
 
@@ -36,9 +36,11 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   scheduledTime,
   onComplete,
   onUncomplete,
-  color,
   showMood,
 }) => {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+  
   const [showMoodPicker, setShowMoodPicker] = useState(false);
   const [isTiming, setIsTiming] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0); // Elapsed time for the current timer session
@@ -48,6 +50,10 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number | null>(null);
   const isTimeBased = unit === 'min';
+  
+  // Get theme-aware color classes
+  const colorClasses = getHabitColorClasses(habitKey, isDark);
+  const gradientClasses = getHabitGradientClasses(habitKey, isDark);
   
   // Unique storage key for each capsule for the current day
   const storageKey = `timer_${habitKey}_${label}_${new Date().toISOString().split('T')[0]}`;
@@ -229,40 +235,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   const currentTotalMinutes = isTimeBased ? initialValue + (elapsedSeconds / 60) : initialValue;
   const progressPercent = Math.min(100, (currentTotalMinutes / value) * 100);
 
-  // Use the custom habit- colors defined in globals.css and tailwind.config.ts
-  const colors = {
-    orange: { 
-      light: 'from-orange-300', dark: 'to-orange-600', wave: '#fb923c', 
-      bg: 'bg-habit-orange', border: 'border-habit-orange-border', 
-      text: 'text-habit-orange-foreground', iconBg: 'bg-habit-orange/20' 
-    },
-    blue: { 
-      light: 'from-blue-300', dark: 'to-blue-600', wave: '#60a5fa', 
-      bg: 'bg-habit-blue', border: 'border-habit-blue-border', 
-      text: 'text-habit-blue-foreground', iconBg: 'bg-habit-blue/20' 
-    },
-    green: { 
-      light: 'from-green-300', dark: 'to-green-600', wave: '#4ade80', 
-      bg: 'bg-habit-green', border: 'border-habit-green-border', 
-      text: 'text-habit-green-foreground', iconBg: 'bg-habit-green/20' 
-    },
-    purple: { 
-      light: 'from-purple-300', dark: 'to-purple-600', wave: '#a78bfa', 
-      bg: 'bg-habit-purple', border: 'border-habit-purple-border', 
-      text: 'text-habit-purple-foreground', iconBg: 'bg-habit-purple/20' 
-    },
-    red: { 
-      light: 'from-red-300', dark: 'to-red-600', wave: '#f87171', 
-      bg: 'bg-habit-red', border: 'border-habit-red-border', 
-      text: 'text-habit-red-foreground', iconBg: 'bg-habit-red/20' 
-    },
-    indigo: { 
-      light: 'from-indigo-300', dark: 'to-indigo-600', wave: '#6366f1', 
-      bg: 'bg-habit-indigo', border: 'border-habit-indigo-border', 
-      text: 'text-habit-indigo-foreground', iconBg: 'bg-habit-indigo/20' 
-    },
-  }[color];
-
   return (
     <motion.div layout className="relative">
       <Card 
@@ -270,7 +242,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
           "relative overflow-hidden transition-all duration-500 border-2 rounded-[24px]",
           isCompleted 
             ? "bg-muted/30 border-muted opacity-70" 
-            : cn(colors.bg, colors.border, "shadow-sm hover:shadow-md"),
+            : cn(colorClasses.bg, colorClasses.border, "shadow-sm hover:shadow-md"),
           isTiming && "ring-4 ring-primary/20 shadow-xl scale-[1.01]"
         )}
         onClick={(!isCompleted && !isTiming && !showMoodPicker) ? (isTimeBased ? handleStartTimer : handleQuickComplete) : undefined}
@@ -283,7 +255,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
               animate={{ height: `${progressPercent}%` }}
               transition={{ type: "tween", ease: isTiming ? "linear" : "easeOut", duration: isTiming ? 1 : 0.6 }}
             >
-              <div className={cn("absolute inset-0 bg-gradient-to-t", colors.light, colors.dark)} />
+              <div className={cn("absolute inset-0 bg-gradient-to-t", gradientClasses.from, gradientClasses.to)} />
             </motion.div>
           )}
         </AnimatePresence>
@@ -294,21 +266,21 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
               <div className="flex items-center gap-4 min-w-0">
                 <div className={cn(
                   "w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border border-black/5",
-                  colors.iconBg
+                  colorClasses.iconBg
                 )}>
                   {isCompleted ? (
                     <Check className="w-6 h-6 text-green-600" />
                   ) : (
                     isTimeBased ? (
-                      <Play className={cn("w-5 h-5 ml-0.5 fill-current", colors.text)} />
+                      <Play className={cn("w-5 h-5 ml-0.5 fill-current", colorClasses.text)} />
                     ) : (
-                      <span className={cn("text-base font-black", colors.text)}>{value}</span>
+                      <span className={cn("text-base font-black", colorClasses.text)}>{value}</span>
                     )
                   )}
                 </div>
                 
                 <div className="min-w-0">
-                  <p className={cn("font-bold text-base leading-tight truncate", isCompleted ? "text-muted-foreground" : colors.text)}>
+                  <p className={cn("font-bold text-base leading-tight truncate", isCompleted ? "text-muted-foreground" : colorClasses.text)}>
                     {label}
                     {initialValue > 0 && !isCompleted && (
                       <span className="ml-2 text-[10px] bg-black/10 dark:bg-white/20 px-1.5 py-0.5 rounded-md align-middle font-black">+ {Math.round(initialValue)} {unit}</span>
@@ -355,7 +327,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
               )}
             </div>
           ) : (
-            <div className={cn("space-y-5 py-2", colors.text)}>
+            <div className={cn("space-y-5 py-2", colorClasses.text)}>
               <div className="flex justify-between items-start">
                 <div className="pl-1">
                   <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Active {label}</p>
