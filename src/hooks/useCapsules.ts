@@ -1,3 +1,5 @@
+"use client";
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
@@ -49,7 +51,7 @@ export const useCapsules = () => {
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
-  const { mutateAsync: logHabit } = useHabitLog(); // Get logHabit from useHabitLog
+  const { mutate: logHabit } = useHabitLog(); // Get logHabit from useHabitLog
 
   const completeCapsule = useMutation({
     mutationFn: async ({
