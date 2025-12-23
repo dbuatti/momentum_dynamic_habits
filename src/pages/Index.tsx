@@ -154,44 +154,44 @@ const Index = () => {
         key={habit.key}
         value={habit.key}
         className={cn(
-          "border-2 rounded-[24px] shadow-sm overflow-hidden transition-all duration-300",
+          "border-2 rounded-[32px] shadow-sm overflow-hidden transition-all duration-300",
           habit.allCompleted ? "opacity-50 grayscale-[0.3] border-muted bg-muted/5" : cn(accentColor, "shadow-md"),
           !habit.isWithinWindow && !habit.allCompleted && "opacity-75"
         )}
       >
-        <AccordionTrigger className="px-4 py-3 hover:no-underline"> {/* Reduced padding */}
-          <div className="flex flex-col w-full text-left gap-3"> {/* Reduced gap */}
+        <AccordionTrigger className="px-6 py-5 hover:no-underline">
+          <div className="flex flex-col w-full text-left gap-4">
             <div className="flex items-center justify-between w-full">
-                <div className="flex items-center gap-3 min-w-0"> {/* Reduced gap */}
+                <div className="flex items-center gap-4 min-w-0">
                   <div className={cn(
-                    "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm border border-black/5", // Reduced size
+                    "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border border-black/5",
                     habit.allCompleted ? "bg-white" : "bg-white/90"
                   )}>
-                    <Icon className="w-5 h-5" /> {/* Reduced icon size */}
+                    <Icon className="w-6 h-6" />
                   </div>
                   <div className="min-w-0 flex-grow pr-2">
-                    <h3 className="font-black text-base flex items-center gap-1.5 leading-tight truncate"> {/* Reduced text size and gap */}
+                    <h3 className="font-black text-lg flex items-center gap-2 leading-tight truncate">
                       {habit.name}
-                      {habit.allCompleted && <CheckCircle2 className="w-4 h-4 text-green-600" />} {/* Reduced icon size */}
+                      {habit.allCompleted && <CheckCircle2 className="w-5 h-5 text-green-600" />}
                     </h3>
-                    <div className="flex flex-wrap items-center gap-1.5 mt-0.5"> {/* Reduced gap and margin */}
+                    <div className="flex flex-wrap items-center gap-2 mt-1">
                       <span className={cn(
-                        "text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border", // Reduced padding and text size
+                        "text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border",
                         habit.allCompleted 
                           ? "bg-green-100 text-green-700 border-green-200" 
                           : habit.isWithinWindow 
-                            ? "bg-primary text-primary-foreground border-transparent"
+                            ? "bg-primary text-primary-foreground border-transparent" // Changed text-white to text-primary-foreground
                             : "bg-muted text-muted-foreground border-transparent"
                       )}>
                         {habit.allCompleted ? "Goal Met" : (habit.isWithinWindow ? "Ready Now" : "Restricted")}
                       </span>
                       {isTrial && (
-                        <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 border border-blue-200">
+                        <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-700 border border-blue-200">
                           Trial Mode
                         </span>
                       )}
                       {isGrowth && (
-                        <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 border border-purple-200">
+                        <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-700 border border-purple-200">
                           Growth Mode
                         </span>
                       )}
@@ -200,26 +200,26 @@ const Index = () => {
                 </div>
                 
                 <div className="hidden sm:flex flex-col items-end text-right">
-                    <p className="text-lg font-black">{habit.dailyProgress}/{habit.dailyGoal}</p> {/* Reduced text size */}
-                    <p className="text-[9px] font-bold uppercase opacity-60 tracking-widest">{habit.unit} session</p> {/* Reduced text size */}
+                    <p className="text-xl font-black">{habit.dailyProgress}/{habit.dailyGoal}</p>
+                    <p className="text-[10px] font-bold uppercase opacity-60 tracking-widest">{habit.unit} session</p>
                 </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 border-t border-black/5 pt-3"> {/* Reduced gap and padding */}
-                <div className="space-y-0.5"> {/* Reduced space */}
-                    <p className="text-[8px] font-black uppercase opacity-50 tracking-widest"> {/* Reduced text size */}
+            <div className="grid grid-cols-2 gap-4 border-t border-black/5 pt-4">
+                <div className="space-y-1">
+                    <p className="text-[9px] font-black uppercase opacity-50 tracking-widest">
                       {isTrial ? "Session Target" : "Daily Goal"}
                     </p>
-                    <div className="flex items-center gap-1.5"> {/* Reduced gap */}
-                        <Target className="w-3 h-3 opacity-40" /> {/* Reduced icon size */}
-                        <p className="text-sm font-black">{habit.dailyGoal} {habit.unit}</p> {/* Reduced text size */}
+                    <div className="flex items-center gap-2">
+                        <Target className="w-3.5 h-3.5 opacity-40" />
+                        <p className="text-sm font-black">{habit.dailyGoal} {habit.unit}</p>
                     </div>
                 </div>
-                <div className="space-y-0.5"> {/* Reduced space */}
-                    <p className="text-[8px] font-black uppercase opacity-50 tracking-widest">Weekly Goal</p> {/* Reduced text size */}
-                    <div className="flex items-center gap-1.5"> {/* Reduced gap */}
-                        <TrendingUp className="w-3 h-3 opacity-40" /> {/* Reduced icon size */}
-                        <p className="text-sm font-black">{habit.weekly_goal} {habit.unit}</p> {/* Reduced text size */}
+                <div className="space-y-1">
+                    <p className="text-[9px] font-black uppercase opacity-50 tracking-widest">Weekly Goal</p>
+                    <div className="flex items-center gap-2">
+                        <TrendingUp className="w-3.5 h-3.5 opacity-40" />
+                        <p className="text-sm font-black">{habit.weekly_goal} {habit.unit}</p>
                     </div>
                 </div>
             </div>
@@ -233,7 +233,7 @@ const Index = () => {
             </div>
           </div>
         </AccordionTrigger>
-        <AccordionContent className="px-4 pb-4 pt-1 space-y-4"> {/* Reduced padding */}
+        <AccordionContent className="px-6 pb-6 pt-2 space-y-6">
           {/* Enhanced Trial Mode Context */}
           {isTrial && !habit.allCompleted && (
             <TrialStatusCard 
@@ -248,24 +248,24 @@ const Index = () => {
 
           {/* Adaptive Insights (Growth mode only) */}
           {isGrowth && !habit.allCompleted && (
-            <div className="p-3 bg-primary/5 rounded-xl border border-primary/10 flex items-start gap-2"> {/* Reduced padding and gap */}
-                <div className="bg-primary/10 p-1.5 rounded-lg"> {/* Reduced padding and rounded */}
-                    <ShieldCheck className="w-3.5 h-3.5 text-primary" /> {/* Reduced icon size */}
+            <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10 flex items-start gap-3">
+                <div className="bg-primary/10 p-2 rounded-xl">
+                    <ShieldCheck className="w-4 h-4 text-primary" />
                 </div>
                 <div className="flex-grow">
-                    <div className="flex justify-between items-center mb-0.5"> {/* Reduced margin */}
-                        <p className="text-[9px] font-black uppercase tracking-widest">Stability Status</p> {/* Reduced text size */}
-                        <span className="text-[9px] font-black text-primary">{habit.growth_stats.completions}/{habit.growth_stats.required} days</span> {/* Reduced text size */}
+                    <div className="flex justify-between items-center mb-1">
+                        <p className="text-[10px] font-black uppercase tracking-widest">Stability Status</p>
+                        <span className="text-[10px] font-black text-primary">{habit.growth_stats.completions}/{habit.growth_stats.required} days</span>
                     </div>
                     <Progress value={(habit.growth_stats.completions / habit.growth_stats.required) * 100} className="h-1 [&>div]:bg-primary" />
-                    <p className="text-[10px] font-medium opacity-60 mt-1 leading-tight"> {/* Reduced text size and margin */}
+                    <p className="text-[11px] font-medium opacity-60 mt-2 leading-tight">
                         {habit.growth_stats.daysRemaining} consistent days until dynamic goal increase ({habit.growth_stats.phase === 'frequency' ? 'Frequency' : 'Duration'} phase).
                     </p>
                 </div>
             </div>
           )}
 
-          <div className="grid gap-2"> {/* Reduced gap */}
+          <div className="grid gap-3">
             {showOnlyNext && nextCapsule ? (
               <>
                 <div className="relative">
@@ -283,15 +283,15 @@ const Index = () => {
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="w-full text-[9px] font-black uppercase tracking-widest h-8 rounded-xl border-dashed" // Reduced height and text size
+                  className="w-full text-[10px] font-black uppercase tracking-widest h-9 rounded-xl border-dashed"
                   onClick={() => toggleShowAll(habit.key)}
                 >
-                  <Layers className="w-3 h-3 mr-1.5" /> {/* Reduced icon size */}
+                  <Layers className="w-3.5 h-3.5 mr-2" />
                   View all session parts ({habit.numChunks})
                 </Button>
               </>
             ) : (
-              <div className="space-y-2"> {/* Reduced space */}
+              <div className="space-y-3">
                 {habit.capsules.map((capsule: any) => (
                   <HabitCapsule
                     key={capsule.id}
@@ -307,7 +307,7 @@ const Index = () => {
                   <Button 
                     variant="ghost" 
                     size="sm" 
-                    className="w-full text-[9px] font-black uppercase opacity-40 h-7" // Reduced height and text size
+                    className="w-full text-[10px] font-black uppercase opacity-40 h-8"
                     onClick={() => toggleShowAll(habit.key)}
                   >
                     Simplify View (Focus Next)
@@ -323,7 +323,7 @@ const Index = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <div className="max-w-screen-xl mx-auto w-full px-4 py-6 pb-32"> {/* Adjusted max-w */}
+      <div className="max-w-lg mx-auto w-full px-4 py-6 pb-32">
         <div className="mb-4">
            <HomeHeader
             dayCounter={data.daysActive}
@@ -346,7 +346,7 @@ const Index = () => {
                 <h2 className="text-xs font-black uppercase tracking-[0.2em] text-primary/80">Anchor Practices</h2>
                 <div className="ml-auto h-px flex-grow bg-black/5" />
               </div>
-              <Accordion type="multiple" value={expandedItems} onValueChange={setExpandedItems} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"> {/* Multi-column grid */}
+              <Accordion type="multiple" value={expandedItems} onValueChange={setExpandedItems} className="space-y-4">
                 {anchorHabits.map(renderHabitItem)}
               </Accordion>
             </div>
@@ -359,7 +359,7 @@ const Index = () => {
               <h2 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Daily Momentum</h2>
               <div className="ml-auto h-px flex-grow bg-black/5" />
             </div>
-            <Accordion type="multiple" value={expandedItems} onValueChange={setExpandedItems} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"> {/* Multi-column grid */}
+            <Accordion type="multiple" value={expandedItems} onValueChange={setExpandedItems} className="space-y-4">
               {dailyHabits.map(renderHabitItem)}
             </Accordion>
           </div>
