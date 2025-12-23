@@ -3,7 +3,7 @@ import { Habit } from '@/types/habit';
 /**
  * Calculates the suggested chunks for a habit based on goal and user preferences.
  * Logic:
- * - Fixed binary habits: ALWAYS 1 chunk.
+ * - Binary habits: ALWAYS 1 chunk.
  * - Time habits: Max 10-15 mins per chunk (smaller for neurodivergent)
  * - Count habits: Max 20-25 reps per chunk
  */
@@ -18,9 +18,9 @@ export const calculateDynamicChunks = (
   isFixed?: boolean,
   measurementType?: string
 ) => {
-  // HARD GUARDRAIL: Fixed habits with binary measurement (like medication)
+  // HARD GUARDRAIL: Binary measurement (like medication)
   // should NEVER have more than 1 chunk/capsule.
-  if (isFixed && measurementType === 'binary') {
+  if (measurementType === 'binary') {
     return {
       numChunks: 1,
       chunkValue: 1 // Binary is always 1 unit
@@ -87,14 +87,8 @@ export const calculateDailyParts = (habits: any[], isNeurodivergent: boolean) =>
     // 2. Determine effective progress (Cap at target)
     // Formula: progressToday = min(loggedAmount, dailyTarget)
     const dailyTarget = habit.adjustedDailyGoal;
-    let effectiveProgress = Math.min(habit.dailyProgress, dailyTarget);
+    const effectiveProgress = Math.min(habit.dailyProgress, dailyTarget);
     
-    // Special handling for Fixed / Binary:
-    // progressToday = completed ? 1 : 0
-    if (habit.is_fixed && habit.measurement_type === 'binary') {
-        effectiveProgress = habit.isComplete ? 1 : 0;
-    }
-
     // 3. Calculate completed parts for this habit based on effective progress
     for (let i = 0; i < numChunks; i++) {
       const isLast = i === numChunks - 1;

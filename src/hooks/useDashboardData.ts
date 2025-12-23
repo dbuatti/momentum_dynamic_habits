@@ -68,8 +68,8 @@ const fetchDashboardData = async (userId: string) => {
   const processedHabits: ProcessedUserHabit[] = (habits || [])
     .filter(h => h.is_visible)
     .map(h => {
-    const dailyProgress = dailyProgressMap.get(h.habit_key) || 0;
-    const adjustedDailyGoal = h.current_daily_goal + (h.carryover_value || 0);
+    const rawDailyProgress = dailyProgressMap.get(h.habit_key) || 0;
+    const baseAdjustedDailyGoal = h.current_daily_goal + (h.carryover_value || 0);
     const isScheduledForToday = h.days_of_week ? h.days_of_week.includes(currentDayOfWeek) : true;
 
     let isWithinWindow = true;
@@ -91,25 +91,35 @@ const fetchDashboardData = async (userId: string) => {
     const isDependencyMet = isDependent ? completedHabitKeysToday.has(dependentHabit?.habit_key || '') : true;
     const isLockedByDependency = isDependent && !isDependencyMet;
 
-    // Robust completion logic
-    // Fixed / Binary: progressToday = completed ? 1 : 0
-    const isComplete = h.measurement_type === 'binary' 
-        ? completedHabitKeysToday.has(h.habit_key)
-        : dailyProgress >= (adjustedDailyGoal - 0.01); // Use epsilon for float precision
+    // Apply strict progress formula: progressToday = min(loggedAmount, dailyTarget)
+    // For Binary: goal = 1, progress = completed ? 1 : 0
+    let dailyProgress = rawDailyProgress;
+    let adjustedDailyGoal = baseAdjustedDailyGoal;
+    let isComplete = false;
+
+    if (h.measurement_type === 'binary') {
+      isComplete = completedHabitKeysToday.has(h.habit_key);
+      dailyProgress = isComplete ? 1 : 0;
+      adjustedDailyGoal = 1;
+    } else {
+      isComplete = rawDailyProgress >= (baseAdjustedDailyGoal - 0.01);
+      dailyProgress = Math.min(rawDailyProgress, baseAdjustedDailyGoal);
+      adjustedDailyGoal = baseAdjustedDailyGoal;
+    }
 
     return {
       ...h,
       key: h.habit_key,
       name: h.name || h.habit_key.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase()),
-      dailyGoal: h.current_daily_goal,
+      dailyGoal: h.measurement_type === 'binary' ? 1 : h.current_daily_goal,
       adjustedDailyGoal: adjustedDailyGoal,
-      carryoverValue: h.carryover_value || 0,
+      carryoverValue: h.measurement_type === 'binary' ? 0 : (h.carryover_value || 0),
       dailyProgress, 
       isComplete: isComplete,
       xpPerUnit: h.xp_per_unit || 0,
       energyCostPerUnit: h.energy_cost_per_unit || 0,
       weekly_completions: weeklyCompletions,
-      weekly_goal: h.current_daily_goal * h.frequency_per_week,
+      weekly_goal: (h.measurement_type === 'binary' ? 1 : h.current_daily_goal) * h.frequency_per_week,
       isScheduledForToday: isScheduledForToday,
       isWithinWindow,
       measurement_type: h.measurement_type || 'timer', 
