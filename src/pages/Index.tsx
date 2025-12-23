@@ -53,7 +53,9 @@ const Index = () => {
   const habitGroups = useMemo(() => {
     if (!data?.habits) return [];
 
-    return data.habits.map(habit => {
+    return data.habits
+      .filter(habit => habit.is_visible) // Filter by is_visible
+      .map(habit => {
       const goal = habit.dailyGoal;
       const progress = habit.dailyProgress;
       

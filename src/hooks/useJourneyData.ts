@@ -27,7 +27,9 @@ const fetchJourneyData = async (userId: string) => {
 
   const initialHabitsMap = new Map(initialHabits.map(h => [h.id, h]));
   
-  const processedHabits = (habits || []).map(h => {
+  const processedHabits = (habits || [])
+    .filter(h => h.is_visible) // Filter by is_visible
+    .map(h => {
     const initialHabit = initialHabitsMap.get(h.habit_key);
     const rawLifetimeProgress = h.lifetime_progress || 0;
     const uiLifetimeProgress = initialHabit?.type === 'time' && initialHabit?.unit === 'min' ? 

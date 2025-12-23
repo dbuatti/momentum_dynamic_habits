@@ -60,7 +60,9 @@ const fetchDashboardData = async (userId: string) => {
     dailyProgressMap.set(key, (dailyProgressMap.get(key) || 0) + progress);
   });
 
-  const processedHabits = (habits || []).map(h => {
+  const processedHabits = (habits || [])
+    .filter(h => h.is_visible) // Filter by is_visible from DB
+    .map(h => {
     const initialHabit = initialHabitsMap.get(h.habit_key);
     const dailyProgress = dailyProgressMap.get(h.habit_key) || 0;
     const dailyGoal = h.current_daily_goal;
@@ -74,8 +76,6 @@ const fetchDashboardData = async (userId: string) => {
       const end = parse(h.window_end, 'HH:mm', now);
       isWithinWindow = isWithinInterval(now, { start, end });
     }
-
-    const isVisible = isScheduledForToday;
 
     const weeklyCompletions = Array.from(weeklyCompletionMap.keys())
       .filter(k => k.startsWith(`${h.habit_key}_`)).length;
@@ -104,7 +104,8 @@ const fetchDashboardData = async (userId: string) => {
       frequency_per_week: h.frequency_per_week,
       weekly_completions: weeklyCompletions,
       weekly_goal: dailyGoal * h.frequency_per_week,
-      isVisible,
+      is_visible: h.is_visible, // Directly use is_visible from DB
+      isScheduledForToday: isScheduledForToday, // Keep for other logic if needed
       isWithinWindow,
       window_start: h.window_start,
       window_end: h.window_end,

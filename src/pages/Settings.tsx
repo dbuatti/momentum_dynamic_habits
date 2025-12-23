@@ -19,7 +19,7 @@ import {
   Brain, LogOut, Anchor, Target, Sparkles, 
   Settings2, Shield, ShieldCheck, Calendar, 
   Clock, Dumbbell, Wind, BookOpen, Music, 
-  Home, Code, Pill, Timer, BarChart3, Layers, Zap, Info
+  Home, Code, Pill, Timer, BarChart3, Layers, Zap, Info, Eye, EyeOff
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { 
@@ -28,6 +28,7 @@ import {
   AccordionItem, 
   AccordionTrigger 
 } from '@/components/ui/accordion';
+import { useUpdateHabitVisibility } from '@/hooks/useUpdateHabitVisibility'; // Import new hook
 
 const days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
@@ -47,6 +48,7 @@ const Settings = () => {
   const { data, isLoading } = useJourneyData();
   const queryClient = useQueryClient();
   const { mutate: updateProfile } = useUpdateProfile();
+  const { mutate: updateHabitVisibility } = useUpdateHabitVisibility(); // Use new hook
   
   const [activeHabitId, setActiveHabitId] = useState<string | null>(null);
 
@@ -280,6 +282,24 @@ const Settings = () => {
               <p className="text-[9px] text-muted-foreground italic px-1">
                 Number of consistent days needed to trigger growth or complete trial.
               </p>
+            </div>
+
+            {/* Habit Visibility Toggle */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 mb-1">
+                {habit.is_visible ? <Eye className="w-4 h-4 text-primary" /> : <EyeOff className="w-4 h-4 text-muted-foreground" />}
+                <Label className="text-[10px] font-black uppercase tracking-widest">Show on Dashboard</Label>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-white/50 dark:bg-black/20 rounded-xl border border-black/5">
+                <div className="space-y-0.5">
+                    <span className="text-xs font-bold block">Visible Habit</span>
+                    <span className="text-[9px] text-muted-foreground">Toggle to show/hide this habit from your dashboard.</span>
+                </div>
+                <Switch 
+                  checked={habit.is_visible} 
+                  onCheckedChange={(val) => updateHabitVisibility({ habitKey: habit.habit_key, isVisible: val })} 
+                />
+              </div>
             </div>
 
             {/* Auto-Chunking (Session Granularity) */}

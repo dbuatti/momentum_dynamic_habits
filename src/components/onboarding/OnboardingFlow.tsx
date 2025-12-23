@@ -9,6 +9,8 @@ import { showError, showSuccess } from '@/utils/toast';
 import { Dumbbell, Wind, BookOpen, Music, Home, Code, Target, Clock, User, Sparkles, Pill, Brain, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Switch } from '@/components/ui/switch';
+import { useUpdateHabitVisibility } from '@/hooks/useUpdateHabitVisibility'; // Import new hook
+import { initialHabits } from '@/lib/habit-data'; // Import initialHabits
 
 const commonTimezones = [
   'UTC', 'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles',
@@ -17,16 +19,37 @@ const commonTimezones = [
 
 const timeOptions = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0') + ':00');
 
-const habitOptions = [
-  { id: 'pushups', name: 'Push-ups', icon: Dumbbell, color: 'bg-habit-orange' },
-  { id: 'meditation', name: 'Meditation', icon: Wind, color: 'bg-habit-blue' },
-  { id: 'kinesiology', name: 'Kinesiology Study', icon: BookOpen, color: 'bg-habit-green' },
-  { id: 'piano', name: 'Piano Practice', icon: Music, color: 'bg-habit-purple' },
-  { id: 'housework', name: 'House Work', icon: Home, color: 'bg-habit-red' },
-  { id: 'projectwork', name: 'Project Work', icon: Code, color: 'bg-habit-indigo' },
-  { id: 'teeth_brushing', name: 'Brush Teeth', icon: Sparkles, color: 'bg-blue-100' },
-  { id: 'medication', name: 'Take Medication', icon: Pill, color: 'bg-purple-100' },
-];
+// Use initialHabits from lib/habit-data.ts
+const habitOptions = initialHabits.map(h => ({
+  id: h.id,
+  name: h.name,
+  icon: habitIconMap[h.id], // Map icons based on habit ID
+  color: habitColorMap[h.id] || 'bg-gray-200', // Fallback color
+}));
+
+// Helper maps for icons and colors (ensure these are defined or imported)
+const habitIconMap: Record<string, React.ElementType> = {
+  pushups: Dumbbell,
+  meditation: Wind,
+  kinesiology: BookOpen,
+  piano: Music,
+  housework: Home,
+  projectwork: Code,
+  teeth_brushing: Sparkles,
+  medication: Pill,
+};
+
+const habitColorMap: Record<string, string> = {
+  pushups: 'bg-habit-orange',
+  meditation: 'bg-habit-blue',
+  kinesiology: 'bg-habit-green',
+  piano: 'bg-habit-purple',
+  housework: 'bg-habit-red',
+  projectwork: 'bg-habit-indigo',
+  teeth_brushing: 'bg-blue-500', // Using a direct color for now, can be mapped to habit-blue if needed
+  medication: 'bg-purple-500', // Using a direct color for now, can be mapped to habit-purple if needed
+};
+
 
 export const OnboardingFlow = ({ onComplete }: { onComplete: () => void }) => {
   const [step, setStep] = useState(1);
@@ -38,6 +61,7 @@ export const OnboardingFlow = ({ onComplete }: { onComplete: () => void }) => {
   const [endTime, setEndTime] = useState('17:00');
   const [selectedHabits, setSelectedHabits] = useState<string[]>([]);
   const { mutate: updateProfile } = useUpdateProfile();
+  const { mutate: updateHabitVisibility } = useUpdateHabitVisibility(); // Use new hook
 
   const handleNext = () => {
     if (step < 4) setStep(step + 1);
@@ -56,7 +80,7 @@ export const OnboardingFlow = ({ onComplete }: { onComplete: () => void }) => {
 
   const handleComplete = async () => {
     try {
-      updateProfile({
+      await updateProfile({
         first_name: firstName,
         last_name: lastName,
         neurodivergent_mode: neurodivergentMode,
@@ -64,6 +88,15 @@ export const OnboardingFlow = ({ onComplete }: { onComplete: () => void }) => {
         default_auto_schedule_start_time: startTime,
         default_auto_schedule_end_time: endTime,
       });
+
+      // Update visibility for all habits based on selection
+      for (const habit of initialHabits) {
+        await updateHabitVisibility({
+          habitKey: habit.id,
+          isVisible: selectedHabits.includes(habit.id),
+        });
+      }
+
       showSuccess('Welcome! Your profile has been set up.');
       onComplete();
     } catch (error) {

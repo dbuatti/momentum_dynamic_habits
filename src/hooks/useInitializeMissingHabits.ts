@@ -3,47 +3,43 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { showError } from '@/utils/toast';
 import { initialHabits } from '@/lib/habit-data';
-
-interface DefaultHabit {
-  habit_key: string;
-  long_term_goal: number;
-  target_completion_date: string;
-  current_daily_goal: number;
-  is_fixed: boolean;
-  plateau_days_required: number; // Added
-}
+import { UserHabitRecord } from '@/types/habit';
 
 const initializeMissingHabits = async (userId: string) => {
   const today = new Date();
   const oneYearFromNow = new Date(today.setFullYear(today.getFullYear() + 1));
   const oneYearDateString = oneYearFromNow.toISOString().split('T')[0];
   
-  // Define ALL default habits with a default plateau_days_required
-  const habitsToEnsure: DefaultHabit[] = [
-    { habit_key: 'pushups', long_term_goal: 200, target_completion_date: oneYearDateString, current_daily_goal: 1, is_fixed: false, plateau_days_required: 7 },
-    { habit_key: 'meditation', long_term_goal: 120, target_completion_date: oneYearDateString, current_daily_goal: 5, is_fixed: false, plateau_days_required: 7 },
-    { habit_key: 'kinesiology', long_term_goal: 60, target_completion_date: oneYearDateString, current_daily_goal: 10, is_fixed: false, plateau_days_required: 7 },
-    { habit_key: 'piano', long_term_goal: 60, target_completion_date: oneYearDateString, current_daily_goal: 10, is_fixed: false, plateau_days_required: 7 },
-    { habit_key: 'housework', long_term_goal: 30, target_completion_date: oneYearDateString, current_daily_goal: 30, is_fixed: false, plateau_days_required: 7 },
-    { habit_key: 'projectwork', long_term_goal: 1000, target_completion_date: oneYearDateString, current_daily_goal: 60, is_fixed: false, plateau_days_required: 7 },
-    { habit_key: 'teeth_brushing', long_term_goal: 365, target_completion_date: oneYearDateString, current_daily_goal: 2, is_fixed: true, plateau_days_required: 7 },
-    { habit_key: 'medication', long_term_goal: 365, target_completion_date: oneYearDateString, current_daily_goal: 1, is_fixed: true, plateau_days_required: 7 },
-  ];
-
-  const habitsToUpsert = habitsToEnsure.map(habit => ({
+  const habitsToUpsert: Partial<UserHabitRecord>[] = initialHabits.map(habitConfig => ({
     user_id: userId,
-    habit_key: habit.habit_key,
-    long_term_goal: habit.long_term_goal,
-    target_completion_date: habit.target_completion_date,
-    current_daily_goal: habit.current_daily_goal,
-    momentum_level: 'Building',
-    is_fixed: habit.is_fixed,
+    habit_key: habitConfig.id,
+    long_term_goal: habitConfig.targetGoal * (habitConfig.type === 'time' ? 365 : 1), // Example: 1 year goal
+    target_completion_date: oneYearDateString,
+    current_daily_goal: habitConfig.targetGoal,
+    momentum_level: habitConfig.momentum,
+    lifetime_progress: 0, // Always start at 0
+    last_goal_increase_date: today.toISOString().split('T')[0],
+    is_frozen: false,
+    max_goal_cap: null,
+    last_plateau_start_date: today.toISOString().split('T')[0],
+    plateau_days_required: 7, // Default plateau days
+    completions_in_plateau: 0,
+    is_fixed: ['teeth_brushing', 'medication'].includes(habitConfig.id), // Fixed for specific habits
+    category: habitConfig.category,
+    is_trial_mode: !['teeth_brushing', 'medication'].includes(habitConfig.id), // Trial mode for non-fixed habits
+    frequency_per_week: 7, // Default to daily
+    growth_phase: 'duration', // Default growth phase
+    window_start: null,
+    window_end: null,
     days_of_week: [0, 1, 2, 3, 4, 5, 6], // Default to all days
-    plateau_days_required: habit.plateau_days_required, // Include new field
+    auto_chunking: true,
+    enable_chunks: false,
+    num_chunks: 1,
+    chunk_duration: habitConfig.targetGoal, // Default to full goal as one chunk
+    is_visible: true, // Default to visible
   }));
 
   if (habitsToUpsert.length > 0) {
-    // ignoreDuplicates: true ensures we only create habits that aren't already there
     const { error: upsertError } = await supabase
       .from('user_habits')
       .upsert(habitsToUpsert, { onConflict: 'user_id, habit_key', ignoreDuplicates: true });

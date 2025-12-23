@@ -31,7 +31,7 @@ export interface UserHabitRecord {
   is_frozen: boolean;
   max_goal_cap: number | null;
   last_plateau_start_date: string;
-  plateau_days_required: number; // Added
+  plateau_days_required: number;
   completions_in_plateau: number;
   is_fixed: boolean;
   category: HabitCategory;
@@ -41,10 +41,11 @@ export interface UserHabitRecord {
   window_start: string | null;
   window_end: string | null;
   days_of_week: number[];
-  auto_chunking: boolean; // Added for dynamic scaling
-  enable_chunks: boolean; // Manual chunks toggle
+  auto_chunking: boolean;
+  enable_chunks: boolean;
   num_chunks: number;
   chunk_duration: number;
+  is_visible: boolean; // Added is_visible
 }
 
 export interface PianoHabit extends Habit {
