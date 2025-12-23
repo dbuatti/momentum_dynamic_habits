@@ -6,7 +6,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Settings from "./pages/Settings";
-import LogHabit from "./pages/LogHabit";
 import Journey from "./pages/Journey";
 import History from "./pages/History";
 import OnboardingFlow from "./pages/Onboarding";
@@ -14,7 +13,7 @@ import NotFound from "./pages/NotFound";
 import HelpPage from "./pages/HelpPage";
 import LandingPage from "./pages/LandingPage";
 import CreateHabit from "./pages/CreateHabit";
-import Analytics from "./pages/Analytics"; // Import the new Analytics page
+import Analytics from "./pages/Analytics";
 import { SessionContextProvider, useSession } from "./contexts/SessionContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import React, { useEffect, useState } from "react";
@@ -135,13 +134,13 @@ const AppRoutes = () => {
         }
       />
       <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-      <Route path="/log/:habitKey" element={<ProtectedRoute><LogHabit /></ProtectedRoute>} />
+      {/* Removed /log/:habitKey route */}
       <Route path="/journey" element={<ProtectedRoute><Journey /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
       <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
       <Route path="/help" element={<ProtectedRoute><HelpPage /></ProtectedRoute>} />
       <Route path="/create-habit" element={<ProtectedRoute><CreateHabit /></ProtectedRoute>} />
-      <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} /> {/* New route for Analytics */}
+      <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
       <Route path="*" element={<ProtectedRoute><NotFound /></ProtectedRoute>} />
     </Routes>
   );
