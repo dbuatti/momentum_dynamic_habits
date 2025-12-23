@@ -146,17 +146,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   }, [storageKey, isCompleted, startInterval, label, initialValue, habitKey, habitName, value, initialCompletedTaskId, completedTaskIdState]); // Added completedTaskIdState to dependencies
 
   useEffect(() => {
-    if (isTiming && isTimeBased && !goalReachedAlerted) {
-      const totalMinutes = (currentSessionInitialValue * 60 + elapsedSeconds) / 60; // Use local initial value
-      if (totalMinutes >= value) {
-        playGoalSound();
-        if (window.navigator?.vibrate) window.navigator.vibrate([100, 50, 100]);
-        setGoalReachedAlerted(true);
-      }
-    }
-  }, [elapsedSeconds, isTiming, isTimeBased, value, currentSessionInitialValue, goalReachedAlerted]); // Dependency on currentSessionInitialValue
-
-  useEffect(() => {
     if (!isCompleted && (isTiming || elapsedSeconds > 0 || currentSessionInitialValue > 0)) { // Also save if currentSessionInitialValue > 0
       localStorage.setItem(storageKey, JSON.stringify({
         start: startTimeRef.current,
@@ -383,7 +372,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
       >
         {/* Enhanced liquid fill with multi-stop gradient + subtle wave effect */}
         <AnimatePresence>
-          {(!isCompleted && (isTiming || currentSessionInitialValue > 0 || elapsedSeconds > 0)) && ( {/* Use local initial value */}
+          {(!isCompleted && (isTiming || currentSessionInitialValue > 0 || elapsedSeconds > 0)) && (
             <motion.div 
               className="absolute inset-x-0 bottom-0 z-0 pointer-events-none"
               initial={{ height: "0%" }}
@@ -437,7 +426,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                 <div className="min-w-0">
                   <p className={cn("font-bold text-lg leading-tight truncate", isCompleted ? "text-muted-foreground" : colors.text)}>
                     {label}
-                    {currentSessionInitialValue > 0 && !isCompleted && ( {/* Use local initial value */}
+                    {currentSessionInitialValue > 0 && !isCompleted && (
                       <span className={cn("ml-2 text-xs bg-white/20 dark:bg-black/20 px-2 py-0.5 rounded-md font-black", colors.text)}>
                         +{currentSessionInitialValue.toFixed(1)} {unit}
                       </span>
@@ -497,9 +486,9 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
               <div className="flex justify-between items-start">
                 <div className="pl-1">
                   <p className="text-xs font-black uppercase tracking-widest opacity-60">Active • {label}</p>
-                  <p className="text-5xl font-black tabular-nums mt-2">{formatTime(currentSessionInitialValue * 60 + elapsedSeconds)}</p> {/* Use local initial value */}
+                  <p className="text-5xl font-black tabular-nums mt-2">{formatTime(currentSessionInitialValue * 60 + elapsedSeconds)}</p>
                   <p className="text-xs opacity-60 mt-2 font-bold">
-                    Goal: {value} min {currentSessionInitialValue > 0 && `(incl. +${currentSessionInitialValue.toFixed(1)}m)`} {/* Use local initial value */}
+                    Goal: {value} min {currentSessionInitialValue > 0 && `(incl. +${currentSessionInitialValue.toFixed(1)}m)`}
                   </p>
                 </div>
                 
