@@ -118,13 +118,13 @@ const Settings = () => {
         <Card className="rounded-3xl shadow-sm border-2 border-primary bg-primary">
           <CardContent className="p-5">
             <Button 
-              className="w-full h-14 rounded-2xl font-bold bg-white text-primary hover:bg-gray-100"
+              className="w-full h-14 rounded-2xl font-bold bg-primary-foreground text-primary hover:bg-primary-foreground/90"
               onClick={() => setShowNewHabitModal(true)}
             >
               <Plus className="w-6 h-6 mr-2" />
               Create Custom Habit
             </Button>
-            <p className="text-xs text-primary-foreground/80 mt-3 text-center">
+            <p className="text-xs text-primary-foreground mt-3 text-center">
               Define a habit with full control over all parameters
             </p>
           </CardContent>
