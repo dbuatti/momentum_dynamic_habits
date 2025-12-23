@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { UserHabitRecord } from '@/types/habit';
 import { useUpdateHabitVisibility } from '@/hooks/useUpdateHabitVisibility';
-import { habitIcons, habitModes } from '@/lib/habit-templates';
+import { habitIcons, habitModes, habitUnits } from '@/lib/habit-templates'; // Import habitUnits
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useJourneyData } from '@/hooks/useJourneyData';
 import { habitIconMap } from '@/lib/habit-utils';
@@ -131,14 +131,28 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
             <div className="grid grid-cols-2 gap-4 bg-primary/[0.03] p-4 rounded-2xl border border-primary/10">
                <div className="space-y-2">
                  <Label className="text-[10px] font-black uppercase opacity-60 ml-1">Daily Target</Label>
-                 <div className="relative">
+                 <div className="relative flex items-center gap-2"> {/* Added flex and gap */}
                    <Input 
                      type="number" 
-                     className="pl-3 pr-12 h-11 rounded-xl font-bold text-base" 
+                     className="pl-3 pr-3 h-11 rounded-xl font-bold text-base flex-grow" // Removed pr-12, added flex-grow
                      defaultValue={habit.current_daily_goal} 
                      onBlur={(e) => onUpdateHabitField(habit.id, { current_daily_goal: parseInt(e.target.value) })}
                    />
-                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-black opacity-40 uppercase">{habitUnit}</span>
+                   <Select 
+                     value={habitUnit} 
+                     onValueChange={(value) => onUpdateHabitField(habit.id, { unit: value })}
+                   >
+                     <SelectTrigger className="h-11 w-[100px] rounded-xl font-bold text-base">
+                       <SelectValue placeholder="Unit" />
+                     </SelectTrigger>
+                     <SelectContent>
+                       {habitUnits.map((u) => (
+                         <SelectItem key={u.value} value={u.value}>
+                           {u.label}
+                         </SelectItem>
+                       ))}
+                     </SelectContent>
+                   </Select>
                  </div>
                </div>
                <div className="space-y-2">

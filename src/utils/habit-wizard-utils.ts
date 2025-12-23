@@ -17,17 +17,19 @@ export const calculateHabitParams = (data: Partial<WizardHabitData>, neurodiverg
 
   // 1. Determine Daily Goal based on energy_per_session and unit
   const energyPerSession = data.energy_per_session_skipped ? 'moderate' : data.energy_per_session;
-  if (data.unit === 'min') {
+  const unit = data.unit || 'min'; // Use the unit from wizardData, default to 'min'
+
+  if (unit === 'min') {
     if (energyPerSession === 'very_little') dailyGoal = 5;
     else if (energyPerSession === 'a_bit') dailyGoal = 10;
     else if (energyPerSession === 'moderate') dailyGoal = 20;
     else if (energyPerSession === 'plenty') dailyGoal = 30;
-  } else if (data.unit === 'reps') {
+  } else if (unit === 'reps') {
     if (energyPerSession === 'very_little') dailyGoal = 5;
     else if (energyPerSession === 'a_bit') dailyGoal = 10;
     else if (energyPerSession === 'moderate') dailyGoal = 20;
     else if (energyPerSession === 'plenty') dailyGoal = 30;
-  } else if (data.unit === 'dose') {
+  } else if (unit === 'dose') {
     dailyGoal = 1; // Doses are typically 1
   }
 
@@ -57,8 +59,8 @@ export const calculateHabitParams = (data: Partial<WizardHabitData>, neurodiverg
   // 6. Determine XP and Energy Cost per Unit
   let xpPerUnit = 30;
   let energyCostPerUnit = 6;
-  if (data.unit === 'reps') { xpPerUnit = 1; energyCostPerUnit = 0.5; }
-  if (data.unit === 'dose') { xpPerUnit = 10; energyCostPerUnit = 0; }
+  if (unit === 'reps') { xpPerUnit = 1; energyCostPerUnit = 0.5; }
+  if (unit === 'dose') { xpPerUnit = 10; energyCostPerUnit = 0; }
 
   // 7. Determine Plateau Days Required
   let plateauDays = 7; // Default
@@ -91,7 +93,7 @@ export const calculateHabitParams = (data: Partial<WizardHabitData>, neurodiverg
     name: data.name!,
     habit_key: data.habit_key!,
     category: data.category as HabitCategory,
-    unit: data.unit || 'min',
+    unit: unit, // Use the determined unit
     icon_name: data.icon_name || 'Target',
     short_description: data.short_description || '', // For templates
     
