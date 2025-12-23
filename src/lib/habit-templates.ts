@@ -1,4 +1,4 @@
-import { Dumbbell, Wind, BookOpen, Music, Home, Code, Sparkles, Pill, Target, Heart, Zap, Anchor, ShieldCheck, FlaskConical } from 'lucide-react'; // Added Anchor, ShieldCheck, FlaskConical
+import { Dumbbell, Wind, BookOpen, Music, Home, Code, Sparkles, Pill, Target, Heart, Zap, Anchor, ShieldCheck, FlaskConical, Calendar, Clock, Layers, Settings } from 'lucide-react'; // Added Calendar, Clock, Layers, Settings
 import { HabitCategory } from '@/types/habit'; // Import HabitCategory
 
 export interface HabitTemplate {
@@ -14,7 +14,7 @@ export interface HabitTemplate {
   unit: 'min' | 'reps' | 'dose';
   xpPerUnit: number;
   energyCostPerUnit: number;
-  icon: React.ElementType;
+  icon_name: string; // Changed to string to store icon name
   plateauDaysRequired: number; // New property
   shortDescription: string; // Added shortDescription
 }
@@ -33,8 +33,8 @@ export const habitTemplates: HabitTemplate[] = [
     unit: "min",
     xpPerUnit: 42,
     energyCostPerUnit: 9,
-    icon: BookOpen, // Added icon
-    plateauDaysRequired: 7, // Default for standard trial
+    icon_name: "BookOpen",
+    plateauDaysRequired: 7,
     shortDescription: "Boost your knowledge and cognitive skills.",
   },
   {
@@ -50,8 +50,8 @@ export const habitTemplates: HabitTemplate[] = [
     unit: "min",
     xpPerUnit: 30,
     energyCostPerUnit: 6,
-    icon: Dumbbell, // Added icon
-    plateauDaysRequired: 7, // Default for standard trial
+    icon_name: "Dumbbell",
+    plateauDaysRequired: 7,
     shortDescription: "Improve physical fitness and energy levels.",
   },
   {
@@ -67,8 +67,8 @@ export const habitTemplates: HabitTemplate[] = [
     unit: "min",
     xpPerUnit: 30,
     energyCostPerUnit: 6,
-    icon: Wind, // Added icon
-    plateauDaysRequired: 7, // Default for standard trial
+    icon_name: "Wind",
+    plateauDaysRequired: 7,
     shortDescription: "Cultivate calm and mental clarity.",
   },
   {
@@ -84,8 +84,8 @@ export const habitTemplates: HabitTemplate[] = [
     unit: "min",
     xpPerUnit: 36,
     energyCostPerUnit: 7.2,
-    icon: Music,
-    plateauDaysRequired: 7, // Default for standard trial
+    icon_name: "Music",
+    plateauDaysRequired: 7,
     shortDescription: "Nurture your artistic and innovative side.",
   },
   {
@@ -101,8 +101,8 @@ export const habitTemplates: HabitTemplate[] = [
     unit: "min",
     xpPerUnit: 24,
     energyCostPerUnit: 4.8,
-    icon: Home,
-    plateauDaysRequired: 7, // Default for standard trial
+    icon_name: "Home",
+    plateauDaysRequired: 7,
     shortDescription: "Stay on top of essential daily chores.",
   },
   {
@@ -118,7 +118,7 @@ export const habitTemplates: HabitTemplate[] = [
     unit: "dose",
     xpPerUnit: 10,
     energyCostPerUnit: 0,
-    icon: Pill,
+    icon_name: "Pill",
     plateauDaysRequired: 7, // Fixed habits still track consistency
     shortDescription: "Ensure consistent medication adherence.",
   },
@@ -135,7 +135,7 @@ export const habitTemplates: HabitTemplate[] = [
     unit: "min",
     xpPerUnit: 5,
     energyCostPerUnit: 0,
-    icon: Sparkles,
+    icon_name: "Sparkles",
     plateauDaysRequired: 7, // Fixed habits still track consistency
     shortDescription: "Maintain oral hygiene daily.",
   },
@@ -152,7 +152,7 @@ export const habitTemplates: HabitTemplate[] = [
     unit: "min",
     xpPerUnit: 30,
     energyCostPerUnit: 6,
-    icon: Target,
+    icon_name: "Target",
     plateauDaysRequired: 7, // Default for custom trial
     shortDescription: "Design a habit tailored to your unique needs.",
   },
@@ -193,4 +193,8 @@ export const habitIcons: { value: string; label: string; icon: React.ElementType
   { value: 'Anchor', label: 'Anchor', icon: Anchor },
   { value: 'FlaskConical', label: 'Flask', icon: FlaskConical },
   { value: 'ShieldCheck', label: 'Shield', icon: ShieldCheck },
+  { value: 'Calendar', label: 'Calendar', icon: Calendar },
+  { value: 'Clock', label: 'Clock', icon: Clock },
+  { value: 'Layers', label: 'Layers', icon: Layers },
+  { value: 'Settings', label: 'Settings', icon: Settings },
 ];
