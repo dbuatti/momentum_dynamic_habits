@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Home, Dumbbell, Wind, BookOpen, Music, Trophy, Settings, Menu, LogOut, BarChart, Code, Moon, Sun, Calendar, Target, Sparkles, Pill } from 'lucide-react';
+import { Home, Dumbbell, Wind, BookOpen, Music, Trophy, Settings, Menu, LogOut, BarChart, Code, Moon, Sun, Calendar, Target, Sparkles, Pill, HelpCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useSession } from '@/contexts/SessionContext';
@@ -67,7 +67,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick }) => {
     piano: Music,
     housework: Home,
     projectwork: Code,
-    'teeth-brushing': Sparkles, // Use 'teeth-brushing' for route consistency
+    'teeth_brushing': Sparkles, // Use 'teeth_brushing' for route consistency
     medication: Pill,
   };
 
@@ -95,6 +95,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick }) => {
       items: visibleHabits, // Use the filtered visible habits here
     },
     { to: "/settings", icon: Settings, label: "Settings" },
+    { to: "/help", icon: HelpCircle, label: "Help" }, // New Help link
   ];
 
   const displayName = dashboardData?.firstName && dashboardData?.lastName 

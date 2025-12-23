@@ -11,6 +11,7 @@ import Journey from "./pages/Journey";
 import History from "./pages/History";
 import Onboarding from "./pages/Onboarding"; // FIX: Changed to default import
 import NotFound from "./pages/NotFound"; // Import NotFound
+import HelpPage from "./pages/HelpPage"; // Import HelpPage
 import { SessionContextProvider, useSession } from "./contexts/SessionContext";
 import { ThemeProvider } from "./contexts/ThemeContext"; // Moved from main.tsx
 import React, { useEffect, useState } from "react"; // Import React
@@ -103,6 +104,7 @@ const AppRoutes = () => {
       <Route path="/journey" element={<ProtectedRoute><Journey /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
       <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
+      <Route path="/help" element={<ProtectedRoute><HelpPage /></ProtectedRoute>} /> {/* New HelpPage route */}
       <Route path="*" element={<ProtectedRoute><NotFound /></ProtectedRoute>} />
     </Routes>
   );
