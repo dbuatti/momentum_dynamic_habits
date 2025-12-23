@@ -64,6 +64,24 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
     deleteHabit({ habitId: habit.id, habitKey: habit.habit_key });
   };
 
+  const handleUnitChange = (newUnit: 'min' | 'reps' | 'dose') => {
+    const updates: any = { unit: newUnit };
+    
+    // Re-validate measurementType based on the new unit
+    if (newUnit === 'dose') {
+      updates.measurement_type = 'binary';
+      updates.current_daily_goal = 1;
+      updates.auto_chunking = false;
+      updates.enable_chunks = false;
+    } else if (newUnit === 'min') {
+      updates.measurement_type = 'timer';
+    } else if (newUnit === 'reps') {
+      updates.measurement_type = 'unit';
+    }
+
+    onUpdateHabitField(habit.id, updates);
+  };
+
   return (
     <AccordionItem 
       key={habit.id} 
@@ -153,7 +171,7 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
                    />
                    <Select 
                      value={habit.unit} 
-                     onValueChange={(v) => onUpdateHabitField(habit.id, { unit: v })}
+                     onValueChange={(v: any) => handleUnitChange(v)}
                    >
                      <SelectTrigger className="h-11 w-[100px] rounded-xl font-bold text-base">
                        <SelectValue placeholder="Unit" />
