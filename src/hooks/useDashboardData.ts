@@ -80,19 +80,30 @@ const fetchDashboardData = async (userId: string) => {
     const weeklyCompletions = Array.from(weeklyCompletionMap.keys())
       .filter(k => k.startsWith(`${h.habit_key}_`)).length;
 
+    // Growth Metrics
+    const plateauRequired = profile?.neurodivergent_mode ? 14 : 7;
+    const daysInPlateau = differenceInDays(new Date(), new Date(h.last_plateau_start_date));
+    const daysRemainingInPlateau = Math.max(0, plateauRequired - h.completions_in_plateau);
+
     return {
       key: h.habit_key,
       name: initialHabit?.name || h.habit_key.charAt(0).toUpperCase() + h.habit_key.slice(1),
-      dailyGoal, dailyProgress, isComplete: dailyProgress >= dailyGoal,
-      momentum: h.momentum_level, longTermGoal: h.long_term_goal,
+      dailyGoal, 
+      dailyProgress, 
+      isComplete: dailyProgress >= dailyGoal,
+      momentum: h.momentum_level, 
+      longTermGoal: h.long_term_goal,
       lifetimeProgress: initialHabit?.type === 'time' && initialHabit?.unit === 'min' ? Math.round((h.lifetime_progress || 0) / 60) : (h.lifetime_progress || 0),
       unit: initialHabit?.unit || '',
-      xpPerUnit: initialHabit?.xpPerUnit || 0, energyCostPerUnit: initialHabit?.energyCostPerUnit || 0,
-      is_frozen: h.is_frozen, is_fixed: h.is_fixed,
+      xpPerUnit: initialHabit?.xpPerUnit || 0, 
+      energyCostPerUnit: initialHabit?.energyCostPerUnit || 0,
+      is_frozen: h.is_frozen, 
+      is_fixed: h.is_fixed,
       category: h.category || 'daily',
       is_trial_mode: h.is_trial_mode,
       frequency_per_week: h.frequency_per_week,
       weekly_completions: weeklyCompletions,
+      weekly_goal: dailyGoal * h.frequency_per_week,
       isVisible,
       isWithinWindow,
       window_start: h.window_start,
@@ -101,6 +112,12 @@ const fetchDashboardData = async (userId: string) => {
       enable_chunks: h.enable_chunks,
       num_chunks: h.num_chunks,
       chunk_duration: h.chunk_duration,
+      growth_stats: {
+        completions: h.completions_in_plateau,
+        required: plateauRequired,
+        daysRemaining: daysRemainingInPlateau,
+        phase: h.growth_phase
+      }
     };
   });
 

@@ -5,7 +5,7 @@ import HomeHeader from "@/components/HomeHeader";
 import { 
   BookOpen, Dumbbell, Music, Wind, Home, Code, Sparkles, Pill, 
   CheckCircle2, Timer, Target, Anchor, Clock, Zap, ChevronDown, ChevronUp,
-  Layers
+  Layers, TrendingUp, ShieldCheck
 } from "lucide-react";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { DashboardSkeleton } from "@/components/dashboard/DashboardSkeleton";
@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { TipCard } from "@/components/dashboard/TipCard";
 import { calculateDynamicChunks } from "@/utils/progress-utils";
 import { MacroGoalProgress } from "@/components/dashboard/MacroGoalProgress";
+import { Progress } from "@/components/ui/progress";
 
 const habitIconMap: Record<string, React.ElementType> = {
   pushups: Dumbbell,
@@ -125,6 +126,8 @@ const Index = () => {
   const renderHabitItem = (habit: any) => {
     const Icon = habitIconMap[habit.key] || Timer;
     const color = habitColorMap[habit.key] || 'blue';
+    const isGrowth = !habit.is_fixed && !habit.is_trial_mode;
+    
     const accentColor = {
         orange: 'text-orange-950 bg-orange-50 border-orange-200',
         blue: 'text-blue-950 bg-blue-50 border-blue-200',
@@ -143,69 +146,122 @@ const Index = () => {
         key={habit.key}
         value={habit.key}
         className={cn(
-          "border-2 rounded-3xl shadow-sm overflow-hidden transition-all bg-card",
-          habit.allCompleted ? "opacity-50 grayscale-[0.3]" : accentColor,
+          "border-2 rounded-[32px] shadow-sm overflow-hidden transition-all bg-card",
+          habit.allCompleted ? "opacity-50 grayscale-[0.3] border-muted bg-muted/5" : cn(accentColor, "shadow-md"),
           !habit.isWithinWindow && !habit.allCompleted && "opacity-75"
         )}
       >
-        <AccordionTrigger className="px-5 py-4 hover:no-underline">
-          <div className="flex items-center justify-between w-full pr-2">
-            <div className="flex items-center gap-4 text-left min-w-0">
-              <div className="w-11 h-11 rounded-2xl bg-white flex items-center justify-center shrink-0 shadow-sm border border-black/5">
-                <Icon className="w-5 h-5" />
-              </div>
-              <div className="min-w-0 flex-grow pr-2">
-                <h3 className="font-black text-base flex items-center gap-1.5 leading-tight truncate">
-                  {habit.name}
-                  {habit.allCompleted && <CheckCircle2 className="w-4 h-4 text-green-600" />}
-                </h3>
-                <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                  <span className={cn(
-                    "text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full",
-                    habit.allCompleted ? "bg-green-100 text-green-700" :
-                    habit.isWithinWindow ? "bg-green-600 text-white" : "bg-muted text-muted-foreground"
+        <AccordionTrigger className="px-6 py-5 hover:no-underline">
+          <div className="flex flex-col w-full text-left gap-4">
+            <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-4 min-w-0">
+                  <div className={cn(
+                    "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border border-black/5",
+                    habit.allCompleted ? "bg-white" : "bg-white/90"
                   )}>
-                    {habit.allCompleted ? "Goal Reached" : (habit.isWithinWindow ? "Available" : "Later")}
-                  </span>
-                  <p className="text-[11px] font-bold opacity-70">
-                    {completedCount}/{habit.numChunks} parts
-                  </p>
+                    <Icon className="w-6 h-6" />
+                  </div>
+                  <div className="min-w-0 flex-grow pr-2">
+                    <h3 className="font-black text-lg flex items-center gap-2 leading-tight truncate">
+                      {habit.name}
+                      {habit.allCompleted && <CheckCircle2 className="w-5 h-5 text-green-600" />}
+                    </h3>
+                    <div className="flex flex-wrap items-center gap-2 mt-1">
+                      <span className={cn(
+                        "text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border",
+                        habit.allCompleted ? "bg-green-100 text-green-700 border-green-200" :
+                        habit.isWithinWindow ? "bg-primary text-white border-transparent" : "bg-muted text-muted-foreground border-transparent"
+                      )}>
+                        {habit.allCompleted ? "Goal Met" : (habit.isWithinWindow ? "Ready Now" : "Restricted")}
+                      </span>
+                      {isGrowth && (
+                        <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-700 border border-blue-200">
+                          Growth Mode
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
+                
+                <div className="hidden sm:flex flex-col items-end text-right">
+                    <p className="text-xl font-black">{habit.dailyProgress}/{habit.dailyGoal}</p>
+                    <p className="text-[10px] font-bold uppercase opacity-60 tracking-widest">{habit.unit} today</p>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 border-t border-black/5 pt-4">
+                <div className="space-y-1">
+                    <p className="text-[9px] font-black uppercase opacity-50 tracking-widest">Daily Focus</p>
+                    <div className="flex items-center gap-2">
+                        <Target className="w-3.5 h-3.5 opacity-40" />
+                        <p className="text-sm font-black">{habit.dailyGoal} {habit.unit}</p>
+                    </div>
+                </div>
+                <div className="space-y-1">
+                    <p className="text-[9px] font-black uppercase opacity-50 tracking-widest">Weekly Commitment</p>
+                    <div className="flex items-center gap-2">
+                        <TrendingUp className="w-3.5 h-3.5 opacity-40" />
+                        <p className="text-sm font-black">{habit.weekly_goal} {habit.unit}</p>
+                    </div>
+                </div>
             </div>
             
-            {!habit.allCompleted && (
-              <div className="hidden sm:block w-24">
-                <MacroGoalProgress current={habit.weekly_completions} total={habit.frequency_per_week} />
-              </div>
-            )}
+            <div className="w-full">
+              <MacroGoalProgress 
+                current={habit.weekly_completions} 
+                total={habit.frequency_per_week} 
+                label="Weekly Consistency"
+              />
+            </div>
           </div>
         </AccordionTrigger>
-        <AccordionContent className="px-5 pb-5 pt-0 space-y-4">
-          <div className="grid gap-2.5">
+        <AccordionContent className="px-6 pb-6 pt-2 space-y-6">
+          {/* Adaptive Insights (Growth mode only) */}
+          {isGrowth && !habit.allCompleted && (
+            <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10 flex items-start gap-3">
+                <div className="bg-primary/10 p-2 rounded-xl">
+                    <ShieldCheck className="w-4 h-4 text-primary" />
+                </div>
+                <div className="flex-grow">
+                    <div className="flex justify-between items-center mb-1">
+                        <p className="text-[10px] font-black uppercase tracking-widest">Stability Status</p>
+                        <span className="text-[10px] font-black text-primary">{habit.growth_stats.completions}/{habit.growth_stats.required} days</span>
+                    </div>
+                    <Progress value={(habit.growth_stats.completions / habit.growth_stats.required) * 100} className="h-1 [&>div]:bg-primary" />
+                    <p className="text-[11px] font-medium opacity-60 mt-2 leading-tight">
+                        {habit.growth_stats.daysRemaining} consistent days until dynamic goal increase ({habit.growth_stats.phase === 'frequency' ? 'Frequency' : 'Duration'} phase).
+                    </p>
+                </div>
+            </div>
+          )}
+
+          <div className="grid gap-3">
             {showOnlyNext && nextCapsule ? (
               <>
-                <HabitCapsule
-                  key={nextCapsule.id}
-                  {...nextCapsule}
-                  habitName={habit.name}
-                  color={color}
-                  onComplete={(actual, mood) => handleCapsuleComplete(habit, nextCapsule, actual, mood)}
-                  onUncomplete={() => handleCapsuleUncomplete(habit, nextCapsule)}
-                  showMood={data.neurodivergentMode}
-                />
+                <div className="relative">
+                    <div className="absolute left-3 top-0 bottom-0 w-px bg-muted/40 z-0" />
+                    <HabitCapsule
+                      key={nextCapsule.id}
+                      {...nextCapsule}
+                      habitName={habit.name}
+                      color={color}
+                      onComplete={(actual, mood) => handleCapsuleComplete(habit, nextCapsule, actual, mood)}
+                      onUncomplete={() => handleCapsuleUncomplete(habit, nextCapsule)}
+                      showMood={data.neurodivergentMode}
+                    />
+                </div>
                 <Button 
-                  variant="ghost" 
+                  variant="outline" 
                   size="sm" 
-                  className="w-full text-[10px] font-black uppercase tracking-widest text-muted-foreground h-8"
+                  className="w-full text-[10px] font-black uppercase tracking-widest h-9 rounded-xl border-dashed"
                   onClick={() => toggleShowAll(habit.key)}
                 >
-                  <Layers className="w-3 h-3 mr-1.5" />
-                  Show remaining {habit.numChunks - completedCount} parts
+                  <Layers className="w-3.5 h-3.5 mr-2" />
+                  View all {habit.numChunks} session parts
                 </Button>
               </>
             ) : (
-              <>
+              <div className="space-y-3">
                 {habit.capsules.map((capsule: any) => (
                   <HabitCapsule
                     key={capsule.id}
@@ -221,18 +277,14 @@ const Index = () => {
                   <Button 
                     variant="ghost" 
                     size="sm" 
-                    className="w-full text-[10px] font-black uppercase tracking-widest text-muted-foreground h-8"
+                    className="w-full text-[10px] font-black uppercase tracking-widest opacity-40 h-8"
                     onClick={() => toggleShowAll(habit.key)}
                   >
                     Simplify View
                   </Button>
                 )}
-              </>
+              </div>
             )}
-          </div>
-          
-          <div className="sm:hidden border-t border-black/5 pt-3">
-             <MacroGoalProgress current={habit.weekly_completions} total={habit.frequency_per_week} />
           </div>
         </AccordionContent>
       </AccordionItem>
@@ -259,12 +311,12 @@ const Index = () => {
           {/* Anchor Section */}
           {anchorHabits.length > 0 && (
             <div className="space-y-4">
-              <div className="sticky top-[60px] z-20 bg-background/95 backdrop-blur-sm py-3 flex items-center gap-2 border-b border-black/5">
-                <Anchor className="w-4 h-4 text-primary" />
+              <div className="sticky top-[60px] z-20 bg-background/95 backdrop-blur-sm py-3 flex items-center gap-3 border-b border-black/5">
+                <Anchor className="w-5 h-5 text-primary" />
                 <h2 className="text-xs font-black uppercase tracking-[0.2em] text-primary/80">Anchor Practices</h2>
                 <div className="ml-auto h-px flex-grow bg-black/5" />
               </div>
-              <Accordion type="multiple" value={expandedItems} onValueChange={setExpandedItems} className="space-y-3">
+              <Accordion type="multiple" value={expandedItems} onValueChange={setExpandedItems} className="space-y-4">
                 {anchorHabits.map(renderHabitItem)}
               </Accordion>
             </div>
@@ -272,12 +324,12 @@ const Index = () => {
 
           {/* Daily Momentum Section */}
           <div className="space-y-4">
-            <div className="sticky top-[60px] z-20 bg-background/95 backdrop-blur-sm py-3 flex items-center gap-2 border-b border-black/5">
-              <Zap className="w-4 h-4 text-orange-500" />
+            <div className="sticky top-[60px] z-20 bg-background/95 backdrop-blur-sm py-3 flex items-center gap-3 border-b border-black/5">
+              <Zap className="w-5 h-5 text-orange-500" />
               <h2 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Daily Momentum</h2>
               <div className="ml-auto h-px flex-grow bg-black/5" />
             </div>
-            <Accordion type="multiple" value={expandedItems} onValueChange={setExpandedItems} className="space-y-3">
+            <Accordion type="multiple" value={expandedItems} onValueChange={setExpandedItems} className="space-y-4">
               {dailyHabits.map(renderHabitItem)}
             </Accordion>
           </div>
