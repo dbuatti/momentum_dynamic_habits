@@ -19,14 +19,6 @@ const commonTimezones = [
 
 const timeOptions = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0') + ':00');
 
-// Use initialHabits from lib/habit-data.ts
-const habitOptions = initialHabits.map(h => ({
-  id: h.id,
-  name: h.name,
-  icon: habitIconMap[h.id], // Map icons based on habit ID
-  color: habitColorMap[h.id] || 'bg-gray-200', // Fallback color
-}));
-
 // Helper maps for icons and colors (ensure these are defined or imported)
 const habitIconMap: Record<string, React.ElementType> = {
   pushups: Dumbbell,
@@ -49,6 +41,14 @@ const habitColorMap: Record<string, string> = {
   teeth_brushing: 'bg-blue-500', // Using a direct color for now, can be mapped to habit-blue if needed
   medication: 'bg-purple-500', // Using a direct color for now, can be mapped to habit-purple if needed
 };
+
+// Use initialHabits from lib/habit-data.ts
+const habitOptions = initialHabits.map(h => ({
+  id: h.id,
+  name: h.name,
+  icon: habitIconMap[h.id], // Map icons based on habit ID
+  color: habitColorMap[h.id] || 'bg-gray-200', // Fallback color
+}));
 
 
 export const OnboardingFlow = ({ onComplete }: { onComplete: () => void }) => {
