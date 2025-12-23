@@ -31,7 +31,8 @@ import {
 import { useUpdateHabitVisibility } from '@/hooks/useUpdateHabitVisibility';
 import { HabitSettingsCard } from '@/components/settings/HabitSettingsCard';
 import { NewHabitModal } from '@/components/habits/NewHabitModal';
-import { ResetProgressCard } from '@/components/settings/ResetProgressCard'; // Import ResetProgressCard
+import { ResetEverythingCard } from '@/components/settings/ResetEverythingCard'; // Updated import
+import { ResetExperienceCard } from '@/components/settings/ResetExperienceCard'; // New import
 
 const Settings = () => {
   const { session, signOut } = useSession();
@@ -194,8 +195,11 @@ const Settings = () => {
         </p>
       </div>
 
-      {/* Reset Progress Card */}
-      <ResetProgressCard />
+      {/* Reset Options */}
+      <div className="space-y-4">
+        <ResetExperienceCard />
+        <ResetEverythingCard />
+      </div>
 
       {/* New Habit Modal */}
       <NewHabitModal 

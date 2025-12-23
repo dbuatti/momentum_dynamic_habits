@@ -15,10 +15,10 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { useResetProgress } from '@/hooks/useResetProgress';
+import { useResetEverything } from '@/hooks/useResetEverything'; // Updated import
 
-export const ResetProgressCard: React.FC = () => {
-  const { mutate: resetProgress, isPending } = useResetProgress();
+export const ResetEverythingCard: React.FC = () => {
+  const { mutate: resetEverything, isPending } = useResetEverything(); // Updated hook name
 
   return (
     <Card className="rounded-3xl shadow-sm border-2 border-destructive/50 bg-destructive/5 dark:bg-destructive/10">
@@ -29,7 +29,7 @@ export const ResetProgressCard: React.FC = () => {
           </div>
           <div>
             <p className="font-black uppercase tracking-tight text-destructive">Danger Zone</p>
-            <p className="text-xs text-muted-foreground">Reset all your progress and start fresh.</p>
+            <p className="text-xs text-muted-foreground">Completely wipe your account data and start fresh.</p>
           </div>
         </div>
         
@@ -45,24 +45,24 @@ export const ResetProgressCard: React.FC = () => {
               ) : (
                 <Trash2 className="w-5 h-5 mr-2" />
               )}
-              {isPending ? 'Resetting...' : 'Reset All Progress'}
+              {isPending ? 'Resetting...' : 'Reset Everything'}
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent className="rounded-2xl">
             <AlertDialogHeader>
               <AlertDialogTitle className="text-destructive">Are you absolutely sure?</AlertDialogTitle>
               <AlertDialogDescription>
-                This action cannot be undone. This will permanently delete all your habit progress, XP, streaks, and reset your profile to a fresh state.
+                This action cannot be undone. This will permanently delete ALL your habits, progress, XP, streaks, and reset your profile to a completely blank state. You will be redirected to onboarding.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
               <AlertDialogAction 
-                onClick={() => resetProgress()} 
+                onClick={() => resetEverything()} 
                 className="rounded-xl bg-destructive hover:bg-destructive/90"
                 disabled={isPending}
               >
-                {isPending ? 'Resetting...' : 'Confirm Reset'}
+                {isPending ? 'Resetting...' : 'Confirm Reset Everything'}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
