@@ -1,20 +1,33 @@
-import { Toaster as SonnerToaster } from "sonner";
-import { useTheme } from "@/contexts/ThemeContext";
+import {
+  Toast,
+  ToastClose,
+  ToastDescription,
+  ToastProvider,
+  ToastTitle,
+  ToastViewport,
+} from "@/components/ui/toast"
+import { useToast } from "@/components/ui/use-toast"
 
 export function Toaster() {
-  const { theme } = useTheme();
-  
+  const { toasts } = useToast()
+
   return (
-    <SonnerToaster
-      theme={theme as any}
-      toastOptions={{
-        classNames: {
-          toast: "group toast group-[.toaster]:bg-[hsl(var(--card))] group-[.toaster]:text-[hsl(var(--card-foreground))] group-[.toaster]:border-[hsl(var(--border))] group-[.toaster]:shadow-lg",
-          description: "group-[.toast]:text-[hsl(var(--muted-foreground))]",
-          actionButton: "group-[.toast]:bg-[hsl(var(--primary))] group-[.toast]:text-[hsl(var(--primary-foreground))]",
-          cancelButton: "group-[.toast]:bg-[hsl(var(--secondary))] group-[.toast]:text-[hsl(var(--secondary-foreground))]",
-        },
-      }}
-    />
-  );
+    <ToastProvider>
+      {toasts.map(function ({ id, title, description, action, ...props }) {
+        return (
+          <Toast key={id} {...props}>
+            <div className="grid gap-1">
+              {title && <ToastTitle>{title}</ToastTitle>}
+              {description && (
+                <ToastDescription>{description}</ToastDescription>
+              )}
+            </div>
+            {action}
+            <ToastClose />
+          </Toast>
+        )
+      })}
+      <ToastViewport />
+    </ToastProvider>
+  )
 }

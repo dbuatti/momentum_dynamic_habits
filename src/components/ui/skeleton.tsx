@@ -1,22 +1,15 @@
-import { cn } from "@/lib/utils";
-import { useTheme } from '@/contexts/ThemeContext';
+import { cn } from "@/lib/utils"
 
-export interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {}
-
-const Skeleton = ({ className, ...props }: SkeletonProps) => {
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
-
+function Skeleton({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn(
-        "animate-pulse rounded-md",
-        isDark ? "bg-[hsl(var(--muted))]" : "bg-[hsl(var(--muted))]",
-        className
-      )}
+      className={cn("animate-pulse rounded-md bg-muted", className)}
       {...props}
     />
-  );
-};
+  )
+}
 
-export { Skeleton };
+export { Skeleton }

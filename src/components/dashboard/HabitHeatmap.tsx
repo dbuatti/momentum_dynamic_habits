@@ -1,10 +1,9 @@
 import React from 'react';
-import { format, subMonths, startOfDay, isSameDay, subWeeks } from 'date-fns';
+import { format, subMonths, startOfDay, isSameDay, subWeeks } from 'date-fns'; // Add subWeeks
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Calendar } from 'lucide-react';
-import { useTheme } from '@/contexts/ThemeContext';
 
 interface HabitCompletion {
   date: string;
@@ -14,7 +13,7 @@ interface HabitCompletion {
 interface HabitHeatmapProps {
   completions: HabitCompletion[];
   habitName?: string;
-  timeframe?: string;
+  timeframe?: string; // Add timeframe prop
 }
 
 interface HeatmapDay {
@@ -23,10 +22,7 @@ interface HeatmapDay {
   count: number;
 }
 
-const HabitHeatmap: React.FC<HabitHeatmapProps> = ({ completions, habitName, timeframe = '8_weeks' }) => {
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
-  
+const HabitHeatmap: React.FC<HabitHeatmapProps> = ({ completions, habitName, timeframe = '8_weeks' }) => { // Default timeframe
   const today = new Date();
   let startDate: Date;
 
@@ -37,12 +33,13 @@ const HabitHeatmap: React.FC<HabitHeatmapProps> = ({ completions, habitName, tim
     case '12_weeks':
       startDate = subWeeks(today, 12);
       break;
-    case '8_weeks':
+    case '8_weeks': // Default
     default:
-      startDate = subWeeks(today, 8);
+      startDate = subWeeks(today, 8); // Changed from subMonths(today, 3) to match analytics data fetch
       break;
   }
   
+  // Ensure startDate is at the beginning of the day
   startDate = startOfDay(startDate);
 
   // Create a map for quick lookup
@@ -69,9 +66,9 @@ const HabitHeatmap: React.FC<HabitHeatmapProps> = ({ completions, habitName, tim
   let currentWeek: HeatmapDay[] = [];
   
   // Fill the first week with leading empty days if startDate is not a Sunday (0)
-  const firstDayOfWeek = startDate.getDay();
+  const firstDayOfWeek = startDate.getDay(); // 0 for Sunday, 1 for Monday, etc.
   for (let i = 0; i < firstDayOfWeek; i++) {
-    currentWeek.push({ date: new Date(0), dateStr: '', count: 0 });
+    currentWeek.push({ date: new Date(0), dateStr: '', count: 0 }); // Placeholder for empty days
   }
 
   days.forEach(day => {
@@ -84,6 +81,7 @@ const HabitHeatmap: React.FC<HabitHeatmapProps> = ({ completions, habitName, tim
   
   // Add remaining days to the last week
   if (currentWeek.length > 0) {
+    // Pad the last week with empty days if it's not full
     while (currentWeek.length < 7) {
       currentWeek.push({ date: new Date(0), dateStr: '', count: 0 });
     }
@@ -94,27 +92,27 @@ const HabitHeatmap: React.FC<HabitHeatmapProps> = ({ completions, habitName, tim
   const maxCount = Math.max(...completions.map(c => c.count), 1);
   
   const getIntensityClass = (count: number) => {
-    if (count === 0) return isDark ? "bg-[hsl(var(--muted))]" : "bg-[hsl(var(--muted))]";
-    if (count >= maxCount * 0.75) return "bg-[hsl(var(--habit-green-foreground))]";
-    if (count >= maxCount * 0.5) return "bg-[hsl(var(--habit-green-foreground))]/80";
-    if (count >= maxCount * 0.25) return "bg-[hsl(var(--habit-green-foreground))]/60";
-    return "bg-[hsl(var(--habit-green-foreground))]/40";
+    if (count === 0) return 'bg-gray-100 dark:bg-gray-800';
+    if (count >= maxCount * 0.75) return 'bg-green-500';
+    if (count >= maxCount * 0.5) return 'bg-green-400';
+    if (count >= maxCount * 0.25) return 'bg-green-300';
+    return 'bg-green-200';
   };
 
   return (
     <Card className="rounded-2xl shadow-sm">
       <CardHeader className="p-4">
         <CardTitle className="text-base flex items-center">
-          <Calendar className="w-4 h-4 mr-2 text-[hsl(var(--muted-foreground))]" />
+          <Calendar className="w-4 h-4 mr-2 text-muted-foreground" />
           {habitName ? `${habitName} Consistency` : 'Habit Consistency'}
         </CardTitle>
       </CardHeader>
       <CardContent className="p-4">
         <div className="flex flex-col space-y-1">
           <div className="flex justify-end space-x-1 pb-1">
-            <span className="text-xs text-[hsl(var(--muted-foreground))] w-6 text-center">M</span>
-            <span className="text-xs text-[hsl(var(--muted-foreground))] w-6 text-center">W</span>
-            <span className="text-xs text-[hsl(var(--muted-foreground))] w-6 text-center">F</span>
+            <span className="text-xs text-muted-foreground w-6 text-center">M</span>
+            <span className="text-xs text-muted-foreground w-6 text-center">W</span>
+            <span className="text-xs text-muted-foreground w-6 text-center">F</span>
           </div>
           <div className="flex space-x-1 overflow-x-auto pb-2">
             {weeks.map((week, weekIndex) => (
@@ -125,10 +123,8 @@ const HabitHeatmap: React.FC<HabitHeatmapProps> = ({ completions, habitName, tim
                       <TooltipTrigger asChild>
                         <div 
                           className={cn(
-                            "w-6 h-6 rounded-sm border",
-                            day.dateStr === '' 
-                              ? "bg-transparent border-transparent" 
-                              : cn(getIntensityClass(day.count), "border-[hsl(var(--border))]")
+                            "w-6 h-6 rounded-sm border border-border",
+                            day.dateStr === '' ? 'bg-transparent border-transparent' : getIntensityClass(day.count) // Handle empty days
                           )} 
                         />
                       </TooltipTrigger>
@@ -151,15 +147,15 @@ const HabitHeatmap: React.FC<HabitHeatmapProps> = ({ completions, habitName, tim
         
         <div className="flex items-center justify-between mt-4">
           <div className="flex items-center space-x-2">
-            <span className="text-xs text-[hsl(var(--muted-foreground))]">Less</span>
+            <span className="text-xs text-muted-foreground">Less</span>
             <div className="flex space-x-1">
-              <div className={cn("w-3 h-3 rounded-sm border", isDark ? "bg-[hsl(var(--muted))]" : "bg-[hsl(var(--muted))]", "border-[hsl(var(--border))]")}></div>
-              <div className="w-3 h-3 bg-[hsl(var(--habit-green-foreground))]/40 rounded-sm"></div>
-              <div className="w-3 h-3 bg-[hsl(var(--habit-green-foreground))]/60 rounded-sm"></div>
-              <div className="w-3 h-3 bg-[hsl(var(--habit-green-foreground))]/80 rounded-sm"></div>
-              <div className="w-3 h-3 bg-[hsl(var(--habit-green-foreground))] rounded-sm"></div>
+              <div className="w-3 h-3 bg-gray-100 dark:bg-gray-800 border border-border rounded-sm"></div>
+              <div className="w-3 h-3 bg-green-200 rounded-sm"></div>
+              <div className="w-3 h-3 bg-green-300 rounded-sm"></div>
+              <div className="w-3 h-3 bg-green-400 rounded-sm"></div>
+              <div className="w-3 h-3 bg-green-500 rounded-sm"></div>
             </div>
-            <span className="text-xs text-[hsl(var(--muted-foreground))]">More</span>
+            <span className="text-xs text-muted-foreground">More</span>
           </div>
         </div>
       </CardContent>

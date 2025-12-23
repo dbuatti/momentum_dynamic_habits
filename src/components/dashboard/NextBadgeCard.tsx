@@ -2,8 +2,6 @@ import { Progress } from '@/components/ui/progress';
 import { Flame, Star, Trophy, Dumbbell, Wind, Shield, Crown, Mountain } from 'lucide-react';
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { useTheme } from '@/contexts/ThemeContext';
-import { cn } from '@/lib/utils';
 
 const iconMap: { [key: string]: React.ElementType } = {
   Flame,
@@ -29,23 +27,17 @@ interface NextBadgeCardProps {
 }
 
 export const NextBadgeCard: React.FC<NextBadgeCardProps> = ({ badge }) => {
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
-
   if (!badge) {
     return (
-      <Card className={cn(
-        "rounded-2xl shadow-sm border-0",
-        isDark ? "bg-green-900/20 border-green-800" : "bg-green-50 border-green-200"
-      )}>
+      <Card className="bg-green-50 border border-green-200 rounded-2xl shadow-sm border-0">
         <CardContent className="p-5">
           <div className="flex items-center space-x-4">
-            <div className={cn("rounded-full p-3", isDark ? "bg-green-800" : "bg-green-100")}>
-              <Trophy className={cn("w-6 h-6", isDark ? "text-green-400" : "text-green-500")} />
+            <div className="bg-green-100 rounded-full p-3">
+              <Trophy className="w-6 h-6 text-green-500" />
             </div>
             <div className="flex-grow">
               <p className="font-semibold">All badges unlocked!</p>
-              <p className="text-sm text-[hsl(var(--muted-foreground))]">You are a true champion.</p>
+              <p className="text-sm text-muted-foreground">You are a true champion.</p>
             </div>
           </div>
         </CardContent>
@@ -56,17 +48,14 @@ export const NextBadgeCard: React.FC<NextBadgeCardProps> = ({ badge }) => {
   const Icon = iconMap[badge.icon_name] || Flame;
   
   return (
-    <Card className={cn(
-      "rounded-2xl shadow-sm border-0",
-      isDark ? "bg-orange-900/20 border-orange-800" : "bg-orange-50 border-orange-200"
-    )}>
+    <Card className="bg-orange-50 border border-orange-200 rounded-2xl shadow-sm border-0">
       <CardContent className="p-5">
         <div className="flex items-center space-x-4">
-          <div className={cn("rounded-full p-3", isDark ? "bg-orange-800" : "bg-orange-100")}>
-            <Icon className={cn("w-6 h-6", isDark ? "text-orange-400" : "text-orange-500")} />
+          <div className="bg-orange-100 rounded-full p-3">
+            <Icon className="w-6 h-6 text-orange-500" />
           </div>
           <div className="flex-grow">
-            <p className={cn("text-sm font-bold flex items-center", isDark ? "text-orange-400" : "text-orange-600")}>
+            <p className="text-sm text-muted-foreground flex items-center">
               <Star className="w-3.5 h-3.5 mr-1" />
               Next badge
             </p>
@@ -74,10 +63,10 @@ export const NextBadgeCard: React.FC<NextBadgeCardProps> = ({ badge }) => {
             <div className="flex items-center space-x-2 mt-2">
               <Progress 
                 value={badge.progress.progressValue} 
-                className={cn("h-2 flex-grow", "[&>div]:bg-orange-400")} 
+                className="h-2 flex-grow [&>div]:bg-orange-400" 
               />
-              <p className="text-sm text-[hsl(var(--muted-foreground))] whitespace-nowrap">
-                <span className={cn("font-semibold", isDark ? "text-orange-400" : "text-orange-600")}>{badge.progress.value}</span> {badge.progress.unit}
+              <p className="text-sm text-muted-foreground whitespace-nowrap">
+                <span className="font-semibold text-orange-600">{badge.progress.value}</span> {badge.progress.unit}
               </p>
             </div>
           </div>

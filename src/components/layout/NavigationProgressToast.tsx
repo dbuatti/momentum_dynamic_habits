@@ -8,8 +8,6 @@ import { useDashboardData } from '@/hooks/useDashboardData';
 import { calculateDailyParts } from '@/utils/progress-utils';
 import { Progress } from '@/components/ui/progress';
 import { getXpForNextLevel, getXpForCurrentLevelStart } from '@/utils/leveling';
-import { useTheme } from '@/contexts/ThemeContext';
-import { cn } from '@/lib/utils';
 
 const MESSAGES = [
   "Keep going!",
@@ -24,8 +22,6 @@ const MESSAGES = [
 export const NavigationProgressToast = () => {
   const location = useLocation();
   const { data } = useDashboardData();
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
   const [isVisible, setIsVisible] = useState(false);
   const [lastPath, setLastPath] = useState(location.pathname);
   const [message, setMessage] = useState(MESSAGES[0]);
@@ -49,11 +45,6 @@ export const NavigationProgressToast = () => {
   const xpNext = getXpForNextLevel(data.level);
   const xpProgress = ((data.xp - xpStart) / (xpNext - xpStart)) * 100;
 
-  // Theme-aware colors
-  const toastBg = isDark ? "bg-[hsl(var(--card))]/95" : "bg-[hsl(var(--card))]/95";
-  const toastBorder = isDark ? "border-[hsl(var(--border))]" : "border-[hsl(var(--border))]";
-  const toastText = isDark ? "text-[hsl(var(--foreground))]" : "text-[hsl(var(--foreground))]";
-
   return (
     <AnimatePresence>
       {isVisible && (
@@ -63,11 +54,11 @@ export const NavigationProgressToast = () => {
           exit={{ opacity: 0, y: 20, scale: 0.95 }}
           className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] w-[calc(100%-2rem)] max-w-sm"
         >
-          <div className={cn("backdrop-blur-md border rounded-2xl p-4 shadow-2xl", toastBg, toastBorder, toastText)}>
+          <div className="bg-slate-900/95 backdrop-blur-md border border-white/10 rounded-2xl p-4 shadow-2xl shadow-primary/20 text-white">
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[hsl(var(--primary))]/20 flex items-center justify-center border border-[hsl(var(--primary))]/30">
-                  <Trophy className="w-5 h-5 text-[hsl(var(--primary))]" />
+                <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center border border-primary/30">
+                  <Trophy className="w-5 h-5 text-primary" />
                 </div>
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-widest opacity-50">Level {data.level}</p>
@@ -76,7 +67,7 @@ export const NavigationProgressToast = () => {
               </div>
               <button 
                 onClick={() => setIsVisible(false)}
-                className="p-1 hover:bg-[hsl(var(--muted))] rounded-full transition-colors"
+                className="p-1 hover:bg-white/10 rounded-full transition-colors"
               >
                 <X className="w-4 h-4 opacity-50" />
               </button>
@@ -88,19 +79,19 @@ export const NavigationProgressToast = () => {
                   <span>Progress to Level {data.level + 1}</span>
                   <span>{Math.round(xpProgress)}%</span>
                 </div>
-                <Progress value={xpProgress} className="h-1 bg-[hsl(var(--border))] [&>div]:bg-[hsl(var(--primary))]" />
+                <Progress value={xpProgress} className="h-1 bg-white/10 [&>div]:bg-primary" />
               </div>
 
               <div className="flex items-center justify-between gap-4 pt-1">
                 <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-lg bg-[hsl(var(--habit-green-foreground))]/20 flex items-center justify-center">
-                    <Zap className="w-3.5 h-3.5 text-[hsl(var(--habit-green-foreground))]" />
+                  <div className="w-6 h-6 rounded-lg bg-green-500/20 flex items-center justify-center">
+                    <Zap className="w-3.5 h-3.5 text-green-400" />
                   </div>
                   <span className="text-xs font-bold">{completed}/{total} parts done</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-lg bg-[hsl(var(--habit-orange-foreground))]/20 flex items-center justify-center">
-                    <Flame className="w-3.5 h-3.5 text-[hsl(var(--habit-orange-foreground))]" />
+                  <div className="w-6 h-6 rounded-lg bg-orange-500/20 flex items-center justify-center">
+                    <Flame className="w-3.5 h-3.5 text-orange-400" />
                   </div>
                   <span className="text-xs font-bold">{data.patterns.streak} day streak</span>
                 </div>
