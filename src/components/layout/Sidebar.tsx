@@ -79,7 +79,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick }) => {
     { to: "/history", icon: BarChart, label: "History" },
     { to: "/analytics", icon: BarChart3, label: "Analytics" },
     { to: "/templates", icon: LayoutTemplate, label: "Templates" },
-    { to: "/create-habit", icon: PlusCircle, label: "Create New Habit" }, // Keep this for direct access
+    { to: "/create-habit", icon: PlusCircle, label: "Habit Wizard" }, // Updated label
     { to: "/settings", icon: Settings, label: "Settings" },
     { to: "/help", icon: HelpCircle, label: "Help" },
   ];

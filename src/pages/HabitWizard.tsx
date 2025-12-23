@@ -28,7 +28,7 @@ import { useJourneyData } from '@/hooks/useJourneyData';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { habitIconMap } from '@/lib/habit-utils';
 import { useCreateTemplate } from '@/hooks/useCreateTemplate';
-import { NewHabitModal } from '@/components/habits/NewHabitModal';
+// import { NewHabitModal } from '@/components/habits/NewHabitModal'; // Removed as it's no longer used here
 
 interface CreateHabitParams {
   name: string;
@@ -140,8 +140,8 @@ const HabitWizard = () => { // Renamed component
   const isTemplateCreationMode = location.state?.mode === 'template';
   const templateToPreFill: HabitTemplate | undefined = location.state?.templateToPreFill;
 
-  const [flowType, setFlowType] = useState<'entry' | 'guided'>('entry');
-  const [step, setStep] = useState(0);
+  // const [flowType, setFlowType] = useState<'entry' | 'guided'>('entry'); // Removed entry screen
+  const [step, setStep] = useState(1); // Start directly at step 1 for guided flow
 
   // Habit state for guided flow
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
@@ -167,8 +167,8 @@ const HabitWizard = () => { // Renamed component
   // New state for guided flow: selected category group
   const [selectedCategoryGroup, setSelectedCategoryGroup] = useState<string | null>(null);
 
-  // Modal state for custom habit creation
-  const [showNewHabitModal, setShowNewHabitModal] = useState(false);
+  // Modal state for custom habit creation (removed from this file, but kept for reference if needed elsewhere)
+  // const [showNewHabitModal, setShowNewHabitModal] = useState(false);
 
   const otherHabits = useMemo(() => {
     return (journeyData?.allHabits || []).filter(h => h.id !== habitKey);
@@ -205,18 +205,18 @@ const HabitWizard = () => { // Renamed component
   // Pre-fill form if a template is passed via state
   useEffect(() => {
     if (templateToPreFill) {
-      setFlowType('guided'); // Switch to guided flow for pre-filling
+      // setFlowType('guided'); // Switch to guided flow for pre-filling
       setStep(2); // Go to template selection step
       setSelectedTemplateId(templateToPreFill.id);
     } else if (isTemplateCreationMode) {
-      setFlowType('guided'); // Force guided flow for template contribution
+      // setFlowType('guided'); // Force guided flow for template contribution
       setStep(1); // Start at template selection
     }
   }, [templateToPreFill, isTemplateCreationMode]);
 
   // Update form fields when a template is selected in guided flow
   useEffect(() => {
-    if (selectedTemplate && flowType === 'guided') {
+    if (selectedTemplate) { // Removed flowType === 'guided' condition
       setHabitName(selectedTemplate.name);
       setHabitKey(selectedTemplate.id);
       setCategory(selectedTemplate.category);
@@ -233,7 +233,15 @@ const HabitWizard = () => { // Renamed component
       setPlateauDaysRequired(selectedTemplate.plateauDaysRequired);
       setShortDescription(templateToPreFill?.shortDescription || selectedTemplate.shortDescription || '');
     }
-  }, [selectedTemplate, flowType, templateToPreFill]);
+  }, [selectedTemplate, templateToPreFill]); // Removed flowType from dependency array
+
+  // Auto-generate habit key from name (only if not pre-filled)
+  useEffect(() => {
+    if (!templateToPreFill && habitName) {
+      const key = habitName.toLowerCase().replace(/\s/g, '_').replace(/[^a-z0-9_]/g, '');
+      setHabitKey(key);
+    }
+  }, [habitName, templateToPreFill]);
 
   const createHabitMutation = useMutation({
     mutationFn: (habit: CreateHabitParams) => {
@@ -320,8 +328,9 @@ const HabitWizard = () => { // Renamed component
 
   const handleGuidedBack = () => {
     if (step === 1) { // If on first step of guided flow, go back to mode selection
-      setFlowType('entry');
-      setStep(0);
+      // setFlowType('entry'); // No entry screen anymore
+      // setStep(0); // No step 0 anymore
+      navigate('/'); // Go back to dashboard if on first step
       setSelectedCategoryGroup(null);
       setSelectedTemplateId(null);
     } else if (step === 2) { // If on Template Selection, go back to Focus Area
@@ -534,7 +543,7 @@ const HabitWizard = () => { // Renamed component
           )}
 
           <div className="flex justify-between mt-8 gap-4">
-            <Button variant="ghost" onClick={handleGuidedBack} disabled={createHabitMutation.isPending || step === 0} className="rounded-2xl px-8">Back</Button>
+            <Button variant="ghost" onClick={handleGuidedBack} disabled={createHabitMutation.isPending || step === 1} className="rounded-2xl px-8">Back</Button>
             <Button onClick={handleGuidedNext} disabled={createHabitMutation.isPending || (step === 1 && !selectedCategoryGroup) || (step === 2 && !selectedTemplateId)} className="flex-1 rounded-2xl h-12 text-base font-bold">
               {step === totalGuidedSteps ? 'Create Habit' : 'Next'}
             </Button>
@@ -882,48 +891,19 @@ const HabitWizard = () => { // Renamed component
 
   return (
     <div className="w-full max-w-4xl mx-auto px-4 py-6 space-y-8 pb-32">
-      <PageHeader title={isTemplateCreationMode ? "Contribute New Template" : "Create New Habit"} />
+      <PageHeader title={isTemplateCreationMode ? "Contribute New Template" : "Habit Wizard"} /> {/* Updated title */}
 
-      {/* Entry Screen */}
-      {flowType === 'entry' && !isTemplateCreationMode && !templateToPreFill && (
-        <div className="space-y-6 text-center max-w-md mx-auto">
-          <div className="mx-auto w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mb-6">
-            <Target className="w-12 h-12 text-primary" />
-          </div>
-          <h2 className="text-3xl font-bold mb-4">How do you want to create your habit?</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Button
-              className="h-32 rounded-3xl text-xl font-bold flex flex-col items-center justify-center space-y-2 bg-primary hover:bg-primary/90"
-              onClick={() => { setFlowType('guided'); setStep(1); }}
-            >
-              <Zap className="w-8 h-8" />
-              <span>Guided Wizard</span>
-              <span className="text-sm font-normal opacity-80">Step-by-step with smart suggestions</span>
-            </Button>
-            <Button
-              variant="outline"
-              className="h-32 rounded-3xl text-xl font-bold flex flex-col items-center justify-center space-y-2 border-2 border-muted-foreground/20 hover:bg-muted/20"
-              onClick={() => setShowNewHabitModal(true)}
-            >
-              <Brain className="w-8 h-8" />
-              <span>Custom Habit</span>
-              <span className="text-sm font-normal opacity-80">Define all parameters manually</span>
-            </Button>
-          </div>
-        </div>
-      )}
+      {/* Guided Flow (always rendered now) */}
+      {renderGuidedStep()}
 
-      {/* Guided Flow */}
-      {(flowType === 'guided' && !isTemplateCreationMode && !templateToPreFill) && renderGuidedStep()}
-
-      {/* Template Creation Form */}
+      {/* Template Creation Form (only if in template creation mode) */}
       {(isTemplateCreationMode || templateToPreFill) && renderTemplateCreationForm()}
 
-      {/* New Habit Modal */}
-      <NewHabitModal 
+      {/* New Habit Modal (removed from this file) */}
+      {/* <NewHabitModal 
         isOpen={showNewHabitModal} 
         onClose={() => setShowNewHabitModal(false)} 
-      />
+      /> */}
     </div>
   );
 };
