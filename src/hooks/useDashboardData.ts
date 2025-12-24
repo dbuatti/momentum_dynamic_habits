@@ -122,8 +122,9 @@ const fetchDashboardData = async (userId: string) => {
     if (mType === 'binary') {
       isComplete = completedHabitKeysToday.has(h.habit_key);
     } else {
-      // Use the standard "close enough" threshold
-      isComplete = rawDailyProgress >= (baseAdjustedDailyGoal - 0.01);
+      // For timer habits, allow a 6-second (0.1 min) grace threshold to handle rounding
+      const threshold = mType === 'timer' ? 0.1 : 0.01;
+      isComplete = rawDailyProgress >= (baseAdjustedDailyGoal - threshold);
     }
 
     return {

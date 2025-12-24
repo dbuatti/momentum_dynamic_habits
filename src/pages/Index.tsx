@@ -27,7 +27,7 @@ import { GrowthGuide } from "@/components/dashboard/GrowthGuide";
 import { Link } from "react-router-dom";
 import { showError } from "@/utils/toast";
 import { habitIconMap, habitColorMap } from '@/lib/habit-utils';
-import { TrialGuidance } from "@/components/dashboard/TrialGuidance"; // New import
+import { TrialGuidance } from "@/components/dashboard/TrialGuidance";
 
 const Index = () => {
   const { data, isLoading, isError } = useDashboardData();
@@ -65,7 +65,10 @@ const Index = () => {
       const isOverallComplete = habit.isComplete;
 
       const capsules = Array.from({ length: numChunks }).map((_, i) => {
-        const isCompleted = progress >= ((i + 1) * chunkValue - 0.01);
+        const targetValue = (i + 1) * chunkValue;
+        // Apply the same 6-second (0.1 min) grace threshold for timer-based capsules
+        const threshold = habit.measurement_type === 'timer' ? 0.1 : 0.01;
+        const isCompleted = progress >= (targetValue - threshold);
         const taskId = capsuleMapping[i] || null;
 
         return {
