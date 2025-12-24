@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Dumbbell, Wind, BookOpen, Music, AlertCircle, Loader2, Zap, Home, Code, ClipboardList, Calendar, Filter, Sparkles, Pill, MessageSquare, Target } from 'lucide-react';
+import { ArrowLeft, Dumbbell, Wind, BookOpen, Music, AlertCircle, Loader2, Zap, Home, Code, ClipboardList, Calendar, Filter, Sparkles, Pill, MessageSquare, Target, Undo2 } from 'lucide-react';
 import { useCompletedTasks } from '@/hooks/useCompletedTasks';
 import { format, parseISO, isSameDay } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,11 +14,13 @@ import { useHabitHeatmapData } from '@/hooks/useHabitHeatmapData';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useDashboardData } from '@/hooks/useDashboardData'; // Import useDashboardData
 import { habitIconMap } from '@/lib/habit-utils'; // Import from centralized utility
+import { useHabitLog } from '@/hooks/useHabitLog'; // Import useHabitLog
 
 const History = () => {
   const { data: completedTasks, isLoading, isError } = useCompletedTasks();
   const { data: heatmapData, isLoading: isHeatmapLoading } = useHabitHeatmapData();
   const { data: dashboardData, isLoading: isDashboardDataLoading } = useDashboardData(); // Fetch dashboard data
+  const { unlog, isUnlogging } = useHabitLog(); // Use the unlog mutation
   const [filter, setFilter] = useState<string>('all');
 
   // Get unique habit types for filter
@@ -36,6 +38,10 @@ const History = () => {
     acc[date].push(task);
     return acc;
   }, {} as Record<string, typeof completedTasks>);
+
+  const handleUnlogTask = (completedTaskId: string) => {
+    unlog({ completedTaskId });
+  };
 
   if (isLoading || isHeatmapLoading || isDashboardDataLoading) {
     return (
@@ -135,16 +141,28 @@ const History = () => {
                               </p>
                             </div>
                           </div>
-                          <div className="text-right">
-                            {unit === 'min' ? (
-                              <p className="font-semibold">{Math.round((task.duration_used || 0) / 60)} min</p>
-                            ) : (
-                              <p className="font-semibold">{Math.round((task.xp_earned || 0) / (userHabit?.xpPerUnit || 1))} {unit}</p>
-                            )}
-                            <div className="flex items-center text-xs text-muted-foreground mt-1">
-                              <Zap className="w-3 h-3 mr-1 text-warning" />
-                              <span>{task.xp_earned} XP</span>
+                          <div className="flex items-center gap-3">
+                            <div className="text-right">
+                              {unit === 'min' ? (
+                                <p className="font-semibold">{Math.round((task.duration_used || 0) / 60)} min</p>
+                              ) : (
+                                <p className="font-semibold">{Math.round((task.xp_earned || 0) / (userHabit?.xpPerUnit || 1))} {unit}</p>
+                              )}
+                              <div className="flex items-center text-xs text-muted-foreground mt-1">
+                                <Zap className="w-3 h-3 mr-1 text-warning" />
+                                <span>{task.xp_earned} XP</span>
+                              </div>
                             </div>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="h-8 px-3 text-xs rounded-full"
+                              onClick={() => handleUnlogTask(task.id)}
+                              disabled={isUnlogging}
+                            >
+                              <Undo2 className="w-3 h-3 mr-1" />
+                              Undo
+                            </Button>
                           </div>
                         </div>
                         
