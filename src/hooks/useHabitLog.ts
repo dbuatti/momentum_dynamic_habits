@@ -314,6 +314,7 @@ export const useHabitLog = () => {
       queryClient.invalidateQueries({ queryKey: ['dailyHabitCompletion', session?.user?.id] });
       queryClient.invalidateQueries({ queryKey: ['habitHeatmapData', session?.user?.id] });
       queryClient.invalidateQueries({ queryKey: ['habitCapsules', session?.user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['completedTasks', session?.user?.id] }); // Invalidate completedTasks
       return data.completedTaskId;
     },
     onError: (error) => {
@@ -333,6 +334,7 @@ export const useHabitLog = () => {
       queryClient.invalidateQueries({ queryKey: ['dailyHabitCompletion', session?.user?.id] });
       queryClient.invalidateQueries({ queryKey: ['habitHeatmapData', session?.user?.id] });
       queryClient.invalidateQueries({ queryKey: ['habitCapsules', session?.user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['completedTasks', session?.user?.id] }); // Invalidate completedTasks
     },
     onError: (error) => {
       showError(`Failed to uncomplete: ${error.message}`);
