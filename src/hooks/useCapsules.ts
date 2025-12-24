@@ -72,7 +72,7 @@ export const useCapsules = () => {
       if (!userId) throw new Error('User not authenticated');
 
       // 1. Log the habit WITH the capsuleIndex
-      const { completedTaskId } = await logHabit({ 
+      const { completedTaskId } = await logHabit({ // Await the logHabit call
         habitKey, 
         value, 
         taskName, 
@@ -104,9 +104,9 @@ export const useCapsules = () => {
         throw error;
       }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['habitCapsules', userId, today] });
-      queryClient.invalidateQueries({ queryKey: ['dashboardData', userId] });
+    onSuccess: async () => { // Added async here
+      await queryClient.refetchQueries({ queryKey: ['habitCapsules', userId, today] }); // Explicit refetch
+      await queryClient.refetchQueries({ queryKey: ['dashboardData', userId] }); // Explicit refetch
     },
     onError: (error) => {
       console.error('[useCapsules] logCapsuleProgress onError:', error);
@@ -142,9 +142,9 @@ export const useCapsules = () => {
         throw error;
       }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['habitCapsules', userId, today] });
-      queryClient.invalidateQueries({ queryKey: ['dashboardData', userId] });
+    onSuccess: async () => { // Added async here
+      await queryClient.refetchQueries({ queryKey: ['habitCapsules', userId, today] }); // Explicit refetch
+      await queryClient.refetchQueries({ queryKey: ['dashboardData', userId] }); // Explicit refetch
     },
     onError: (error) => {
       console.error('[useCapsules] uncompleteCapsule onError:', error);

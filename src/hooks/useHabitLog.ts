@@ -307,9 +307,9 @@ export const useHabitLog = () => {
       if (!session?.user?.id) throw new Error('User not authenticated');
       return logHabit({ ...params, userId: session.user.id });
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => { // Added async here
       showSuccess(`${data.taskName} completed! +${data.xpEarned} XP`);
-      queryClient.invalidateQueries({ queryKey: ['dashboardData', session?.user?.id] });
+      await queryClient.refetchQueries({ queryKey: ['dashboardData', session?.user?.id] }); // Explicit refetch
       queryClient.invalidateQueries({ queryKey: ['journeyData', session?.user?.id] });
       queryClient.invalidateQueries({ queryKey: ['dailyHabitCompletion', session?.user?.id] });
       queryClient.invalidateQueries({ queryKey: ['habitHeatmapData', session?.user?.id] });
@@ -326,9 +326,9 @@ export const useHabitLog = () => {
       if (!session?.user?.id) throw new Error('User not authenticated');
       return unlogHabit({ ...params, userId: session.user.id });
     },
-    onSuccess: () => {
+    onSuccess: async () => { // Added async here
       showSuccess('Task uncompleted.');
-      queryClient.invalidateQueries({ queryKey: ['dashboardData', session?.user?.id] });
+      await queryClient.refetchQueries({ queryKey: ['dashboardData', session?.user?.id] }); // Explicit refetch
       queryClient.invalidateQueries({ queryKey: ['journeyData', session?.user?.id] });
       queryClient.invalidateQueries({ queryKey: ['dailyHabitCompletion', session?.user?.id] });
       queryClient.invalidateQueries({ queryKey: ['habitHeatmapData', session?.user?.id] });
