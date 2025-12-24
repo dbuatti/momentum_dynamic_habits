@@ -6,7 +6,7 @@ import {
   CheckCircle2, Target, Anchor, Zap, 
   Layers, PlusCircle, Lock, ChevronRight,
   AlertCircle, Sparkles, TrendingUp, Clock, Play,
-  Check
+  Check, CalendarDays
 } from "lucide-react";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { DashboardSkeleton } from "@/components/dashboard/DashboardSkeleton";
@@ -41,7 +41,10 @@ const Index = () => {
     if (!data?.habits) return [];
 
     return data.habits
-      .filter(habit => habit.is_visible)
+      .filter(habit => {
+        // Filter: Show if scheduled for today OR has progress made today OR is complete
+        return habit.is_visible && (habit.isScheduledForToday || habit.dailyProgress > 0 || habit.isComplete);
+      })
       .map(habit => {
       const goal = habit.adjustedDailyGoal;
       const progress = habit.dailyProgress;
@@ -244,6 +247,11 @@ const Index = () => {
                   )}>
                     {habit.allCompleted ? "Goal Reached" : (habit.isWithinWindow ? "Ready Now" : "Restricted")}
                   </span>
+                  {!habit.isScheduledForToday && !habit.allCompleted && (
+                    <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-muted/50 text-muted-foreground border-transparent border flex items-center gap-1">
+                      <CalendarDays className="w-3 h-3" /> Extra Session
+                    </span>
+                  )}
                 </div>
                 <p className={cn("text-sm font-bold mt-2", habit.allCompleted ? "text-success-foreground" : "text-foreground")}>
                   Progress: {Math.round(habit.displayProgress)}/{Math.round(habit.adjustedDailyGoal)} {habit.unit}

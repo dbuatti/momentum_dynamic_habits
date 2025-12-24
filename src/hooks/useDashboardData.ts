@@ -63,7 +63,8 @@ const fetchDashboardData = async (userId: string) => {
 
     const userHabit = habits?.find(h => h.habit_key === key);
     const mType = userHabit?.measurement_type || 'timer';
-    const xpPerUnit = userHabit?.xp_per_unit || 1;
+    // Use a sensible default of 30 XP if missing, or 1 if count-based
+    const xpPerUnit = userHabit?.xp_per_unit || (userHabit?.unit === 'min' ? 30 : 1);
 
     let progress = 0;
     if (mType === 'timer') progress = (task.duration_used || 0) / 60;
@@ -79,7 +80,10 @@ const fetchDashboardData = async (userId: string) => {
     const rawDailyProgress = dailyProgressMap.get(h.habit_key) || 0;
     const capsuleTaskMapping = dailyCapsuleTasksMap.get(h.habit_key) || {};
     const baseAdjustedDailyGoal = h.current_daily_goal + (h.carryover_value || 0);
-    const isScheduledForToday = h.days_of_week ? h.days_of_week.includes(currentDayOfWeek) : true;
+    
+    // Robustly handle string vs number array for days_of_week
+    const activeDays = h.days_of_week ? h.days_of_week.map((d: any) => Number(d)) : [0, 1, 2, 3, 4, 5, 6];
+    const isScheduledForToday = activeDays.includes(currentDayOfWeek);
 
     let isWithinWindow = true;
     if (h.window_start && h.window_end) {
@@ -121,8 +125,8 @@ const fetchDashboardData = async (userId: string) => {
       carryoverValue: mType === 'binary' ? 0 : (h.carryover_value || 0),
       dailyProgress: rawDailyProgress, 
       isComplete: isComplete,
-      xpPerUnit: h.xp_per_unit || 0,
-      energyCostPerUnit: h.energy_cost_per_unit || 0,
+      xpPerUnit: h.xp_per_unit || (h.unit === 'min' ? 30 : 1),
+      energyCostPerUnit: h.energy_cost_per_unit || (h.unit === 'min' ? 6 : 0.5),
       weekly_completions: weeklyCompletions,
       weekly_goal: (mType === 'binary' ? 1 : h.current_daily_goal) * h.frequency_per_week,
       isScheduledForToday,
@@ -143,7 +147,7 @@ const fetchDashboardData = async (userId: string) => {
     const totals = { pushups: 0, meditation: 0 };
     tasks.forEach(t => {
       const userHabit = habits?.find(h => h.habit_key === t.original_source);
-      const xpPerUnit = userHabit?.xp_per_unit || 1;
+      const xpPerUnit = userHabit?.xp_per_unit || (userHabit?.unit === 'min' ? 30 : 1);
       if (t.original_source === 'pushups') totals.pushups += (t.xp_earned || 0) / xpPerUnit;
       if (t.original_source === 'meditation') totals.meditation += (t.duration_used || 0) / 60;
     });

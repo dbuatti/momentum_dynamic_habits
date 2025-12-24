@@ -52,8 +52,12 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
     lifetimeProgressIncrementValue = value; 
   }
 
-  const xpEarned = Math.round(xpBaseValue * (userHabitData.xp_per_unit ?? 1));
-  const energyCost = Math.round(xpBaseValue * (userHabitData.energy_cost_per_unit ?? 0));
+  // Sensible fallbacks for system values to ensure XP is always granted
+  const xpPerUnit = userHabitData.xp_per_unit || (userHabitData.unit === 'min' ? 30 : 1);
+  const energyCostPerUnit = userHabitData.energy_cost_per_unit ?? (userHabitData.unit === 'min' ? 6 : 0.5);
+
+  const xpEarned = Math.round(xpBaseValue * xpPerUnit);
+  const energyCost = Math.round(xpBaseValue * energyCostPerUnit);
 
   const { data: insertedTask, error: insertError } = await supabase.from('completedtasks').insert({
     user_id: userId, 
@@ -82,7 +86,7 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
   (completedTodayAfterLog || []).filter((task: any) => task.original_source === habitKey).forEach((task: any) => {
     if (userHabitData.measurement_type === 'timer') totalDailyProgressAfterLog += (task.duration_used || 0) / 60;
     else if (userHabitData.measurement_type === 'unit' || userHabitData.measurement_type === 'binary') {
-        totalDailyProgressAfterLog += (task.xp_earned || 0) / (userHabitData.xp_per_unit ?? 1);
+        totalDailyProgressAfterLog += (task.xp_earned || 0) / xpPerUnit;
     } else totalDailyProgressAfterLog += 1;
   });
   
@@ -222,12 +226,13 @@ const unlogHabit = async ({ userId, completedTaskId }: { userId: string, complet
 
   if (!userHabitDataResult) throw new Error(`Habit data not found for key: ${task.original_source}`);
   const userHabitData = userHabitDataResult;
+  const xpPerUnit = userHabitData.xp_per_unit || (userHabitData.unit === 'min' ? 30 : 1);
 
   let lifetimeProgressDecrementValue;
   if (userHabitData.measurement_type === 'timer') {
     lifetimeProgressDecrementValue = task.duration_used || 0;
   } else {
-    lifetimeProgressDecrementValue = (task.xp_earned || 0) / (userHabitData.xp_per_unit ?? 1); 
+    lifetimeProgressDecrementValue = (task.xp_earned || 0) / xpPerUnit; 
   }
 
   await supabase.rpc('increment_lifetime_progress', {
@@ -253,7 +258,7 @@ const unlogHabit = async ({ userId, completedTaskId }: { userId: string, complet
   (completedTodayAfterUnlog || []).filter((t: any) => t.original_source === task.original_source).forEach((t: any) => {
     if (userHabitData.measurement_type === 'timer') totalDailyProgressAfterUnlog += (t.duration_used || 0) / 60;
     else if (userHabitData.measurement_type === 'unit' || userHabitData.measurement_type === 'binary') {
-        totalDailyProgressAfterUnlog += (t.xp_earned || 0) / (userHabitData.xp_per_unit ?? 1);
+        totalDailyProgressAfterUnlog += (t.xp_earned || 0) / xpPerUnit;
     } else totalDailyProgressAfterUnlog += 1;
   });
 
