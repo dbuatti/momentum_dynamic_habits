@@ -27,6 +27,7 @@ import { GrowthGuide } from "@/components/dashboard/GrowthGuide";
 import { Link } from "react-router-dom";
 import { showError } from "@/utils/toast";
 import { habitIconMap, habitColorMap } from '@/lib/habit-utils';
+import { TrialGuidance } from "@/components/dashboard/TrialGuidance"; // New import
 
 const Index = () => {
   const { data, isLoading, isError } = useDashboardData();
@@ -200,6 +201,8 @@ const Index = () => {
     
     const canQuickFinish = !habit.allCompleted && !isLocked;
 
+    const showTrialGuidance = (habit.is_trial_mode || habit.anchor_practice) && !habit.allCompleted;
+
     return (
       <AccordionItem
         key={habit.key}
@@ -249,7 +252,6 @@ const Index = () => {
                     </span>
                   )}
                 </div>
-                {/* IMPROVED ROUNDING: Show 60/60 instead of 59.9/60 */}
                 <p className={cn("text-sm font-bold mt-2", habit.allCompleted ? "text-success-foreground" : "text-foreground")}>
                   Progress: {Math.round(habit.displayProgress)}/{Math.round(habit.adjustedDailyGoal)} {habit.unit}
                 </p>
@@ -264,6 +266,20 @@ const Index = () => {
           </div>
         </AccordionTrigger>
         <AccordionContent className="px-6 pb-6 pt-2 space-y-6">
+          {showTrialGuidance && (
+            <TrialGuidance
+              habitKey={habit.key}
+              habitName={habit.name}
+              isTrial={habit.is_trial_mode}
+              isAnchor={habit.anchor_practice}
+              completionsInPlateau={habit.completions_in_plateau}
+              plateauDaysRequired={habit.plateau_days_required}
+              dailyGoal={habit.dailyGoal}
+              unit={habit.unit}
+              frequency={habit.frequency_per_week}
+            />
+          )}
+
           <div className="grid grid-cols-2 gap-4 border-t border-border pt-4">
               <div className="space-y-1">
                   <p className="text-[9px] font-black uppercase opacity-50 tracking-widest text-muted-foreground">{isTrial ? "Session Target" : "Daily Goal"}</p>
