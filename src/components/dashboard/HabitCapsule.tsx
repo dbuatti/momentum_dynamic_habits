@@ -189,7 +189,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     stopInterval();
     
     // SNAPPING LOGIC: If we're within 15 seconds of the goal, log the full target value
-    // This prevents 9.98 minutes being logged when 10 was the goal.
     let totalSessionMinutes = 0;
     if (timeLeft <= 15) {
       totalSessionMinutes = value;
@@ -226,8 +225,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     stopInterval();
     
     const elapsedSeconds = Math.round(value * 60) - timeLeft;
-    
-    // Use high precision minutes for partial logs
     const elapsedMinutes = Number((elapsedSeconds / 60).toFixed(2));
 
     if (elapsedSeconds > 2) {
@@ -304,14 +301,13 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
           isBonusMode && 'border-dashed border-success/50'
         )}
       >
-        {/* Success Shimmer Feedback */}
         <AnimatePresence>
           {showSavedFeedback && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 z-50 bg-success/20 backdrop-blur-sm flex items-center justify-center pointer-events-none"
+              className="absolute inset-0 z-[60] bg-success/20 backdrop-blur-sm flex items-center justify-center pointer-events-none"
             >
                <motion.div 
                 initial={{ scale: 0.8, y: 10 }}
@@ -325,7 +321,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
           )}
         </AnimatePresence>
 
-        {/* Breathing Active Glow */}
         {isTiming && !isPaused && (
           <motion.div
             animate={{ opacity: [0.1, 0.3, 0.1] }}
@@ -513,19 +508,37 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
         <AnimatePresence>
           {showMoodPicker && (
             <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
               onClick={(e) => e.stopPropagation()}
-              className="absolute inset-0 z-50 bg-card/95 backdrop-blur-md flex flex-col items-center justify-center p-4 gap-4"
+              className="absolute inset-0 z-50 bg-card border-none flex flex-col items-center justify-center p-6 gap-6"
             >
-              <p className="text-sm font-black uppercase tracking-widest opacity-60">Success! How was it?</p>
-              <div className="flex gap-4">
-                <Button variant="ghost" className="h-14 w-14 rounded-full hover:scale-110 transition-transform" onClick={() => (measurementType === 'unit' ? handleLogManual('sad', false) : measurementType === 'binary' ? handleLogBinary('sad', false) : handleFinishTiming('sad', false))}><Frown className="w-8 h-8 text-red-500" /></Button>
-                <Button variant="ghost" className="h-14 w-14 rounded-full hover:scale-110 transition-transform" onClick={() => (measurementType === 'unit' ? handleLogManual('neutral', false) : measurementType === 'binary' ? handleLogBinary('neutral', false) : handleFinishTiming('neutral', false))}><Meh className="w-8 h-8 text-yellow-500" /></Button>
-                <Button variant="ghost" className="h-14 w-14 rounded-full hover:scale-110 transition-transform" onClick={() => (measurementType === 'unit' ? handleLogManual('happy', false) : measurementType === 'binary' ? handleLogBinary('happy', false) : handleFinishTiming('happy', false))}><Smile className="w-8 h-8 text-green-500" /></Button>
+              <div className="text-center space-y-1">
+                <p className="text-sm font-black uppercase tracking-[0.2em] text-primary">Success!</p>
+                <p className="text-xs font-bold text-muted-foreground uppercase">How did it feel?</p>
               </div>
-              <Button variant="link" size="sm" onClick={() => (measurementType === 'unit' ? handleLogManual(undefined, false) : measurementType === 'binary' ? handleLogBinary(undefined, false) : handleFinishTiming(undefined, false))} className="text-muted-foreground uppercase font-black text-[10px] tracking-widest">Skip Reflection</Button>
+              <div className="flex gap-8">
+                <div className="flex flex-col items-center gap-2">
+                  <Button variant="ghost" className="h-16 w-16 rounded-full hover:scale-110 transition-transform bg-secondary/30" onClick={() => (measurementType === 'unit' ? handleLogManual('sad', false) : measurementType === 'binary' ? handleLogBinary('sad', false) : handleFinishTiming('sad', false))}>
+                    <Frown className="w-10 h-10 text-red-500" />
+                  </Button>
+                  <span className="text-[10px] font-black uppercase opacity-40">Heavy</span>
+                </div>
+                <div className="flex flex-col items-center gap-2">
+                  <Button variant="ghost" className="h-16 w-16 rounded-full hover:scale-110 transition-transform bg-secondary/30" onClick={() => (measurementType === 'unit' ? handleLogManual('neutral', false) : measurementType === 'binary' ? handleLogBinary('neutral', false) : handleFinishTiming('neutral', false))}>
+                    <Meh className="w-10 h-10 text-yellow-500" />
+                  </Button>
+                  <span className="text-[10px] font-black uppercase opacity-40">Neutral</span>
+                </div>
+                <div className="flex flex-col items-center gap-2">
+                  <Button variant="ghost" className="h-16 w-16 rounded-full hover:scale-110 transition-transform bg-secondary/30" onClick={() => (measurementType === 'unit' ? handleLogManual('happy', false) : measurementType === 'binary' ? handleLogBinary('happy', false) : handleFinishTiming('happy', false))}>
+                    <Smile className="w-10 h-10 text-green-500" />
+                  </Button>
+                  <span className="text-[10px] font-black uppercase opacity-40">Energized</span>
+                </div>
+              </div>
+              <Button variant="link" size="sm" onClick={() => (measurementType === 'unit' ? handleLogManual(undefined, false) : measurementType === 'binary' ? handleLogBinary(undefined, false) : handleFinishTiming(undefined, false))} className="text-muted-foreground uppercase font-black text-[10px] tracking-widest mt-2">Skip Reflection</Button>
             </motion.div>
           )}
         </AnimatePresence>
