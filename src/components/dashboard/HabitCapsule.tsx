@@ -51,7 +51,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
 }) => {
   const [showMoodPicker, setShowMoodPicker] = useState(false);
   const [isTiming, setIsTiming] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(measurementType === 'timer' ? value * 60 : 0);
+  const [timeLeft, setTimeLeft] = useState(measurementType === 'timer' ? Math.round(value * 60) : 0);
   const [isPaused, setIsPaused] = useState(false);
   const [completedTaskIdState, setCompletedTaskIdState] = useState<string | null>(initialCompletedTaskId || null);
   const [manualValue, setManualValue] = useState<number>(value);
@@ -125,7 +125,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     if (isCompleted) {
       localStorage.removeItem(storageKey);
       setIsTiming(false);
-      setTimeLeft(value * 60);
+      setTimeLeft(Math.round(value * 60));
       return;
     }
     const saved = localStorage.getItem(storageKey);
@@ -138,7 +138,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
         startInterval();
       }
     } else {
-      setTimeLeft(value * 60);
+      setTimeLeft(Math.round(value * 60));
     }
     return () => {
         stopInterval();
@@ -163,7 +163,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     triggerFeedback('start');
     setIsTiming(true);
     setIsPaused(false);
-    if (timeLeft <= 0) setTimeLeft(value * 60);
+    if (timeLeft <= 0) setTimeLeft(Math.round(value * 60));
     startInterval();
   };
 
@@ -182,12 +182,21 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   const handleResetTimer = (e: React.MouseEvent) => {
     e.stopPropagation();
     triggerFeedback('pause');
-    setTimeLeft(value * 60);
+    setTimeLeft(Math.round(value * 60));
   };
 
   const handleFinishTiming = (mood?: string, promptMood: boolean = false) => {
     stopInterval();
-    const totalSessionMinutes = timeLeft === 0 ? value : Math.max(1, Math.ceil((value * 60 - timeLeft) / 60));
+    
+    // SNAPPING LOGIC: If we're within 15 seconds of the goal, log the full target value
+    // This prevents 9.98 minutes being logged when 10 was the goal.
+    let totalSessionMinutes = 0;
+    if (timeLeft <= 15) {
+      totalSessionMinutes = value;
+    } else {
+      const elapsedSeconds = Math.round(value * 60) - timeLeft;
+      totalSessionMinutes = Number((elapsedSeconds / 60).toFixed(2));
+    }
     
     if (promptMood && showMood && mood === undefined) {
       setShowMoodPicker(true);
@@ -195,8 +204,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     }
     triggerFeedback('completion');
     
-    // Trigger celebratory confetti for full completion
-    if (timeLeft === 0) {
+    if (timeLeft <= 15) {
       confetti({
         particleCount: 100,
         spread: 70,
@@ -208,7 +216,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     localStorage.removeItem(storageKey);
     onLogProgress(totalSessionMinutes, true, mood);
     setIsTiming(false);
-    setTimeLeft(value * 60);
+    setTimeLeft(Math.round(value * 60));
     setShowMoodPicker(false);
   };
 
@@ -217,7 +225,9 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     
     stopInterval();
     
-    const elapsedSeconds = (value * 60) - timeLeft;
+    const elapsedSeconds = Math.round(value * 60) - timeLeft;
+    
+    // Use high precision minutes for partial logs
     const elapsedMinutes = Number((elapsedSeconds / 60).toFixed(2));
 
     if (elapsedSeconds > 2) {
@@ -275,7 +285,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   };
 
   const progressPercent = measurementType === 'timer' 
-    ? Math.min(100, ((value * 60 - timeLeft) / (value * 60)) * 100)
+    ? Math.min(100, ((Math.round(value * 60) - timeLeft) / (Math.round(value * 60))) * 100)
     : 0;
 
   return (

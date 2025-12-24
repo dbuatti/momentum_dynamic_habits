@@ -45,14 +45,14 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
   let durationUsedForDB = null; 
 
   if (userHabitData.measurement_type === 'timer') {
-    durationUsedForDB = value * 60; 
-    lifetimeProgressIncrementValue = value * 60; 
+    // Value is minutes, store as seconds
+    durationUsedForDB = Math.round(value * 60); 
+    lifetimeProgressIncrementValue = Math.round(value * 60); 
   } else {
     durationUsedForDB = null;
     lifetimeProgressIncrementValue = value; 
   }
 
-  // Sensible fallbacks for system values to ensure XP is always granted
   const xpPerUnit = userHabitData.xp_per_unit || (userHabitData.unit === 'min' ? 30 : 1);
   const energyCostPerUnit = userHabitData.energy_cost_per_unit ?? (userHabitData.unit === 'min' ? 6 : 0.5);
 
@@ -69,7 +69,7 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
     difficulty_rating: difficultyRating || null,
     completed_at: new Date().toISOString(),
     note: note || null,
-    capsule_index: capsuleIndex !== undefined ? capsuleIndex : null, // Explicitly save the index
+    capsule_index: capsuleIndex !== undefined ? capsuleIndex : null,
   }).select('id').single();
 
   if (insertError) throw insertError;
@@ -82,13 +82,23 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
     p_user_id: userId, p_timezone: timezone 
   });
   
-  let totalDailyProgressAfterLog = 0;
+  // Calculate aggregate daily progress using seconds for timers
+  let totalDailySeconds = 0;
+  let totalDailyUnits = 0;
+  
   (completedTodayAfterLog || []).filter((task: any) => task.original_source === habitKey).forEach((task: any) => {
-    if (userHabitData.measurement_type === 'timer') totalDailyProgressAfterLog += (task.duration_used || 0) / 60;
-    else if (userHabitData.measurement_type === 'unit' || userHabitData.measurement_type === 'binary') {
-        totalDailyProgressAfterLog += (task.xp_earned || 0) / xpPerUnit;
-    } else totalDailyProgressAfterLog += 1;
+    if (userHabitData.measurement_type === 'timer') {
+      totalDailySeconds += (task.duration_used || 0);
+    } else if (userHabitData.measurement_type === 'unit' || userHabitData.measurement_type === 'binary') {
+      totalDailyUnits += (task.xp_earned || 0) / xpPerUnit;
+    } else {
+      totalDailyUnits += 1;
+    }
   });
+
+  const totalDailyProgressAfterLog = userHabitData.measurement_type === 'timer' 
+    ? totalDailySeconds / 60 
+    : totalDailyUnits;
   
   const surplus = totalDailyProgressAfterLog - userHabitData.current_daily_goal;
   const newCarryoverValue = Math.max(0, surplus);
@@ -254,13 +264,22 @@ const unlogHabit = async ({ userId, completedTaskId }: { userId: string, complet
     p_user_id: userId, p_timezone: timezone 
   });
   
-  let totalDailyProgressAfterUnlog = 0;
+  let totalDailySeconds = 0;
+  let totalDailyUnits = 0;
+
   (completedTodayAfterUnlog || []).filter((t: any) => t.original_source === task.original_source).forEach((t: any) => {
-    if (userHabitData.measurement_type === 'timer') totalDailyProgressAfterUnlog += (t.duration_used || 0) / 60;
-    else if (userHabitData.measurement_type === 'unit' || userHabitData.measurement_type === 'binary') {
-        totalDailyProgressAfterUnlog += (t.xp_earned || 0) / xpPerUnit;
-    } else totalDailyProgressAfterUnlog += 1;
+    if (userHabitData.measurement_type === 'timer') {
+      totalDailySeconds += (t.duration_used || 0);
+    } else if (userHabitData.measurement_type === 'unit' || userHabitData.measurement_type === 'binary') {
+      totalDailyUnits += (t.xp_earned || 0) / xpPerUnit;
+    } else {
+      totalDailyUnits += 1;
+    }
   });
+
+  const totalDailyProgressAfterUnlog = userHabitData.measurement_type === 'timer' 
+    ? totalDailySeconds / 60 
+    : totalDailyUnits;
 
   const surplusAfterUnlog = totalDailyProgressAfterUnlog - userHabitData.current_daily_goal;
   const newCarryoverValueAfterUnlog = Math.max(0, surplusAfterUnlog);

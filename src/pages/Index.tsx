@@ -42,7 +42,6 @@ const Index = () => {
 
     return data.habits
       .filter(habit => {
-        // Filter: Show if scheduled for today OR has progress made today OR is complete
         return habit.is_visible && (habit.isScheduledForToday || habit.dailyProgress > 0 || habit.isComplete);
       })
       .map(habit => {
@@ -103,7 +102,6 @@ const Index = () => {
     });
   }, [data?.habits, data?.neurodivergentMode]);
 
-  // Nudge: Find the best incomplete habit to focus on right now
   const suggestedAction = useMemo(() => {
     if (!habitGroups.length) return null;
     return habitGroups.find(h => !h.allCompleted && !h.isLockedByDependency && h.isWithinWindow) || 
@@ -133,13 +131,11 @@ const Index = () => {
     });
   };
 
-  // Improved focus function to expand and scroll
   const focusHabit = (habitKey: string) => {
     if (!expandedItems.includes(habitKey)) {
       handleExpandedChange([...expandedItems, habitKey]);
     }
     
-    // Allow time for the accordion to start expanding before scrolling
     setTimeout(() => {
       const element = document.getElementById(`habit-card-${habitKey}`);
       if (element) {
@@ -161,7 +157,7 @@ const Index = () => {
 
     await logCapsuleProgress.mutateAsync({
       habitKey: habit.key,
-      index: 999, // Specialty index for "Log Remaining"
+      index: 999, 
       value: remaining,
       taskName: `${habit.name} completion`,
       isComplete: true
@@ -253,6 +249,7 @@ const Index = () => {
                     </span>
                   )}
                 </div>
+                {/* IMPROVED ROUNDING: Show 60/60 instead of 59.9/60 */}
                 <p className={cn("text-sm font-bold mt-2", habit.allCompleted ? "text-success-foreground" : "text-foreground")}>
                   Progress: {Math.round(habit.displayProgress)}/{Math.round(habit.adjustedDailyGoal)} {habit.unit}
                 </p>
@@ -391,7 +388,6 @@ const Index = () => {
 
           <TipCard tip={data.tip} bestTime={data.patterns.bestTime} isNeurodivergent={data.neurodivergentMode} />
 
-          {/* Anchor Habits Section */}
           <div className="space-y-4">
             <div className="sticky top-[60px] z-20 bg-background/95 backdrop-blur-sm py-3 flex items-center gap-3 border-b border-border">
               <Anchor className="w-5 h-5 text-primary" />
@@ -411,7 +407,6 @@ const Index = () => {
             )}
           </div>
 
-          {/* Daily Momentum Section */}
           <div className="space-y-4">
             <div className="sticky top-[60px] z-20 bg-background/95 backdrop-blur-sm py-3 flex items-center gap-3 border-b border-border">
               <Zap className="w-5 h-5 text-warning" />

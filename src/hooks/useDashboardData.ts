@@ -47,7 +47,10 @@ const fetchDashboardData = async (userId: string) => {
     weeklyCompletionMap.set(key, 1);
   });
 
-  const dailyProgressMap = new Map<string, number>();
+  // PRE-CALCULATION: Aggregate in seconds first to avoid floating point drift
+  const dailySecondsMap = new Map<string, number>();
+  const dailyUnitProgressMap = new Map<string, number>();
+  
   const dailyCapsuleTasksMap = new Map<string, Record<number, string>>(); 
   const completedHabitKeysToday = new Set<string>();
 
@@ -63,25 +66,33 @@ const fetchDashboardData = async (userId: string) => {
 
     const userHabit = habits?.find(h => h.habit_key === key);
     const mType = userHabit?.measurement_type || 'timer';
-    // Use a sensible default of 30 XP if missing, or 1 if count-based
     const xpPerUnit = userHabit?.xp_per_unit || (userHabit?.unit === 'min' ? 30 : 1);
 
-    let progress = 0;
-    if (mType === 'timer') progress = (task.duration_used || 0) / 60;
-    else if (mType === 'unit' || mType === 'binary') progress = (task.xp_earned || 0) / xpPerUnit;
-    else progress = 1;
-
-    dailyProgressMap.set(key, (dailyProgressMap.get(key) || 0) + progress);
+    if (mType === 'timer') {
+      const seconds = task.duration_used || 0;
+      dailySecondsMap.set(key, (dailySecondsMap.get(key) || 0) + seconds);
+    } else {
+      const progress = (task.xp_earned || 0) / xpPerUnit;
+      dailyUnitProgressMap.set(key, (dailyUnitProgressMap.get(key) || 0) + progress);
+    }
   });
 
   const processedHabits: ProcessedUserHabit[] = (habits || [])
     .filter(h => h.is_visible)
     .map(h => {
-    const rawDailyProgress = dailyProgressMap.get(h.habit_key) || 0;
+    const mType = h.measurement_type || 'timer';
+    
+    // Aggregation logic depends on measurement type
+    let rawDailyProgress = 0;
+    if (mType === 'timer') {
+      rawDailyProgress = (dailySecondsMap.get(h.habit_key) || 0) / 60;
+    } else {
+      rawDailyProgress = dailyUnitProgressMap.get(h.habit_key) || 0;
+    }
+
     const capsuleTaskMapping = dailyCapsuleTasksMap.get(h.habit_key) || {};
     const baseAdjustedDailyGoal = h.current_daily_goal + (h.carryover_value || 0);
     
-    // Robustly handle string vs number array for days_of_week
     const activeDays = h.days_of_week ? h.days_of_week.map((d: any) => Number(d)) : [0, 1, 2, 3, 4, 5, 6];
     const isScheduledForToday = activeDays.includes(currentDayOfWeek);
 
@@ -106,12 +117,12 @@ const fetchDashboardData = async (userId: string) => {
     const isLockedByDependency = isDependent && !isDependencyMet;
 
     let isComplete = false;
-    const mType = h.measurement_type || 'timer';
     const unit = h.unit || (mType === 'timer' ? 'min' : (mType === 'binary' ? 'dose' : 'reps'));
 
     if (mType === 'binary') {
       isComplete = completedHabitKeysToday.has(h.habit_key);
     } else {
+      // Use the standard "close enough" threshold
       isComplete = rawDailyProgress >= (baseAdjustedDailyGoal - 0.01);
     }
 
