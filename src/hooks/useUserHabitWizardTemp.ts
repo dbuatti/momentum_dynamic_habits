@@ -70,6 +70,8 @@ export interface WizardHabitData {
   sequence_bias?: 'early' | 'after_core' | 'energy_based';
   soft_lock?: boolean;
   safety_net_choice?: 'none' | 'rollover' | 'gentle';
+  
+  weekly_session_min_duration?: number;
 }
 
 export interface UserHabitWizardTemp {

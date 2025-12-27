@@ -252,7 +252,7 @@ const unlogHabit = async ({ userId, completedTaskId }: { userId: string, complet
 
   const { data: userHabitDataResult } = await supabase
     .from('user_habits')
-    .select('id, unit, xp_per_unit, current_daily_goal, completions_in_plateau, last_plateau_start_date, carryover_value, measurement_type, weekly_session_min_duration, frequency_per_week, category') // Select new fields
+    .select('id, unit, xp_per_unit, current_daily_goal, completions_in_plateau, last_plateau_start_date, carryover_value, measurement_type, weekly_session_min_duration, frequency_per_week, category, is_fixed') // ADDED is_fixed
     .eq('user_id', userId)
     .eq('habit_key', task.original_source)
     .single();

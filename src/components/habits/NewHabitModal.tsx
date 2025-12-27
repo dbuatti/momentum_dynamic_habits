@@ -39,10 +39,11 @@ const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: s
 
   const { 
     name, habit_key, category, current_daily_goal, frequency_per_week, 
-    is_trial_mode, is_fixed, anchor_practice, auto_chunking, unit, 
-    measurement_type, xp_per_unit, energy_cost_per_unit, icon_name, 
+    is_trial_mode, is_fixed, anchor_practice, auto_chunking, enable_chunks,
+    chunking_mode, preferred_chunk_duration, preferred_chunk_count,
+    unit, measurement_type, xp_per_unit, energy_cost_per_unit, icon_name, 
     dependent_on_habit_id, window_start, window_end, carryover_enabled,
-    growth_type, growth_value 
+    growth_type, growth_value, weekly_session_min_duration
   } = habit;
 
   let calculatedPlateauDays = habit.plateau_days_required;
@@ -56,8 +57,12 @@ const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: s
 
   let numChunks = 1;
   let chunkDuration = current_daily_goal;
-  if (auto_chunking && measurement_type === 'timer' && current_daily_goal > (neurodivergentMode ? 5 : 10)) {
+  if (auto_chunking && unit === 'min' && current_daily_goal > (neurodivergentMode ? 5 : 10)) {
     const targetChunkSize = neurodivergentMode ? 5 : 10;
+    numChunks = Math.max(1, Math.ceil(current_daily_goal / targetChunkSize));
+    chunkDuration = Number((current_daily_goal / numChunks).toFixed(1));
+  } else if (auto_chunking && unit === 'reps' && current_daily_goal > (neurodivergentMode ? 10 : 20)) {
+    const targetChunkSize = neurodivergentMode ? 10 : 20;
     numChunks = Math.max(1, Math.ceil(current_daily_goal / targetChunkSize));
     chunkDuration = Number((current_daily_goal / numChunks).toFixed(1));
   }
@@ -74,7 +79,6 @@ const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: s
     p_anchor_practice: anchor_practice,
     p_auto_chunking: auto_chunking,
     p_unit: unit,
-    p_measurement_type: measurement_type,
     p_xp_per_unit: Math.round(xp_per_unit),
     p_energy_cost_per_unit: energy_cost_per_unit,
     p_icon_name: icon_name,
@@ -94,12 +98,14 @@ const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: s
     p_completions_in_plateau: 0,
     p_growth_phase: 'duration',
     p_days_of_week: [0, 1, 2, 3, 4, 5, 6],
-    p_enable_chunks: auto_chunking,
+    p_enable_chunks: enable_chunks,
     p_num_chunks: Math.round(numChunks),
     p_chunk_duration: chunkDuration,
     p_is_visible: true,
+    p_measurement_type: measurement_type,
     p_growth_type: growth_type,
-    p_growth_value: growth_value
+    p_growth_value: growth_value,
+    p_weekly_session_min_duration: Math.round(weekly_session_min_duration),
   });
 
   if (error) throw error;
@@ -134,6 +140,7 @@ export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, t
   const [shortDescription, setShortDescription] = useState('');
   const [growthType, setGrowthType] = useState<GrowthType>('percentage');
   const [growthValue, setGrowthValue] = useState(10);
+  const [weeklySessionMinDuration, setWeeklySessionMinDuration] = useState(10);
 
   useEffect(() => {
     if (templateToPreFill) {
@@ -153,6 +160,7 @@ export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, t
       setSelectedIconName(templateToPreFill.icon_name);
       setPlateauDaysRequired(templateToPreFill.plateauDaysRequired);
       setShortDescription(templateToPreFill.shortDescription || '');
+      setWeeklySessionMinDuration(templateToPreFill.defaultDuration); // Initialize new field
       
       if (templateToPreFill.unit === 'min') {
         setGrowthType('percentage');
@@ -184,6 +192,7 @@ export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, t
       setShortDescription('');
       setGrowthType('percentage');
       setGrowthValue(10);
+      setWeeklySessionMinDuration(10); // Default for new habit
     }
   }, [templateToPreFill, isOpen, neurodivergentMode]);
 
@@ -193,15 +202,18 @@ export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, t
       setGrowthType('percentage');
       setGrowthValue(neurodivergentMode ? 10 : 20);
       setMeasurementType('timer');
+      setWeeklySessionMinDuration(dailyGoal);
     } else if (newUnit === 'reps') {
       setGrowthType('fixed');
       setGrowthValue(neurodivergentMode ? 1 : 3);
       setMeasurementType('unit');
+      setWeeklySessionMinDuration(dailyGoal);
     } else {
       setGrowthType('fixed');
       setGrowthValue(0);
       setMeasurementType('binary');
       setDailyGoal(1);
+      setWeeklySessionMinDuration(1);
     }
   };
 
@@ -245,7 +257,8 @@ export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, t
       carryover_enabled: carryoverEnabled,
       short_description: shortDescription,
       growth_type: growthType,
-      growth_value: growthValue
+      growth_value: growthValue,
+      weekly_session_min_duration: weeklySessionMinDuration, // ADDED
     };
 
     if (isTemplateMode) {
