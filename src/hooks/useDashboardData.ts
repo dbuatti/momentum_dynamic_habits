@@ -79,7 +79,6 @@ const fetchDashboardData = async (userId: string) => {
   });
 
   const processedHabits: ProcessedUserHabit[] = (habits || [])
-    .filter(h => h.is_visible)
     .map(h => {
     const mType = h.measurement_type || 'timer';
     

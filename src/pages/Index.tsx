@@ -44,11 +44,14 @@ const Index = () => {
 
     return data.habits
       .filter(habit => {
-        const isAnchor = habit.category === 'anchor';
-        const isWeeklyAnchor = isAnchor && habit.frequency_per_week === 1;
+        const isWeeklyAnchor = habit.category === 'anchor' && habit.frequency_per_week === 1;
         
-        // Weekly anchors are always visible if they are visible in settings
-        // Daily habits only show if scheduled, completed, or in progress today.
+        // A habit is visible if:
+        // 1. It is marked is_visible: true
+        // 2. It is a Weekly Anchor (always visible if is_visible)
+        // 3. OR it is scheduled for today (isScheduledForToday)
+        // 4. OR it has progress today (dailyProgress > 0)
+        // 5. OR it was completed today (isComplete)
         return habit.is_visible && (
           isWeeklyAnchor || 
           habit.isScheduledForToday || 
@@ -106,31 +109,37 @@ const Index = () => {
         showExtraCapsule: isOverallComplete && !habit.is_fixed
       };
     }).sort((a, b) => {
+      // 1. Locked habits go last
       if (a.isLockedByDependency !== b.isLockedByDependency) return a.isLockedByDependency ? 1 : -1;
+      // 2. Completed habits go after incomplete ones
       if (a.allCompleted !== b.allCompleted) return a.allCompleted ? 1 : -1;
+      // 3. Anchors go before daily
       if (a.category === 'anchor' && b.category !== 'anchor') return -1;
       if (a.category !== 'anchor' && b.category === 'anchor') return 1;
       
-      // Sort by daily progress ratio only for non-weekly anchors
+      // 4. Weekly Anchors go before daily/multi-session anchors
       const aIsWeeklyAnchor = a.category === 'anchor' && a.frequency_per_week === 1;
       const bIsWeeklyAnchor = b.category === 'anchor' && b.frequency_per_week === 1;
-
       if (aIsWeeklyAnchor && !bIsWeeklyAnchor) return -1;
       if (!aIsWeeklyAnchor && bIsWeeklyAnchor) return 1;
 
+      // 5. Sort by daily progress ratio (for non-weekly anchors)
       if (!aIsWeeklyAnchor && !bIsWeeklyAnchor) {
         const aProgressRatio = a.adjustedDailyGoal > 0 ? a.displayProgress / a.adjustedDailyGoal : 0;
         const bProgressRatio = b.adjustedDailyGoal > 0 ? b.displayProgress / b.adjustedDailyGoal : 0;
         if (aProgressRatio !== bProgressRatio) return bProgressRatio - aProgressRatio;
       }
       
+      // 6. Alphabetical fallback
       return (a.name || '').localeCompare(b.name || '');
     });
   }, [data?.habits, data?.neurodivergentMode]);
 
   const suggestedAction = useMemo(() => {
     if (!habitGroups.length) return null;
-    return habitGroups.find(h => !h.allCompleted && !h.isLockedByDependency && h.isWithinWindow) || 
+    // Suggest action based on incomplete, unlocked, and scheduled habits.
+    // We no longer filter by isWithinWindow for visibility, but we use it for the nudge.
+    return habitGroups.find(h => !h.allCompleted && !h.isLockedByDependency && h.isScheduledForToday) || 
            habitGroups.find(h => !h.allCompleted && !h.isLockedByDependency);
   }, [habitGroups]);
 
@@ -299,7 +308,7 @@ const Index = () => {
             )}
           </div>
         </AccordionTrigger>
-        <AccordionContent className="px-6 pb-6 pt-2 space-y-6">
+        <AccordionContent className="px-6 pb-8 pt-2 space-y-6">
           {showTrialGuidance && (
             <TrialGuidance
               habitKey={habit.key}
