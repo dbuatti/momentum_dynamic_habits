@@ -43,7 +43,16 @@ const Index = () => {
 
     return data.habits
       .filter(habit => {
-        return habit.is_visible && (habit.isScheduledForToday || habit.dailyProgress > 0 || habit.isComplete);
+        // FIX: Ensure all visible anchor habits are always included, regardless of schedule, 
+        // to maintain stability and visibility for core routines.
+        const isAnchor = habit.category === 'anchor';
+        
+        return habit.is_visible && (
+          isAnchor || 
+          habit.isScheduledForToday || 
+          habit.dailyProgress > 0 || 
+          habit.isComplete
+        );
       })
       .map(habit => {
       const goal = habit.adjustedDailyGoal;
