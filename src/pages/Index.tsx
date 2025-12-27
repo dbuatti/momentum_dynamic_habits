@@ -115,25 +115,24 @@ const Index = () => {
     });
   }, [data?.habits, data?.neurodivergentMode]);
 
-  // --- CORE FIX: Define the single source of truth for today's eligible habits ---
+  // --- CORE FIX: Define the single source of truth for today's eligible habits for Daily Momentum ---
   const todayEligibleHabits = useMemo(() => {
     return habitGroups.filter(habit => {
       const isWeeklyAnchor = habit.category === 'anchor' && habit.frequency_per_week === 1;
       
-      // A habit is eligible if:
-      // 1. It is visible.
+      // 1. Exclude Weekly Anchors from Daily Momentum calculation (as per user request)
+      if (isWeeklyAnchor) return false; 
+      
+      // 2. Must be visible.
       if (!habit.is_visible) return false;
       
-      // 2. It is not locked by dependency.
+      // 3. Must be scheduled for today (for daily/multi-session habits).
+      if (!habit.isScheduledForToday) return false;
+      
+      // 4. Must not be locked by dependency.
       if (habit.isLockedByDependency) return false;
 
-      if (isWeeklyAnchor) {
-        // Weekly anchors are eligible if they are visible AND not yet complete for the week.
-        return !habit.allCompleted;
-      }
-      
-      // Daily/Multi-session habits are eligible if scheduled for today.
-      return habit.isScheduledForToday;
+      return true;
     });
   }, [habitGroups]);
   

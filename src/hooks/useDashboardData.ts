@@ -9,7 +9,7 @@ import { calculateDynamicChunks } from '@/utils/progress-utils'; // Import chunk
 const fetchDashboardData = async (userId: string) => {
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('journey_start_date, daily_streak, last_active_at, first_name, last_name, timezone, xp, level, tasks_completed_today, daily_challenge_target, neurodivergent_mode, enable_sound, enable_haptics')
+    .select('journey_start_date, daily_streak, last_active_at, first_name, last_name, timezone, xp, level, neurodivergent_mode, enable_sound, enable_haptics') // Removed tasks_completed_today, daily_challenge_target
     .eq('id', userId)
     .single();
 
@@ -189,8 +189,6 @@ const fetchDashboardData = async (userId: string) => {
     neurodivergentMode: profile?.neurodivergent_mode || false,
     enable_sound: profile?.enable_sound ?? true,
     enable_haptics: profile?.enable_haptics ?? true,
-    tasks_completed_today: profile?.tasks_completed_today || 0,
-    daily_challenge_target: profile?.daily_challenge_target || 3,
     weeklySummary: { 
       activeDays: new Set((completedThisWeek || []).map(t => startOfDay(new Date(t.completed_at)).toISOString())).size,
       pushups: { current: currentWeekTotals.pushups, previous: previousWeekTotals.pushups },
