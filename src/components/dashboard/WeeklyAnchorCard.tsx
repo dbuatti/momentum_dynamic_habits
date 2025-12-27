@@ -37,8 +37,9 @@ export const WeeklyAnchorCard: React.FC<WeeklyAnchorCardProps> = ({
   const { mutate: logHabit, isPending: isLogging } = useHabitLog();
   const { triggerFeedback } = useFeedback();
 
-  const minDuration = habit.weekly_session_min_duration || 10; // In minutes
-  const goalDuration = habit.current_daily_goal; // In minutes
+  // Use dailyGoal as the minimum session duration for display
+  const minDuration = habit.dailyGoal; // In minutes
+  const goalDuration = habit.current_daily_goal; // In minutes (same as minDuration for anchors)
 
   const isCompleteForWeek = habit.weekly_progress >= habit.frequency_per_week;
   const progressPercentage = Math.min(100, (habit.weekly_progress / habit.frequency_per_week) * 100);
@@ -142,7 +143,9 @@ export const WeeklyAnchorCard: React.FC<WeeklyAnchorCardProps> = ({
     const elapsedMinutes = elapsedTime / 60;
     
     // Rule 4: Check if elapsed time meets minimum duration
-    const isSessionComplete = elapsedMinutes >= minDuration;
+    // Use habit.weekly_session_min_duration which is set to dailyGoal for anchors
+    const sessionMinDuration = habit.weekly_session_min_duration || 10; 
+    const isSessionComplete = elapsedMinutes >= sessionMinDuration;
 
     if (isSessionComplete) {
       triggerFeedback('completion');
@@ -156,7 +159,7 @@ export const WeeklyAnchorCard: React.FC<WeeklyAnchorCardProps> = ({
         note: mood,
       });
     } else {
-      showError(`Session too short (${Math.round(elapsedMinutes)} min). Must be at least ${minDuration} minutes to count as a full session.`);
+      showError(`Session too short (${Math.round(elapsedMinutes)} min). Must be at least ${sessionMinDuration} minutes to count as a full session.`);
       setElapsedTime(0); // Reset timer if failed
     }
   };
@@ -247,12 +250,12 @@ export const WeeklyAnchorCard: React.FC<WeeklyAnchorCardProps> = ({
             
             <div className="space-y-2">
               <div className="flex justify-between text-xs font-medium text-muted-foreground">
-                <span>Progress to Goal ({goalDuration} {habit.unit})</span>
+                <span>Progress to Minimum ({minDuration} {habit.unit})</span>
                 <span className={cn(isMinMet && "text-success-foreground font-bold")}>
-                  {isMinMet ? 'Minimum Met!' : `${Math.round(progressToMin)}% to minimum (${minDuration} min)`}
+                  {isMinMet ? 'Minimum Met!' : `${Math.round(progressToMin)}% to minimum`}
                 </span>
               </div>
-              <Progress value={progressToGoal} className={cn("h-2", `[&>div]:${colors.progress}`)} />
+              <Progress value={progressToMin} className={cn("h-2", `[&>div]:${colors.progress}`)} />
             </div>
 
             <div className="flex gap-3 pt-2">
