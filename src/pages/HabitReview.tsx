@@ -27,7 +27,7 @@ interface HabitReviewStepProps {
   onEditDetails: (data: Partial<CreateHabitParams>) => void; // Changed to accept data
   onSaveAndFinishLater: () => Promise<void>;
   onCreateHabit: () => Promise<void>;
-  onCancel: () => void;
+  onDiscardDraft: () => Promise<void>; // New prop for hard delete
   isSaving: boolean;
   isCreating: boolean;
   isTemplateMode?: boolean;
@@ -38,7 +38,7 @@ export const HabitReviewStep: React.FC<HabitReviewStepProps> = ({
   onEditDetails,
   onSaveAndFinishLater,
   onCreateHabit,
-  onCancel,
+  onDiscardDraft, // Use new prop
   isSaving,
   isCreating,
   isTemplateMode = false,
@@ -169,15 +169,18 @@ export const HabitReviewStep: React.FC<HabitReviewStepProps> = ({
           </AlertDialogTrigger>
           <AlertDialogContent className="rounded-2xl">
             <AlertDialogHeader>
-              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogTitle className="text-destructive">Discard this habit?</AlertDialogTitle>
               <AlertDialogDescription>
-                This will discard all your current progress in the habit wizard.
+                This will permanently discard all your current progress in the habit wizard. This action cannot be undone.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel className="rounded-xl">Keep Editing</AlertDialogCancel>
-              <AlertDialogAction onClick={onCancel} className="rounded-xl bg-destructive hover:bg-destructive/90">
-                Discard Progress
+              <AlertDialogAction 
+                onClick={onDiscardDraft} // Use the new hard delete function
+                className="rounded-xl bg-destructive hover:bg-destructive/90"
+              >
+                Discard Draft
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

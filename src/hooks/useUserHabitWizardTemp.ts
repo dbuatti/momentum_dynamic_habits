@@ -127,6 +127,12 @@ const saveWizardProgress = async ({ userId, current_step, habit_data }: SaveWiza
   return { success: true };
 };
 
+const clearWizardProgress = async (userId: string) => {
+  const { error } = await supabase.from('user_habits_wizard_temp').delete().eq('user_id', userId);
+  if (error) throw error;
+  return { success: true };
+};
+
 export const useUserHabitWizardTemp = () => {
   const { session } = useSession();
   const queryClient = useQueryClient();
@@ -155,9 +161,7 @@ export const useUserHabitWizardTemp = () => {
   const deleteProgressMutation = useMutation({
     mutationFn: async () => {
       if (!userId) throw new Error('User not authenticated');
-      const { error } = await supabase.from('user_habits_wizard_temp').delete().eq('user_id', userId);
-      if (error) throw error;
-      return { success: true };
+      return clearWizardProgress(userId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['userHabitWizardTemp', userId] });
@@ -176,5 +180,6 @@ export const useUserHabitWizardTemp = () => {
     deleteProgress: deleteProgressMutation.mutateAsync,
     isDeleting: deleteProgressMutation.isPending,
     refetch,
+    clearProgress: deleteProgressMutation.mutateAsync, // Expose clearProgress explicitly
   };
 };

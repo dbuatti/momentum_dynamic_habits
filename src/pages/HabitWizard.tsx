@@ -185,7 +185,7 @@ const HabitWizard = () => {
   const { data: journeyData } = useJourneyData();
   const neurodivergentMode = journeyData?.profile?.neurodivergent_mode || false;
 
-  const { wizardProgress, isLoading: isLoadingWizardProgress, saveProgress, deleteProgress } = useUserHabitWizardTemp();
+  const { wizardProgress, isLoading: isLoadingWizardProgress, saveProgress, clearProgress } = useUserHabitWizardTemp();
 
   const isTemplateCreationMode = location.state?.mode === 'template';
   const templateToPreFill: HabitTemplate | undefined = location.state?.templateToPreFill;
@@ -206,7 +206,7 @@ const HabitWizard = () => {
     },
     onSuccess: async () => {
       showSuccess('Habit created successfully!');
-      await deleteProgress();
+      await clearProgress(); // Hard delete draft on successful creation
       queryClient.invalidateQueries({ queryKey: ['dashboardData', session?.user?.id] });
       queryClient.invalidateQueries({ queryKey: ['journeyData', session?.user?.id] });
       navigate('/');
@@ -286,6 +286,7 @@ const HabitWizard = () => {
           xp_per_unit: templateToPreFill.xpPerUnit,
           energy_cost_per_unit: templateToPreFill.energyCostPerUnit,
           plateau_days_required: templateToPreFill.plateauDaysRequired,
+          short_description: templateToPreFill.shortDescription,
         });
       }
       setHasLoadedInitialProgress(true);
@@ -318,9 +319,9 @@ const HabitWizard = () => {
       }
 
       if (nextMacroStep > MACRO_STEPS[MACRO_STEPS.length - 1]) {
-        handleSubmitFinal();
-        shouldSaveProgress = false;
-        return;
+        // If we hit the end, navigate to the review step (which is step 7)
+        nextMacroStep = MACRO_STEPS[MACRO_STEPS.length - 1];
+        nextMicroStepIdx = 0;
       }
 
       if (shouldSaveProgress) {
@@ -362,7 +363,7 @@ const HabitWizard = () => {
 
   const handleResetProgress = useCallback(async () => {
     try {
-      await deleteProgress();
+      await clearProgress(); // Use hard delete
       setWizardData({});
       setCurrentStep(1);
       setCurrentMicroStepIndex(0);
@@ -371,7 +372,7 @@ const HabitWizard = () => {
     } catch (error) {
       showError('Failed to reset progress.');
     }
-  }, [deleteProgress]);
+  }, [clearProgress]);
 
   const handleSaveAndFinishLater = useCallback(async () => {
     setIsSaving(true);
@@ -387,19 +388,19 @@ const HabitWizard = () => {
     }
   }, [currentStep, wizardData, saveProgress, navigate]);
 
-  const handleCancelWizard = useCallback(async () => {
+  const handleDiscardDraft = useCallback(async () => {
     setIsSaving(true);
     try {
-      await deleteProgress();
-      showSuccess('Wizard progress discarded.');
+      await clearProgress(); // Hard delete draft
+      showSuccess('Draft discarded.');
       navigate('/');
     } catch (error) {
-      showError('Failed to discard progress.');
+      showError('Failed to discard draft.');
     } finally {
       setIsSaving(false);
       setShowExitDialog(false);
     }
-  }, [deleteProgress, navigate]);
+  }, [clearProgress, navigate]);
 
   const handleMacroStepClick = useCallback((stepNumber: number) => {
     setCurrentStep(stepNumber);
@@ -534,7 +535,7 @@ const HabitWizard = () => {
           }}
           onSaveAndFinishLater={handleSaveAndFinishLater}
           onCreateHabit={handleSubmitFinal}
-          onCancel={() => setShowExitDialog(true)}
+          onDiscardDraft={() => handleDiscardDraft()} // Pass the hard delete function
           isSaving={isSaving}
           isCreating={createHabitMutation.isPending || createTemplateMutation.isPending}
           isTemplateMode={isTemplateCreationMode}
@@ -555,7 +556,7 @@ const HabitWizard = () => {
             variant="ghost" 
             size="icon" 
             className="absolute top-4 right-4 rounded-full text-muted-foreground hover:text-foreground"
-            onClick={() => setShowExitDialog(true)}
+            onClick={() => setShowExitDialog(true)} // Use the exit dialog for top-right X
           >
             <X className="w-5 h-5" />
           </Button>
@@ -648,7 +649,7 @@ const HabitWizard = () => {
             <Button
               variant="destructive"
               className="rounded-xl w-full sm:w-auto"
-              onClick={handleCancelWizard}
+              onClick={handleDiscardDraft} // Use hard delete function
               disabled={isSaving}
             >
               Discard Draft
