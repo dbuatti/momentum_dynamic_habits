@@ -4,6 +4,7 @@ import { useSession } from '@/contexts/SessionContext';
 import { startOfDay, differenceInDays, startOfWeek, endOfWeek, subWeeks, addMonths, subDays, formatDistanceToNowStrict, isWithinInterval, parse } from 'date-fns';
 import { initialHabits } from '@/lib/habit-data';
 import { ProcessedUserHabit } from '@/types/habit';
+import { calculateDynamicChunks } from '@/utils/progress-utils'; // Import chunk calculator
 
 const fetchDashboardData = async (userId: string) => {
   const { data: profile, error: profileError } = await supabase
@@ -79,8 +80,7 @@ const fetchDashboardData = async (userId: string) => {
   });
 
   const processedHabits: ProcessedUserHabit[] = (habits || [])
-    .filter(h => h.is_visible)
-    .map(h => {
+    .map(h => { // Do NOT filter here, we need all habits to check dependencies/visibility
     const mType = h.measurement_type || 'timer';
     
     // Aggregation logic depends on measurement type
@@ -184,7 +184,7 @@ const fetchDashboardData = async (userId: string) => {
 
   return {
     daysActive: totalDaysSinceStart,
-    habits: processedHabits,
+    habits: processedHabits, // Return the full list of processed habits
     neurodivergentMode: profile?.neurodivergent_mode || false,
     enable_sound: profile?.enable_sound ?? true,
     enable_haptics: profile?.enable_haptics ?? true,

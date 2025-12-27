@@ -84,11 +84,19 @@ export const calculateDynamicChunks = (
   };
 };
 
-export const calculateDailyParts = (habits: any[], isNeurodivergent: boolean) => {
+/**
+ * Calculates the total completed and total possible parts (denominator) 
+ * based on a list of habits eligible for today.
+ * 
+ * @param eligibleHabits - The list of habits that are visible AND scheduled/eligible today.
+ * @param isNeurodivergent - User's neurodivergent mode setting.
+ * @returns { completed: number, total: number }
+ */
+export const calculateDailyParts = (eligibleHabits: any[], isNeurodivergent: boolean) => {
   let totalParts = 0;
   let completedParts = 0;
 
-  habits.forEach(habit => {
+  eligibleHabits.forEach(habit => {
     const { numChunks, chunkValue } = calculateDynamicChunks(
       habit.key,
       habit.adjustedDailyGoal,
@@ -110,7 +118,10 @@ export const calculateDailyParts = (habits: any[], isNeurodivergent: boolean) =>
     for (let i = 0; i < numChunks; i++) {
       const isLast = i === numChunks - 1;
       const cumulativeNeeded = isLast ? habit.adjustedDailyGoal : (i + 1) * chunkValue;
-      if (rawProgress >= (cumulativeNeeded - 0.01)) {
+      
+      // Check if the cumulative progress meets the threshold for this chunk
+      const threshold = habit.measurement_type === 'timer' ? 0.1 : 0.01;
+      if (rawProgress >= (cumulativeNeeded - threshold)) {
         completedParts++;
       }
     }

@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { TipCard } from "@/components/dashboard/TipCard";
-import { calculateDynamicChunks } from "@/utils/progress-utils";
+import { calculateDynamicChunks, calculateDailyParts } from "@/utils/progress-utils";
 import { MacroGoalProgress } from "@/components/dashboard/MacroGoalProgress";
 import { Progress } from "@/components/ui/progress";
 import { GrowthGuide } from "@/components/dashboard/GrowthGuide";
@@ -43,19 +43,6 @@ const Index = () => {
     if (!data?.habits) return [];
 
     return data.habits
-      .filter(habit => {
-        const isAnchor = habit.category === 'anchor';
-        const isWeeklyAnchor = isAnchor && habit.frequency_per_week === 1;
-        
-        // Weekly anchors are always visible if they are visible in settings
-        // Daily habits only show if scheduled, completed, or in progress today.
-        return habit.is_visible && (
-          isWeeklyAnchor || 
-          habit.isScheduledForToday || 
-          habit.dailyProgress > 0 || 
-          habit.isComplete
-        );
-      })
       .map(habit => {
       const goal = habit.adjustedDailyGoal;
       const progress = habit.dailyProgress;
@@ -128,14 +115,48 @@ const Index = () => {
     });
   }, [data?.habits, data?.neurodivergentMode]);
 
+  // --- CORE FIX: Define the single source of truth for today's eligible habits ---
+  const todayEligibleHabits = useMemo(() => {
+    return habitGroups.filter(habit => {
+      const isWeeklyAnchor = habit.category === 'anchor' && habit.frequency_per_week === 1;
+      
+      // A habit is eligible if:
+      // 1. It is visible in settings (h.is_visible is already filtered in useDashboardData, but we keep the logic here for clarity)
+      // 2. It is scheduled for today OR it is a weekly anchor (which is always 'scheduled' if visible)
+      // 3. It is not a weekly anchor that is already complete for the week (to prevent double counting the denominator)
+      // 4. It is not locked by dependency (if locked, it shouldn't count in the denominator)
+      
+      if (!habit.is_visible) return false;
+      if (habit.isLockedByDependency) return false;
+
+      if (isWeeklyAnchor) {
+        // Weekly anchors are eligible if they are visible AND not yet complete for the week.
+        return !habit.allCompleted;
+      }
+      
+      // Daily/Multi-session habits are eligible if scheduled for today.
+      return habit.isScheduledForToday;
+    });
+  }, [habitGroups]);
+  
+  // Calculate Daily Momentum based ONLY on todayEligibleHabits
+  const { completed: completedParts, total: totalParts } = useMemo(() => {
+    return calculateDailyParts(todayEligibleHabits, data?.neurodivergentMode || false);
+  }, [todayEligibleHabits, data?.neurodivergentMode]);
+  
+  // Calculate Daily Momentum Progress for Header
+  const dailyMomentumProgress = totalParts > 0 ? (completedParts / totalParts) * 100 : 0;
+  const isDailyMomentumComplete = completedParts === totalParts && totalParts > 0;
+  // --- END CORE FIX ---
+
   const suggestedAction = useMemo(() => {
     if (!habitGroups.length) return null;
     return habitGroups.find(h => !h.allCompleted && !h.isLockedByDependency && h.isWithinWindow) || 
            habitGroups.find(h => !h.allCompleted && !h.isLockedByDependency);
   }, [habitGroups]);
 
-  const anchorHabits = useMemo(() => habitGroups.filter(h => h.category === 'anchor'), [habitGroups]);
-  const dailyHabits = useMemo(() => habitGroups.filter(h => h.category !== 'anchor'), [habitGroups]);
+  const anchorHabits = useMemo(() => habitGroups.filter(h => h.category === 'anchor').filter(h => h.is_visible && (h.isScheduledForToday || h.category === 'anchor')), [habitGroups]);
+  const dailyHabits = useMemo(() => habitGroups.filter(h => h.category !== 'anchor').filter(h => h.is_visible && (h.isScheduledForToday || h.dailyProgress > 0 || h.isComplete)), [habitGroups]);
 
   useEffect(() => {
     if (habitGroups.length === 0 || hasInitializedState) return;
@@ -401,13 +422,13 @@ const Index = () => {
           lastName={data.lastName}
           xp={data.xp}
           level={data.level}
-          tasksCompletedToday={data.tasks_completed_today}
-          dailyChallengeTarget={data.daily_challenge_target}
+          tasksCompletedToday={completedParts} // Use completedParts for tasks completed today
+          dailyChallengeTarget={totalParts} // Use totalParts for the daily challenge target
         />
 
         <main className="space-y-8">
           {/* Streak Protection Nudge */}
-          {data.patterns.streak > 0 && data.tasks_completed_today === 0 && new Date().getHours() >= 20 && (
+          {data.patterns.streak > 0 && completedParts === 0 && new Date().getHours() >= 20 && (
             <Card className="bg-destructive/10 border-destructive border-2 rounded-2xl animate-pulse">
               <CardContent className="p-4 flex items-center gap-3">
                 <AlertCircle className="w-6 h-6 text-destructive" />

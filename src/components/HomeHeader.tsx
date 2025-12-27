@@ -16,8 +16,8 @@ interface HomeHeaderProps {
   lastName: string | null;
   xp: number;
   level: number;
-  tasksCompletedToday?: number;
-  dailyChallengeTarget?: number;
+  tasksCompletedToday?: number; // Now represents completed parts
+  dailyChallengeTarget?: number; // Now represents total eligible parts
 }
 
 const getGreeting = (firstName: string | null, lastName: string | null) => {
@@ -39,7 +39,7 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
   xp, 
   level,
   tasksCompletedToday = 0,
-  dailyChallengeTarget = 3
+  dailyChallengeTarget = 0 // Default to 0 if no eligible tasks
 }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
   
@@ -58,8 +58,8 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
   const xpNeededForNextLevel = xpForNextLevel - xpForCurrentLevelStart;
   const levelProgress = xpNeededForNextLevel > 0 ? (xpProgressInCurrentLevel / xpNeededForNextLevel) * 100 : 0;
 
-  const challengeProgress = Math.min(100, (tasksCompletedToday / dailyChallengeTarget) * 100);
-  const isChallengeComplete = tasksCompletedToday >= dailyChallengeTarget;
+  const challengeProgress = dailyChallengeTarget > 0 ? Math.min(100, (tasksCompletedToday / dailyChallengeTarget) * 100) : 0;
+  const isChallengeComplete = dailyChallengeTarget > 0 && tasksCompletedToday >= dailyChallengeTarget;
 
   return (
     <Card className="w-full mb-6 border-0 shadow-sm rounded-2xl overflow-hidden">
@@ -120,10 +120,10 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
             <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                <div className="flex items-center gap-1">
                  <CheckCircle2 className={cn("w-3 h-3", isChallengeComplete ? "text-success" : "text-primary")} />
-                 <span>Daily Challenge</span>
+                 <span>Daily Momentum</span>
                </div>
                <span className={cn(isChallengeComplete && "text-success")}>
-                 {tasksCompletedToday} / {dailyChallengeTarget} Tasks
+                 {tasksCompletedToday} / {dailyChallengeTarget} Parts
                </span>
             </div>
             <Progress value={challengeProgress} className={cn("h-1.5", isChallengeComplete ? "[&>div]:bg-success" : "[&>div]:bg-primary")} />
