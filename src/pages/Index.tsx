@@ -272,14 +272,7 @@ const Index = () => {
                     {habit.name}
                     {habit.allCompleted && <CheckCircle2 className="w-5 h-5 text-success" />}
                   </h3>
-                  {canQuickFinish && (
-                    <Button 
-                      size="sm" variant="secondary" className="h-8 px-3 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm hover:scale-105 transition-transform"
-                      onClick={(e) => { e.stopPropagation(); handleLogRemaining(habit); }}
-                    >
-                      <Check className="w-3 h-3 mr-1" /> Finish Practice
-                    </Button>
-                  )}
+                  {/* REMOVED NESTED BUTTON TO FIX DOM NESTING WARNING */}
                 </div>
                 <div className="flex flex-wrap items-center gap-2 mt-1">
                   <span className={cn(
@@ -348,6 +341,16 @@ const Index = () => {
             <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">Daily Progress</p>
             <Progress value={Math.min(100, (habit.displayProgress / habit.adjustedDailyGoal) * 100)} className="h-1.5 [&>div]:bg-primary" />
           </div>
+          
+          {canQuickFinish && (
+            <Button 
+              size="lg" variant="secondary" className="w-full h-12 px-3 rounded-2xl text-sm font-black uppercase tracking-wider shadow-sm hover:scale-[1.005] transition-transform mb-4"
+              onClick={() => handleLogRemaining(habit)}
+            >
+              <Check className="w-4 h-4 mr-2" /> Quick Finish Remaining ({Math.round(Math.max(0, habit.adjustedDailyGoal - habit.displayProgress))} {habit.unit})
+            </Button>
+          )}
+
           {!habit.allCompleted && (
             <div className="grid gap-3">
               {showOnlyNext && nextCapsule ? (
