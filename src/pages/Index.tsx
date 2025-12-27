@@ -121,12 +121,10 @@ const Index = () => {
       const isWeeklyAnchor = habit.category === 'anchor' && habit.frequency_per_week === 1;
       
       // A habit is eligible if:
-      // 1. It is visible in settings (h.is_visible is already filtered in useDashboardData, but we keep the logic here for clarity)
-      // 2. It is scheduled for today OR it is a weekly anchor (which is always 'scheduled' if visible)
-      // 3. It is not a weekly anchor that is already complete for the week (to prevent double counting the denominator)
-      // 4. It is not locked by dependency (if locked, it shouldn't count in the denominator)
-      
+      // 1. It is visible.
       if (!habit.is_visible) return false;
+      
+      // 2. It is not locked by dependency.
       if (habit.isLockedByDependency) return false;
 
       if (isWeeklyAnchor) {
@@ -155,8 +153,13 @@ const Index = () => {
            habitGroups.find(h => !h.allCompleted && !h.isLockedByDependency);
   }, [habitGroups]);
 
-  const anchorHabits = useMemo(() => habitGroups.filter(h => h.category === 'anchor').filter(h => h.is_visible && (h.isScheduledForToday || h.category === 'anchor')), [habitGroups]);
-  const dailyHabits = useMemo(() => habitGroups.filter(h => h.category !== 'anchor').filter(h => h.is_visible && (h.isScheduledForToday || h.dailyProgress > 0 || h.isComplete)), [habitGroups]);
+  // Filter habits for display based on eligibility and visibility
+  const visibleHabitsForDisplay = useMemo(() => {
+    return habitGroups.filter(h => h.is_visible && (h.isScheduledForToday || h.category === 'anchor'));
+  }, [habitGroups]);
+
+  const anchorHabits = useMemo(() => visibleHabitsForDisplay.filter(h => h.category === 'anchor'), [visibleHabitsForDisplay]);
+  const dailyHabits = useMemo(() => visibleHabitsForDisplay.filter(h => h.category !== 'anchor'), [visibleHabitsForDisplay]);
 
   useEffect(() => {
     if (habitGroups.length === 0 || hasInitializedState) return;

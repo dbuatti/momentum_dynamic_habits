@@ -94,7 +94,8 @@ const fetchDashboardData = async (userId: string) => {
     const capsuleTaskMapping = dailyCapsuleTasksMap.get(h.habit_key) || {};
     const baseAdjustedDailyGoal = h.current_daily_goal + (h.carryover_value || 0);
     
-    const activeDays = h.days_of_week ? h.days_of_week.map((d: any) => Number(d)) : [0, 1, 2, 3, 4, 5, 6];
+    // FIX: Ensure days_of_week is an array of numbers, defaulting to empty array if null/undefined
+    const activeDays = (h.days_of_week || []).map((d: any) => Number(d));
     const isScheduledForToday = activeDays.includes(currentDayOfWeek);
 
     let isWithinWindow = true;
@@ -214,6 +215,6 @@ export const useDashboardData = () => {
     queryKey: ['dashboardData', userId],
     queryFn: () => fetchDashboardData(userId!),
     enabled: !!userId,
-    staleTime: 1000 * 60 * 5,
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 };

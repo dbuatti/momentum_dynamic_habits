@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback } from 'react';
-import { useDashboardData } from './useDashboardData';
+import { useDashboardData } from '@/hooks/useDashboardData';
 import { playStartSound, playEndSound, playGoalSound } from '@/utils/audio';
 
 type FeedbackType = 'start' | 'pause' | 'completion' | 'goal_reached';

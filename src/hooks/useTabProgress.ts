@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { useDashboardData } from './useDashboardData';
+import { useDashboardData } from '@/hooks/useDashboardData';
 import { calculateDailyParts } from '@/utils/progress-utils';
 
 export const useTabProgress = () => {
