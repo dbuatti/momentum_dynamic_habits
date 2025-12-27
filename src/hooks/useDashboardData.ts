@@ -39,12 +39,13 @@ const fetchDashboardData = async (userId: string) => {
 
   if (profileError || habitsError || completedTodayError) throw new Error('Failed to fetch essential data');
 
-  const weeklyCompletionMap = new Map<string, number>();
+  // Map of habit_key to the number of distinct sessions completed this week
+  const weeklySessionCountMap = new Map<string, number>();
   
   (completedThisWeek || []).forEach(task => {
-    const day = startOfDay(new Date(task.completed_at)).toISOString();
-    const key = `${task.original_source}_${day}`;
-    weeklyCompletionMap.set(key, 1);
+    // For weekly tracking, we count distinct sessions. 
+    // Since completedtasks stores one row per log, we just count the rows per habit.
+    weeklySessionCountMap.set(task.original_source, (weeklySessionCountMap.get(task.original_source) || 0) + 1);
   });
 
   // PRE-CALCULATION: Aggregate in seconds first to avoid floating point drift
@@ -108,9 +109,9 @@ const fetchDashboardData = async (userId: string) => {
       }
     }
 
-    const weeklyCompletions = Array.from(weeklyCompletionMap.keys())
-      .filter(k => k.startsWith(`${h.habit_key}_`)).length;
-
+    const weeklyCompletions = weeklySessionCountMap.get(h.habit_key) || 0;
+    const weeklyGoal = h.frequency_per_week;
+    
     const isDependent = !!h.dependent_on_habit_id;
     const dependentHabit = habits?.find(depH => depH.id === h.dependent_on_habit_id);
     const isDependencyMet = isDependent ? completedHabitKeysToday.has(dependentHabit?.habit_key || '') : true;
@@ -119,10 +120,17 @@ const fetchDashboardData = async (userId: string) => {
     let isComplete = false;
     const unit = h.unit || (mType === 'timer' ? 'min' : (mType === 'binary' ? 'dose' : 'reps'));
 
-    if (mType === 'binary') {
+    // CRITICAL FIX: Determine completion based on frequency
+    const isWeeklyAnchor = h.category === 'anchor' && h.frequency_per_week === 1;
+    
+    if (isWeeklyAnchor) {
+      // For weekly anchors, completion is based on meeting the weekly session count (which is 1)
+      isComplete = weeklyCompletions >= 1;
+    } else if (mType === 'binary') {
+      // For daily binary habits (like medication/teeth brushing)
       isComplete = completedHabitKeysToday.has(h.habit_key);
     } else {
-      // For timer habits, allow a 6-second (0.1 min) grace threshold to handle rounding
+      // For daily time/unit habits
       const threshold = mType === 'timer' ? 0.1 : 0.01;
       isComplete = rawDailyProgress >= (baseAdjustedDailyGoal - threshold);
     }
@@ -141,6 +149,7 @@ const fetchDashboardData = async (userId: string) => {
       energyCostPerUnit: h.energy_cost_per_unit || (h.unit === 'min' ? 6 : 0.5),
       weekly_completions: weeklyCompletions,
       weekly_goal: (mType === 'binary' ? 1 : h.current_daily_goal) * h.frequency_per_week,
+      weekly_progress: weeklyCompletions, // Use weekly session count
       isScheduledForToday,
       isWithinWindow,
       measurement_type: mType, 

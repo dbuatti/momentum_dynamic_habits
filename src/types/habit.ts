@@ -75,6 +75,7 @@ export interface ProcessedUserHabit extends UserHabitRecord {
   isComplete: boolean;
   weekly_completions: number;
   weekly_goal: number;
+  weekly_progress: number; // New: Sessions completed this week
   xpPerUnit: number;
   energyCostPerUnit: number;
   growth_stats: {

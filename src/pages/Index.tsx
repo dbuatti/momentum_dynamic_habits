@@ -28,6 +28,7 @@ import { Link } from "react-router-dom";
 import { showError } from "@/utils/toast";
 import { habitIconMap, habitColorMap } from '@/lib/habit-utils';
 import { TrialGuidance } from "@/components/dashboard/TrialGuidance";
+import { WeeklyAnchorCard } from "@/components/dashboard/WeeklyAnchorCard"; // Import new component
 
 const Index = () => {
   const { data, isLoading, isError } = useDashboardData();
@@ -43,12 +44,13 @@ const Index = () => {
 
     return data.habits
       .filter(habit => {
-        // FIX: Ensure all visible anchor habits are always included, regardless of schedule, 
-        // to maintain stability and visibility for core routines.
         const isAnchor = habit.category === 'anchor';
+        const isWeeklyAnchor = isAnchor && habit.frequency_per_week === 1;
         
+        // Weekly anchors are always visible if they are visible in settings
+        // Daily habits only show if scheduled, completed, or in progress today.
         return habit.is_visible && (
-          isAnchor || 
+          isWeeklyAnchor || 
           habit.isScheduledForToday || 
           habit.dailyProgress > 0 || 
           habit.isComplete
@@ -71,11 +73,11 @@ const Index = () => {
         habit.measurement_type
       );
 
+      // For weekly anchors, isOverallComplete is based on weekly_progress >= frequency_per_week (1)
       const isOverallComplete = habit.isComplete;
 
       const capsules = Array.from({ length: numChunks }).map((_, i) => {
         const targetValue = (i + 1) * chunkValue;
-        // Apply the same 6-second (0.1 min) grace threshold for timer-based capsules
         const threshold = habit.measurement_type === 'timer' ? 0.1 : 0.01;
         const isCompleted = progress >= (targetValue - threshold);
         const taskId = capsuleMapping[i] || null;
@@ -108,9 +110,20 @@ const Index = () => {
       if (a.allCompleted !== b.allCompleted) return a.allCompleted ? 1 : -1;
       if (a.category === 'anchor' && b.category !== 'anchor') return -1;
       if (a.category !== 'anchor' && b.category === 'anchor') return 1;
-      const aProgressRatio = a.adjustedDailyGoal > 0 ? a.displayProgress / a.adjustedDailyGoal : 0;
-      const bProgressRatio = b.adjustedDailyGoal > 0 ? b.displayProgress / b.adjustedDailyGoal : 0;
-      if (aProgressRatio !== bProgressRatio) return bProgressRatio - aProgressRatio;
+      
+      // Sort by daily progress ratio only for non-weekly anchors
+      const aIsWeeklyAnchor = a.category === 'anchor' && a.frequency_per_week === 1;
+      const bIsWeeklyAnchor = b.category === 'anchor' && b.frequency_per_week === 1;
+
+      if (aIsWeeklyAnchor && !bIsWeeklyAnchor) return -1;
+      if (!aIsWeeklyAnchor && bIsWeeklyAnchor) return 1;
+
+      if (!aIsWeeklyAnchor && !bIsWeeklyAnchor) {
+        const aProgressRatio = a.adjustedDailyGoal > 0 ? a.displayProgress / a.adjustedDailyGoal : 0;
+        const bProgressRatio = b.adjustedDailyGoal > 0 ? b.displayProgress / b.adjustedDailyGoal : 0;
+        if (aProgressRatio !== bProgressRatio) return bProgressRatio - aProgressRatio;
+      }
+      
       return (a.name || '').localeCompare(b.name || '');
     });
   }, [data?.habits, data?.neurodivergentMode]);
@@ -130,7 +143,10 @@ const Index = () => {
       const stored = localStorage.getItem(`habitAccordionState:${h.key}`);
       if (stored === 'expanded') return true;
       if (stored === 'collapsed') return false;
-      return !h.allCompleted && !h.isLockedByDependency && (h.category === 'anchor' || h.is_trial_mode);
+      
+      // Only auto-expand daily/multi-session anchors/trials that are incomplete
+      const isWeeklyAnchor = h.category === 'anchor' && h.frequency_per_week === 1;
+      return !h.allCompleted && !h.isLockedByDependency && (h.category === 'anchor' || h.is_trial_mode) && !isWeeklyAnchor;
     }).map(h => h.key);
     setExpandedItems(initialExpanded);
     setHasInitializedState(true);
@@ -193,6 +209,21 @@ const Index = () => {
   if (isError || !data) return null;
 
   const renderHabitItem = (habit: any) => {
+    const isWeeklyAnchor = habit.category === 'anchor' && habit.frequency_per_week === 1;
+    const dependentHabitName = data.habits.find(h => h.id === habit.dependent_on_habit_id)?.name || 'previous habit';
+
+    if (isWeeklyAnchor) {
+      return (
+        <WeeklyAnchorCard 
+          key={habit.key}
+          habit={habit}
+          isLocked={habit.isLockedByDependency}
+          dependentHabitName={dependentHabitName}
+        />
+      );
+    }
+
+    // --- Standard Daily/Multi-Session Habit Rendering ---
     const Icon = habitIconMap[habit.key] || habitIconMap.custom_habit;
     const color = habitColorMap[habit.key] || 'blue';
     const isTrial = habit.is_trial_mode;
@@ -209,7 +240,6 @@ const Index = () => {
     const nextCapsule = habit.capsules.find((c: any) => !c.isCompleted);
     const showOnlyNext = !showAllMomentum[habit.key] && habit.numChunks > 1;
     const isLocked = habit.isLockedByDependency;
-    const dependentHabitName = data.habits.find(h => h.id === habit.dependent_on_habit_id)?.name || 'previous habit';
     
     const canQuickFinish = !habit.allCompleted && !isLocked;
 
