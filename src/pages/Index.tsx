@@ -272,7 +272,6 @@ const Index = () => {
                     {habit.name}
                     {habit.allCompleted && <CheckCircle2 className="w-5 h-5 text-success" />}
                   </h3>
-                  {/* REMOVED NESTED BUTTON TO FIX DOM NESTING WARNING */}
                 </div>
                 <div className="flex flex-wrap items-center gap-2 mt-1">
                   <span className={cn(

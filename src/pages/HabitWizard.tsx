@@ -78,6 +78,7 @@ export interface CreateHabitParams {
   short_description?: string;
   growth_type: GrowthType;
   growth_value: number;
+  weekly_session_min_duration: number; // New field
 }
 
 const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: string; habit: CreateHabitParams; neurodivergentMode: boolean }) => {
@@ -91,7 +92,7 @@ const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: s
     chunking_mode, preferred_chunk_duration, preferred_chunk_count,
     unit, measurement_type, xp_per_unit, energy_cost_per_unit, icon_name, 
     dependent_on_habit_id, window_start, window_end, carryover_enabled,
-    growth_type, growth_value
+    growth_type, growth_value, weekly_session_min_duration
   } = habit;
 
   let calculatedPlateauDays = habit.plateau_days_required;
@@ -152,7 +153,8 @@ const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: s
     p_is_visible: true,
     p_measurement_type: measurement_type,
     p_growth_type: growth_type,
-    p_growth_value: growth_value
+    p_growth_value: growth_value,
+    p_weekly_session_min_duration: Math.round(weekly_session_min_duration),
   });
 
   if (error) throw error;
@@ -236,6 +238,7 @@ const HabitWizard = () => {
       icon_name: wizardData.icon_name || 'Target',
       short_description: wizardData.short_description || '',
       ...inferredParams,
+      weekly_session_min_duration: inferredParams.weekly_session_min_duration || 10, // Ensure this is set
     } as CreateHabitParams;
 
     if (isTemplateCreationMode) {
@@ -287,6 +290,7 @@ const HabitWizard = () => {
           energy_cost_per_unit: templateToPreFill.energyCostPerUnit,
           plateau_days_required: templateToPreFill.plateauDaysRequired,
           short_description: templateToPreFill.shortDescription,
+          weekly_session_min_duration: templateToPreFill.defaultDuration, // Set default min duration
         });
       }
       setHasLoadedInitialProgress(true);
@@ -334,7 +338,7 @@ const HabitWizard = () => {
     } finally {
       setIsSaving(false);
     }
-  }, [wizardData, currentStep, currentMicroStepIndex, saveProgress, neurodivergentMode, handleSubmitFinal]);
+  }, [wizardData, currentStep, currentMicroStepIndex, saveProgress, neurodivergentMode]);
 
   const handleBack = useCallback(async () => {
     if (currentStep === 1 && currentMicroStepIndex === 0) {
@@ -408,8 +412,35 @@ const HabitWizard = () => {
   }, []);
 
   const isMacroStepCompleted = useCallback((stepNumber: number) => {
-    return currentStep > stepNumber;
-  }, [currentStep]);
+    if (currentStep > stepNumber) return true;
+    if (currentStep < stepNumber) return false;
+
+    // Check if all micro-steps in the current macro step are completed/skipped
+    const microSteps = MICRO_STEPS_MAP[stepNumber];
+    if (!microSteps) return false;
+
+    return microSteps.every((microStepId, index) => {
+      if (index < currentMicroStepIndex) return true;
+      
+      switch (microStepId) {
+        case '3.1': return !!wizardData.energy_per_session || wizardData.energy_per_session_skipped;
+        case '3.2': return !!wizardData.consistency_reality || wizardData.consistency_reality_skipped;
+        case '3.3': return !!wizardData.emotional_cost || wizardData.emotional_cost_skipped;
+        case '3.4': return !!wizardData.confidence_check || wizardData.confidence_check_skipped;
+        case '4.1': return (!!wizardData.barriers && wizardData.barriers.length > 0) || wizardData.barriers_skipped;
+        case '4.2': return !!wizardData.missed_day_response || wizardData.missed_day_response_skipped;
+        case '4.3': return !!wizardData.sensitivity_setting || wizardData.sensitivity_setting_skipped;
+        case '5.1': return !!wizardData.time_of_day_fit || wizardData.time_of_day_fit_skipped;
+        case '5.2': return !!wizardData.dependency_check || wizardData.dependency_check_skipped;
+        case '5.3': return !!wizardData.time_pressure_check || wizardData.time_pressure_check_skipped;
+        case '6.1': return !!wizardData.growth_appetite || wizardData.growth_appetite_skipped;
+        case '6.2': return !!wizardData.growth_style || wizardData.growth_style_skipped;
+        case '6.3': return !!wizardData.failure_response || wizardData.failure_response_skipped;
+        case '6.4': return !!wizardData.success_definition || wizardData.success_definition_skipped;
+        default: return false;
+      }
+    });
+  }, [currentStep, currentMicroStepIndex, wizardData]);
 
   const totalDisplaySteps = MACRO_STEPS.reduce((acc, step) => acc + (MICRO_STEPS_MAP[step]?.length || 1), 0);
   
@@ -478,6 +509,7 @@ const HabitWizard = () => {
         ...wizardData,
         ...updatedData,
         daily_goal: updatedData.current_daily_goal || wizardData.daily_goal,
+        weekly_session_min_duration: updatedData.weekly_session_min_duration || wizardData.weekly_session_min_duration,
       };
       setWizardData(newWizardData);
       await saveProgress({ current_step: currentStep, habit_data: newWizardData });

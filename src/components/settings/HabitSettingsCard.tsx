@@ -55,10 +55,15 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
   const { mutate: deleteHabit, isPending: isDeletingHabit } = useDeleteHabit();
 
   const [editedHabitName, setEditedHabitName] = useState(habit.name || habit.habit_key.replace(/_/g, ' '));
+  const [minDuration, setMinDuration] = useState(habit.weekly_session_min_duration || 10); // New state
 
   useEffect(() => {
     setEditedHabitName(habit.name || habit.habit_key.replace(/_/g, ' '));
   }, [habit.name, habit.habit_key]);
+  
+  useEffect(() => {
+    setMinDuration(habit.weekly_session_min_duration || 10);
+  }, [habit.weekly_session_min_duration]);
 
   const handleDeleteHabit = () => {
     deleteHabit({ habitId: habit.id, habitKey: habit.habit_key });
@@ -76,6 +81,12 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
       updates.measurement_type = 'unit';
     }
     onUpdateHabitField(habit.id, updates);
+  };
+
+  const handleMinDurationBlur = () => {
+    if (minDuration !== habit.weekly_session_min_duration) {
+      onUpdateHabitField(habit.id, { weekly_session_min_duration: Math.round(minDuration) });
+    }
   };
 
   // Preview the calculated chunks
@@ -98,6 +109,8 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
 
   const durationOptions = habit.unit === 'min' ? [5, 10, 15, 20, 30, 45, 60] : [5, 10, 20, 25, 50];
   const countOptions = [2, 3, 4, 5, 6, 8, 10, 12];
+  
+  const isWeeklyAnchor = habit.category === 'anchor' && habit.frequency_per_week === 1;
 
   return (
     <AccordionItem 
@@ -183,6 +196,25 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
                   />
                </div>
             </div>
+            
+            {isWeeklyAnchor && habit.unit === 'min' && (
+              <div className="space-y-2 bg-info-background/50 p-4 rounded-2xl border border-info-border/50">
+                <Label className="text-[10px] font-black uppercase opacity-60 ml-1 flex items-center gap-1">
+                  <Clock className="w-3.5 h-3.5" /> Minimum Session Duration (min)
+                </Label>
+                <Input 
+                  type="number" 
+                  min="1" 
+                  className="h-11 rounded-xl font-bold text-base" 
+                  value={minDuration}
+                  onChange={(e) => setMinDuration(Number(e.target.value))}
+                  onBlur={handleMinDurationBlur}
+                />
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  A session must be at least this long to count as 1 completed weekly session.
+                </p>
+              </div>
+            )}
 
             <div className="space-y-3">
               <Label className="text-[10px] font-black uppercase tracking-widest opacity-60 ml-1">Operating Mode</Label>

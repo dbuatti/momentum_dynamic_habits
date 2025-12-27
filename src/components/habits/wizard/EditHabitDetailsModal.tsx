@@ -70,6 +70,7 @@ export const EditHabitDetailsModal: React.FC<EditHabitDetailsModalProps> = ({
   const [shortDescription, setShortDescription] = useState(initialHabitData.short_description || '');
   const [growthType, setGrowthType] = useState<GrowthType>(initialHabitData.growth_type || 'fixed');
   const [growthValue, setGrowthValue] = useState(initialHabitData.growth_value || 1);
+  const [weeklySessionMinDuration, setWeeklySessionMinDuration] = useState(initialHabitData.weekly_session_min_duration || 10); // New state
 
   useEffect(() => {
     setHabitName(initialHabitData.name || '');
@@ -94,6 +95,7 @@ export const EditHabitDetailsModal: React.FC<EditHabitDetailsModalProps> = ({
     setShortDescription(initialHabitData.short_description || '');
     setGrowthType(initialHabitData.growth_type || 'fixed');
     setGrowthValue(initialHabitData.growth_value || 1);
+    setWeeklySessionMinDuration(initialHabitData.weekly_session_min_duration || 10); // Initialize new state
   }, [initialHabitData]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -121,7 +123,8 @@ export const EditHabitDetailsModal: React.FC<EditHabitDetailsModalProps> = ({
       carryover_enabled: carryoverEnabled,
       short_description: shortDescription,
       growth_type: growthType,
-      growth_value: growthValue
+      growth_value: growthValue,
+      weekly_session_min_duration: Math.round(weeklySessionMinDuration), // Include new field
     };
 
     onSave(updatedData);
@@ -166,6 +169,31 @@ export const EditHabitDetailsModal: React.FC<EditHabitDetailsModalProps> = ({
               </div>
             </div>
           </div>
+
+          {/* Weekly Anchor Specific Setting */}
+          {category === 'anchor' && frequency === 1 && unit === 'min' && (
+            <div className="space-y-6">
+              <h3 className="text-lg font-bold flex items-center gap-2"><Clock className="w-5 h-5 text-primary" /> Session Minimum</h3>
+              <div className="bg-info-background/50 p-4 rounded-2xl border border-info-border/50 space-y-2">
+                <Label htmlFor="minDuration">Minimum Session Duration (minutes)</Label>
+                <div className="flex items-center gap-3">
+                  <Input
+                    id="minDuration"
+                    type="number"
+                    value={weeklySessionMinDuration}
+                    onChange={(e) => setWeeklySessionMinDuration(Number(e.target.value))}
+                    className="h-12 rounded-xl font-bold"
+                    min={1}
+                    required
+                  />
+                  <span className="font-bold text-lg">min</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  A session must be at least this long to count as 1 completed weekly session.
+                </p>
+              </div>
+            </div>
+          )}
 
           {!isFixed && unit !== 'dose' && (
             <div className="space-y-6">

@@ -41,6 +41,9 @@ const updateHabit = async ({ userId, habitId, updates }: UpdateHabitParams & { u
   if (typeof roundedUpdates.completions_in_plateau === 'number') {
     roundedUpdates.completions_in_plateau = Math.round(roundedUpdates.completions_in_plateau);
   }
+  if (typeof roundedUpdates.weekly_session_min_duration === 'number') {
+    roundedUpdates.weekly_session_min_duration = Math.round(roundedUpdates.weekly_session_min_duration);
+  }
 
   const { error } = await supabase
     .from('user_habits')

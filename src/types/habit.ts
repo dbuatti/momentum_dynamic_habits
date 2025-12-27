@@ -65,6 +65,9 @@ export interface UserHabitRecord {
   chunking_mode: ChunkingMode;
   preferred_chunk_duration: number | null;
   preferred_chunk_count: number | null;
+  
+  // New Weekly Anchor Field
+  weekly_session_min_duration: number;
 }
 
 export interface ProcessedUserHabit extends UserHabitRecord {

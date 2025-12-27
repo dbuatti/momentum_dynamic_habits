@@ -98,6 +98,16 @@ export const calculateHabitParams = (data: Partial<WizardHabitData>, neurodiverg
 
   const safetyNetChoice = data.safety_net_choice_skipped ? 'none' : data.safety_net_choice;
   const carryoverEnabled = safetyNetChoice === 'rollover' || safetyNetChoice === 'gentle';
+  
+  // NEW: Weekly Session Minimum Duration (for Weekly Anchors)
+  let weeklySessionMinDuration = 10; // Default minimum for time-based anchors
+  if (unit === 'min') {
+    // If it's a time-based habit, the minimum session duration is the daily goal
+    weeklySessionMinDuration = dailyGoal;
+  } else if (unit === 'reps' || unit === 'dose') {
+    // For count/binary, the minimum duration is 1 (or the goal itself)
+    weeklySessionMinDuration = dailyGoal;
+  }
 
   return {
     name: data.name!,
@@ -125,5 +135,6 @@ export const calculateHabitParams = (data: Partial<WizardHabitData>, neurodiverg
     carryover_enabled: carryoverEnabled,
     growth_type: growthType,
     growth_value: growthValue,
+    weekly_session_min_duration: weeklySessionMinDuration, // Include new field
   };
 };
