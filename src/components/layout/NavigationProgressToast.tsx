@@ -3,7 +3,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDashboardData } from '@/hooks/useDashboardData';
-import { calculateDailyParts } from '@/utils/progress-utils';
 import { cn } from '@/lib/utils';
 import { Target, CheckCircle2 } from 'lucide-react';
 
@@ -12,7 +11,9 @@ export const NavigationProgressToast = () => {
 
   if (isLoading || !data) return null;
 
-  const { completed, total } = calculateDailyParts(data.habits, data.neurodivergentMode);
+  // Use the pre-calculated, strictly filtered parts
+  const { completed, total } = data.dailyMomentumParts; 
+  
   const percentage = total > 0 ? (completed / total) * 100 : 0;
   const isComplete = completed === total && total > 0;
 

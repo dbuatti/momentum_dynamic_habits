@@ -4,7 +4,7 @@ import { useSession } from '@/contexts/SessionContext';
 import { startOfDay, differenceInDays, startOfWeek, endOfWeek, subWeeks, addMonths, subDays, formatDistanceToNowStrict, isWithinInterval, parse } from 'date-fns';
 import { initialHabits } from '@/lib/habit-data';
 import { ProcessedUserHabit } from '@/types/habit';
-import { calculateDynamicChunks } from '@/utils/progress-utils'; // Import chunk calculator
+import { calculateDynamicChunks, calculateDailyParts } from '@/utils/progress-utils'; // Import chunk calculator
 
 const fetchDashboardData = async (userId: string) => {
   const { data: profile, error: profileError } = await supabase
@@ -165,6 +165,28 @@ const fetchDashboardData = async (userId: string) => {
     } as any;
   });
 
+  // --- NEW: Calculate Daily Momentum Parts based on strict eligibility ---
+  const dailyMomentumHabits = processedHabits.filter(h => {
+    const isWeeklyAnchor = h.category === 'anchor' && h.frequency_per_week === 1;
+    
+    // 1. Exclude Weekly Anchors
+    if (isWeeklyAnchor) return false; 
+    
+    // 2. Must be visible.
+    if (!h.is_visible) return false;
+    
+    // 3. Must be scheduled for today.
+    if (!h.isScheduledForToday) return false;
+    
+    // 4. Must not be locked by dependency.
+    if (h.isLockedByDependency) return false;
+
+    return true;
+  });
+  
+  const dailyMomentumParts = calculateDailyParts(dailyMomentumHabits, profile?.neurodivergent_mode || false);
+  // --- END NEW CALCULATION ---
+
   const calculateTotals = (tasks: any[]) => {
     const totals = { pushups: 0, meditation: 0 };
     tasks.forEach(t => {
@@ -202,6 +224,7 @@ const fetchDashboardData = async (userId: string) => {
     xp: profile?.xp || 0, 
     level: profile?.level || 1, 
     averageDailyTasks: totalSessions && totalDaysSinceStart > 0 ? (totalSessions / totalDaysSinceStart).toFixed(1) : '0.0',
+    dailyMomentumParts, // <-- NEW RETURN VALUE
   };
 };
 

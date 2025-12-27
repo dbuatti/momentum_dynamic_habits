@@ -115,35 +115,9 @@ const Index = () => {
     });
   }, [data?.habits, data?.neurodivergentMode]);
 
-  // --- CORE FIX: Define the single source of truth for today's eligible habits for Daily Momentum ---
-  const todayEligibleHabits = useMemo(() => {
-    return habitGroups.filter(habit => {
-      const isWeeklyAnchor = habit.category === 'anchor' && habit.frequency_per_week === 1;
-      
-      // 1. Exclude Weekly Anchors from Daily Momentum calculation (as per user request)
-      if (isWeeklyAnchor) return false; 
-      
-      // 2. Must be visible.
-      if (!habit.is_visible) return false;
-      
-      // 3. Must be scheduled for today (for daily/multi-session habits).
-      if (!habit.isScheduledForToday) return false;
-      
-      // 4. Must not be locked by dependency.
-      if (habit.isLockedByDependency) return false;
-
-      return true;
-    });
-  }, [habitGroups]);
-  
-  // Calculate Daily Momentum based ONLY on todayEligibleHabits
-  const { completed: completedParts, total: totalParts } = useMemo(() => {
-    return calculateDailyParts(todayEligibleHabits, data?.neurodivergentMode || false);
-  }, [todayEligibleHabits, data?.neurodivergentMode]);
-  
-  // Calculate Daily Momentum Progress for Header
-  const dailyMomentumProgress = totalParts > 0 ? (completedParts / totalParts) * 100 : 0;
-  const isDailyMomentumComplete = completedParts === totalParts && totalParts > 0;
+  // --- CORE FIX: Use pre-calculated Daily Momentum Parts ---
+  const completedParts = data?.dailyMomentumParts.completed || 0;
+  const totalParts = data?.dailyMomentumParts.total || 0;
   // --- END CORE FIX ---
 
   const suggestedAction = useMemo(() => {
