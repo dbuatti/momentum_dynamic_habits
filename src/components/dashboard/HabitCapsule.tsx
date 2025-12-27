@@ -188,13 +188,15 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   const handleFinishTiming = (mood?: string, promptMood: boolean = false) => {
     stopInterval();
     
-    // SNAPPING LOGIC: If we're within 15 seconds of the goal, log the full target value
-    let totalSessionMinutes = 0;
-    if (timeLeft <= 15) {
-      totalSessionMinutes = value;
+    let totalSessionValue = 0;
+
+    if (measurementType === 'timer') {
+      // CRITICAL FIX: For timer habits, always log the full goal value (value is in minutes)
+      totalSessionValue = value;
     } else {
+      // For other types, log the elapsed/manual value (shouldn't happen here, but for safety)
       const elapsedSeconds = Math.round(value * 60) - timeLeft;
-      totalSessionMinutes = Number((elapsedSeconds / 60).toFixed(2));
+      totalSessionValue = Number((elapsedSeconds / 60).toFixed(2));
     }
     
     if (promptMood && showMood && mood === undefined) {
@@ -203,7 +205,8 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     }
     triggerFeedback('completion');
     
-    if (timeLeft <= 15) {
+    // Trigger confetti if goal was met (or committed to)
+    if (measurementType === 'timer') {
       confetti({
         particleCount: 100,
         spread: 70,
@@ -213,7 +216,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     }
 
     localStorage.removeItem(storageKey);
-    onLogProgress(totalSessionMinutes, true, mood);
+    onLogProgress(totalSessionValue, true, mood);
     setIsTiming(false);
     setTimeLeft(Math.round(value * 60));
     setShowMoodPicker(false);
@@ -227,7 +230,8 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     const elapsedSeconds = Math.round(value * 60) - timeLeft;
     const elapsedMinutes = Number((elapsedSeconds / 60).toFixed(2));
 
-    if (elapsedSeconds > 2) {
+    // Only log partial progress if it's a timer and elapsed time is significant (> 2 seconds)
+    if (measurementType === 'timer' && elapsedSeconds > 2) {
       onLogProgress(elapsedMinutes, false);
       setShowSavedFeedback(true);
       setTimeout(() => setShowSavedFeedback(false), 2000);
@@ -403,7 +407,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
                         className="h-14 px-8 rounded-full font-black shadow-2xl bg-primary text-primary-foreground hover:scale-105 active:scale-95 transition-all" 
                         onClick={() => handleFinishTiming(undefined, true)}
                       >
-                        <Square className="w-4 h-4 mr-2 fill-current" /> Finish Early
+                        <Square className="w-4 h-4 mr-2 fill-current" /> Complete
                       </Button>
                     </div>
                 </div>
