@@ -107,7 +107,7 @@ const Settings = () => {
     } else {
       newDays = [...currentDays, dayIndex].sort();
     }
-    onUpdateHabitField(habit.id, { days_of_week: newDays });
+    updateHabitField(habitId, { days_of_week: newDays });
   };
 
   return (
