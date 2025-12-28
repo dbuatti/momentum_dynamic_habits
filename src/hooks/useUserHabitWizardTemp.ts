@@ -163,14 +163,18 @@ export const useUserHabitWizardTemp = () => {
   const deleteProgressMutation = useMutation({
     mutationFn: async () => {
       if (!userId) throw new Error('User not authenticated');
+      // Synchronously clear the cache first to prevent UI flicker/reload
+      queryClient.setQueryData(['userHabitWizardTemp', userId], null);
       return clearWizardProgress(userId);
     },
     onSuccess: () => {
-      // CRITICAL FIX: Use removeQueries to ensure the old draft doesn't flicker back during refetching
+      // Ensure the query is removed and won't be refetched with old data
       queryClient.removeQueries({ queryKey: ['userHabitWizardTemp', userId] });
     },
     onError: (error) => {
       showError(`Failed to clear wizard progress: ${error.message}`);
+      // On error, we might want to invalidate to restore the data from server
+      queryClient.invalidateQueries({ queryKey: ['userHabitWizardTemp', userId] });
     },
   });
 
@@ -183,6 +187,6 @@ export const useUserHabitWizardTemp = () => {
     deleteProgress: deleteProgressMutation.mutateAsync,
     isDeleting: deleteProgressMutation.isPending,
     refetch,
-    clearProgress: deleteProgressMutation.mutateAsync, // Expose clearProgress explicitly
+    clearProgress: deleteProgressMutation.mutateAsync,
   };
 };

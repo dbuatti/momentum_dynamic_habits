@@ -1,6 +1,6 @@
 "use client";
 
-  import React, { useState, useMemo, useEffect, useCallback } from 'react';
+  import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
   import { Card, CardContent, CardHeader } from '@/components/ui/card';
   import { Button } from '@/components/ui/button';
   import { Loader2, RotateCcw, X } from 'lucide-react';
@@ -197,7 +197,7 @@
     const [currentMicroStepIndex, setCurrentMicroStepIndex] = useState(0);
     const [wizardData, setWizardData] = useState<Partial<WizardHabitData>>({});
     const [isSaving, setIsSaving] = useState(false);
-    const [isDiscarding, setIsDiscarding] = useState(false); // NEW: specifically for discard flow
+    const discardInProgress = useRef(false); // USE REF: For immediate, synchronous status checking
     const [hasLoadedInitialProgress, setHasLoadedInitialProgress] = useState(false);
     const [showEditDetailsModal, setShowEditDetailsModal] = useState(false);
     const [editableHabitData, setEditableHabitData] = useState<Partial<CreateHabitParams>>({});
@@ -210,7 +210,8 @@
       },
       onSuccess: async () => {
         showSuccess('Habit created successfully!');
-        await clearProgress(); // Hard delete draft on successful creation
+        discardInProgress.current = true; // Block any further loads
+        await clearProgress();
         queryClient.invalidateQueries({ queryKey: ['dashboardData', session?.user?.id] });
         queryClient.invalidateQueries({ queryKey: ['journeyData', session?.user?.id] });
         navigate('/');
@@ -269,18 +270,37 @@
     };
 
     useEffect(() => {
-      // If we are in a "new" mode (template, AI, or fresh start), don't load progress
+      // 1. Hard stop if we are ignoring old progress (discarding/creating)
+      if (discardInProgress.current) return;
+
+      // 2. Hard stop for special source modes
       if (isTemplateCreationMode || templateToPreFill || aiGeneratedData) {
-        setHasLoadedInitialProgress(true);
+        if (!hasLoadedInitialProgress) {
+          if (aiGeneratedData) setWizardData(aiGeneratedData);
+          else if (templateToPreFill) {
+             const templateParams = calculateHabitParams({
+               habit_key: templateToPreFill.id,
+               name: templateToPreFill.name,
+               category: templateToPreFill.category,
+               unit: templateToPreFill.unit,
+               icon_name: templateToPreFill.icon_name,
+               short_description: templateToPreFill.shortDescription,
+               is_trial_mode: templateToPreFill.defaultMode === 'Trial',
+               is_fixed: templateToPreFill.defaultMode === 'Fixed',
+               anchor_practice: templateToPreFill.anchorPractice,
+               daily_goal: templateToPreFill.defaultDuration,
+               frequency_per_week: templateToPreFill.defaultFrequency,
+             } as any, neurodivergentMode);
+             setWizardData(templateParams as any);
+          }
+          setHasLoadedInitialProgress(true);
+        }
         return;
       }
 
-      // If we have already loaded progress, or are loading/discarding, do nothing
-      if (hasLoadedInitialProgress || isLoadingWizardProgress || isDiscarding) {
-        return;
-      }
+      // 3. Normal Draft Loading Logic
+      if (hasLoadedInitialProgress || isLoadingWizardProgress) return;
 
-      // If we have progress data, load it
       if (wizardProgress) {
         console.log('[HabitWizard] Loading saved progress:', wizardProgress);
         setCurrentStep(wizardProgress.current_step);
@@ -288,7 +308,7 @@
         setCurrentMicroStepIndex(0);
         setHasLoadedInitialProgress(true);
       }
-    }, [isLoadingWizardProgress, wizardProgress, isTemplateCreationMode, templateToPreFill, aiGeneratedData, hasLoadedInitialProgress, isDiscarding]);
+    }, [isLoadingWizardProgress, wizardProgress, isTemplateCreationMode, templateToPreFill, aiGeneratedData, hasLoadedInitialProgress, neurodivergentMode]);
 
     useEffect(() => {
       if (!templateToPreFill && !aiGeneratedData && wizardData.name) {
@@ -305,7 +325,6 @@
 
         let nextMacroStep = currentStep;
         let nextMicroStepIdx = currentMicroStepIndex;
-        let shouldSaveProgress = true;
 
         const microStepsForCurrentMacro = MICRO_STEPS_MAP[currentStep];
         if (microStepsForCurrentMacro && nextMicroStepIdx < microStepsForCurrentMacro.length - 1) {
@@ -320,17 +339,15 @@
           nextMicroStepIdx = 0;
         }
 
-        if (shouldSaveProgress) {
-          await saveProgress({ current_step: nextMacroStep, habit_data: updatedWizardData });
-          setCurrentStep(nextMacroStep);
-          setCurrentMicroStepIndex(nextMicroStepIdx);
-        }
+        await saveProgress({ current_step: nextMacroStep, habit_data: updatedWizardData });
+        setCurrentStep(nextMacroStep);
+        setCurrentMicroStepIndex(nextMicroStepIdx);
       } catch (error) {
         showError("Failed to save progress. Please try again.");
       } finally {
         setIsSaving(false);
       }
-    }, [wizardData, currentStep, currentMicroStepIndex, saveProgress, neurodivergentMode]);
+    }, [wizardData, currentStep, currentMicroStepIndex, saveProgress]);
 
     const handleBack = useCallback(async () => {
       if (currentStep === 1 && currentMicroStepIndex === 0) {
@@ -358,33 +375,27 @@
     }, [currentStep, currentMicroStepIndex]);
 
     const handleResetProgress = useCallback(async () => {
-      console.log('[HabitWizard] handleResetProgress called');
       try {
-        console.log('[HabitWizard] Calling clearProgress...');
+        discardInProgress.current = true;
         await clearProgress();
-        console.log('[HabitWizard] clearProgress completed successfully');
         setWizardData({});
         setCurrentStep(1);
         setCurrentMicroStepIndex(0);
         setHasLoadedInitialProgress(false);
+        discardInProgress.current = false; // Allow loading again if we are staying here
         showSuccess('Wizard progress reset.');
       } catch (error) {
-        console.error('[HabitWizard] Error in handleResetProgress:', error);
         showError('Failed to reset progress.');
       }
     }, [clearProgress]);
 
     const handleSaveAndFinishLater = useCallback(async () => {
-      console.log('[HabitWizard] handleSaveAndFinishLater called');
       setIsSaving(true);
       try {
-        console.log('[HabitWizard] Saving progress before exit:', { currentStep, wizardData });
         await saveProgress({ current_step: currentStep, habit_data: wizardData });
-        console.log('[HabitWizard] Progress saved successfully');
         showSuccess('Progress saved! You can continue later.');
         navigate('/');
       } catch (error) {
-        console.error('[HabitWizard] Error in handleSaveAndFinishLater:', error);
         showError('Failed to save progress.');
       } finally {
         setIsSaving(false);
@@ -395,9 +406,10 @@
     const handleDiscardDraft = useCallback(async () => {
       console.log('[HabitWizard] handleDiscardDraft called');
       setIsSaving(true);
-      setIsDiscarding(true); // CRITICAL: Block the useEffect from loading old data
+      discardInProgress.current = true; // IMMEDIATELY lock the loading effect
+      
       try {
-        // Reset local state immediately
+        // Reset local state first to clear UI
         setWizardData({});
         setCurrentStep(1);
         setCurrentMicroStepIndex(0);
@@ -405,14 +417,13 @@
 
         console.log('[HabitWizard] Calling clearProgress to discard draft...');
         await clearProgress();
-        console.log('[HabitWizard] clearProgress completed successfully');
         
         showSuccess('Draft discarded.');
         navigate('/', { replace: true });
       } catch (error) {
         console.error('[HabitWizard] Error in handleDiscardDraft:', error);
         showError('Failed to discard draft.');
-        setIsDiscarding(false); // Allow loading again if delete failed
+        discardInProgress.current = false; // Unlock if failed
       } finally {
         setIsSaving(false);
         setShowExitDialog(false);
@@ -534,7 +545,7 @@
       }
     }, [currentStep, wizardData, saveProgress]);
 
-    if (isLoadingWizardProgress) {
+    if (isLoadingWizardProgress && !hasLoadedInitialProgress) {
       return (
         <div className="min-h-screen flex items-center justify-center bg-background">
           <Loader2 className="h-10 w-10 animate-spin text-primary" />
