@@ -52,8 +52,6 @@ const checkHabitCompletionOnDay = async (userId: string, habitKey: string, date:
 
 
 const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, note, capsuleIndex }: LogHabitParams & { userId: string }) => {
-  console.log(`[useHabitLog] Starting logHabit for ${habitKey}. Value: ${value}, CapsuleIndex: ${capsuleIndex}`);
-
   const { data: userHabitDataResult, error: userHabitFetchError } = await supabase
     .from('user_habits')
     .select('*')
@@ -65,7 +63,6 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
     throw userHabitFetchError || new Error(`Habit data not found for key: ${habitKey}`);
   }
   const userHabitData: UserHabitRecord = userHabitDataResult;
-  console.log(`[useHabitLog] Fetched habit data. complete_on_finish: ${userHabitData.complete_on_finish}, measurement_type: ${userHabitData.measurement_type}`);
 
   const { data: profileData, error: profileFetchError } = await supabase
     .from('profiles')
@@ -97,8 +94,6 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
   const xpEarned = Math.round(xpBaseValue * xpPerUnit);
   const energyCost = Math.round(xpBaseValue * energyCostPerUnit);
 
-  console.log(`[useHabitLog] Calculated values. xpBaseValue: ${xpBaseValue}, xpEarned: ${xpEarned}, durationUsedForDB: ${durationUsedForDB}`);
-
   const { data: insertedTask, error: insertError } = await supabase.from('completedtasks').insert({
     user_id: userId, 
     original_source: habitKey, 
@@ -113,7 +108,6 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
   }).select('id').single();
 
   if (insertError) throw insertError;
-  console.log(`[useHabitLog] Inserted completed task. ID: ${insertedTask.id}`);
 
   await supabase.rpc('increment_lifetime_progress', {
     p_user_id: userId, p_habit_key: habitKey, p_increment_value: Math.round(lifetimeProgressIncrementValue),
@@ -153,7 +147,6 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
     
     const threshold = userHabitData.measurement_type === 'timer' ? 0.1 : 0.01;
     isGoalMetAfterLog = totalDailyProgressAfterLog >= (userHabitData.current_daily_goal - threshold);
-    console.log(`[useHabitLog] Daily progress check. Goal: ${userHabitData.current_daily_goal}, Progress: ${totalDailyProgressAfterLog}, Met: ${isGoalMetAfterLog}`);
   }
 
   // NEW: Carryover Logic
@@ -162,16 +155,11 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
     const surplus = totalDailyProgressAfterLog - userHabitData.current_daily_goal;
     const newCarryoverValue = Math.max(0, surplus);
 
-    console.log(`[useHabitLog] complete_on_finish is FALSE. Calculating carryover.`);
-    console.log(`[useHabitLog] Goal: ${userHabitData.current_daily_goal}, Progress: ${totalDailyProgressAfterLog}, Surplus: ${surplus}`);
-    console.log(`[useHabitLog] New carryover_value to save: ${newCarryoverValue}`);
-
     await supabase.from('user_habits').update({
       carryover_value: newCarryoverValue,
     }).eq('id', userHabitData.id);
   } else if (userHabitData.complete_on_finish) {
     // If complete_on_finish is true, any surplus is consumed by the goal, so reset carryover
-    console.log(`[useHabitLog] complete_on_finish is TRUE. Resetting carryover to 0.`);
     
     await supabase.from('user_habits').update({
       carryover_value: 0,
@@ -374,10 +362,6 @@ const unlogHabit = async ({ userId, completedTaskId }: { userId: string, complet
     const surplusAfterUnlog = totalDailyProgressAfterUnlog - userHabitData.current_daily_goal;
     const newCarryoverValueAfterUnlog = Math.max(0, surplusAfterUnlog);
     
-    console.log(`[useHabitLog] UNLOG. Recalculating carryover.`);
-    console.log(`[useHabitLog] Goal: ${userHabitData.current_daily_goal}, Progress: ${totalDailyProgressAfterUnlog}, Surplus: ${surplusAfterUnlog}`);
-    console.log(`[useHabitLog] New carryover_value to save: ${newCarryoverValueAfterUnlog}`);
-
     await supabase.from('user_habits').update({
       carryover_value: newCarryoverValueAfterUnlog,
     }).eq('id', userHabitData.id);

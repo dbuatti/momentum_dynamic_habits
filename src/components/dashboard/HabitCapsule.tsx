@@ -125,7 +125,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   // Effect to handle timer completion
   useEffect(() => {
     if (isTiming && timeLeft === 0) {
-      console.log(`[HabitCapsule] Timer reached 0. Triggering finish.`);
       handleFinishTiming(undefined, true);
       triggerFeedback('goal_reached');
     }
@@ -137,7 +136,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
 
     // If the capsule is marked completed, clear timer state from localStorage
     if (isCompleted) {
-      console.log(`[HabitCapsule] Capsule is completed. Clearing timer state.`);
       localStorage.removeItem(storageKey);
       setIsTiming(false);
       setIsPaused(false);
@@ -154,9 +152,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
         // Calculate actual time left based on last update to account for app being closed
         const elapsedSinceLastUpdate = Math.floor((Date.now() - lastUpdated) / 1000);
         calculatedTimeLeft = Math.max(0, savedTimeLeft - elapsedSinceLastUpdate);
-        console.log(`[HabitCapsule] Resuming from localStorage. Saved: ${savedTimeLeft}s, Elapsed: ${elapsedSinceLastUpdate}s, Calculated: ${calculatedTimeLeft}s`);
-      } else {
-        console.log(`[HabitCapsule] Loaded paused state from localStorage: ${savedTimeLeft}s`);
       }
 
       setIsPaused(paused);
@@ -169,7 +164,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     } else {
       // If no saved state, initialize with the prop, or default to targetDurationSeconds
       const initialTime = initialRemainingTimeSeconds !== undefined ? initialRemainingTimeSeconds : targetDurationSeconds;
-      console.log(`[HabitCapsule] No saved state. Initializing timeLeft to: ${initialTime}s (Prop: ${initialRemainingTimeSeconds}, Target: ${targetDurationSeconds})`);
       setTimeLeft(initialTime);
     }
     
@@ -189,7 +183,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
         lastUpdated: Date.now()
       };
       localStorage.setItem(storageKey, JSON.stringify(state));
-      console.log(`[HabitCapsule] Saving timer state: ${JSON.stringify(state)}`);
     }
   }, [timeLeft, isPaused, isTiming, isCompleted, storageKey, measurementType]);
 
@@ -197,14 +190,12 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   const handleStartTimer = (e: React.MouseEvent) => {
     if (isLoggingDisabled) return;
     e.stopPropagation();
-    console.log(`[HabitCapsule] Start clicked. Current timeLeft: ${timeLeft}s`);
     triggerFeedback('start');
     setIsTiming(true);
     setIsPaused(false);
     // Only reset timeLeft to targetDurationSeconds if it's at 0 or its initial full value
     if (timeLeft <= 0 || timeLeft === targetDurationSeconds) { 
       const newTime = initialRemainingTimeSeconds !== undefined ? initialRemainingTimeSeconds : targetDurationSeconds;
-      console.log(`[HabitCapsule] Resetting timeLeft to: ${newTime}s`);
       setTimeLeft(newTime);
     }
     startInterval();
@@ -212,7 +203,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
 
   const handlePauseTimer = (e: React.MouseEvent) => {
     e.stopPropagation();
-    console.log(`[HabitCapsule] Pause/Resume clicked. Current isPaused: ${isPaused}`);
     triggerFeedback('pause');
     if (isPaused) {
       setIsPaused(false);
@@ -225,7 +215,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
 
   const handleResetTimer = (e: React.MouseEvent) => {
     e.stopPropagation();
-    console.log(`[HabitCapsule] Reset clicked.`);
     triggerFeedback('pause');
     setTimeLeft(targetDurationSeconds); 
     setIsTiming(false); 
@@ -234,7 +223,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   };
 
   const handleFinishTiming = (mood?: string, promptMood: boolean = false) => {
-    console.log(`[HabitCapsule] handleFinishTiming called. Mood: ${mood}, Prompt: ${promptMood}`);
     stopInterval();
     
     let totalSessionValue = 0;
@@ -242,12 +230,10 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     if (measurementType === 'timer') {
       // NEW LOGIC: Use completeOnFinish toggle
       if (completeOnFinish) {
-        console.log(`[HabitCapsule] completeOnFinish is TRUE. Logging full value: ${value}`);
         totalSessionValue = value; 
       } else {
         const elapsedSeconds = targetDurationSeconds - timeLeft; 
         totalSessionValue = Number((elapsedSeconds / 60).toFixed(2));
-        console.log(`[HabitCapsule] completeOnFinish is FALSE. Elapsed: ${elapsedSeconds}s, Logging: ${totalSessionValue}m`);
       }
     } else {
       const elapsedSeconds = targetDurationSeconds - timeLeft;
@@ -255,7 +241,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     }
     
     if (promptMood && showMood && mood === undefined) {
-      console.log(`[HabitCapsule] Showing mood picker.`);
       setShowMoodPicker(true);
       return;
     }
@@ -270,9 +255,8 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
       });
     }
 
-    console.log(`[HabitCapsule] Calling onLogProgress with value: ${totalSessionValue}`);
-    localStorage.removeItem(storageKey);
     onLogProgress(totalSessionValue, true, mood);
+    localStorage.removeItem(storageKey);
     setIsTiming(false);
     setTimeLeft(targetDurationSeconds); 
     setShowMoodPicker(false);
@@ -281,14 +265,12 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   const handleCollapse = (e: React.MouseEvent) => {
     if (!isTiming || isCompleted) return;
     
-    console.log(`[HabitCapsule] Collapsed (background click).`);
     stopInterval();
     
     const elapsedSeconds = targetDurationSeconds - timeLeft; 
     const elapsedMinutes = Number((elapsedSeconds / 60).toFixed(2));
 
     if (measurementType === 'timer' && elapsedSeconds > 2) {
-      console.log(`[HabitCapsule] Saving partial progress: ${elapsedMinutes}m`);
       onLogProgress(elapsedMinutes, false);
       setShowSavedFeedback(true);
       setTimeout(() => setShowSavedFeedback(false), 2000);
@@ -315,7 +297,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     
     // Manual entry usually logs exactly what is entered, but we can treat 'Complete' as full goal if requested
     const logValue = completeOnFinish ? value : manualValue;
-    console.log(`[HabitCapsule] Manual log. Value: ${logValue}`);
     onLogProgress(logValue, true, mood);
     setShowMoodPicker(false);
   };
@@ -327,7 +308,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
       return;
     }
     triggerFeedback('completion');
-    console.log(`[HabitCapsule] Binary log. Value: ${value}`);
     onLogProgress(value, true, mood);
     setShowMoodPicker(false);
   };
