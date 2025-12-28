@@ -28,7 +28,8 @@ import { Link } from "react-router-dom";
 import { showError } from "@/utils/toast";
 import { habitIconMap, habitColorMap } from '@/lib/habit-utils';
 import { TrialGuidance } from "@/components/dashboard/TrialGuidance";
-import { WeeklyAnchorCard } from "@/components/dashboard/WeeklyAnchorCard"; // Import new component
+import { WeeklyAnchorCard } from "@/components/dashboard/WeeklyAnchorCard";
+import { AIGenerateButton } from "@/components/dashboard/AIGenerateButton"; // Import the AI button
 
 const Index = () => {
   const { data, isLoading, isError } = useDashboardData();
@@ -498,6 +499,9 @@ const Index = () => {
           <MadeWithDyad className="mt-12" />
         </main>
       </div>
+
+      {/* AI Generate Button */}
+      <AIGenerateButton />
     </div>
   );
 };

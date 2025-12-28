@@ -191,6 +191,7 @@ const HabitWizard = () => {
 
   const isTemplateCreationMode = location.state?.mode === 'template';
   const templateToPreFill: HabitTemplate | undefined = location.state?.templateToPreFill;
+  const aiGeneratedData: Partial<WizardHabitData> | undefined = location.state?.aiGeneratedData;
 
   const [currentStep, setCurrentStep] = useState(1);
   const [currentMicroStepIndex, setCurrentMicroStepIndex] = useState(0);
@@ -267,13 +268,19 @@ const HabitWizard = () => {
   };
 
   useEffect(() => {
-    if (!isLoadingWizardProgress && wizardProgress && !hasLoadedInitialProgress && !isTemplateCreationMode && !templateToPreFill) {
+    if (!isLoadingWizardProgress && wizardProgress && !hasLoadedInitialProgress && !isTemplateCreationMode && !templateToPreFill && !aiGeneratedData) {
       setCurrentStep(wizardProgress.current_step);
       setWizardData(wizardProgress.habit_data);
       setCurrentMicroStepIndex(0);
       setHasLoadedInitialProgress(true);
     } else if (!isLoadingWizardProgress && !hasLoadedInitialProgress) {
-      if (templateToPreFill) {
+      if (aiGeneratedData) {
+        // AI-generated data takes precedence
+        setWizardData(aiGeneratedData);
+        setCurrentStep(7); // Jump to review
+        setCurrentMicroStepIndex(0);
+        showSuccess('AI-generated habit ready for review!');
+      } else if (templateToPreFill) {
         setWizardData({
           name: templateToPreFill.name,
           habit_key: templateToPreFill.id,
@@ -295,14 +302,14 @@ const HabitWizard = () => {
       }
       setHasLoadedInitialProgress(true);
     }
-  }, [isLoadingWizardProgress, wizardProgress, isTemplateCreationMode, templateToPreFill, hasLoadedInitialProgress, navigate]);
+  }, [isLoadingWizardProgress, wizardProgress, isTemplateCreationMode, templateToPreFill, aiGeneratedData, hasLoadedInitialProgress, navigate]);
 
   useEffect(() => {
-    if (!templateToPreFill && wizardData.name) {
+    if (!templateToPreFill && !aiGeneratedData && wizardData.name) {
       const key = wizardData.name.toLowerCase().replace(/\s/g, '_').replace(/[^a-z0-9_]/g, '');
       setWizardData(prev => ({ ...prev, habit_key: key }));
     }
-  }, [wizardData.name, templateToPreFill]);
+  }, [wizardData.name, templateToPreFill, aiGeneratedData]);
 
   const handleSaveAndNext = useCallback(async (dataToSave: Partial<WizardHabitData>) => {
     setIsSaving(true);
