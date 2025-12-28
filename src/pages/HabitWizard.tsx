@@ -77,8 +77,8 @@ export interface CreateHabitParams {
   growth_type: GrowthType;
   growth_value: number;
   weekly_session_min_duration: number;
-  complete_on_finish: boolean; // Added
-  is_weekly_goal: boolean;    // Added
+  complete_on_finish: boolean;
+  is_weekly_goal: boolean;
 }
 
 const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: string; habit: CreateHabitParams; neurodivergentMode: boolean }) => {
@@ -93,7 +93,7 @@ const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: s
     unit, measurement_type, xp_per_unit, energy_cost_per_unit, icon_name, 
     dependent_on_habit_id, window_start, window_end, carryover_enabled,
     growth_type, growth_value, weekly_session_min_duration,
-    complete_on_finish, is_weekly_goal // Added
+    complete_on_finish, is_weekly_goal
   } = habit;
 
   let calculatedPlateauDays = habit.plateau_days_required;
@@ -156,8 +156,8 @@ const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: s
     p_growth_type: growth_type,
     p_growth_value: growth_value,
     p_weekly_session_min_duration: Math.round(weekly_session_min_duration),
-    p_complete_on_finish: complete_on_finish, // Added
-    p_is_weekly_goal: is_weekly_goal,         // Added
+    p_complete_on_finish: complete_on_finish,
+    p_is_weekly_goal: is_weekly_goal,
   });
 
   if (error) throw error;
