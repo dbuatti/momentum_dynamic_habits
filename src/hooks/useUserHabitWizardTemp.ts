@@ -174,10 +174,11 @@ export const useUserHabitWizardTemp = () => {
       return clearWizardProgress(userId);
     },
     onSuccess: () => {
-      // Ensure the query is completely gone from the cache
+      // Ensure the query is completely gone from the cache and won't trigger a refetch
       queryClient.removeQueries({ queryKey: ['userHabitWizardTemp', userId] });
     },
     onError: (error) => {
+      console.error('[useUserHabitWizardTemp] Error clearing progress:', error);
       showError(`Failed to clear wizard progress: ${error.message}`);
       // Restore cached state on failure so the user knows it didn't delete
       queryClient.invalidateQueries({ queryKey: ['userHabitWizardTemp', userId] });
