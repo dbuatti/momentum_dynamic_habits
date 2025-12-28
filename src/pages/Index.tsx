@@ -68,18 +68,35 @@ const Index = () => {
 
       const isOverallComplete = habit.isComplete;
 
+      let cumulativeProgressBeforeThisCapsule = 0;
       const capsules = Array.from({ length: numChunks }).map((_, i) => {
         const targetValue = (i + 1) * chunkValue;
         const threshold = habit.measurement_type === 'timer' ? 0.1 : 0.01;
         const isCompleted = progress >= (targetValue - threshold);
         const taskId = capsuleMapping[i] || null;
 
+        let effectiveValue = chunkValue;
+        if (i === 0 && habit.carryoverValue > 0) {
+          effectiveValue = chunkValue + habit.carryoverValue;
+        }
+        
+        let initialRemainingTimeSeconds = Math.round(effectiveValue * 60); // Default to full chunk duration
+        
+        // If this capsule is not yet completed, but there's some progress within it
+        if (!isCompleted && habit.displayProgress > cumulativeProgressBeforeThisCapsule) {
+          const progressWithinThisCapsuleMinutes = habit.displayProgress - cumulativeProgressBeforeThisCapsule;
+          const remainingMinutes = effectiveValue - progressWithinThisCapsuleMinutes;
+          initialRemainingTimeSeconds = Math.round(Math.max(0, remainingMinutes * 60));
+        }
+
+        cumulativeProgressBeforeThisCapsule += effectiveValue; // Update for the next iteration
+
         return {
           id: `${habit.key}-${i}`,
           habitKey: habit.key,
           index: i,
           label: habit.auto_chunking ? `Part ${i + 1}` : (habit.enable_chunks ? `Part ${i + 1}` : (habit.is_trial_mode ? 'Trial Session' : 'Daily Goal')),
-          value: chunkValue,
+          value: effectiveValue,
           unit: habit.unit,
           measurementType: habit.measurement_type,
           isCompleted,
@@ -87,6 +104,7 @@ const Index = () => {
           isFixed: habit.is_fixed,
           completedTaskId: taskId,
           completeOnFinish: (habit as any).complete_on_finish ?? true,
+          initialRemainingTimeSeconds: initialRemainingTimeSeconds, // Pass this new prop
         };
       });
 

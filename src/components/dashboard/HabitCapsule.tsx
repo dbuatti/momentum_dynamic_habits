@@ -30,6 +30,7 @@ interface HabitCapsuleProps {
   color: 'orange' | 'blue' | 'green' | 'purple' | 'red' | 'indigo';
   showMood?: boolean;
   completeOnFinish?: boolean; // NEW PROP
+  initialRemainingTimeSeconds?: number; // NEW PROP
 }
 
 export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
@@ -50,6 +51,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   color,
   showMood,
   completeOnFinish = true, // Default to true
+  initialRemainingTimeSeconds, // NEW PROP
 }) => {
   const [showMoodPicker, setShowMoodPicker] = useState(false);
   const [isTiming, setIsTiming] = useState(false);
@@ -71,7 +73,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   // Calculate the target duration in seconds for this specific capsule
   const targetDurationSeconds = measurementType === 'timer' ? Math.round(value * 60) : 0;
   // State for the actual time left, initialized with the target duration
-  const [timeLeft, setTimeLeft] = useState(targetDurationSeconds);
+  const [timeLeft, setTimeLeft] = useState(initialRemainingTimeSeconds !== undefined ? initialRemainingTimeSeconds : targetDurationSeconds);
 
   const isLoggingDisabled = isFixed && isHabitComplete && !isCompleted;
   const isBonusMode = !isFixed && isHabitComplete && !isCompleted;
@@ -137,7 +139,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
       localStorage.removeItem(storageKey);
       setIsTiming(false);
       setIsPaused(false);
-      setTimeLeft(targetDurationSeconds); // Reset to initial goal for next time
+      setTimeLeft(0); // If completed, remaining time is 0
       return;
     }
 
@@ -160,16 +162,15 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
         startInterval();
       }
     } else {
-      // Only initialize timeLeft to targetDurationSeconds if no saved state exists
-      // This prevents resetting an active timer when 'value' prop changes due to carryover updates
-      setTimeLeft(targetDurationSeconds);
+      // If no saved state, initialize with the prop, or default to targetDurationSeconds
+      setTimeLeft(initialRemainingTimeSeconds !== undefined ? initialRemainingTimeSeconds : targetDurationSeconds);
     }
     
     return () => {
         stopInterval();
         window.dispatchEvent(new CustomEvent('habit-timer-update', { detail: null }));
     };
-  }, [isCompleted, storageKey, measurementType, startInterval, targetDurationSeconds]); // Depend on targetDurationSeconds
+  }, [isCompleted, storageKey, measurementType, startInterval, targetDurationSeconds, initialRemainingTimeSeconds]); // Depend on targetDurationSeconds
 
   // Effect to save timer state to localStorage when active
   useEffect(() => {
@@ -192,7 +193,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     setIsPaused(false);
     // Only reset timeLeft to targetDurationSeconds if it's at 0 or its initial full value
     if (timeLeft <= 0 || timeLeft === targetDurationSeconds) { 
-      setTimeLeft(targetDurationSeconds);
+      setTimeLeft(initialRemainingTimeSeconds !== undefined ? initialRemainingTimeSeconds : targetDurationSeconds);
     }
     startInterval();
   };
