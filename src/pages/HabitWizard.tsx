@@ -608,7 +608,7 @@ const HabitWizard = () => {
           }}
           onSaveAndFinishLater={handleSaveAndFinishLater}
           onCreateHabit={handleSubmitFinal}
-          onDiscardDraft={handleDiscardDraft}
+          onDiscardDraft={handleDiscardDraft} // No changes needed here, argument will be ignored
           isSaving={isSaving}
           isCreating={createHabitMutation.isPending || createTemplateMutation.isPending}
           isTemplateMode={isTemplateCreationMode}
