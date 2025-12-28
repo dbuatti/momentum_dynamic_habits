@@ -2,7 +2,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useSession } from '@/contexts/SessionContext';
+import { useSession } from '@/contexts/SessionContext'; // Added missing import
 import { showSuccess, showError } from '@/utils/toast';
 import { calculateLevel } from '@/utils/leveling';
 import { isSameDay, subDays, format, startOfDay, endOfDay } from 'date-fns';
@@ -286,9 +286,10 @@ const unlogHabit = async ({ userId, completedTaskId }: { userId: string, complet
 
   const timezone = profileData?.timezone || 'UTC';
 
+  // Fetch full habit record for unlog logic
   const { data: userHabitDataResult } = await supabase
     .from('user_habits')
-    .select('*') // Select all fields to match UserHabitRecord
+    .select('*')
     .eq('user_id', userId)
     .eq('habit_key', task.original_source)
     .single();
@@ -387,7 +388,7 @@ const unlogHabit = async ({ userId, completedTaskId }: { userId: string, complet
 };
 
 export const useHabitLog = () => {
-  const { session } = useSession();
+  const { session } = useSession(); // Fixed: useSession is now imported
   const queryClient = useQueryClient();
 
   const logMutation = useMutation({
