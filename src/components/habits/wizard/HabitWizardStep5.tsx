@@ -18,8 +18,7 @@ import {
   Sun,
   Moon,
   Sunset,
-  Sunrise,
-  TrendingUp
+  Sunrise
 } from 'lucide-react';
 import { WizardHabitData } from '@/hooks/useUserHabitWizardTemp';
 import { useJourneyData } from '@/hooks/useJourneyData';
@@ -102,22 +101,6 @@ export const HabitWizardStep5: React.FC<HabitWizardStep5Props> = ({ wizardData, 
     }));
   };
 
-  // NEW: Handle Weekly Goal Toggle
-  const handleWeeklyGoalToggle = (checked: boolean) => {
-    setWizardData(prev => ({
-      ...prev,
-      weekly_goal_enabled: checked,
-    }));
-  };
-
-  // NEW: Handle Weekly Goal Target
-  const handleWeeklyGoalTarget = (value: string) => {
-    setWizardData(prev => ({
-      ...prev,
-      weekly_goal_target: Number(value),
-    }));
-  };
-
   return (
     <div className="space-y-6">
       <div className="text-center">
@@ -127,47 +110,6 @@ export const HabitWizardStep5: React.FC<HabitWizardStep5Props> = ({ wizardData, 
         <h2 className="text-2xl font-bold mb-2">When this fits best — and what needs to happen first</h2>
         <p className="text-muted-foreground">Let's set soft boundaries so this habit feels supported, not scheduled.</p>
       </div>
-
-      {/* NEW: Weekly Goal Section */}
-      <Card className="border-border">
-        <CardContent className="p-4 space-y-4">
-          <div className="flex items-center gap-2 mb-2">
-            <TrendingUp className="w-5 h-5 text-primary" />
-            <h3 className="font-bold text-lg">Weekly Goal Option</h3>
-          </div>
-          
-          <div className="flex items-center justify-between p-4 bg-primary/5 rounded-2xl border border-primary/10">
-            <div className="space-y-1">
-              <Label className="font-bold">Enable Weekly Goal</Label>
-              <p className="text-xs text-muted-foreground">Track progress over the week instead of daily</p>
-            </div>
-            <Switch 
-              checked={wizardData.weekly_goal_enabled || false} 
-              onCheckedChange={handleWeeklyGoalToggle} 
-            />
-          </div>
-
-          {wizardData.weekly_goal_enabled && (
-            <div className="space-y-3 animate-in fade-in slide-in-from-top-1">
-              <Label htmlFor="weeklyTarget">Weekly Target</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="weeklyTarget"
-                  type="number"
-                  value={wizardData.weekly_goal_target || ''}
-                  onChange={(e) => handleWeeklyGoalTarget(e.target.value)}
-                  className="h-12 rounded-xl font-bold"
-                  placeholder="e.g., 70"
-                />
-                <span className="font-bold text-lg">{wizardData.unit || 'min'} / week</span>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Example: If you want to read 10 minutes daily, set this to 70 minutes per week.
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
       {/* Section 1: Time-of-Day Fit */}
       <Card className="border-border">
@@ -358,9 +300,6 @@ export const HabitWizardStep5: React.FC<HabitWizardStep5Props> = ({ wizardData, 
             </span></li>
             <li>• Dashboard Order: <span className="font-semibold text-primary">
               {wizardData.sequence_bias === 'early' ? 'Top' : wizardData.sequence_bias === 'after_core' ? 'After Anchors' : 'Flexible'}
-            </span></li>
-            <li>• Weekly Goal: <span className="font-semibold text-primary">
-              {wizardData.weekly_goal_enabled ? `Enabled (${wizardData.weekly_goal_target || '?'} ${wizardData.unit || 'min'}/week)` : 'Disabled'}
             </span></li>
           </ul>
         </CardContent>

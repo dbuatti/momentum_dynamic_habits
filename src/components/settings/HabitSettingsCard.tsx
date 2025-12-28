@@ -12,7 +12,7 @@ import {
   Anchor, Target, Sparkles, ShieldCheck, Calendar, 
   Clock, Dumbbell, Wind, BookOpen, Music, 
   Home, Code, Pill, Timer, BarChart3, Layers, Zap, Info, Eye, EyeOff, Link as LinkIcon, FlaskConical,
-  Trash2, ChevronDown, ChevronUp, CheckCircle2, ListOrdered, TrendingUp
+  Trash2, ChevronDown, ChevronUp, CheckCircle2, ListOrdered
 } from 'lucide-react';
 import { UserHabitRecord, MeasurementType, ChunkingMode } from '@/types/habit';
 import { useUpdateHabitVisibility } from '@/hooks/useUpdateHabitVisibility';
@@ -56,9 +56,6 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
 
   const [editedHabitName, setEditedHabitName] = useState(habit.name || habit.habit_key.replace(/_/g, ' '));
   const [minDuration, setMinDuration] = useState(habit.weekly_session_min_duration || 10); // New state
-  // NEW: Weekly Goal State
-  const [weeklyGoalEnabled, setWeeklyGoalEnabled] = useState(habit.weekly_goal_enabled || false);
-  const [weeklyGoalTarget, setWeeklyGoalTarget] = useState(habit.weekly_goal_target || 0);
 
   useEffect(() => {
     setEditedHabitName(habit.name || habit.habit_key.replace(/_/g, ' '));
@@ -67,12 +64,6 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
   useEffect(() => {
     setMinDuration(habit.weekly_session_min_duration || 10);
   }, [habit.weekly_session_min_duration]);
-
-  // NEW: Update weekly goal state when habit changes
-  useEffect(() => {
-    setWeeklyGoalEnabled(habit.weekly_goal_enabled || false);
-    setWeeklyGoalTarget(habit.weekly_goal_target || 0);
-  }, [habit.weekly_goal_enabled, habit.weekly_goal_target]);
 
   const handleDeleteHabit = () => {
     deleteHabit({ habitId: habit.id, habitKey: habit.habit_key });
@@ -95,18 +86,6 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
   const handleMinDurationBlur = () => {
     if (minDuration !== habit.weekly_session_min_duration) {
       onUpdateHabitField(habit.id, { weekly_session_min_duration: Math.round(minDuration) });
-    }
-  };
-
-  // NEW: Handle weekly goal changes
-  const handleWeeklyGoalToggle = (checked: boolean) => {
-    setWeeklyGoalEnabled(checked);
-    onUpdateHabitField(habit.id, { weekly_goal_enabled: checked });
-  };
-
-  const handleWeeklyGoalTargetBlur = () => {
-    if (weeklyGoalTarget !== habit.weekly_goal_target) {
-      onUpdateHabitField(habit.id, { weekly_goal_target: Math.round(weeklyGoalTarget) });
     }
   };
 
@@ -175,12 +154,6 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
                    • {chunkPreview.numChunks} {chunkPreview.numChunks === 1 ? 'Part' : 'Parts'}
                  </span>
-                 {/* NEW: Weekly Goal Indicator */}
-                 {habit.weekly_goal_enabled && (
-                   <span className="text-[10px] font-bold text-primary uppercase tracking-widest">
-                     • Weekly Goal
-                   </span>
-                 )}
               </div>
             </div>
           </div>
@@ -223,41 +196,7 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
                   />
                </div>
             </div>
-
-            {/* NEW: Weekly Goal Settings */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 bg-primary/5 rounded-xl border border-primary/10">
-                <div className="space-y-0.5">
-                  <Label className="font-bold">Weekly Goal</Label>
-                  <p className="text-[10px] text-muted-foreground">Track progress over the week instead of daily</p>
-                </div>
-                <Switch 
-                  checked={weeklyGoalEnabled} 
-                  onCheckedChange={handleWeeklyGoalToggle} 
-                />
-              </div>
-
-              {weeklyGoalEnabled && (
-                <div className="space-y-2 animate-in fade-in slide-in-from-top-1">
-                  <Label className="text-[10px] font-black uppercase opacity-60 ml-1">Weekly Target</Label>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="number"
-                      value={weeklyGoalTarget}
-                      onChange={(e) => setWeeklyGoalTarget(Number(e.target.value))}
-                      onBlur={handleWeeklyGoalTargetBlur}
-                      className="h-11 rounded-xl font-bold text-base flex-grow"
-                      min={1}
-                    />
-                    <span className="font-bold text-lg">{habit.unit} / week</span>
-                  </div>
-                  <p className="text-[10px] text-muted-foreground">
-                    Example: 70 minutes per week for daily 10-minute reading.
-                  </p>
-                </div>
-              )}
-            </div>
-
+            
             {isWeeklyAnchor && habit.unit === 'min' && (
               <div className="space-y-2 bg-info-background/50 p-4 rounded-2xl border border-info-border/50">
                 <Label className="text-[10px] font-black uppercase opacity-60 ml-1 flex items-center gap-1">

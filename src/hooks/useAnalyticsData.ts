@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { startOfWeek, endOfWeek, subWeeks, format, startOfDay, endOfDay, eachDayOfInterval, isSameDay, isBefore, isAfter } from 'date-fns';
-import { UserHabitRecord, ProcessedUserHabit } from '@/types/habit';
+import { UserHabitRecord, ProcessedUserHabit } from '@/types/habit'; // Import ProcessedUserHabit
 
 interface CompletedTask {
   id: string;
@@ -92,10 +92,10 @@ const fetchAnalyticsData = async ({ userId, timeframe }: FetchAnalyticsDataParam
     { data: bestTime, error: bestTimeError }, // Fetch bestTime
   ] = await Promise.all([
     supabase.from('profiles').select('neurodivergent_mode, timezone, first_name, last_name, daily_streak').eq('id', userId).single(),
-    supabase.from('user_habits').select('*, dependent_on_habit_id, anchor_practice, carryover_value').eq('user_id', userId),
+    supabase.from('user_habits').select('*, dependent_on_habit_id, anchor_practice, carryover_value').eq('user_id', userId), // Fetch carryover_value
     supabase.from('completedtasks').select('*').eq('user_id', userId).gte('completed_at', startDateFilter.toISOString()), // Use startDateFilter
     supabase.from('habit_capsules').select('*').eq('user_id', userId).gte('created_at', format(startDateFilter, 'yyyy-MM-dd')), // Use startDateFilter
-    supabase.from('reflections').select('*').eq('user_id', userId).order('reflection_date', { ascending: false }).limit(1).single(),
+    supabase.from('reflections').select('*').eq('user_id', userId).order('reflection_date', { ascending: false }).limit(1),
     supabase.rpc('get_best_time', { p_user_id: userId }), // Fetch bestTime
   ]);
 

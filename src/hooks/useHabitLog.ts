@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { showSuccess, showError } from '@/utils/toast';
 import { calculateLevel } from '@/utils/leveling';
-import { isSameDay, subDays, startOfWeek, endOfWeek } from 'date-fns';
+import { isSameDay, subDays } from 'date-fns';
 import { UserHabitRecord } from '@/types/habit';
 
 interface LogHabitParams {
@@ -14,14 +14,14 @@ interface LogHabitParams {
   taskName: string;
   difficultyRating?: number;
   note?: string;
-  capsuleIndex?: number;
+  capsuleIndex?: number; // New field for attribution
 }
 
 const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, note, capsuleIndex }: LogHabitParams & { userId: string }) => {
   // Fetch user_habit data to get dynamic properties
   const { data: userHabitDataResult, error: userHabitFetchError } = await supabase
     .from('user_habits')
-    .select('*, weekly_session_min_duration')
+    .select('*, weekly_session_min_duration') // Select new field
     .eq('user_id', userId)
     .eq('habit_key', habitKey)
     .single();
@@ -81,45 +81,10 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
   // --- START: Daily/Weekly Completion Logic Update ---
 
   const isWeeklyAnchor = userHabitData.category === 'anchor' && userHabitData.frequency_per_week === 1;
-  const isWeeklyGoal = userHabitData.weekly_goal_enabled;
-  
   let isGoalMetAfterLog = false;
   let totalDailyProgressAfterLog = 0;
-  let totalWeeklyProgressAfterLog = 0;
 
-  // Get weekly progress for this habit
-  const weekStart = startOfWeek(new Date());
-  const weekEnd = endOfWeek(new Date());
-  const { data: completedThisWeek } = await supabase
-    .from('completedtasks')
-    .select('duration_used, xp_earned')
-    .eq('user_id', userId)
-    .eq('original_source', habitKey)
-    .gte('completed_at', weekStart.toISOString())
-    .lte('completed_at', weekEnd.toISOString());
-
-  // Calculate total weekly progress including the new log
-  let weeklyProgress = 0;
-  (completedThisWeek || []).forEach(task => {
-    if (userHabitData.measurement_type === 'timer') {
-      weeklyProgress += (task.duration_used || 0) / 60;
-    } else {
-      weeklyProgress += (task.xp_earned || 0) / xpPerUnit;
-    }
-  });
-  // Add the new log
-  if (userHabitData.measurement_type === 'timer') {
-    weeklyProgress += value;
-  } else {
-    weeklyProgress += value;
-  }
-  totalWeeklyProgressAfterLog = weeklyProgress;
-
-  if (isWeeklyGoal) {
-    // NEW: Weekly Goal Logic
-    const threshold = userHabitData.measurement_type === 'timer' ? 0.1 : 0.01;
-    isGoalMetAfterLog = weeklyProgress >= (userHabitData.weekly_goal_target - threshold);
-  } else if (isWeeklyAnchor) {
+  if (isWeeklyAnchor && userHabitData.measurement_type === 'timer') {
     // Rule 4: For Weekly Anchors (time-based), check if the logged session duration meets the minimum duration.
     const minDuration = userHabitData.weekly_session_min_duration || 10;
     
@@ -134,6 +99,7 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
       const sessionsToday = (completedToday || []).filter((task: any) => task.original_source === habitKey);
       
       // If this is the first session today that meets the minimum, it counts as goal met for plateau logic.
+      // Note: This logic assumes that for a weekly anchor, only ONE session per day counts towards the plateau.
       isGoalMetAfterLog = sessionsToday.length === 0; 
       totalDailyProgressAfterLog = value; // Keep track of progress for carryover/display
     }
@@ -164,8 +130,8 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
     isGoalMetAfterLog = totalDailyProgressAfterLog >= (userHabitData.current_daily_goal - threshold);
   }
 
-  // Carryover Logic (Only applies to non-binary, non-fixed, non-weekly-goal habits)
-  if (userHabitData.measurement_type !== 'binary' && !userHabitData.is_fixed && !isWeeklyGoal) {
+  // Carryover Logic (Only applies to non-binary, non-fixed habits)
+  if (userHabitData.measurement_type !== 'binary' && !userHabitData.is_fixed) {
     const surplus = totalDailyProgressAfterLog - userHabitData.current_daily_goal;
     const newCarryoverValue = Math.max(0, surplus);
 
@@ -286,7 +252,7 @@ const unlogHabit = async ({ userId, completedTaskId }: { userId: string, complet
 
   const { data: userHabitDataResult } = await supabase
     .from('user_habits')
-    .select('id, unit, xp_per_unit, current_daily_goal, completions_in_plateau, last_plateau_start_date, carryover_value, measurement_type, weekly_session_min_duration, frequency_per_week, category, is_fixed, weekly_goal_enabled, weekly_goal_target') // ADDED weekly_goal_enabled, weekly_goal_target
+    .select('id, unit, xp_per_unit, current_daily_goal, completions_in_plateau, last_plateau_start_date, carryover_value, measurement_type, weekly_session_min_duration, frequency_per_week, category, is_fixed') // ADDED is_fixed
     .eq('user_id', userId)
     .eq('habit_key', task.original_source)
     .single();
@@ -320,42 +286,15 @@ const unlogHabit = async ({ userId, completedTaskId }: { userId: string, complet
   // --- START: Re-evaluate completion status after unlog ---
   
   const isWeeklyAnchor = userHabitData.category === 'anchor' && userHabitData.frequency_per_week === 1;
-  const isWeeklyGoal = userHabitData.weekly_goal_enabled;
   
   const { data: completedTodayAfterUnlog } = await supabase.rpc('get_completed_tasks_today', { 
     p_user_id: userId, p_timezone: timezone 
   });
   
-  // Get weekly progress for this habit (after unlog)
-  const weekStart = startOfWeek(new Date());
-  const weekEnd = endOfWeek(new Date());
-  const { data: completedThisWeekAfterUnlog } = await supabase
-    .from('completedtasks')
-    .select('duration_used, xp_earned')
-    .eq('user_id', userId)
-    .eq('original_source', task.original_source)
-    .gte('completed_at', weekStart.toISOString())
-    .lte('completed_at', weekEnd.toISOString());
-
   let totalDailyProgressAfterUnlog = 0;
-  let totalWeeklyProgressAfterUnlog = 0;
   let isGoalMetAfterUnlog = false;
 
-  // Calculate weekly progress after unlog
-  let weeklyProgress = 0;
-  (completedThisWeekAfterUnlog || []).forEach(t => {
-    if (userHabitData.measurement_type === 'timer') {
-      weeklyProgress += (t.duration_used || 0) / 60;
-    } else {
-      weeklyProgress += (t.xp_earned || 0) / xpPerUnit;
-    }
-  });
-  totalWeeklyProgressAfterUnlog = weeklyProgress;
-
-  if (isWeeklyGoal) {
-    const threshold = userHabitData.measurement_type === 'timer' ? 0.1 : 0.01;
-    isGoalMetAfterUnlog = weeklyProgress >= (userHabitData.weekly_goal_target - threshold);
-  } else if (isWeeklyAnchor) {
+  if (isWeeklyAnchor && userHabitData.measurement_type === 'timer') {
     // For weekly anchors, we check if ANY remaining session meets the minimum duration.
     const minDuration = userHabitData.weekly_session_min_duration || 10;
     
@@ -388,8 +327,8 @@ const unlogHabit = async ({ userId, completedTaskId }: { userId: string, complet
     isGoalMetAfterUnlog = totalDailyProgressAfterUnlog >= (userHabitData.current_daily_goal - threshold);
   }
 
-  // Carryover Logic (Only applies to non-binary, non-fixed, non-weekly-goal habits)
-  if (userHabitData.measurement_type !== 'binary' && !userHabitData.is_fixed && !isWeeklyGoal) {
+  // Carryover Logic (Only applies to non-binary, non-fixed habits)
+  if (userHabitData.measurement_type !== 'binary' && !userHabitData.is_fixed) {
     const surplusAfterUnlog = totalDailyProgressAfterUnlog - userHabitData.current_daily_goal;
     const newCarryoverValueAfterUnlog = Math.max(0, surplusAfterUnlog);
     await supabase.from('user_habits').update({

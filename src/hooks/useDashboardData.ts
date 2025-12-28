@@ -4,12 +4,12 @@ import { useSession } from '@/contexts/SessionContext';
 import { startOfDay, differenceInDays, startOfWeek, endOfWeek, subWeeks, addMonths, subDays, formatDistanceToNowStrict, isWithinInterval, parse } from 'date-fns';
 import { initialHabits } from '@/lib/habit-data';
 import { ProcessedUserHabit } from '@/types/habit';
-import { calculateDynamicChunks, calculateDailyParts } from '@/utils/progress-utils';
+import { calculateDynamicChunks, calculateDailyParts } from '@/utils/progress-utils'; // Import chunk calculator
 
 const fetchDashboardData = async (userId: string) => {
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('journey_start_date, daily_streak, last_active_at, first_name, last_name, timezone, xp, level, neurodivergent_mode, enable_sound, enable_haptics')
+    .select('journey_start_date, daily_streak, last_active_at, first_name, last_name, timezone, xp, level, neurodivergent_mode, enable_sound, enable_haptics') // Removed tasks_completed_today, daily_challenge_target
     .eq('id', userId)
     .single();
 
@@ -17,8 +17,6 @@ const fetchDashboardData = async (userId: string) => {
   const timezone = profile?.timezone || 'UTC';
   const today = new Date();
   const currentDayOfWeek = today.getDay();
-  const weekStart = startOfWeek(today);
-  const weekEnd = endOfWeek(today);
 
   const [
     { data: habits, error: habitsError },
@@ -32,7 +30,7 @@ const fetchDashboardData = async (userId: string) => {
   ] = await Promise.all([
     supabase.from('user_habits').select('*, measurement_type').eq('user_id', userId),
     supabase.rpc('get_completed_tasks_today', { p_user_id: userId, p_timezone: timezone }),
-    supabase.from('completedtasks').select('id, original_source, duration_used, xp_earned, completed_at').eq('user_id', userId).gte('completed_at', weekStart.toISOString()).lte('completed_at', weekEnd.toISOString()),
+    supabase.from('completedtasks').select('id, original_source, duration_used, xp_earned, completed_at').eq('user_id', userId).gte('completed_at', startOfWeek(today).toISOString()).lte('completed_at', endOfWeek(today).toISOString()),
     supabase.from('completedtasks').select('original_source, duration_used, xp_earned').eq('user_id', userId).gte('completed_at', startOfWeek(subWeeks(today, 1)).toISOString()).lte('completed_at', endOfWeek(subWeeks(today, 1)).toISOString()),
     supabase.from('completedtasks').select('id', { count: 'exact' }),
     supabase.rpc('get_distinct_completed_days', { p_user_id: userId }),
@@ -44,24 +42,11 @@ const fetchDashboardData = async (userId: string) => {
 
   // Map of habit_key to the number of distinct sessions completed this week
   const weeklySessionCountMap = new Map<string, number>();
-  const weeklyProgressMap = new Map<string, number>(); // For weekly goals
   
   (completedThisWeek || []).forEach(task => {
-    const key = task.original_source;
-    weeklySessionCountMap.set(key, (weeklySessionCountMap.get(key) || 0) + 1);
-    
-    // Calculate weekly progress for weekly goals
-    const userHabit = habits?.find(h => h.habit_key === key);
-    if (userHabit?.weekly_goal_enabled) {
-      let progressValue = 0;
-      if (userHabit.measurement_type === 'timer') {
-        progressValue = (task.duration_used || 0) / 60; // Convert seconds to minutes
-      } else {
-        const xpPerUnit = userHabit.xp_per_unit || 1;
-        progressValue = (task.xp_earned || 0) / xpPerUnit;
-      }
-      weeklyProgressMap.set(key, (weeklyProgressMap.get(key) || 0) + progressValue);
-    }
+    // For weekly tracking, we count distinct sessions. 
+    // Since completedtasks stores one row per log, we just count the rows per habit.
+    weeklySessionCountMap.set(task.original_source, (weeklySessionCountMap.get(task.original_source) || 0) + 1);
   });
 
   // PRE-CALCULATION: Aggregate in seconds first to avoid floating point drift
@@ -95,7 +80,7 @@ const fetchDashboardData = async (userId: string) => {
   });
 
   const processedHabits: ProcessedUserHabit[] = (habits || [])
-    .map(h => {
+    .map(h => { // Do NOT filter here, we need all habits to check dependencies/visibility
     const mType = h.measurement_type || 'timer';
     
     // Aggregation logic depends on measurement type
@@ -109,6 +94,7 @@ const fetchDashboardData = async (userId: string) => {
     const capsuleTaskMapping = dailyCapsuleTasksMap.get(h.habit_key) || {};
     const baseAdjustedDailyGoal = h.current_daily_goal + (h.carryover_value || 0);
     
+    // FIX: Ensure days_of_week is an array of numbers, defaulting to empty array if null/undefined
     const activeDays = (h.days_of_week || []).map((d: any) => Number(d));
     const isScheduledForToday = activeDays.includes(currentDayOfWeek);
 
@@ -127,11 +113,6 @@ const fetchDashboardData = async (userId: string) => {
     const weeklyCompletions = weeklySessionCountMap.get(h.habit_key) || 0;
     const weeklyGoal = h.frequency_per_week;
     
-    // NEW: Weekly goal progress
-    const weeklyProgress = h.weekly_goal_enabled 
-      ? (weeklyProgressMap.get(h.habit_key) || 0)
-      : weeklyCompletions;
-
     const isDependent = !!h.dependent_on_habit_id;
     const dependentHabit = habits?.find(depH => depH.id === h.dependent_on_habit_id);
     const isDependencyMet = isDependent ? completedHabitKeysToday.has(dependentHabit?.habit_key || '') : true;
@@ -146,10 +127,6 @@ const fetchDashboardData = async (userId: string) => {
     if (isWeeklyAnchor) {
       // For weekly anchors, completion is based on meeting the weekly session count (which is 1)
       isComplete = weeklyCompletions >= 1;
-    } else if (h.weekly_goal_enabled) {
-      // NEW: For weekly goals, check if weekly progress meets target
-      const threshold = mType === 'timer' ? 0.1 : 0.01;
-      isComplete = weeklyProgress >= (h.weekly_goal_target - threshold);
     } else if (mType === 'binary') {
       // For daily binary habits (like medication/teeth brushing)
       isComplete = completedHabitKeysToday.has(h.habit_key);
@@ -173,7 +150,7 @@ const fetchDashboardData = async (userId: string) => {
       energyCostPerUnit: h.energy_cost_per_unit || (h.unit === 'min' ? 6 : 0.5),
       weekly_completions: weeklyCompletions,
       weekly_goal: (mType === 'binary' ? 1 : h.current_daily_goal) * h.frequency_per_week,
-      weekly_progress: weeklyProgress, // Use weekly session count or weekly goal progress
+      weekly_progress: weeklyCompletions, // Use weekly session count
       isScheduledForToday,
       isWithinWindow,
       measurement_type: mType, 
@@ -191,10 +168,9 @@ const fetchDashboardData = async (userId: string) => {
   // --- NEW: Calculate Daily Momentum Parts based on strict eligibility ---
   const dailyMomentumHabits = processedHabits.filter(h => {
     const isWeeklyAnchor = h.category === 'anchor' && h.frequency_per_week === 1;
-    const isWeeklyGoal = h.weekly_goal_enabled;
     
-    // 1. Exclude Weekly Anchors and Weekly Goals from daily momentum
-    if (isWeeklyAnchor || isWeeklyGoal) return false; 
+    // 1. Exclude Weekly Anchors
+    if (isWeeklyAnchor) return false; 
     
     // 2. Must be visible.
     if (!h.is_visible) return false;
@@ -231,7 +207,7 @@ const fetchDashboardData = async (userId: string) => {
 
   return {
     daysActive: totalDaysSinceStart,
-    habits: processedHabits,
+    habits: processedHabits, // Return the full list of processed habits
     neurodivergentMode: profile?.neurodivergent_mode || false,
     enable_sound: profile?.enable_sound ?? true,
     enable_haptics: profile?.enable_haptics ?? true,
@@ -248,7 +224,7 @@ const fetchDashboardData = async (userId: string) => {
     xp: profile?.xp || 0, 
     level: profile?.level || 1, 
     averageDailyTasks: totalSessions && totalDaysSinceStart > 0 ? (totalSessions / totalDaysSinceStart).toFixed(1) : '0.0',
-    dailyMomentumParts,
+    dailyMomentumParts, // <-- NEW RETURN VALUE
   };
 };
 

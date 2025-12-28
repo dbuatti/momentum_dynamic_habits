@@ -25,8 +25,7 @@ import {
   Home,
   Pill,
   Sparkle,
-  X,
-  TrendingUp
+  X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -56,9 +55,6 @@ interface AIParsedResult {
   short_description: string;
   confidence: number;
   reasoning: string;
-  // NEW: Weekly goal fields
-  weekly_goal_enabled: boolean;
-  weekly_goal_target: number;
 }
 
 const AIGenerativeDialogue: React.FC<AIGenerativeDialogueProps> = ({ onHabitGenerated, isOpen, onClose }) => {
@@ -113,8 +109,6 @@ const AIGenerativeDialogue: React.FC<AIGenerativeDialogueProps> = ({ onHabitGene
     Heart: ['self care', 'love', 'kindness', 'compassion', 'mental health'],
     Zap: ['energy', 'power', 'strength', 'vigor', 'active'],
     Anchor: ['anchor', 'foundation', 'core', 'essential', 'priority'],
-    // NEW: Weekly goal keywords
-    weekly: ['weekly', 'per week', 'total per week', 'by the end of the week', 'over the week'],
   };
 
   const analyzeInput = (text: string): AIParsedResult => {
@@ -326,16 +320,6 @@ const AIGenerativeDialogue: React.FC<AIGenerativeDialogueProps> = ({ onHabitGene
     const short_description = `A ${category} habit focused on ${motivation_type.replace('_', ' ')}.`;
     confidence = Math.min(confidence, 100);
 
-    // NEW: Weekly goal detection
-    const weeklyGoalEnabled = keywordMap.weekly.some(k => lowerText.includes(k));
-    let weeklyGoalTarget = 0;
-    if (weeklyGoalEnabled) {
-      // If weekly goal is mentioned, calculate target based on daily goal and frequency
-      weeklyGoalTarget = daily_goal * frequency_per_week;
-      confidence += 10;
-      reasoning.push('Detected weekly goal preference');
-    }
-
     return {
       name,
       category,
@@ -352,8 +336,6 @@ const AIGenerativeDialogue: React.FC<AIGenerativeDialogueProps> = ({ onHabitGene
       short_description,
       confidence,
       reasoning: reasoning.join(', '),
-      weekly_goal_enabled: weeklyGoalEnabled,
-      weekly_goal_target: weeklyGoalTarget,
     };
   };
 
@@ -402,10 +384,6 @@ const AIGenerativeDialogue: React.FC<AIGenerativeDialogueProps> = ({ onHabitGene
       window_end: null,
       carryover_enabled: false,
       weekly_session_min_duration: parsedResult.daily_goal,
-      // NEW: Weekly goal fields
-      weekly_goal_enabled: parsedResult.weekly_goal_enabled,
-      weekly_goal_target: parsedResult.weekly_goal_target,
-      weekly_goal_unit: parsedResult.unit,
     };
 
     onHabitGenerated(wizardData);
@@ -571,19 +549,6 @@ const AIGenerativeDialogue: React.FC<AIGenerativeDialogueProps> = ({ onHabitGene
                       <p className="font-semibold">{parsedResult.frequency_per_week}x/week</p>
                     </div>
                   </div>
-
-                  {/* NEW: Weekly Goal Display */}
-                  {parsedResult.weekly_goal_enabled && (
-                    <div className="bg-primary/5 p-3 rounded-xl border border-primary/10 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <TrendingUp className="w-4 h-4 text-primary" />
-                        <span className="text-xs font-bold text-primary uppercase">Weekly Goal</span>
-                      </div>
-                      <span className="font-bold text-primary">
-                        {parsedResult.weekly_goal_target} {parsedResult.unit} / week
-                      </span>
-                    </div>
-                  )}
 
                   <div className="bg-primary/5 p-4 rounded-xl border border-primary/10 space-y-2">
                     <p className="text-xs font-bold text-primary uppercase">AI Insights</p>

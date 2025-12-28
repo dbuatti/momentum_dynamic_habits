@@ -111,11 +111,6 @@ const initializeSelectedHabits = async (userId: string, params: OnboardingHabitP
       chunkDuration = Number((currentDailyGoal / numChunks).toFixed(1));
     }
 
-    // NEW: Weekly goal settings (disabled by default for onboarding)
-    const weeklyGoalEnabled = false;
-    const weeklyGoalTarget = currentDailyGoal * weeklyFrequency;
-    const weeklyGoalUnit = template.unit;
-
     return {
       user_id: userId,
       habit_key: template.id,
@@ -151,10 +146,6 @@ const initializeSelectedHabits = async (userId: string, params: OnboardingHabitP
       carryover_value: 0,
       growth_type: growthType,
       growth_value: growthValue,
-      // NEW: Weekly goal fields
-      weekly_goal_enabled: weeklyGoalEnabled,
-      weekly_goal_target: weeklyGoalTarget,
-      weekly_goal_unit: weeklyGoalUnit,
     };
   });
 
@@ -196,10 +187,6 @@ const initializeSelectedHabits = async (userId: string, params: OnboardingHabitP
     carryover_value: 0,
     growth_type: 'fixed' as GrowthType,
     growth_value: 0,
-    // NEW: Weekly goal fields (disabled for fixed habits)
-    weekly_goal_enabled: false,
-    weekly_goal_target: 0,
-    weekly_goal_unit: template.unit,
   }));
 
   const finalHabitsToUpsert = [...habitsToUpsert, ...fixedHabitsToAdd];

@@ -21,10 +21,6 @@ export interface CreateTemplateParams {
   plateau_days_required: number;
   short_description: string;
   is_public: boolean;
-  // NEW: Weekly goal fields for templates
-  weekly_goal_enabled?: boolean;
-  weekly_goal_target?: number;
-  weekly_goal_unit?: string;
 }
 
 const createTemplate = async (template: CreateTemplateParams) => {

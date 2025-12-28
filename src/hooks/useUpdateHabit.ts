@@ -44,10 +44,6 @@ const updateHabit = async ({ userId, habitId, updates }: UpdateHabitParams & { u
   if (typeof roundedUpdates.weekly_session_min_duration === 'number') {
     roundedUpdates.weekly_session_min_duration = Math.round(roundedUpdates.weekly_session_min_duration);
   }
-  // NEW: Round weekly goal fields
-  if (typeof roundedUpdates.weekly_goal_target === 'number') {
-    roundedUpdates.weekly_goal_target = Math.round(roundedUpdates.weekly_goal_target);
-  }
 
   const { error } = await supabase
     .from('user_habits')

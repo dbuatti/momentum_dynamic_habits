@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Anchor, Calendar, CheckCircle2, Target, Play, Lock, Info, Loader2, Check, Pause, Square, RotateCcw, Clock, Sparkles, FlaskConical, TrendingUp } from 'lucide-react';
+import { Anchor, Calendar, CheckCircle2, Target, Play, Lock, Info, Loader2, Check, Pause, Square, RotateCcw, Clock, Sparkles, FlaskConical } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProcessedUserHabit } from '@/types/habit';
 import { habitIconMap, habitColorMap } from '@/lib/habit-utils';
@@ -37,23 +37,12 @@ export const WeeklyAnchorCard: React.FC<WeeklyAnchorCardProps> = ({
   const { mutate: logHabit, isPending: isLogging } = useHabitLog();
   const { triggerFeedback } = useFeedback();
 
-  // Determine if this is a weekly goal habit
-  const isWeeklyGoal = habit.weekly_goal_enabled;
-  
   // Use dailyGoal as the minimum session duration for display
   const minDuration = habit.dailyGoal; // In minutes
   const goalDuration = habit.current_daily_goal; // In minutes (same as minDuration for anchors)
 
-  // For weekly goals, we need to track progress towards the weekly target
-  const weeklyTarget = habit.weekly_goal_target || habit.weekly_goal; // Fallback to weekly_goal if not set
-  const weeklyProgress = habit.weekly_progress || 0;
-  const isCompleteForWeek = isWeeklyGoal 
-    ? weeklyProgress >= weeklyTarget 
-    : habit.weekly_progress >= habit.frequency_per_week;
-  
-  const progressPercentage = isWeeklyGoal
-    ? Math.min(100, (weeklyProgress / weeklyTarget) * 100)
-    : Math.min(100, (habit.weekly_progress / habit.frequency_per_week) * 100);
+  const isCompleteForWeek = habit.weekly_progress >= habit.frequency_per_week;
+  const progressPercentage = Math.min(100, (habit.weekly_progress / habit.frequency_per_week) * 100);
   
   // Timer State Management
   const storageKey = `weeklyAnchorTimer:${habit.habit_key}`;
@@ -221,17 +210,8 @@ export const WeeklyAnchorCard: React.FC<WeeklyAnchorCardProps> = ({
                   "text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border",
                   colors.text, colors.border, colors.bg
                 )}>
-                  {isWeeklyGoal ? (
-                    <>
-                      <TrendingUp className="w-3 h-3 inline-block mr-1" />
-                      Weekly Goal
-                    </>
-                  ) : (
-                    <>
-                      <Anchor className="w-3 h-3 inline-block mr-1" />
-                      Weekly Anchor
-                    </>
-                  )}
+                  <Anchor className="w-3 h-3 inline-block mr-1" />
+                  Weekly Anchor
                 </span>
               </div>
             </div>
@@ -253,9 +233,7 @@ export const WeeklyAnchorCard: React.FC<WeeklyAnchorCardProps> = ({
         ) : isCompleteForWeek ? (
           <div className="p-4 bg-success/20 rounded-xl border border-success/30 flex items-center gap-3">
             <CheckCircle2 className="w-5 h-5 text-success" />
-            <p className="text-sm font-semibold text-success-foreground">
-              {isWeeklyGoal ? "Weekly goal met! Great consistency." : "Weekly goal met! You are consistent."}
-            </p>
+            <p className="text-sm font-semibold text-success-foreground">Weekly goal met! You are consistent.</p>
           </div>
         ) : isTiming ? (
           // Timer View
@@ -331,11 +309,9 @@ export const WeeklyAnchorCard: React.FC<WeeklyAnchorCardProps> = ({
             
             <div className="space-y-3 pt-3 border-t border-border/50">
               <div className="flex justify-between items-center text-sm font-bold">
-                <span className="text-muted-foreground">
-                  {isWeeklyGoal ? "This Week's Progress" : "Sessions Logged This Week"}
-                </span>
+                <span className="text-muted-foreground">Sessions Logged This Week</span>
                 <span className="text-foreground tabular-nums">
-                  {isWeeklyGoal ? `${Math.round(weeklyProgress)} / ${weeklyTarget} ${habit.unit}` : `${habit.weekly_progress} / ${habit.frequency_per_week}`}
+                  {habit.weekly_progress} / {habit.frequency_per_week}
                 </span>
               </div>
               <Progress value={progressPercentage} className={cn("h-2", `[&>div]:${colors.progress}`)} />
