@@ -38,7 +38,7 @@ export const WeeklyAnchorCard: React.FC<WeeklyAnchorCardProps> = ({
   const { triggerFeedback } = useFeedback();
 
   // Use dailyGoal as the minimum session duration for display
-  const minDuration = habit.dailyGoal; // In minutes
+  const minDuration = habit.weekly_session_min_duration || 10; // In minutes
   const goalDuration = habit.current_daily_goal; // In minutes (same as minDuration for anchors)
 
   const isCompleteForWeek = habit.weekly_progress >= habit.frequency_per_week;
@@ -51,6 +51,7 @@ export const WeeklyAnchorCard: React.FC<WeeklyAnchorCardProps> = ({
   const [elapsedTime, setElapsedTime] = useState(0); // In seconds
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // --- Interval Management Refactored ---
   const stopInterval = () => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -58,14 +59,21 @@ export const WeeklyAnchorCard: React.FC<WeeklyAnchorCardProps> = ({
     }
   };
 
-  const startInterval = useCallback(() => {
-    stopInterval();
-    timerRef.current = setInterval(() => {
-      setElapsedTime((prev) => prev + 1);
-    }, 1000);
-  }, []);
+  useEffect(() => {
+    if (isTiming && !isPaused && !isCompleteForWeek) {
+      stopInterval();
+      timerRef.current = setInterval(() => {
+        setElapsedTime((prev) => prev + 1);
+      }, 1000);
+    } else {
+      stopInterval();
+    }
 
-  // Load/Save state from localStorage
+    return () => stopInterval();
+  }, [isTiming, isPaused, isCompleteForWeek]);
+  // --------------------------------------
+
+  // Load/Save state from localStorage (Modified)
   useEffect(() => {
     if (isCompleteForWeek) {
       localStorage.removeItem(storageKey);
@@ -88,16 +96,10 @@ export const WeeklyAnchorCard: React.FC<WeeklyAnchorCardProps> = ({
       setIsPaused(paused);
       setIsTiming(timing);
       setElapsedTime(calculatedElapsed);
-      
-      if (timing && !paused) {
-        startInterval();
-      }
     }
     
-    return () => {
-      stopInterval();
-    };
-  }, [isCompleteForWeek, storageKey, startInterval]);
+    return () => {}; 
+  }, [isCompleteForWeek, storageKey]);
 
   useEffect(() => {
     if (isTiming && !isCompleteForWeek) {
@@ -119,23 +121,22 @@ export const WeeklyAnchorCard: React.FC<WeeklyAnchorCardProps> = ({
     triggerFeedback('start');
     setIsTiming(true);
     setIsPaused(false);
-    startInterval();
+    // Interval starts via dedicated useEffect
   };
 
   const handlePauseSession = () => {
     triggerFeedback('pause');
     setIsPaused(true);
-    stopInterval();
+    // Interval stops via dedicated useEffect
   };
 
   const handleResumeSession = () => {
     triggerFeedback('start');
     setIsPaused(false);
-    startInterval();
+    // Interval starts via dedicated useEffect
   };
 
   const handleEndSession = (mood?: string) => {
-    stopInterval();
     setIsTiming(false);
     setIsPaused(false);
     localStorage.removeItem(storageKey);
@@ -143,7 +144,6 @@ export const WeeklyAnchorCard: React.FC<WeeklyAnchorCardProps> = ({
     const elapsedMinutes = elapsedTime / 60;
     
     // Rule 4: Check if elapsed time meets minimum duration
-    // Use habit.weekly_session_min_duration which is set to dailyGoal for anchors
     const sessionMinDuration = habit.weekly_session_min_duration || 10; 
     const isSessionComplete = elapsedMinutes >= sessionMinDuration;
 
@@ -165,7 +165,6 @@ export const WeeklyAnchorCard: React.FC<WeeklyAnchorCardProps> = ({
   };
 
   const handleResetTimer = () => {
-    stopInterval();
     setIsTiming(false);
     setIsPaused(false);
     setElapsedTime(0);

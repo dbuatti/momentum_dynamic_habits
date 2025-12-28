@@ -84,6 +84,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     setCompletedTaskIdState(initialCompletedTaskId || null);
   }, [initialCompletedTaskId]);
 
+  // --- Interval Management Refactored ---
   const stopInterval = () => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -91,18 +92,31 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     }
   };
 
-  const startInterval = useCallback(() => {
-    stopInterval();
-    timerRef.current = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          stopInterval();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  }, []);
+  useEffect(() => {
+    if (measurementType !== 'timer') return;
+
+    if (isTiming && !isPaused && !isCompleted) {
+      stopInterval(); // Clear any existing interval before starting a new one
+      timerRef.current = setInterval(() => {
+        setTimeLeft((prev) => {
+          if (prev <= 1) {
+            stopInterval();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } else {
+      stopInterval();
+    }
+
+    // Cleanup function runs on unmount or when dependencies change
+    return () => {
+      stopInterval();
+      window.dispatchEvent(new CustomEvent('habit-timer-update', { detail: null }));
+    };
+  }, [isTiming, isPaused, isCompleted, measurementType]);
+  // --------------------------------------
 
   // Effect to dispatch timer updates for FloatingTimer and Tab Title
   useEffect(() => {
@@ -130,11 +144,10 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     }
   }, [timeLeft, isTiming, triggerFeedback]);
 
-  // Effect to load/save timer state from/to localStorage
+  // Effect to load/save timer state from/to localStorage (Modified to remove interval logic)
   useEffect(() => {
     if (measurementType !== 'timer') return;
 
-    // If the capsule is marked completed, clear timer state from localStorage
     if (isCompleted) {
       localStorage.removeItem(storageKey);
       setIsTiming(false);
@@ -144,7 +157,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     }
 
     // Only update timeLeft from props/localStorage if timer is not actively running
-    // This prevents the "jump" when onLogProgress causes a re-render while timer is active
     if (!isTiming) { 
       const saved = localStorage.getItem(storageKey);
       if (saved) {
@@ -161,9 +173,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
         setIsTiming(timing);
         setTimeLeft(calculatedTimeLeft);
         
-        if (timing && !paused) {
-          startInterval();
-        }
       } else {
         // If no saved state, initialize with the prop, or default to targetDurationSeconds
         const initialTime = initialRemainingTimeSeconds !== undefined ? initialRemainingTimeSeconds : targetDurationSeconds;
@@ -171,13 +180,13 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
       }
     }
     
+    // Cleanup for unmount (interval cleanup is handled by the dedicated useEffect)
     return () => {
-        stopInterval();
         window.dispatchEvent(new CustomEvent('habit-timer-update', { detail: null }));
     };
-  }, [isCompleted, storageKey, measurementType, startInterval, targetDurationSeconds, initialRemainingTimeSeconds, isTiming]); 
+  }, [isCompleted, storageKey, measurementType, targetDurationSeconds, initialRemainingTimeSeconds, isTiming]); 
 
-  // Effect to save timer state to localStorage when active
+  // Effect to save timer state to localStorage when active (Runs on every tick)
   useEffect(() => {
     if (measurementType === 'timer' && isTiming && !isCompleted) {
       const state = {
@@ -195,26 +204,22 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     if (isLoggingDisabled) return;
     e.stopPropagation();
     triggerFeedback('start');
+    
+    // If starting from 0, set the time first.
+    if (timeLeft <= 0) { 
+      setTimeLeft(targetDurationSeconds); 
+    }
+    
+    // Set timing state. The dedicated useEffect will start the interval on the next render.
     setIsTiming(true);
     setIsPaused(false);
-    // If the timer is at 0 (fully completed or never started), reset to the full chunk value.
-    // Otherwise, continue from the current timeLeft.
-    if (timeLeft <= 0) { 
-      setTimeLeft(targetDurationSeconds); // Start from full chunk value if it's at 0
-    }
-    startInterval();
   };
 
   const handlePauseTimer = (e: React.MouseEvent) => {
     e.stopPropagation();
     triggerFeedback('pause');
-    if (isPaused) {
-      setIsPaused(false);
-      startInterval();
-    } else {
-      setIsPaused(true);
-      stopInterval();
-    }
+    // Toggle isPaused. The dedicated useEffect will stop/start the interval.
+    setIsPaused(prev => !prev);
   };
 
   const handleResetTimer = (e: React.MouseEvent) => {
