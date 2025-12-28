@@ -143,35 +143,39 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
       return;
     }
 
-    const saved = localStorage.getItem(storageKey);
-    if (saved) {
-      const { timeLeft: savedTimeLeft, paused, timing, lastUpdated } = JSON.parse(saved);
-      
-      let calculatedTimeLeft = savedTimeLeft;
-      if (timing && !paused && lastUpdated) {
-        // Calculate actual time left based on last update to account for app being closed
-        const elapsedSinceLastUpdate = Math.floor((Date.now() - lastUpdated) / 1000);
-        calculatedTimeLeft = Math.max(0, savedTimeLeft - elapsedSinceLastUpdate);
-      }
+    // Only update timeLeft from props/localStorage if timer is not actively running
+    // This prevents the "jump" when onLogProgress causes a re-render while timer is active
+    if (!isTiming) { 
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        const { timeLeft: savedTimeLeft, paused, timing, lastUpdated } = JSON.parse(saved);
+        
+        let calculatedTimeLeft = savedTimeLeft;
+        if (timing && !paused && lastUpdated) {
+          // Calculate actual time left based on last update to account for app being closed
+          const elapsedSinceLastUpdate = Math.floor((Date.now() - lastUpdated) / 1000);
+          calculatedTimeLeft = Math.max(0, savedTimeLeft - elapsedSinceLastUpdate);
+        }
 
-      setIsPaused(paused);
-      setIsTiming(timing);
-      setTimeLeft(calculatedTimeLeft);
-      
-      if (timing && !paused) {
-        startInterval();
+        setIsPaused(paused);
+        setIsTiming(timing);
+        setTimeLeft(calculatedTimeLeft);
+        
+        if (timing && !paused) {
+          startInterval();
+        }
+      } else {
+        // If no saved state, initialize with the prop, or default to targetDurationSeconds
+        const initialTime = initialRemainingTimeSeconds !== undefined ? initialRemainingTimeSeconds : targetDurationSeconds;
+        setTimeLeft(initialTime);
       }
-    } else {
-      // If no saved state, initialize with the prop, or default to targetDurationSeconds
-      const initialTime = initialRemainingTimeSeconds !== undefined ? initialRemainingTimeSeconds : targetDurationSeconds;
-      setTimeLeft(initialTime);
     }
     
     return () => {
         stopInterval();
         window.dispatchEvent(new CustomEvent('habit-timer-update', { detail: null }));
     };
-  }, [isCompleted, storageKey, measurementType, startInterval, targetDurationSeconds, initialRemainingTimeSeconds]); 
+  }, [isCompleted, storageKey, measurementType, startInterval, targetDurationSeconds, initialRemainingTimeSeconds, isTiming]); 
 
   // Effect to save timer state to localStorage when active
   useEffect(() => {
@@ -193,10 +197,10 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     triggerFeedback('start');
     setIsTiming(true);
     setIsPaused(false);
-    // Only reset timeLeft to targetDurationSeconds if it's at 0 or its initial full value
-    if (timeLeft <= 0 || timeLeft === targetDurationSeconds) { 
-      const newTime = initialRemainingTimeSeconds !== undefined ? initialRemainingTimeSeconds : targetDurationSeconds;
-      setTimeLeft(newTime);
+    // If the timer is at 0 (fully completed or never started), reset to the full chunk value.
+    // Otherwise, continue from the current timeLeft.
+    if (timeLeft <= 0) { 
+      setTimeLeft(targetDurationSeconds); // Start from full chunk value if it's at 0
     }
     startInterval();
   };
@@ -226,14 +230,14 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     stopInterval();
     
     let totalSessionValue = 0;
+    const elapsedSecondsForThisTimerRun = targetDurationSeconds - timeLeft;
 
     if (measurementType === 'timer') {
       // NEW LOGIC: Use completeOnFinish toggle
       if (completeOnFinish) {
         totalSessionValue = value; 
       } else {
-        const elapsedSeconds = targetDurationSeconds - timeLeft; 
-        totalSessionValue = Number((elapsedSeconds / 60).toFixed(2));
+        totalSessionValue = Number((elapsedSecondsForThisTimerRun / 60).toFixed(2));
       }
     } else {
       const elapsedSeconds = targetDurationSeconds - timeLeft;
@@ -256,10 +260,26 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     }
 
     onLogProgress(totalSessionValue, true, mood);
-    localStorage.removeItem(storageKey);
-    setIsTiming(false);
-    setTimeLeft(targetDurationSeconds); 
-    setShowMoodPicker(false);
+    
+    if (completeOnFinish) {
+      setIsTiming(false);
+      setTimeLeft(targetDurationSeconds); 
+      localStorage.removeItem(storageKey);
+      setShowMoodPicker(false);
+    } else {
+      // For partial logging (completeOnFinish: false)
+      // Timer continues to run. `timeLeft` will be updated by the prop on re-render.
+      // We need to update localStorage with the new remaining time.
+      // The `useEffect` will then pick this up if the component unmounts/remounts.
+      const newRemainingTime = initialRemainingTimeSeconds !== undefined ? initialRemainingTimeSeconds : targetDurationSeconds;
+      localStorage.setItem(storageKey, JSON.stringify({
+        timeLeft: newRemainingTime, // Store the new remaining time from the prop
+        paused: isPaused,
+        timing: isTiming, // Should still be true
+        lastUpdated: Date.now()
+      }));
+      setShowMoodPicker(false);
+    }
   };
 
   const handleCollapse = (e: React.MouseEvent) => {
