@@ -28,6 +28,11 @@ const checkHabitCompletionOnDay = async (userId: string, habitKey: string, date:
 
   if (error || !completedTasksOnDay || completedTasksOnDay.length === 0) return false;
 
+  // NEW LOGIC: If complete_on_finish is true, any logged task means it's complete for the day.
+  if (userHabitData.complete_on_finish) {
+    return completedTasksOnDay.length > 0;
+  }
+
   const isWeeklyAnchor = userHabitData.category === 'anchor' && userHabitData.frequency_per_week === 1;
   const xpPerUnit = userHabitData.xp_per_unit || (userHabitData.unit === 'min' ? 30 : 1);
 
@@ -117,7 +122,10 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
   let isGoalMetAfterLog = false;
   let totalDailyProgressAfterLog = 0;
 
-  if (isWeeklyAnchor && userHabitData.measurement_type === 'timer') {
+  if (userHabitData.complete_on_finish) {
+    isGoalMetAfterLog = true; // If complete_on_finish is true, any log means goal is met for the day
+    totalDailyProgressAfterLog = userHabitData.current_daily_goal; // For display purposes, assume full goal
+  } else if (isWeeklyAnchor && userHabitData.measurement_type === 'timer') {
     const minDuration = userHabitData.weekly_session_min_duration || 10;
     if (value >= minDuration) {
       isGoalMetAfterLog = true; 
@@ -328,7 +336,10 @@ const unlogHabit = async ({ userId, completedTaskId }: { userId: string, complet
   let totalDailyProgressAfterUnlog = 0;
   let isGoalMetAfterUnlog = false;
 
-  if (isWeeklyAnchor && userHabitData.measurement_type === 'timer') {
+  if (userHabitData.complete_on_finish) {
+    isGoalMetAfterUnlog = (completedTodayAfterUnlog || []).filter((t: any) => t.original_source === task.original_source).length >= 1;
+    totalDailyProgressAfterUnlog = isGoalMetAfterUnlog ? userHabitData.current_daily_goal : 0;
+  } else if (isWeeklyAnchor && userHabitData.measurement_type === 'timer') {
     const minDuration = userHabitData.weekly_session_min_duration || 10;
     
     const remainingSessionsToday = (completedTodayAfterUnlog || [])
@@ -358,12 +369,17 @@ const unlogHabit = async ({ userId, completedTaskId }: { userId: string, complet
     isGoalMetAfterUnlog = totalDailyProgressAfterUnlog >= (userHabitData.current_daily_goal - threshold);
   }
 
-  if (userHabitData.measurement_type !== 'binary' && !userHabitData.is_fixed) {
+  if (userHabitData.measurement_type !== 'binary' && !userHabitData.is_fixed && !userHabitData.complete_on_finish) {
     const surplusAfterUnlog = totalDailyProgressAfterUnlog - userHabitData.current_daily_goal;
     const newCarryoverValueAfterUnlog = Math.max(0, surplusAfterUnlog);
     
     await supabase.from('user_habits').update({
       carryover_value: newCarryoverValueAfterUnlog,
+    }).eq('id', userHabitData.id);
+  } else if (userHabitData.complete_on_finish) {
+    // If complete_on_finish is true, any surplus is consumed by the goal, so reset carryover
+    await supabase.from('user_habits').update({
+      carryover_value: 0,
     }).eq('id', userHabitData.id);
   }
 

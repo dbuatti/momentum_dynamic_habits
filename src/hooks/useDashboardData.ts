@@ -110,7 +110,10 @@ const fetchDashboardData = async (userId: string) => {
     let isComplete = false;
     const unit = h.unit || (mType === 'timer' ? 'min' : (mType === 'binary' ? 'dose' : 'reps'));
 
-    if (isWeeklyAnchor) {
+    // NEW LOGIC FOR isComplete:
+    if (h.complete_on_finish) {
+      isComplete = completedHabitKeysToday.has(h.habit_key);
+    } else if (isWeeklyAnchor) {
       isComplete = weeklyCompletions >= 1;
     } else if (mType === 'binary') {
       isComplete = completedHabitKeysToday.has(h.habit_key);
