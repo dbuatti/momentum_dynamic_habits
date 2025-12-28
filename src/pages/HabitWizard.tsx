@@ -269,17 +269,20 @@ const HabitWizard = () => {
 
   useEffect(() => {
     if (!isLoadingWizardProgress && wizardProgress && !hasLoadedInitialProgress && !isTemplateCreationMode && !templateToPreFill && !aiGeneratedData) {
+      console.log('[HabitWizard] Loading saved progress:', wizardProgress);
       setCurrentStep(wizardProgress.current_step);
       setWizardData(wizardProgress.habit_data);
       setCurrentMicroStepIndex(0);
       setHasLoadedInitialProgress(true);
     } else if (!isLoadingWizardProgress && !hasLoadedInitialProgress) {
       if (aiGeneratedData) {
+        console.log('[HabitWizard] Loading AI-generated data:', aiGeneratedData);
         setWizardData(aiGeneratedData);
         setCurrentStep(7);
         setCurrentMicroStepIndex(0);
         showSuccess('AI-generated habit ready for review!');
       } else if (templateToPreFill) {
+        console.log('[HabitWizard] Loading template data:', templateToPreFill);
         setWizardData({
           name: templateToPreFill.name,
           habit_key: templateToPreFill.id,
@@ -371,25 +374,33 @@ const HabitWizard = () => {
   }, [currentStep, currentMicroStepIndex]);
 
   const handleResetProgress = useCallback(async () => {
+    console.log('[HabitWizard] handleResetProgress called');
     try {
+      console.log('[HabitWizard] Calling clearProgress...');
       await clearProgress();
+      console.log('[HabitWizard] clearProgress completed successfully');
       setWizardData({});
       setCurrentStep(1);
       setCurrentMicroStepIndex(0);
       setHasLoadedInitialProgress(false);
       showSuccess('Wizard progress reset.');
     } catch (error) {
+      console.error('[HabitWizard] Error in handleResetProgress:', error);
       showError('Failed to reset progress.');
     }
   }, [clearProgress]);
 
   const handleSaveAndFinishLater = useCallback(async () => {
+    console.log('[HabitWizard] handleSaveAndFinishLater called');
     setIsSaving(true);
     try {
+      console.log('[HabitWizard] Saving progress before exit:', { currentStep, wizardData });
       await saveProgress({ current_step: currentStep, habit_data: wizardData });
+      console.log('[HabitWizard] Progress saved successfully');
       showSuccess('Progress saved! You can continue later.');
       navigate('/');
     } catch (error) {
+      console.error('[HabitWizard] Error in handleSaveAndFinishLater:', error);
       showError('Failed to save progress.');
     } finally {
       setIsSaving(false);
@@ -398,12 +409,16 @@ const HabitWizard = () => {
   }, [currentStep, wizardData, saveProgress, navigate]);
 
   const handleDiscardDraft = useCallback(async () => {
+    console.log('[HabitWizard] handleDiscardDraft called');
     setIsSaving(true);
     try {
-      await clearProgress(); // Hard delete draft
+      console.log('[HabitWizard] Calling clearProgress to discard draft...');
+      await clearProgress();
+      console.log('[HabitWizard] clearProgress completed successfully');
       showSuccess('Draft discarded.');
       navigate('/');
     } catch (error) {
+      console.error('[HabitWizard] Error in handleDiscardDraft:', error);
       showError('Failed to discard draft.');
     } finally {
       setIsSaving(false);
