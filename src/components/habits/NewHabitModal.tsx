@@ -25,6 +25,13 @@ import { useJourneyData } from '@/hooks/useJourneyData';
 import { useCreateTemplate, CreateTemplateParams } from '@/hooks/useCreateTemplate';
 import { CreateHabitParams } from '@/pages/HabitWizard';
 
+interface NewHabitModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  templateToPreFill?: HabitTemplate;
+  isTemplateMode?: boolean;
+}
+
 const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: string; habit: CreateHabitParams; neurodivergentMode: boolean }) => {
   const today = new Date();
   const oneYearFromNow = new Date(today.setFullYear(today.getFullYear() + 1));
