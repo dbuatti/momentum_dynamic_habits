@@ -166,9 +166,8 @@ export const useUserHabitWizardTemp = () => {
       return clearWizardProgress(userId);
     },
     onSuccess: () => {
-      // Invalidate and remove the data from the cache immediately
-      queryClient.setQueryData(['userHabitWizardTemp', userId], null);
-      queryClient.invalidateQueries({ queryKey: ['userHabitWizardTemp', userId] });
+      // CRITICAL FIX: Use removeQueries to ensure the old draft doesn't flicker back during refetching
+      queryClient.removeQueries({ queryKey: ['userHabitWizardTemp', userId] });
     },
     onError: (error) => {
       showError(`Failed to clear wizard progress: ${error.message}`);

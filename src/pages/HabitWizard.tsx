@@ -197,6 +197,7 @@
     const [currentMicroStepIndex, setCurrentMicroStepIndex] = useState(0);
     const [wizardData, setWizardData] = useState<Partial<WizardHabitData>>({});
     const [isSaving, setIsSaving] = useState(false);
+    const [isDiscarding, setIsDiscarding] = useState(false); // NEW: specifically for discard flow
     const [hasLoadedInitialProgress, setHasLoadedInitialProgress] = useState(false);
     const [showEditDetailsModal, setShowEditDetailsModal] = useState(false);
     const [editableHabitData, setEditableHabitData] = useState<Partial<CreateHabitParams>>({});
@@ -274,8 +275,8 @@
         return;
       }
 
-      // If we have already loaded progress or are currently loading, do nothing
-      if (hasLoadedInitialProgress || isLoadingWizardProgress) {
+      // If we have already loaded progress, or are loading/discarding, do nothing
+      if (hasLoadedInitialProgress || isLoadingWizardProgress || isDiscarding) {
         return;
       }
 
@@ -287,7 +288,7 @@
         setCurrentMicroStepIndex(0);
         setHasLoadedInitialProgress(true);
       }
-    }, [isLoadingWizardProgress, wizardProgress, isTemplateCreationMode, templateToPreFill, aiGeneratedData, hasLoadedInitialProgress]);
+    }, [isLoadingWizardProgress, wizardProgress, isTemplateCreationMode, templateToPreFill, aiGeneratedData, hasLoadedInitialProgress, isDiscarding]);
 
     useEffect(() => {
       if (!templateToPreFill && !aiGeneratedData && wizardData.name) {
@@ -394,23 +395,24 @@
     const handleDiscardDraft = useCallback(async () => {
       console.log('[HabitWizard] handleDiscardDraft called');
       setIsSaving(true);
+      setIsDiscarding(true); // CRITICAL: Block the useEffect from loading old data
       try {
-        // CRITICAL FIX: Reset local state *immediately* to prevent the useEffect
-        // from reloading the data that is about to be deleted.
+        // Reset local state immediately
         setWizardData({});
         setCurrentStep(1);
         setCurrentMicroStepIndex(0);
-        setHasLoadedInitialProgress(true); // Mark as loaded to prevent useEffect from running again
+        setHasLoadedInitialProgress(true); 
 
         console.log('[HabitWizard] Calling clearProgress to discard draft...');
         await clearProgress();
         console.log('[HabitWizard] clearProgress completed successfully');
         
         showSuccess('Draft discarded.');
-        navigate('/');
+        navigate('/', { replace: true });
       } catch (error) {
         console.error('[HabitWizard] Error in handleDiscardDraft:', error);
         showError('Failed to discard draft.');
+        setIsDiscarding(false); // Allow loading again if delete failed
       } finally {
         setIsSaving(false);
         setShowExitDialog(false);
