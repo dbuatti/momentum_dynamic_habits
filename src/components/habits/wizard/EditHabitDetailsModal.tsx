@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 import { 
   Target, Anchor, Brain, Clock, Layers,
   Plus, Loader2, Info, X, LayoutTemplate, Zap,
-  Percent, Hash
+  Percent, Hash, TrendingUp
 } from 'lucide-react';
 import { habitCategories, habitUnits, habitModes, habitIcons, habitMeasurementTypes, HabitTemplate } from '@/lib/habit-templates';
 import { useSession } from '@/contexts/SessionContext';
@@ -71,6 +71,9 @@ export const EditHabitDetailsModal: React.FC<EditHabitDetailsModalProps> = ({
   const [growthType, setGrowthType] = useState<GrowthType>(initialHabitData.growth_type || 'fixed');
   const [growthValue, setGrowthValue] = useState(initialHabitData.growth_value || 1);
   const [weeklySessionMinDuration, setWeeklySessionMinDuration] = useState(initialHabitData.weekly_session_min_duration || 10); // New state
+  // NEW: Weekly Goal State
+  const [weeklyGoalEnabled, setWeeklyGoalEnabled] = useState(initialHabitData.weekly_goal_enabled || false);
+  const [weeklyGoalTarget, setWeeklyGoalTarget] = useState(initialHabitData.weekly_goal_target || 0);
 
   useEffect(() => {
     setHabitName(initialHabitData.name || '');
@@ -96,6 +99,9 @@ export const EditHabitDetailsModal: React.FC<EditHabitDetailsModalProps> = ({
     setGrowthType(initialHabitData.growth_type || 'fixed');
     setGrowthValue(initialHabitData.growth_value || 1);
     setWeeklySessionMinDuration(initialHabitData.weekly_session_min_duration || 10); // Initialize new state
+    // NEW: Initialize weekly goal state
+    setWeeklyGoalEnabled(initialHabitData.weekly_goal_enabled || false);
+    setWeeklyGoalTarget(initialHabitData.weekly_goal_target || 0);
   }, [initialHabitData]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -125,6 +131,10 @@ export const EditHabitDetailsModal: React.FC<EditHabitDetailsModalProps> = ({
       growth_type: growthType,
       growth_value: growthValue,
       weekly_session_min_duration: Math.round(weeklySessionMinDuration), // Include new field
+      // NEW: Weekly goal fields
+      weekly_goal_enabled: weeklyGoalEnabled,
+      weekly_goal_target: weeklyGoalTarget,
+      weekly_goal_unit: unit,
     };
 
     onSave(updatedData);
@@ -167,6 +177,43 @@ export const EditHabitDetailsModal: React.FC<EditHabitDetailsModalProps> = ({
                   <SelectContent>{habitUnits.map(u => <SelectItem key={u.value} value={u.value}>{u.label}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
+            </div>
+          </div>
+
+          {/* Weekly Goal Section */}
+          <div className="space-y-6">
+            <h3 className="text-lg font-bold flex items-center gap-2"><TrendingUp className="w-5 h-5 text-primary" /> Weekly Goal</h3>
+            <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>Enable Weekly Goal</Label>
+                  <p className="text-xs text-muted-foreground">Track progress over the week instead of daily</p>
+                </div>
+                <Switch 
+                  checked={weeklyGoalEnabled} 
+                  onCheckedChange={setWeeklyGoalEnabled} 
+                />
+              </div>
+
+              {weeklyGoalEnabled && (
+                <div className="space-y-3 animate-in fade-in slide-in-from-top-1">
+                  <Label>Weekly Target</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      value={weeklyGoalTarget}
+                      onChange={(e) => setWeeklyGoalTarget(Number(e.target.value))}
+                      className="h-12 rounded-xl font-bold"
+                      min={1}
+                      required
+                    />
+                    <span className="font-bold text-lg">{unit} / week</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Example: 70 minutes per week for daily 10-minute reading.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 

@@ -72,6 +72,11 @@ export interface WizardHabitData {
   safety_net_choice?: 'none' | 'rollover' | 'gentle';
   
   weekly_session_min_duration?: number;
+
+  // NEW: Weekly Goal Fields
+  weekly_goal_enabled?: boolean;
+  weekly_goal_target?: number;
+  weekly_goal_unit?: string;
 }
 
 export interface UserHabitWizardTemp {

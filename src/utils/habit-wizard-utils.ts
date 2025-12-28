@@ -109,6 +109,11 @@ export const calculateHabitParams = (data: Partial<WizardHabitData>, neurodiverg
     weeklySessionMinDuration = dailyGoal;
   }
 
+  // NEW: Weekly Goal Support
+  const weeklyGoalEnabled = data.weekly_goal_enabled || false;
+  const weeklyGoalTarget = data.weekly_goal_target || dailyGoal * frequency;
+  const weeklyGoalUnit = unit;
+
   return {
     name: data.name!,
     habit_key: data.habit_key!,
@@ -136,5 +141,9 @@ export const calculateHabitParams = (data: Partial<WizardHabitData>, neurodiverg
     growth_type: growthType,
     growth_value: growthValue,
     weekly_session_min_duration: weeklySessionMinDuration, // Include new field
+    // NEW: Weekly goal fields
+    weekly_goal_enabled: weeklyGoalEnabled,
+    weekly_goal_target: weeklyGoalTarget,
+    weekly_goal_unit: weeklyGoalUnit,
   };
 };

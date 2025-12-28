@@ -18,6 +18,10 @@ export interface HabitTemplate {
   icon_name: string;
   plateauDaysRequired: number;
   shortDescription: string;
+  // NEW: Weekly goal fields for templates
+  weekly_goal_enabled?: boolean;
+  weekly_goal_target?: number;
+  weekly_goal_unit?: string;
 }
 
 export const habitTemplates: HabitTemplate[] = [
@@ -122,7 +126,7 @@ export const habitTemplates: HabitTemplate[] = [
     autoChunking: false,
     anchorPractice: true,
     unit: "dose",
-    measurement_type: "binary", // Binary means single completion
+    measurement_type: "binary",
     xpPerUnit: 10,
     energyCostPerUnit: 0,
     icon_name: "Pill",
@@ -182,6 +186,28 @@ export const habitTemplates: HabitTemplate[] = [
     icon_name: "Target",
     plateauDaysRequired: 7,
     shortDescription: "Design a habit tailored to your unique needs.",
+  },
+  // NEW: Weekly Goal Template Example
+  {
+    id: "reading_weekly",
+    name: "Reading",
+    category: "cognitive",
+    defaultFrequency: 4,
+    defaultDuration: 15,
+    defaultMode: "Trial",
+    defaultChunks: 1,
+    autoChunking: true,
+    anchorPractice: false,
+    unit: "min",
+    measurement_type: "timer",
+    xpPerUnit: 42,
+    energyCostPerUnit: 9,
+    icon_name: "BookOpen",
+    plateauDaysRequired: 7,
+    shortDescription: "Read consistently over the week.",
+    weekly_goal_enabled: true,
+    weekly_goal_target: 60,
+    weekly_goal_unit: "min",
   },
 ];
 

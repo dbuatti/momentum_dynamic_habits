@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 import { 
   Target, Anchor, Brain, Clock, Layers,
   Plus, Loader2, Info, X, LayoutTemplate, Zap,
-  Percent, Hash
+  Percent, Hash, TrendingUp
 } from 'lucide-react';
 import { habitCategories, habitUnits, habitModes, habitIcons, habitMeasurementTypes, HabitTemplate } from '@/lib/habit-templates';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -43,7 +43,8 @@ const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: s
     chunking_mode, preferred_chunk_duration, preferred_chunk_count,
     unit, measurement_type, xp_per_unit, energy_cost_per_unit, icon_name, 
     dependent_on_habit_id, window_start, window_end, carryover_enabled,
-    growth_type, growth_value, weekly_session_min_duration
+    growth_type, growth_value, weekly_session_min_duration,
+    weekly_goal_enabled, weekly_goal_target, weekly_goal_unit // NEW fields
   } = habit;
 
   let calculatedPlateauDays = habit.plateau_days_required;
@@ -106,6 +107,10 @@ const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: s
     p_growth_type: growth_type,
     p_growth_value: growth_value,
     p_weekly_session_min_duration: Math.round(weekly_session_min_duration),
+    // NEW: Weekly goal fields
+    p_weekly_goal_enabled: weekly_goal_enabled,
+    p_weekly_goal_target: weekly_goal_target,
+    p_weekly_goal_unit: weekly_goal_unit,
   });
 
   if (error) throw error;
@@ -141,6 +146,9 @@ export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, t
   const [growthType, setGrowthType] = useState<GrowthType>('percentage');
   const [growthValue, setGrowthValue] = useState(10);
   const [weeklySessionMinDuration, setWeeklySessionMinDuration] = useState(10);
+  // NEW: Weekly Goal State
+  const [weeklyGoalEnabled, setWeeklyGoalEnabled] = useState(false);
+  const [weeklyGoalTarget, setWeeklyGoalTarget] = useState(0);
 
   useEffect(() => {
     if (templateToPreFill) {
@@ -193,6 +201,9 @@ export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, t
       setGrowthType('percentage');
       setGrowthValue(10);
       setWeeklySessionMinDuration(10); // Default for new habit
+      // NEW: Reset weekly goal state
+      setWeeklyGoalEnabled(false);
+      setWeeklyGoalTarget(0);
     }
   }, [templateToPreFill, isOpen, neurodivergentMode]);
 
@@ -215,6 +226,8 @@ export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, t
       setDailyGoal(1);
       setWeeklySessionMinDuration(1);
     }
+    // NEW: Reset weekly goal target when unit changes
+    setWeeklyGoalTarget(0);
   };
 
   const createHabitMutation = useMutation({
@@ -259,6 +272,10 @@ export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, t
       growth_type: growthType,
       growth_value: growthValue,
       weekly_session_min_duration: weeklySessionMinDuration, // ADDED
+      // NEW: Weekly goal fields
+      weekly_goal_enabled: weeklyGoalEnabled,
+      weekly_goal_target: weeklyGoalTarget,
+      weekly_goal_unit: unit,
     };
 
     if (isTemplateMode) {
@@ -323,6 +340,43 @@ export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, t
             </div>
           </div>
 
+          {/* NEW: Weekly Goal Section */}
+          <div className="space-y-6">
+            <h3 className="text-lg font-bold flex items-center gap-2"><TrendingUp className="w-5 h-5 text-primary" /> Weekly Goal</h3>
+            <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>Enable Weekly Goal</Label>
+                  <p className="text-xs text-muted-foreground">Track progress over the week instead of daily</p>
+                </div>
+                <Switch 
+                  checked={weeklyGoalEnabled} 
+                  onCheckedChange={setWeeklyGoalEnabled} 
+                />
+              </div>
+
+              {weeklyGoalEnabled && (
+                <div className="space-y-3 animate-in fade-in slide-in-from-top-1">
+                  <Label>Weekly Target</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      value={weeklyGoalTarget}
+                      onChange={(e) => setWeeklyGoalTarget(Number(e.target.value))}
+                      className="h-12 rounded-xl font-bold"
+                      min={1}
+                      required={weeklyGoalEnabled}
+                    />
+                    <span className="font-bold text-lg">{unit} / week</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Example: 70 minutes per week for daily 10-minute reading.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
           {!isFixed && unit !== 'dose' && (
             <div className="space-y-6">
               <h3 className="text-lg font-bold flex items-center gap-2"><Zap className="w-5 h-5 text-primary" /> Growth Increments</h3>
@@ -353,32 +407,232 @@ export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, t
                     <Input
                       type="number"
                       value={growthValue}
-                      onChange={(e) => setGrowthValue(Number(e.target.value))}
-                      className="h-12 rounded-xl font-bold"
-                    />
-                    <span className="font-bold text-lg">
-                      {growthType === 'percentage' ? '%' : unit}
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {growthType === 'percentage' 
-                      ? `Target will increase from ${dailyGoal} to ${Math.round(dailyGoal * (1 + growthValue / 100))} ${unit}`
-                      : `Target will increase from ${dailyGoal} to ${dailyGoal + growthValue} ${unit}`
-                    } after stability plateau.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
+                      onChange={(e) => Adaptive Growth: Daily goal for ${userHabitData.name} increased to ${Math.round(newDailyGoal)} ${userHabitData.unit}!`);
+          }
+          
+          newGrowthPhase = userHabitData.frequency_per_week < 7 ? 'frequency' : 'duration';
+        }
 
-          <div className="flex gap-4 pt-4 border-t">
-            <Button variant="ghost" className="flex-1 h-14 rounded-2xl" onClick={onClose}>Cancel</Button>
-            <Button type="submit" className="flex-1 h-14 rounded-2xl font-bold" disabled={createHabitMutation.isPending}>
-              {createHabitMutation.isPending ? <Loader2 className="animate-spin" /> : 'Confirm'}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
+        await supabase.from('user_habits').update({
+          last_plateau_start_date: todayDateString,
+          completions_in_plateau: 0, 
+          last_goal_increase_date: todayDateString,
+          current_daily_goal: Math.round(newDailyGoal),
+          frequency_per_week: Math.round(newFrequency),
+          growth_phase: newGrowthPhase,
+          is_trial_mode: newIsTrialMode,
+        }).eq('id', userHabitData.id);
+      }
+    } else {
+      await supabase.from('user_habits').update({
+        completions_in_plateau: Math.round(newCompletionsInPlateau),
+        last_plateau_start_date: newLastPlateauStartDate,
+        is_trial_mode: newIsTrialMode,
+      }).eq('id', userHabitData.id);
+    }
+  }
+  // --- END: Daily/Weekly Completion Logic Update ---
+
+  const newXp = (profileData.xp || 0) + xpEarned;
+  await supabase.from('profiles').update({
+    last_active_at: new Date().toISOString(),
+    tasks_completed_today: (profileData.tasks_completed_today || 0) + 1,
+    xp: newXp,
+    level: calculateLevel(newXp),
+  }).eq('id', userId);
+
+  return { success: true, taskName, xpEarned, completedTaskId: insertedTask.id };
+};
+
+const unlogHabit = async ({ userId, completedTaskId }: { userId: string, completedTaskId: string }) => {
+  const { data: task, error: fetchTaskError } = await supabase
+    .from('completedtasks')
+    .select('*')
+    .eq('id', completedTaskId)
+    .eq('user_id', userId)
+    .single();
+
+  if (fetchTaskError || !task) throw fetchTaskError || new Error('Completed task not found');
+
+  const { data: profileData } = await supabase
+    .from('profiles')
+    .select('timezone, xp, tasks_completed_today')
+    .eq('id', userId)
+    .single();
+
+  const timezone = profileData?.timezone || 'UTC';
+
+  const { data: userHabitDataResult } = await supabase
+    .from('user_habits')
+    .select('id, unit, xp_per_unit, current_daily_goal, completions_in_plateau, last_plateau_start_date, carryover_value, measurement_type, weekly_session_min_duration, frequency_per_week, category, is_fixed, weekly_goal_enabled, weekly_goal_target') // ADDED weekly_goal_enabled, weekly_goal_target
+    .eq('user_id', userId)
+    .eq('habit_key', task.original_source)
+    .single();
+
+  if (!userHabitDataResult) throw new Error(`Habit data not found for key: ${task.original_source}`);
+  const userHabitData = userHabitDataResult;
+  const xpPerUnit = userHabitData.xp_per_unit || (userHabitData.unit === 'min' ? 30 : 1);
+
+  let lifetimeProgressDecrementValue;
+  if (userHabitData.measurement_type === 'timer') {
+    lifetimeProgressDecrementValue = task.duration_used || 0;
+  } else {
+    lifetimeProgressDecrementValue = (task.xp_earned || 0) / xpPerUnit; 
+  }
+
+  await supabase.rpc('increment_lifetime_progress', {
+    p_user_id: userId, p_habit_key: task.original_source, p_increment_value: -Math.round(lifetimeProgressDecrementValue),
+  });
+
+  if (profileData) {
+    const newXp = Math.max(0, (profileData.xp || 0) - (task.xp_earned || 0));
+    await supabase.from('profiles').update({
+      xp: newXp,
+      level: calculateLevel(newXp),
+      tasks_completed_today: Math.max(0, (profileData.tasks_completed_today || 0) - 1)
+    }).eq('id', userId);
+  }
+
+  await supabase.from('completedtasks').delete().eq('id', completedTaskId);
+
+  // --- START: Re-evaluate completion status after unlog ---
+  
+  const isWeeklyAnchor = userHabitData.category === 'anchor' && userHabitData.frequency_per_week === 1;
+  const isWeeklyGoal = userHabitData.weekly_goal_enabled;
+  
+  const { data: completedTodayAfterUnlog } = await supabase.rpc('get_completed_tasks_today', { 
+    p_user_id: userId, p_timezone: timezone 
+  });
+  
+  // Get weekly progress for this habit (after unlog)
+  const weekStart = startOfWeek(new Date());
+  const weekEnd = endOfWeek(new Date());
+  const { data: completedThisWeekAfterUnlog } = await supabase
+    .from('completedtasks')
+    .select('duration_used, xp_earned')
+    .eq('user_id', userId)
+    .eq('original_source', task.original_source)
+    .gte('completed_at', weekStart.toISOString())
+    .lte('completed_at', weekEnd.toISOString());
+
+  let totalDailyProgressAfterUnlog = 0;
+  let totalWeeklyProgressAfterUnlog = 0;
+  let isGoalMetAfterUnlog = false;
+
+  // Calculate weekly progress after unlog
+  let weeklyProgress = 0;
+  (completedThisWeekAfterUnlog || []).forEach(t => {
+    if (userHabitData.measurement_type === 'timer') {
+      weeklyProgress += (t.duration_used || 0) / 60;
+    } else {
+      weeklyProgress += (t.xp_earned || 0) / xpPerUnit;
+    }
+  });
+  totalWeeklyProgressAfterUnlog = weeklyProgress;
+
+  if (isWeeklyGoal) {
+    const threshold = userHabitData.measurement_type === 'timer' ? 0.1 : 0.01;
+    isGoalMetAfterUnlog = weeklyProgress >= (userHabitData.weekly_goal_target - threshold);
+  } else if (isWeeklyAnchor) {
+    // For weekly anchors, we check if ANY remaining session meets the minimum duration.
+    const minDuration = userHabitData.weekly_session_min_duration || 10;
+    
+    const remainingSessionsToday = (completedTodayAfterUnlog || [])
+      .filter((t: any) => t.original_source === task.original_source && t.duration_used && (t.duration_used / 60) >= minDuration);
+      
+    // If there is at least one remaining session that meets the minimum, the goal is still considered met for plateau logic.
+    isGoalMetAfterUnlog = remainingSessionsToday.length > 0;
+    totalDailyProgressAfterUnlog = remainingSessionsToday.length > 0 ? remainingSessionsToday[0].duration_used / 60 : 0; // Arbitrarily use first remaining session's duration for progress tracking if needed
+  } else {
+    // Standard Daily Habit Logic
+    let totalDailySeconds = 0;
+    let totalDailyUnits = 0;
+
+    (completedTodayAfterUnlog || []).filter((t: any) => t.original_source === task.original_source).forEach((t: any) => {
+      if (userHabitData.measurement_type === 'timer') {
+        totalDailySeconds += (t.duration_used || 0);
+      } else if (userHabitData.measurement_type === 'unit' || userHabitData.measurement_type === 'binary') {
+        totalDailyUnits += (t.xp_earned || 0) / xpPerUnit;
+      } else {
+        totalDailyUnits += 1;
+      }
+    });
+
+    totalDailyProgressAfterUnlog = userHabitData.measurement_type === 'timer' 
+      ? totalDailySeconds / 60 
+      : totalDailyUnits;
+
+    const threshold = userHabitData.measurement_type === 'timer' ? 0.1 : 0.01;
+    isGoalMetAfterUnlog = totalDailyProgressAfterUnlog >= (userHabitData.current_daily_goal - threshold);
+  }
+
+  // Carryover Logic (Only applies to non-binary, non-fixed, non-weekly-goal habits)
+  if (userHabitData.measurement_type !== 'binary' && !userHabitData.is_fixed && !isWeeklyGoal) {
+    const surplusAfterUnlog = totalDailyProgressAfterUnlog - userHabitData.current_daily_goal;
+    const newCarryoverValueAfterUnlog = Math.max(0, surplusAfterUnlog);
+    await supabase.from('user_habits').update({
+      carryover_value: newCarryoverValueAfterUnlog,
+    }).eq('id', userHabitData.id);
+  }
+
+  // Plateau/Growth Logic: Decrement completions if goal is no longer met today
+  if (!isGoalMetAfterUnlog && userHabitData.completions_in_plateau > 0) {
+    await supabase.from('user_habits').update({
+      completions_in_plateau: Math.round(userHabitData.completions_in_plateau - 1),
+    }).eq('id', userHabitData.id);
+  }
+  // --- END: Re-evaluate completion status after unlog ---
+
+  return { success: true };
+};
+
+export const useHabitLog = () => {
+  const { session } = useSession();
+  const queryClient = useQueryClient();
+
+  const logMutation = useMutation({
+    mutationFn: (params: LogHabitParams) => {
+      if (!session?.user?.id) throw new Error('User not authenticated');
+      return logHabit({ ...params, userId: session.user.id });
+    },
+    onSuccess: async (data) => { // Added async here
+      showSuccess(`${data.taskName} completed! +${data.xpEarned} XP`);
+      await queryClient.refetchQueries({ queryKey: ['dashboardData', session?.user?.id] }); // Explicit refetch
+      queryClient.invalidateQueries({ queryKey: ['journeyData', session?.user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['dailyHabitCompletion', session?.user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['habitHeatmapData', session?.user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['habitCapsules', session?.user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['completedTasks', session?.user?.id] }); // Invalidate completedTasks
+      return data.completedTaskId;
+    },
+    onError: (error) => {
+      showError(`Failed: ${error.message}`);
+    },
+  });
+
+  const unlogMutation = useMutation({
+    mutationFn: (params: { completedTaskId: string }) => {
+      if (!session?.user?.id) throw new Error('User not authenticated');
+      return unlogHabit({ ...params, userId: session.user.id });
+    },
+    onSuccess: async () => { // Added async here
+      showSuccess('Task uncompleted.');
+      await queryClient.refetchQueries({ queryKey: ['dashboardData', session?.user?.id] }); // Explicit refetch
+      queryClient.invalidateQueries({ queryKey: ['journeyData', session?.user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['dailyHabitCompletion', session?.user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['habitHeatmapData', session?.user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['habitCapsules', session?.user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['completedTasks', session?.user?.id] }); // Invalidate completedTasks
+    },
+    onError: (error) => {
+      showError(`Failed to uncomplete: ${error.message}`);
+    },
+  });
+
+  return {
+    mutate: logMutation.mutateAsync,
+    isPending: logMutation.isPending,
+    unlog: unlogMutation.mutate,
+    isUnlogging: unlogMutation.isPending,
+  };
 };

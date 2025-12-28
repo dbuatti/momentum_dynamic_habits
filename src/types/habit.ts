@@ -68,6 +68,12 @@ export interface UserHabitRecord {
   
   // New Weekly Anchor Field
   weekly_session_min_duration: number;
+
+  // NEW: Weekly Goal Support
+  weekly_goal_enabled: boolean;
+  weekly_goal_target: number; // e.g., 70 minutes per week
+  weekly_goal_unit: string; // e.g., "min"
+  weekly_progress: number; // Calculated field for current week
 }
 
 export interface ProcessedUserHabit extends UserHabitRecord {
