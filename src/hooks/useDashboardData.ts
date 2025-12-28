@@ -84,7 +84,12 @@ const fetchDashboardData = async (userId: string) => {
     }
 
     const capsuleTaskMapping = dailyCapsuleTasksMap.get(h.habit_key) || {};
-    const baseAdjustedDailyGoal = h.current_daily_goal + (h.carryover_value || 0);
+    
+    // NEW: Calculate adjusted daily goal including carryover
+    // Only apply carryover for non-binary, non-fixed habits
+    const carryover = (h.measurement_type !== 'binary' && !h.is_fixed) ? (h.carryover_value || 0) : 0;
+    const baseAdjustedDailyGoal = h.current_daily_goal + carryover;
+
     const activeDays = (h.days_of_week || []).map((d: any) => Number(d));
     const isScheduledForToday = activeDays.includes(currentDayOfWeek);
 
@@ -94,7 +99,7 @@ const fetchDashboardData = async (userId: string) => {
       try {
         const start = parse(h.window_start, 'HH:mm', now);
         const end = parse(h.window_end, 'HH:mm', now);
-        isWithinWindow = isWithinInterval(now, { start, end });
+        isWithinInterval(now, { start, end });
       } catch (e) {
         console.error("Window parsing error", e);
       }

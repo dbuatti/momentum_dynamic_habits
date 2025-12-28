@@ -149,12 +149,19 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
     isGoalMetAfterLog = totalDailyProgressAfterLog >= (userHabitData.current_daily_goal - threshold);
   }
 
-  if (userHabitData.measurement_type !== 'binary' && !userHabitData.is_fixed) {
+  // NEW: Carryover Logic
+  // Only apply carryover for non-binary, non-fixed habits when complete_on_finish is false
+  if (userHabitData.measurement_type !== 'binary' && !userHabitData.is_fixed && !userHabitData.complete_on_finish) {
     const surplus = totalDailyProgressAfterLog - userHabitData.current_daily_goal;
     const newCarryoverValue = Math.max(0, surplus);
 
     await supabase.from('user_habits').update({
       carryover_value: newCarryoverValue,
+    }).eq('id', userHabitData.id);
+  } else if (userHabitData.complete_on_finish) {
+    // If complete_on_finish is true, any surplus is consumed by the goal, so reset carryover
+    await supabase.from('user_habits').update({
+      carryover_value: 0,
     }).eq('id', userHabitData.id);
   }
 
