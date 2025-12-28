@@ -55,6 +55,7 @@ async function resetUserProgress(supabaseAdmin: SupabaseClient, userId: string) 
       enable_aethersink_backup: true,
       is_in_regen_pod: false,
       regen_pod_start_time: null,
+      day_rollover_hour: 0, // Added
     })
     .eq('id', userId);
   if (profileError) throw profileError;

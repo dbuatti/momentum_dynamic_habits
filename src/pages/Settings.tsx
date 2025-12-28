@@ -55,6 +55,7 @@ const Settings = () => {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [timezone, setTimezone] = useState('UTC');
+  const [dayRolloverHour, setDayRolloverHour] = useState(0); // New state for day rollover
 
   const habits = useMemo(() => data?.habits || [], [data]);
   const profile = useMemo(() => data?.profile, [data]);
@@ -65,7 +66,10 @@ const Settings = () => {
       setLastName(profile.last_name || '');
       setTimezone(profile.timezone || 'UTC');
     }
-  }, [profile]);
+    if (dashboardData) { // Use dashboardData for dayRolloverHour as it's fetched there
+      setDayRolloverHour(dashboardData.dayRolloverHour || 0);
+    }
+  }, [profile, dashboardData]);
 
   const enableSound = (dashboardData as any)?.enable_sound ?? true;
   const enableHaptics = (dashboardData as any)?.enable_haptics ?? true;
@@ -80,7 +84,8 @@ const Settings = () => {
     updateProfile({
       first_name: firstName,
       last_name: lastName,
-      timezone: timezone
+      timezone: timezone,
+      day_rollover_hour: dayRolloverHour, // Include dayRolloverHour
     });
   };
 
@@ -102,7 +107,7 @@ const Settings = () => {
     } else {
       newDays = [...currentDays, dayIndex].sort();
     }
-    updateHabitField(habitId, { days_of_week: newDays });
+    onUpdateHabitField(habit.id, { days_of_week: newDays });
   };
 
   return (
@@ -172,6 +177,32 @@ const Settings = () => {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            {/* Day Rollover Setting */}
+            <div className="space-y-2">
+              <Label htmlFor="dayRollover" className="text-xs font-bold">Day Rollover Hour</Label>
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-muted-foreground" />
+                <Select 
+                  value={String(dayRolloverHour)} 
+                  onValueChange={(val) => setDayRolloverHour(Number(val))}
+                >
+                  <SelectTrigger id="dayRollover" className="w-24 h-11 rounded-xl font-bold text-center">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 24 }, (_, i) => i).map(hour => (
+                      <SelectItem key={hour} value={String(hour)}>
+                        {hour.toString().padStart(2, '0')}:00
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-1">
+                This is when your "new day" begins. Tasks completed before this hour will count towards the previous day.
+              </p>
             </div>
 
             <Button 
@@ -269,7 +300,7 @@ const Settings = () => {
               </div>
               <Switch 
                 checked={profile?.neurodivergent_mode} 
-                onCheckedChange={(val) => updateProfile({ neurodivergent_mode: val })} 
+                onCheckedChange={(val) => updateProfile({ neurodiverdivergent_mode: val })} 
               />
             </div>
           </CardContent>
