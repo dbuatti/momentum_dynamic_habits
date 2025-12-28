@@ -12,7 +12,7 @@ import {
   Anchor, Target, Sparkles, ShieldCheck, Calendar, 
   Clock, Dumbbell, Wind, BookOpen, Music, 
   Home, Code, Pill, Timer, BarChart3, Layers, Zap, Info, Eye, EyeOff, Link as LinkIcon, FlaskConical,
-  Trash2, ChevronDown, ChevronUp, CheckCircle2, ListOrdered
+  Trash2, ChevronDown, ChevronUp, CheckCircle2, ListOrdered, ListChecks, CalendarDays
 } from 'lucide-react';
 import { UserHabitRecord, MeasurementType, ChunkingMode } from '@/types/habit';
 import { useUpdateHabitVisibility } from '@/hooks/useUpdateHabitVisibility';
@@ -55,7 +55,7 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
   const { mutate: deleteHabit, isPending: isDeletingHabit } = useDeleteHabit();
 
   const [editedHabitName, setEditedHabitName] = useState(habit.name || habit.habit_key.replace(/_/g, ' '));
-  const [minDuration, setMinDuration] = useState(habit.weekly_session_min_duration || 10); // New state
+  const [minDuration, setMinDuration] = useState(habit.weekly_session_min_duration || 10);
 
   useEffect(() => {
     setEditedHabitName(habit.name || habit.habit_key.replace(/_/g, ' '));
@@ -89,7 +89,6 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
     }
   };
 
-  // Preview the calculated chunks
   const chunkPreview = useMemo(() => {
     return calculateDynamicChunks(
       habit.habit_key,
@@ -154,6 +153,11 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
                    • {chunkPreview.numChunks} {chunkPreview.numChunks === 1 ? 'Part' : 'Parts'}
                  </span>
+                 {habit.is_weekly_goal && (
+                   <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full border bg-primary/10 text-primary border-primary/20">
+                     Weekly
+                   </span>
+                 )}
               </div>
             </div>
           </div>
@@ -197,6 +201,40 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
                </div>
             </div>
             
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 rounded-2xl bg-primary/5 border border-primary/10">
+                <div className="flex gap-4">
+                  <div className="bg-primary/20 p-2 rounded-xl">
+                    <CalendarDays className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-black uppercase">Weekly Objective</p>
+                    <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">Show as a weekly goal until finished.</p>
+                  </div>
+                </div>
+                <Switch 
+                  checked={habit.is_weekly_goal} 
+                  onCheckedChange={(val) => onUpdateHabitField(habit.id, { is_weekly_goal: val })} 
+                />
+              </div>
+
+              <div className="flex items-center justify-between p-4 rounded-2xl bg-primary/5 border border-primary/10">
+                <div className="flex gap-4">
+                  <div className="bg-primary/20 p-2 rounded-xl">
+                    <ListChecks className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-black uppercase">Complete on finish</p>
+                    <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">Finish marked as 100% completion.</p>
+                  </div>
+                </div>
+                <Switch 
+                  checked={habit.complete_on_finish} 
+                  onCheckedChange={(val) => onUpdateHabitField(habit.id, { complete_on_finish: val })} 
+                />
+              </div>
+            </div>
+
             {isWeeklyAnchor && habit.unit === 'min' && (
               <div className="space-y-2 bg-info-background/50 p-4 rounded-2xl border border-info-border/50">
                 <Label className="text-[10px] font-black uppercase opacity-60 ml-1 flex items-center gap-1">

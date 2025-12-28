@@ -16,7 +16,7 @@ interface HabitCapsuleProps {
   habitKey: string;
   habitName: string;
   label: string;
-  value: number;
+  value: number; // This is the goal/chunk value in units (min, reps, etc)
   unit: string;
   measurementType: MeasurementType;
   isCompleted: boolean;
@@ -29,6 +29,7 @@ interface HabitCapsuleProps {
   onUncomplete: (completedTaskId: string) => void;
   color: 'orange' | 'blue' | 'green' | 'purple' | 'red' | 'indigo';
   showMood?: boolean;
+  completeOnFinish?: boolean; // NEW PROP
 }
 
 export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
@@ -48,6 +49,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   onUncomplete,
   color,
   showMood,
+  completeOnFinish = true, // Default to true
 }) => {
   const [showMoodPicker, setShowMoodPicker] = useState(false);
   const [isTiming, setIsTiming] = useState(false);
@@ -191,10 +193,14 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     let totalSessionValue = 0;
 
     if (measurementType === 'timer') {
-      // CRITICAL FIX: For timer habits, always log the full goal value (value is in minutes)
-      totalSessionValue = value;
+      // NEW LOGIC: Use completeOnFinish toggle
+      if (completeOnFinish) {
+        totalSessionValue = value;
+      } else {
+        const elapsedSeconds = Math.round(value * 60) - timeLeft;
+        totalSessionValue = Number((elapsedSeconds / 60).toFixed(2));
+      }
     } else {
-      // For other types, log the elapsed/manual value (shouldn't happen here, but for safety)
       const elapsedSeconds = Math.round(value * 60) - timeLeft;
       totalSessionValue = Number((elapsedSeconds / 60).toFixed(2));
     }
@@ -205,8 +211,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     }
     triggerFeedback('completion');
     
-    // Trigger confetti if goal was met (or committed to)
-    if (measurementType === 'timer') {
+    if (measurementType === 'timer' && (completeOnFinish || timeLeft === 0)) {
       confetti({
         particleCount: 100,
         spread: 70,
@@ -230,7 +235,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     const elapsedSeconds = Math.round(value * 60) - timeLeft;
     const elapsedMinutes = Number((elapsedSeconds / 60).toFixed(2));
 
-    // Only log partial progress if it's a timer and elapsed time is significant (> 2 seconds)
     if (measurementType === 'timer' && elapsedSeconds > 2) {
       onLogProgress(elapsedMinutes, false);
       setShowSavedFeedback(true);
@@ -255,7 +259,10 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
       return;
     }
     triggerFeedback('completion');
-    onLogProgress(manualValue, true, mood);
+    
+    // Manual entry usually logs exactly what is entered, but we can treat 'Complete' as full goal if requested
+    const logValue = completeOnFinish ? value : manualValue;
+    onLogProgress(logValue, true, mood);
     setShowMoodPicker(false);
   };
 
@@ -508,7 +515,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
           )}
         </div>
 
-        {/* Mood Picker Overlay */}
         <AnimatePresence>
           {showMoodPicker && (
             <motion.div

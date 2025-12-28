@@ -68,6 +68,10 @@ export interface UserHabitRecord {
   
   // New Weekly Anchor Field
   weekly_session_min_duration: number;
+
+  // NEW: Behavior settings
+  complete_on_finish: boolean;
+  is_weekly_goal: boolean;
 }
 
 export interface ProcessedUserHabit extends UserHabitRecord {

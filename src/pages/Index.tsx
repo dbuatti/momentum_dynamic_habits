@@ -6,7 +6,7 @@ import {
   CheckCircle2, Target, Anchor, Zap, 
   Layers, PlusCircle, Lock,
   AlertCircle, Sparkles, TrendingUp, Clock, Play,
-  Check, CalendarDays
+  Check, CalendarDays, CalendarCheck
 } from "lucide-react";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { DashboardSkeleton } from "@/components/dashboard/DashboardSkeleton";
@@ -85,7 +85,8 @@ const Index = () => {
           isCompleted,
           isHabitComplete: isOverallComplete,
           isFixed: habit.is_fixed,
-          completedTaskId: taskId, 
+          completedTaskId: taskId,
+          completeOnFinish: (habit as any).complete_on_finish ?? true,
         };
       });
 
@@ -129,11 +130,13 @@ const Index = () => {
   }, [habitGroups]);
 
   const visibleHabitsForDisplay = useMemo(() => {
-    return habitGroups.filter(h => h.is_visible && (h.isScheduledForToday || h.category === 'anchor'));
+    return habitGroups.filter(h => h.is_visible && (h.isScheduledForToday || h.category === 'anchor' || (h as any).is_weekly_goal));
   }, [habitGroups]);
 
+  // Grouping Logic
   const anchorHabits = useMemo(() => visibleHabitsForDisplay.filter(h => h.category === 'anchor'), [visibleHabitsForDisplay]);
-  const dailyHabits = useMemo(() => visibleHabitsForDisplay.filter(h => h.category !== 'anchor'), [visibleHabitsForDisplay]);
+  const weeklyHabits = useMemo(() => visibleHabitsForDisplay.filter(h => (h as any).is_weekly_goal && h.category !== 'anchor'), [visibleHabitsForDisplay]);
+  const dailyHabits = useMemo(() => visibleHabitsForDisplay.filter(h => !(h as any).is_weekly_goal && h.category !== 'anchor'), [visibleHabitsForDisplay]);
 
   useEffect(() => {
     if (habitGroups.length === 0 || hasInitializedState) return;
@@ -290,7 +293,12 @@ const Index = () => {
                   )}>
                     {habit.allCompleted ? "Goal Reached" : (habit.isWithinWindow ? "Ready Now" : "Restricted")}
                   </span>
-                  {!habit.isScheduledForToday && !habit.allCompleted && (
+                  {habit.is_weekly_goal && (
+                    <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border-primary/20 border flex items-center gap-1">
+                      <CalendarCheck className="w-3 h-3" /> Weekly Goal
+                    </span>
+                  )}
+                  {!habit.isScheduledForToday && !habit.allCompleted && !habit.is_weekly_goal && (
                     <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-muted/50 text-muted-foreground border-transparent border flex items-center gap-1">
                       <CalendarDays className="w-3 h-3" /> Extra Session
                     </span>
@@ -475,6 +483,20 @@ const Index = () => {
             )}
           </div>
 
+          {/* NEW: Weekly Objectives Section */}
+          {weeklyHabits.length > 0 && (
+            <div className="space-y-4">
+              <div className="sticky top-[60px] z-20 bg-background/95 backdrop-blur-sm py-3 flex items-center gap-3 border-b border-border">
+                <CalendarCheck className="w-5 h-5 text-indigo-500" />
+                <h2 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Weekly Objectives</h2>
+                <div className="ml-auto h-px flex-grow bg-border" />
+              </div>
+              <Accordion type="multiple" value={expandedItems} onValueChange={handleExpandedChange} className="space-y-4">
+                {weeklyHabits.map(renderHabitItem)}
+              </Accordion>
+            </div>
+          )}
+
           <div className="space-y-4">
             <div className="sticky top-[60px] z-20 bg-background/95 backdrop-blur-sm py-3 flex items-center gap-3 border-b border-border">
               <Zap className="w-5 h-5 text-warning" />
@@ -486,7 +508,7 @@ const Index = () => {
               <Accordion type="multiple" value={expandedItems} onValueChange={handleExpandedChange} className="space-y-4">
                 {dailyHabits.map(renderHabitItem)}
               </Accordion>
-            ) : !anchorHabits.length ? (
+            ) : !anchorHabits.length && !weeklyHabits.length ? (
               <div className="bg-card border-2 border-primary/20 rounded-[2rem] p-10 text-center space-y-6 shadow-xl">
                 <div className="w-20 h-20 bg-primary/10 rounded-[2rem] flex items-center justify-center mx-auto"><PlusCircle className="w-10 h-10 text-primary" /></div>
                 <div className="space-y-2">
@@ -498,7 +520,7 @@ const Index = () => {
                   <Link to="/templates"><Button variant="outline" size="lg" className="w-full h-14 rounded-2xl font-black text-base border-2">Explore Templates</Button></Link>
                 </div>
               </div>
-            ) : (
+            ) : dailyHabits.length === 0 && (
               <div className="p-6 bg-muted/20 border-2 border-dashed border-border rounded-3xl text-center">
                 <p className="text-sm font-bold text-muted-foreground">No additional daily habits scheduled today.</p>
               </div>

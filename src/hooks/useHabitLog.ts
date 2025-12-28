@@ -2,7 +2,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useSession } from '@/contexts/SessionContext'; // Added missing import
+import { useSession } from '@/contexts/SessionContext';
 import { showSuccess, showError } from '@/utils/toast';
 import { calculateLevel } from '@/utils/leveling';
 import { isSameDay, subDays, format, startOfDay, endOfDay } from 'date-fns';
@@ -17,7 +17,6 @@ interface LogHabitParams {
   capsuleIndex?: number;
 }
 
-// Helper function to check if a habit was completed on a specific day
 const checkHabitCompletionOnDay = async (userId: string, habitKey: string, date: Date, userHabitData: UserHabitRecord, timezone: string): Promise<boolean> => {
   const { data: completedTasksOnDay, error } = await supabase
     .from('completedtasks')
@@ -53,10 +52,9 @@ const checkHabitCompletionOnDay = async (userId: string, habitKey: string, date:
 
 
 const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, note, capsuleIndex }: LogHabitParams & { userId: string }) => {
-  // Fetch user_habit data to get dynamic properties
   const { data: userHabitDataResult, error: userHabitFetchError } = await supabase
     .from('user_habits')
-    .select('*') // Select all fields to match UserHabitRecord
+    .select('*')
     .eq('user_id', userId)
     .eq('habit_key', habitKey)
     .single();
@@ -75,12 +73,14 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
   if (profileFetchError) throw profileFetchError;
   const timezone = profileData.timezone || 'UTC';
   
-  let xpBaseValue = value; 
-  let lifetimeProgressIncrementValue = value; 
+  // NEW: Logic for complete_on_finish
+  // If complete_on_finish is true, we always credit the target 'value' (usually the capsule size or goal).
+  // If false, we credit the 'value' passed (which is the actual elapsed duration/reps).
+  const xpBaseValue = value; 
+  let lifetimeProgressIncrementValue;
   let durationUsedForDB = null; 
 
   if (userHabitData.measurement_type === 'timer') {
-    // Value is minutes, store as seconds
     durationUsedForDB = Math.round(value * 60); 
     lifetimeProgressIncrementValue = Math.round(value * 60); 
   } else {
@@ -113,8 +113,6 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
     p_user_id: userId, p_habit_key: habitKey, p_increment_value: Math.round(lifetimeProgressIncrementValue),
   });
 
-  // --- START: Daily/Weekly Completion Logic Update ---
-
   const isWeeklyAnchor = userHabitData.category === 'anchor' && userHabitData.frequency_per_week === 1;
   let isGoalMetAfterLog = false;
   let totalDailyProgressAfterLog = 0;
@@ -126,7 +124,6 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
       totalDailyProgressAfterLog = value; 
     }
   } else {
-    // Standard Daily Habit Logic (Time/Unit/Binary)
     const { data: completedTodayAfterLog } = await supabase.rpc('get_completed_tasks_today', { 
       p_user_id: userId, p_timezone: timezone 
     });
@@ -152,7 +149,6 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
     isGoalMetAfterLog = totalDailyProgressAfterLog >= (userHabitData.current_daily_goal - threshold);
   }
 
-  // Carryover Logic (Only applies to non-binary, non-fixed habits)
   if (userHabitData.measurement_type !== 'binary' && !userHabitData.is_fixed) {
     const surplus = totalDailyProgressAfterLog - userHabitData.current_daily_goal;
     const newCarryoverValue = Math.max(0, surplus);
@@ -162,7 +158,6 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
     }).eq('id', userHabitData.id);
   }
 
-  // Plateau/Growth Logic (Only update if goal was met today)
   let newIsTrialMode = userHabitData.is_trial_mode;
   let newCompletionsInPlateau = userHabitData.completions_in_plateau;
   let newLastPlateauStartDate = userHabitData.last_plateau_start_date;
@@ -174,7 +169,6 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
     const todayDate = new Date();
     const todayDateString = format(todayDate, 'yyyy-MM-dd'); 
 
-    // Check if a valid session for this habit was already logged TODAY (for plateau purposes)
     const { data: existingCompletionsToday } = await supabase
       .from('completedtasks')
       .select('id')
@@ -183,11 +177,10 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
       .gte('completed_at', startOfDay(todayDate).toISOString())
       .lte('completed_at', endOfDay(todayDate).toISOString());
 
-    // Filter out the *current* inserted task to check if any *previous* task today met the criteria
     const previousValidSessionsToday = (existingCompletionsToday || []).filter(task => task.id !== insertedTask.id);
     const alreadyCountedForPlateauToday = previousValidSessionsToday.length > 0;
 
-    if (!alreadyCountedForPlateauToday) { // Only increment plateau if this is the first valid session today
+    if (!alreadyCountedForPlateauToday) { 
       const plateauRequired = userHabitData.plateau_days_required; 
       const lastPlateauDate = new Date(userHabitData.last_plateau_start_date);
       const isNewDayForPlateau = !isSameDay(todayDate, lastPlateauDate);
@@ -199,7 +192,7 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
         if (isSameDay(lastPlateauDate, yesterday) && wasCompletedYesterday) {
           newCompletionsInPlateau = userHabitData.completions_in_plateau + 1;
         } else {
-          newCompletionsInPlateau = 1; // Reset streak if not consecutive
+          newCompletionsInPlateau = 1; 
         }
         newLastPlateauStartDate = todayDateString;
       }
@@ -255,7 +248,6 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
       }
     }
   }
-  // --- END: Daily/Weekly Completion Logic Update ---
 
   const newXp = (profileData.xp || 0) + xpEarned;
   await supabase.from('profiles').update({
@@ -286,7 +278,6 @@ const unlogHabit = async ({ userId, completedTaskId }: { userId: string, complet
 
   const timezone = profileData?.timezone || 'UTC';
 
-  // Fetch full habit record for unlog logic
   const { data: userHabitDataResult } = await supabase
     .from('user_habits')
     .select('*')
@@ -320,8 +311,6 @@ const unlogHabit = async ({ userId, completedTaskId }: { userId: string, complet
 
   await supabase.from('completedtasks').delete().eq('id', completedTaskId);
 
-  // --- START: Re-evaluate completion status after unlog ---
-  
   const isWeeklyAnchor = userHabitData.category === 'anchor' && userHabitData.frequency_per_week === 1;
   
   const { data: completedTodayAfterUnlog } = await supabase.rpc('get_completed_tasks_today', { 
@@ -332,17 +321,14 @@ const unlogHabit = async ({ userId, completedTaskId }: { userId: string, complet
   let isGoalMetAfterUnlog = false;
 
   if (isWeeklyAnchor && userHabitData.measurement_type === 'timer') {
-    // For weekly anchors, we check if ANY remaining session meets the minimum duration.
     const minDuration = userHabitData.weekly_session_min_duration || 10;
     
     const remainingSessionsToday = (completedTodayAfterUnlog || [])
       .filter((t: any) => t.original_source === task.original_source && t.duration_used && (t.duration_used / 60) >= minDuration);
       
-    // If there is at least one remaining session that meets the minimum, the goal is still considered met for plateau logic.
     isGoalMetAfterUnlog = remainingSessionsToday.length > 0;
-    totalDailyProgressAfterUnlog = remainingSessionsToday.length > 0 ? remainingSessionsToday[0].duration_used / 60 : 0; // Arbitrarily use first remaining session's duration for progress tracking if needed
+    totalDailyProgressAfterUnlog = remainingSessionsToday.length > 0 ? remainingSessionsToday[0].duration_used / 60 : 0; 
   } else {
-    // Standard Daily Habit Logic
     let totalDailySeconds = 0;
     let totalDailyUnits = 0;
 
@@ -350,7 +336,7 @@ const unlogHabit = async ({ userId, completedTaskId }: { userId: string, complet
       if (userHabitData.measurement_type === 'timer') {
         totalDailySeconds += (t.duration_used || 0);
       } else if (userHabitData.measurement_type === 'unit' || userHabitData.measurement_type === 'binary') {
-        totalDailyUnits += (t.xp_earned || 0) / xpPerUnit;
+        totalDailyUnits += (task.xp_earned || 0) / xpPerUnit;
       } else {
         totalDailyUnits += 1;
       }
@@ -364,7 +350,6 @@ const unlogHabit = async ({ userId, completedTaskId }: { userId: string, complet
     isGoalMetAfterUnlog = totalDailyProgressAfterUnlog >= (userHabitData.current_daily_goal - threshold);
   }
 
-  // Carryover Logic (Only applies to non-binary, non-fixed habits)
   if (userHabitData.measurement_type !== 'binary' && !userHabitData.is_fixed) {
     const surplusAfterUnlog = totalDailyProgressAfterUnlog - userHabitData.current_daily_goal;
     const newCarryoverValueAfterUnlog = Math.max(0, surplusAfterUnlog);
@@ -373,7 +358,6 @@ const unlogHabit = async ({ userId, completedTaskId }: { userId: string, complet
     }).eq('id', userHabitData.id);
   }
 
-  // Plateau/Growth Logic: Decrement completions if goal is no longer met today
   const todayDate = new Date();
   const wasCompletedTodayBeforeUnlog = await checkHabitCompletionOnDay(userId, task.original_source, todayDate, userHabitData, timezone);
 
@@ -382,13 +366,12 @@ const unlogHabit = async ({ userId, completedTaskId }: { userId: string, complet
       completions_in_plateau: Math.round(userHabitData.completions_in_plateau - 1),
     }).eq('id', userHabitData.id);
   }
-  // --- END: Re-evaluate completion status after unlog ---
 
   return { success: true };
 };
 
 export const useHabitLog = () => {
-  const { session } = useSession(); // Fixed: useSession is now imported
+  const { session } = useSession();
   const queryClient = useQueryClient();
 
   const logMutation = useMutation({
