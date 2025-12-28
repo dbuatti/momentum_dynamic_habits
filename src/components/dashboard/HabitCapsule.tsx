@@ -16,7 +16,7 @@ interface HabitCapsuleProps {
   habitKey: string;
   habitName: string;
   label: string;
-  value: number; // This is the goal/chunk value in units (min, reps, etc)
+  value: number; // This is the goal/chunk value in units (min, reps, etc), now including carryover for the first chunk
   unit: string;
   measurementType: MeasurementType;
   isCompleted: boolean;

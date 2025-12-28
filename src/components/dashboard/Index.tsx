@@ -74,12 +74,19 @@ const Index = () => {
         const isCompleted = progress >= (targetValue - threshold);
         const taskId = capsuleMapping[i] || null;
 
+        // Calculate the effective value for this capsule, considering carryover
+        // If there's carryover, the first chunk's value is effectively larger
+        let effectiveValue = chunkValue;
+        if (i === 0 && habit.carryoverValue > 0) {
+          effectiveValue = chunkValue + habit.carryoverValue;
+        }
+
         return {
           id: `${habit.key}-${i}`,
           habitKey: habit.key,
           index: i,
           label: habit.auto_chunking ? `Part ${i + 1}` : (habit.enable_chunks ? `Part ${i + 1}` : (habit.is_trial_mode ? 'Trial Session' : 'Daily Goal')),
-          value: chunkValue,
+          value: effectiveValue, // Use the effective value
           unit: habit.unit,
           measurementType: habit.measurement_type,
           isCompleted,
