@@ -83,8 +83,8 @@ const Index = () => {
         let initialRemainingTimeSeconds = Math.round(effectiveValue * 60); // Default to full chunk duration
         
         // If this capsule is not yet completed, but there's some progress within it
-        if (!isCompleted && habit.displayProgress > cumulativeProgressBeforeThisCapsule) {
-          const progressWithinThisCapsuleMinutes = habit.displayProgress - cumulativeProgressBeforeThisCapsule;
+        if (!isCompleted && progress > cumulativeProgressBeforeThisCapsule) {
+          const progressWithinThisCapsuleMinutes = progress - cumulativeProgressBeforeThisCapsule;
           const remainingMinutes = effectiveValue - progressWithinThisCapsuleMinutes;
           initialRemainingTimeSeconds = Math.round(Math.max(0, remainingMinutes * 60));
         }
