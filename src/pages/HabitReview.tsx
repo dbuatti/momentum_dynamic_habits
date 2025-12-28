@@ -20,14 +20,14 @@ import {
   AlertDialogTrigger,
   AlertDialogContent,
 } from "@/components/ui/alert-dialog";
-import { CreateHabitParams } from './HabitWizard'; // Import CreateHabitParams
+import { CreateHabitParams } from './HabitWizard';
 
 interface HabitReviewStepProps {
   wizardData: Partial<WizardHabitData>;
-  onEditDetails: (data: Partial<CreateHabitParams>) => void; // Changed to accept data
+  onEditDetails: (data: Partial<CreateHabitParams>) => void;
   onSaveAndFinishLater: () => Promise<void>;
   onCreateHabit: () => Promise<void>;
-  onDiscardDraft: () => Promise<void>; // New prop for hard delete
+  onDiscardDraft: (habitKey: string) => Promise<void>;
   isSaving: boolean;
   isCreating: boolean;
   isTemplateMode?: boolean;
@@ -38,7 +38,7 @@ export const HabitReviewStep: React.FC<HabitReviewStepProps> = ({
   onEditDetails,
   onSaveAndFinishLater,
   onCreateHabit,
-  onDiscardDraft, // Use new prop
+  onDiscardDraft,
   isSaving,
   isCreating,
   isTemplateMode = false,
@@ -55,7 +55,7 @@ export const HabitReviewStep: React.FC<HabitReviewStepProps> = ({
   const editableHabitData: Partial<CreateHabitParams> = useMemo(() => ({
     name: wizardData.name,
     habit_key: wizardData.habit_key,
-    category: wizardData.category as any, // Cast to any to match CreateHabitParams
+    category: wizardData.category as any,
     current_daily_goal: wizardData.daily_goal,
     frequency_per_week: wizardData.frequency_per_week,
     is_trial_mode: wizardData.is_trial_mode,
@@ -72,6 +72,7 @@ export const HabitReviewStep: React.FC<HabitReviewStepProps> = ({
     window_end: wizardData.window_end,
     carryover_enabled: wizardData.carryover_enabled,
     short_description: wizardData.short_description,
+    weekly_session_min_duration: wizardData.weekly_session_min_duration,
   }), [wizardData]);
 
   return (
@@ -125,7 +126,7 @@ export const HabitReviewStep: React.FC<HabitReviewStepProps> = ({
           Edit Details
         </Button>
 
-        {!isTemplateMode && ( // Only show Save & Finish Later for habit creation
+        {!isTemplateMode && (
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button
@@ -177,7 +178,7 @@ export const HabitReviewStep: React.FC<HabitReviewStepProps> = ({
             <AlertDialogFooter>
               <AlertDialogCancel className="rounded-xl">Keep Editing</AlertDialogCancel>
               <AlertDialogAction 
-                onClick={onDiscardDraft} // Use the new hard delete function
+                onClick={() => onDiscardDraft(wizardData.habit_key || '')}
                 className="rounded-xl bg-destructive hover:bg-destructive/90"
               >
                 Discard Draft

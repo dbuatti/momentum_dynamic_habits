@@ -78,7 +78,7 @@ export interface CreateHabitParams {
   short_description?: string;
   growth_type: GrowthType;
   growth_value: number;
-  weekly_session_min_duration: number; // New field
+  weekly_session_min_duration: number;
 }
 
 const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: string; habit: CreateHabitParams; neurodivergentMode: boolean }) => {
@@ -239,7 +239,7 @@ const HabitWizard = () => {
       icon_name: wizardData.icon_name || 'Target',
       short_description: wizardData.short_description || '',
       ...inferredParams,
-      weekly_session_min_duration: inferredParams.weekly_session_min_duration || 10, // Ensure this is set
+      weekly_session_min_duration: inferredParams.weekly_session_min_duration || 10,
     } as CreateHabitParams;
 
     if (isTemplateCreationMode) {
@@ -275,9 +275,8 @@ const HabitWizard = () => {
       setHasLoadedInitialProgress(true);
     } else if (!isLoadingWizardProgress && !hasLoadedInitialProgress) {
       if (aiGeneratedData) {
-        // AI-generated data takes precedence
         setWizardData(aiGeneratedData);
-        setCurrentStep(7); // Jump to review
+        setCurrentStep(7);
         setCurrentMicroStepIndex(0);
         showSuccess('AI-generated habit ready for review!');
       } else if (templateToPreFill) {
@@ -297,7 +296,7 @@ const HabitWizard = () => {
           energy_cost_per_unit: templateToPreFill.energyCostPerUnit,
           plateau_days_required: templateToPreFill.plateauDaysRequired,
           short_description: templateToPreFill.shortDescription,
-          weekly_session_min_duration: templateToPreFill.defaultDuration, // Set default min duration
+          weekly_session_min_duration: templateToPreFill.defaultDuration,
         });
       }
       setHasLoadedInitialProgress(true);
@@ -330,7 +329,6 @@ const HabitWizard = () => {
       }
 
       if (nextMacroStep > MACRO_STEPS[MACRO_STEPS.length - 1]) {
-        // If we hit the end, navigate to the review step (which is step 7)
         nextMacroStep = MACRO_STEPS[MACRO_STEPS.length - 1];
         nextMicroStepIdx = 0;
       }
@@ -374,7 +372,7 @@ const HabitWizard = () => {
 
   const handleResetProgress = useCallback(async () => {
     try {
-      await clearProgress(); // Use hard delete
+      await clearProgress();
       setWizardData({});
       setCurrentStep(1);
       setCurrentMicroStepIndex(0);
@@ -422,7 +420,6 @@ const HabitWizard = () => {
     if (currentStep > stepNumber) return true;
     if (currentStep < stepNumber) return false;
 
-    // Check if all micro-steps in the current macro step are completed/skipped
     const microSteps = MICRO_STEPS_MAP[stepNumber];
     if (!microSteps) return false;
 
@@ -574,7 +571,7 @@ const HabitWizard = () => {
           }}
           onSaveAndFinishLater={handleSaveAndFinishLater}
           onCreateHabit={handleSubmitFinal}
-          onDiscardDraft={() => handleDiscardDraft()} // Pass the hard delete function
+          onDiscardDraft={handleDiscardDraft}
           isSaving={isSaving}
           isCreating={createHabitMutation.isPending || createTemplateMutation.isPending}
           isTemplateMode={isTemplateCreationMode}
@@ -595,7 +592,7 @@ const HabitWizard = () => {
             variant="ghost" 
             size="icon" 
             className="absolute top-4 right-4 rounded-full text-muted-foreground hover:text-foreground"
-            onClick={() => setShowExitDialog(true)} // Use the exit dialog for top-right X
+            onClick={() => setShowExitDialog(true)}
           >
             <X className="w-5 h-5" />
           </Button>
@@ -688,7 +685,7 @@ const HabitWizard = () => {
             <Button
               variant="destructive"
               className="rounded-xl w-full sm:w-auto"
-              onClick={handleDiscardDraft} // Use hard delete function
+              onClick={handleDiscardDraft}
               disabled={isSaving}
             >
               Discard Draft

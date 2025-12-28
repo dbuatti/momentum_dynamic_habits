@@ -2,9 +2,10 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useSession } from '@/contexts/SessionContext';
 import { showSuccess, showError } from '@/utils/toast';
 import { calculateLevel } from '@/utils/leveling';
-import { isSameDay, subDays, format, startOfDay, endOfDay } from 'date-fns'; // Added format, startOfDay, endOfDay
+import { isSameDay, subDays, format, startOfDay, endOfDay } from 'date-fns';
 import { UserHabitRecord } from '@/types/habit';
 
 interface LogHabitParams {
@@ -13,7 +14,7 @@ interface LogHabitParams {
   taskName: string;
   difficultyRating?: number;
   note?: string;
-  capsuleIndex?: number; // New field for attribution
+  capsuleIndex?: number;
 }
 
 // Helper function to check if a habit was completed on a specific day
@@ -55,7 +56,7 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
   // Fetch user_habit data to get dynamic properties
   const { data: userHabitDataResult, error: userHabitFetchError } = await supabase
     .from('user_habits')
-    .select('*, weekly_session_min_duration') // Select new field
+    .select('*') // Select all fields to match UserHabitRecord
     .eq('user_id', userId)
     .eq('habit_key', habitKey)
     .single();
@@ -287,13 +288,13 @@ const unlogHabit = async ({ userId, completedTaskId }: { userId: string, complet
 
   const { data: userHabitDataResult } = await supabase
     .from('user_habits')
-    .select('id, unit, xp_per_unit, current_daily_goal, completions_in_plateau, last_plateau_start_date, carryover_value, measurement_type, weekly_session_min_duration, frequency_per_week, category, is_fixed') // ADDED is_fixed
+    .select('*') // Select all fields to match UserHabitRecord
     .eq('user_id', userId)
     .eq('habit_key', task.original_source)
     .single();
 
   if (!userHabitDataResult) throw new Error(`Habit data not found for key: ${task.original_source}`);
-  const userHabitData = userHabitDataResult;
+  const userHabitData: UserHabitRecord = userHabitDataResult;
   const xpPerUnit = userHabitData.xp_per_unit || (userHabitData.unit === 'min' ? 30 : 1);
 
   let lifetimeProgressDecrementValue;
@@ -394,14 +395,14 @@ export const useHabitLog = () => {
       if (!session?.user?.id) throw new Error('User not authenticated');
       return logHabit({ ...params, userId: session.user.id });
     },
-    onSuccess: async (data) => { // Added async here
+    onSuccess: async (data) => {
       showSuccess(`${data.taskName} completed! +${data.xpEarned} XP`);
-      await queryClient.refetchQueries({ queryKey: ['dashboardData', session?.user?.id] }); // Explicit refetch
+      await queryClient.refetchQueries({ queryKey: ['dashboardData', session?.user?.id] });
       queryClient.invalidateQueries({ queryKey: ['journeyData', session?.user?.id] });
       queryClient.invalidateQueries({ queryKey: ['dailyHabitCompletion', session?.user?.id] });
       queryClient.invalidateQueries({ queryKey: ['habitHeatmapData', session?.user?.id] });
       queryClient.invalidateQueries({ queryKey: ['habitCapsules', session?.user?.id] });
-      queryClient.invalidateQueries({ queryKey: ['completedTasks', session?.user?.id] }); // Invalidate completedTasks
+      queryClient.invalidateQueries({ queryKey: ['completedTasks', session?.user?.id] });
       return data.completedTaskId;
     },
     onError: (error) => {
@@ -414,14 +415,14 @@ export const useHabitLog = () => {
       if (!session?.user?.id) throw new Error('User not authenticated');
       return unlogHabit({ ...params, userId: session.user.id });
     },
-    onSuccess: async () => { // Added async here
+    onSuccess: async () => {
       showSuccess('Task uncompleted.');
-      await queryClient.refetchQueries({ queryKey: ['dashboardData', session?.user?.id] }); // Explicit refetch
+      await queryClient.refetchQueries({ queryKey: ['dashboardData', session?.user?.id] });
       queryClient.invalidateQueries({ queryKey: ['journeyData', session?.user?.id] });
       queryClient.invalidateQueries({ queryKey: ['dailyHabitCompletion', session?.user?.id] });
       queryClient.invalidateQueries({ queryKey: ['habitHeatmapData', session?.user?.id] });
       queryClient.invalidateQueries({ queryKey: ['habitCapsules', session?.user?.id] });
-      queryClient.invalidateQueries({ queryKey: ['completedTasks', session?.user?.id] }); // Invalidate completedTasks
+      queryClient.invalidateQueries({ queryKey: ['completedTasks', session?.user?.id] });
     },
     onError: (error) => {
       showError(`Failed to uncomplete: ${error.message}`);
