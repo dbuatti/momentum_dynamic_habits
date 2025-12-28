@@ -7,7 +7,7 @@ import { SegmentedControl } from '@/components/ui/segmented-control';
 import { WizardHabitData } from '@/hooks/useUserHabitWizardTemp';
 import { StructuredOverview } from '@/components/habits/wizard/review/StructuredOverview';
 import { NarrativeSummary } from '@/components/habits/wizard/review/NarrativeSummary';
-import { CheckCircle2, Edit2, Save, X, Target, ArrowLeft } from 'lucide-react';
+import { CheckCircle2, Edit2, Save, X, Target, ArrowLeft, Loader2 } from 'lucide-react';
 import { useJourneyData } from '@/hooks/useJourneyData';
 import {
   AlertDialog,

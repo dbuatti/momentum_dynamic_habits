@@ -25,13 +25,6 @@ import { useJourneyData } from '@/hooks/useJourneyData';
 import { useCreateTemplate, CreateTemplateParams } from '@/hooks/useCreateTemplate';
 import { CreateHabitParams } from '@/pages/HabitWizard';
 
-interface NewHabitModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  templateToPreFill?: HabitTemplate | null;
-  isTemplateMode?: boolean;
-}
-
 const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: string; habit: CreateHabitParams; neurodivergentMode: boolean }) => {
   const today = new Date();
   const oneYearFromNow = new Date(today.setFullYear(today.getFullYear() + 1));
@@ -43,7 +36,8 @@ const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: s
     chunking_mode, preferred_chunk_duration, preferred_chunk_count,
     unit, measurement_type, xp_per_unit, energy_cost_per_unit, icon_name, 
     dependent_on_habit_id, window_start, window_end, carryover_enabled,
-    growth_type, growth_value, weekly_session_min_duration
+    growth_type, growth_value, weekly_session_min_duration,
+    complete_on_finish, is_weekly_goal
   } = habit;
 
   let calculatedPlateauDays = habit.plateau_days_required;
@@ -106,6 +100,8 @@ const createNewHabit = async ({ userId, habit, neurodivergentMode }: { userId: s
     p_growth_type: growth_type,
     p_growth_value: growth_value,
     p_weekly_session_min_duration: Math.round(weekly_session_min_duration),
+    p_complete_on_finish: complete_on_finish,
+    p_is_weekly_goal: is_weekly_goal,
   });
 
   if (error) throw error;
@@ -141,6 +137,8 @@ export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, t
   const [growthType, setGrowthType] = useState<GrowthType>('percentage');
   const [growthValue, setGrowthValue] = useState(10);
   const [weeklySessionMinDuration, setWeeklySessionMinDuration] = useState(10);
+  const [completeOnFinish, setCompleteOnFinish] = useState(true);
+  const [isWeeklyGoal, setIsWeeklyGoal] = useState(false);
 
   useEffect(() => {
     if (templateToPreFill) {
@@ -160,7 +158,9 @@ export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, t
       setSelectedIconName(templateToPreFill.icon_name);
       setPlateauDaysRequired(templateToPreFill.plateauDaysRequired);
       setShortDescription(templateToPreFill.shortDescription || '');
-      setWeeklySessionMinDuration(templateToPreFill.defaultDuration); // Initialize new field
+      setWeeklySessionMinDuration(templateToPreFill.defaultDuration);
+      setCompleteOnFinish(true);
+      setIsWeeklyGoal(false);
       
       if (templateToPreFill.unit === 'min') {
         setGrowthType('percentage');
@@ -192,7 +192,9 @@ export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, t
       setShortDescription('');
       setGrowthType('percentage');
       setGrowthValue(10);
-      setWeeklySessionMinDuration(10); // Default for new habit
+      setWeeklySessionMinDuration(10);
+      setCompleteOnFinish(true);
+      setIsWeeklyGoal(false);
     }
   }, [templateToPreFill, isOpen, neurodivergentMode]);
 
@@ -258,7 +260,9 @@ export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, t
       short_description: shortDescription,
       growth_type: growthType,
       growth_value: growthValue,
-      weekly_session_min_duration: weeklySessionMinDuration, // ADDED
+      weekly_session_min_duration: weeklySessionMinDuration,
+      complete_on_finish: completeOnFinish,
+      is_weekly_goal: isWeeklyGoal,
     };
 
     if (isTemplateMode) {
