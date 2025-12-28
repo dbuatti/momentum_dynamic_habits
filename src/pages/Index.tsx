@@ -28,7 +28,7 @@ import { showError } from "@/utils/toast";
 import { habitIconMap, habitColorMap } from '@/lib/habit-utils';
 import { TrialGuidance } from "@/components/dashboard/TrialGuidance";
 import { WeeklyAnchorCard } from "@/components/dashboard/WeeklyAnchorCard";
-import { WeeklyObjectiveCard } from "@/components/dashboard/WeeklyObjectiveCard"; // Import new component
+import { WeeklyObjectiveCard } from "@/components/dashboard/WeeklyObjectiveCard";
 import { FixEmptyHabitKey } from "@/components/fixers/FixEmptyHabitKey";
 
 const Index = () => {
@@ -263,7 +263,6 @@ const Index = () => {
           habit={habit}
           isLocked={habit.isLockedByDependency}
           dependentHabitName={dependentHabitName}
-          onFocus={focusHabit}
         />
       );
     }
@@ -531,7 +530,6 @@ const Index = () => {
                       habit={habit}
                       isLocked={habit.isLockedByDependency}
                       dependentHabitName={dependentHabitName}
-                      onFocus={focusHabit}
                     />
                   );
                 })}
