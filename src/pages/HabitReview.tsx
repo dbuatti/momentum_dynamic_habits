@@ -7,7 +7,7 @@ import { SegmentedControl } from '@/components/ui/segmented-control';
 import { WizardHabitData } from '@/hooks/useUserHabitWizardTemp';
 import { StructuredOverview } from '@/components/habits/wizard/review/StructuredOverview';
 import { NarrativeSummary } from '@/components/habits/wizard/review/NarrativeSummary';
-import { CheckCircle2, Edit2, Save, X, Target } from 'lucide-react';
+import { CheckCircle2, Edit2, Save, X, Target, ArrowLeft } from 'lucide-react';
 import { useJourneyData } from '@/hooks/useJourneyData';
 import {
   AlertDialog,
@@ -51,7 +51,6 @@ export const HabitReviewStep: React.FC<HabitReviewStepProps> = ({
     return wizardData.name?.trim() && wizardData.habit_key?.trim() && wizardData.category;
   }, [wizardData]);
 
-  // Prepare data for the Edit Details modal
   const editableHabitData: Partial<CreateHabitParams> = useMemo(() => ({
     name: wizardData.name,
     habit_key: wizardData.habit_key,
@@ -76,80 +75,81 @@ export const HabitReviewStep: React.FC<HabitReviewStepProps> = ({
   }), [wizardData]);
 
   return (
-    <div className="space-y-6">
-      <div className="text-center">
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="text-center space-y-2">
         <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
           <Target className="w-8 h-8 text-primary" />
         </div>
-        <h2 className="text-2xl font-bold mb-2">{isTemplateMode ? 'Review Your Template' : 'Review Your Habit'}</h2>
-        <p className="text-muted-foreground">
-          Here's what we've created together. You can view it as structured data or as a story.
+        <h2 className="text-3xl font-black uppercase tracking-tight italic">Review Lab Results</h2>
+        <p className="text-muted-foreground font-medium">
+          Here's the design for your new practice. Review it as a story or data.
         </p>
       </div>
 
-      <div className="flex justify-center mb-6">
+      <div className="flex justify-center">
         <SegmentedControl
           options={[
-            { label: 'Structured Overview', value: 'structured' },
             { label: 'Narrative Summary', value: 'narrative' },
+            { label: 'Structured Data', value: 'structured' },
           ]}
           value={reviewMode}
           onValueChange={(value) => setReviewMode(value as 'structured' | 'narrative')}
         />
       </div>
 
-      {reviewMode === 'structured' ? (
-        <StructuredOverview wizardData={wizardData} />
-      ) : (
-        <NarrativeSummary wizardData={wizardData} neurodivergentMode={neurodivergentMode} />
-      )}
+      <div className="bg-muted/10 rounded-[2rem] p-2">
+        {reviewMode === 'structured' ? (
+          <StructuredOverview wizardData={wizardData} />
+        ) : (
+          <NarrativeSummary wizardData={wizardData} neurodivergentMode={neurodivergentMode} />
+        )}
+      </div>
 
-      <div className="flex flex-col gap-4 pt-8 border-t border-border">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-8 border-t border-border/50">
         <Button
           type="button"
-          className="w-full h-14 rounded-2xl text-lg font-bold"
+          className="h-16 rounded-2xl text-lg font-black uppercase tracking-widest shadow-xl shadow-primary/20 order-1 sm:order-2"
           onClick={onCreateHabit}
           disabled={isCreating || isSaving || !isFormValid}
         >
-          <CheckCircle2 className="w-6 h-6 mr-2" />
-          {isTemplateMode ? 'Contribute Template' : 'Create Habit'}
+          {isCreating ? <Loader2 className="w-6 h-6 animate-spin" /> : <><CheckCircle2 className="w-6 h-6 mr-2" /> Launch Practice</>}
         </Button>
 
         <Button
           type="button"
           variant="outline"
-          className="w-full h-12 rounded-2xl font-semibold"
+          className="h-16 rounded-2xl font-bold text-lg order-2 sm:order-1 gap-2"
           onClick={() => onEditDetails(editableHabitData)}
           disabled={isCreating || isSaving}
         >
-          <Edit2 className="w-5 h-5 mr-2" />
-          Edit Details
+          <Edit2 className="w-5 h-5" /> Adjust Details
         </Button>
+      </div>
 
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-muted-foreground">
         {!isTemplateMode && (
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button
                 type="button"
                 variant="ghost"
-                className="w-full h-12 rounded-2xl font-semibold text-muted-foreground hover:text-primary"
+                className="font-black uppercase text-[10px] tracking-[0.2em] hover:text-primary h-auto p-2"
                 disabled={isCreating || isSaving}
               >
-                <Save className="w-5 h-5 mr-2" />
-                Save & Finish Later
+                <Save className="w-3.5 h-3.5 mr-2" /> Save Draft
               </Button>
             </AlertDialogTrigger>
-            <AlertDialogContent className="rounded-2xl">
+            <AlertDialogContent className="rounded-[2rem]">
               <AlertDialogHeader>
-                <AlertDialogTitle>Save Progress?</AlertDialogTitle>
+                <AlertDialogTitle>Save Draft?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Your current habit wizard progress will be saved, and you can continue later from the dashboard.
+                  We'll keep this design in the Lab. You can return to it anytime from the dashboard.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
+                <AlertDialogCancel className="rounded-xl">Continue Review</AlertDialogCancel>
                 <AlertDialogAction onClick={onSaveAndFinishLater} className="rounded-xl">
-                  Save Progress
+                  Save and Exit
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -161,27 +161,26 @@ export const HabitReviewStep: React.FC<HabitReviewStepProps> = ({
             <Button
               type="button"
               variant="ghost"
-              className="w-full h-12 rounded-2xl font-semibold text-destructive hover:bg-destructive/10"
+              className="font-black uppercase text-[10px] tracking-[0.2em] hover:text-destructive h-auto p-2"
               disabled={isCreating || isSaving}
             >
-              <X className="w-5 h-5 mr-2" />
-              Cancel
+              <X className="w-3.5 h-3.5 mr-2" /> Discard
             </Button>
           </AlertDialogTrigger>
-          <AlertDialogContent className="rounded-2xl">
+          <AlertDialogContent className="rounded-[2rem]">
             <AlertDialogHeader>
-              <AlertDialogTitle className="text-destructive">Discard this habit?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This will permanently discard all your current progress in the habit wizard. This action cannot be undone.
+              <AlertDialogTitle className="text-destructive font-black uppercase">Discard Design?</AlertDialogTitle>
+              <AlertDialogDescription className="font-medium text-base">
+                This will permanently wipe this habit design. This cannot be undone.
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel className="rounded-xl">Keep Editing</AlertDialogCancel>
+            <AlertDialogFooter className="pt-4">
+              <AlertDialogCancel className="rounded-xl">Keep Reviewing</AlertDialogCancel>
               <AlertDialogAction 
                 onClick={() => onDiscardDraft(wizardData.habit_key || '')}
                 className="rounded-xl bg-destructive hover:bg-destructive/90"
               >
-                Discard Draft
+                Wipe Design
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

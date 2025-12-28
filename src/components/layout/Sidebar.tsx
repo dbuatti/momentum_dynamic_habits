@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Home, Dumbbell, Wind, BookOpen, Music, Trophy, Settings, Menu, LogOut, BarChart, Code, Moon, Sun, Calendar, Target, Sparkles, Pill, HelpCircle, PlusCircle, BarChart3, LayoutTemplate, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Home, Trophy, Settings, Menu, LogOut, BarChart, Moon, Sun, Target, PlusCircle, BarChart3, LayoutTemplate, ChevronLeft, ChevronRight, HelpCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useSession } from '@/contexts/SessionContext';
@@ -18,7 +18,7 @@ interface NavLinkProps {
   icon: React.ElementType;
   label: string;
   currentPath: string;
-  isCollapsed: boolean; // New prop
+  isCollapsed: boolean;
   onClick?: () => void;
 }
 
@@ -33,7 +33,7 @@ const NavLink: React.FC<NavLinkProps> = ({ to, icon: Icon, label, currentPath, i
         isActive 
           ? "bg-sidebar-primary text-sidebar-primary-foreground font-medium" 
           : "text-sidebar-foreground",
-        isCollapsed && "justify-center px-2" // Center icon when collapsed
+        isCollapsed && "justify-center px-2"
       )}
     >
       <Icon className="h-5 w-5" />
@@ -44,9 +44,9 @@ const NavLink: React.FC<NavLinkProps> = ({ to, icon: Icon, label, currentPath, i
 
 interface SidebarContentProps {
   onLinkClick?: () => void;
-  isCollapsed: boolean; // New prop
-  onToggleCollapse: () => void; // New prop
-  isMobile: boolean; // Added isMobile prop
+  isCollapsed: boolean;
+  onToggleCollapse: () => void;
+  isMobile: boolean;
 }
 
 const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick, isCollapsed, onToggleCollapse, isMobile }) => {
@@ -64,27 +64,13 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick, isCollapse
     setTheme(theme === "dark" ? "light" : "dark");
   };
 
-  // Filter habits based on dashboardData and initialHabits
-  const visibleHabits = React.useMemo(() => {
-    if (isDashboardLoading || !dashboardData?.habits) return [];
-    
-    // Use the habit name and key from dashboardData directly
-    return dashboardData.habits
-      .filter(h => h.is_visible)
-      .map(h => ({
-        to: `/log/${h.key}`, // Use h.key for the route
-        icon: habitIconMap[h.key] || habitIconMap.custom_habit, // Fallback icon
-        label: h.name, // Use h.name for the label
-      }));
-  }, [dashboardData?.habits, isDashboardLoading]);
-
   const navItems = [
     { to: "/", icon: Home, label: "Dashboard" },
     { to: "/journey", icon: Trophy, label: "Journey" },
     { to: "/history", icon: BarChart, label: "History" },
     { to: "/analytics", icon: BarChart3, label: "Analytics" },
     { to: "/templates", icon: LayoutTemplate, label: "Templates" },
-    { to: "/create-habit", icon: PlusCircle, label: "Habit Wizard" }, // Updated label
+    { to: "/create-habit", icon: PlusCircle, label: "Practice Lab" },
     { to: "/settings", icon: Settings, label: "Settings" },
     { to: "/help", icon: HelpCircle, label: "Help" },
   ];
@@ -111,14 +97,14 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick, isCollapse
           "grid items-start text-sm font-medium gap-1",
           isCollapsed ? "px-2" : "px-4 lg:px-6"
         )}>
-          {navItems.map((item, index) => (
+          {navItems.map((item) => (
             <NavLink 
               key={item.to} 
               to={item.to} 
               icon={item.icon} 
               label={item.label} 
               currentPath={location.pathname} 
-              isCollapsed={isCollapsed} // Pass isCollapsed
+              isCollapsed={isCollapsed}
               onClick={onLinkClick} 
             />
           ))}

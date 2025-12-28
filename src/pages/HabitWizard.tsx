@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, RotateCcw, X } from 'lucide-react';
+import { Loader2, RotateCcw, X, Brain, Sparkles, Wand2, Compass, ArrowRight, ArrowLeft } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,17 +22,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { showError, showSuccess } from '@/utils/toast';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { UserHabitRecord, HabitCategory, MeasurementType, GrowthType, ChunkingMode } from '@/types/habit';
+import { HabitCategory, MeasurementType, GrowthType, ChunkingMode } from '@/types/habit';
 import { useJourneyData } from '@/hooks/useJourneyData';
 import { useCreateTemplate } from '@/hooks/useCreateTemplate';
 import { useUserHabitWizardTemp, WizardHabitData } from '@/hooks/useUserHabitWizardTemp';
 import { calculateHabitParams } from '@/utils/habit-wizard-utils';
 
-// Macro Steps
 import { HabitWizardStep1 } from '@/components/habits/wizard/HabitWizardStep1';
 import { HabitWizardStep2 } from '@/components/habits/wizard/HabitWizardStep2';
-
-// Micro Steps
 import { Step3_EnergyPerSession } from '@/components/habits/wizard/micro/Step3_EnergyPerSession';
 import { Step3_ConsistencyReality } from '@/components/habits/wizard/micro/Step3_ConsistencyReality';
 import { Step3_EmotionalCost } from '@/components/habits/wizard/micro/Step3_EmotionalCost';
@@ -50,6 +47,7 @@ import { Step6_SuccessDefinition } from '@/components/habits/wizard/micro/Step6_
 import { HabitReviewStep } from '@/pages/HabitReview';
 import { WizardStepper } from '@/components/habits/wizard/WizardStepper';
 import { EditHabitDetailsModal } from '@/components/habits/wizard/EditHabitDetailsModal';
+import AIGenerativeDialogue from '@/components/habits/AIGenerativeDialogue';
 
 export interface CreateHabitParams {
   name: string;
@@ -193,19 +191,22 @@ const HabitWizard = () => {
   const templateToPreFill: HabitTemplate | undefined = location.state?.templateToPreFill;
   const aiGeneratedData: Partial<WizardHabitData> | undefined = location.state?.aiGeneratedData;
 
+  const [setupPath, setSetupPath] = useState<'selection' | 'guided' | 'ai'>(
+    aiGeneratedData ? 'guided' : (wizardProgress ? 'guided' : 'selection')
+  );
   const [currentStep, setCurrentStep] = useState(1);
   const [currentMicroStepIndex, setCurrentMicroStepIndex] = useState(0);
   const [wizardData, setWizardData] = useState<Partial<WizardHabitData>>({});
   const [isSaving, setIsSaving] = useState(false);
-  const [isDiscarding, setIsDiscarding] = useState(false); // Explicit state for discard process
+  const [isDiscarding, setIsDiscarding] = useState(false);
   
-  // Explicit locks to stop draft loading logic during destruction
   const discardInProgress = useRef(false); 
   const [hasLoadedInitialProgress, setHasLoadedInitialProgress] = useState(false);
   
   const [showEditDetailsModal, setShowEditDetailsModal] = useState(false);
   const [editableHabitData, setEditableHabitData] = useState<Partial<CreateHabitParams>>({});
   const [showExitDialog, setShowExitDialog] = useState(false);
+  const [isAIDialogOpen, setIsAIDialogOpen] = useState(false);
 
   const createHabitMutation = useMutation({
     mutationFn: (habit: CreateHabitParams) => {
@@ -214,7 +215,7 @@ const HabitWizard = () => {
     },
     onSuccess: async () => {
       showSuccess('Habit created successfully!');
-      discardInProgress.current = true; // Lock loading
+      discardInProgress.current = true;
       await clearProgress();
       queryClient.invalidateQueries({ queryKey: ['dashboardData', session?.user?.id] });
       queryClient.invalidateQueries({ queryKey: ['journeyData', session?.user?.id] });
@@ -274,11 +275,10 @@ const HabitWizard = () => {
   };
 
   useEffect(() => {
-    // 1. Hard stop if we are ignoring old progress (discarding/creating)
     if (discardInProgress.current || isDiscarding) return;
 
-    // 2. Hard stop for special source modes
     if (isTemplateCreationMode || templateToPreFill || aiGeneratedData) {
+      setSetupPath('guided');
       if (!hasLoadedInitialProgress) {
         if (aiGeneratedData) setWizardData(aiGeneratedData);
         else if (templateToPreFill) {
@@ -302,11 +302,10 @@ const HabitWizard = () => {
       return;
     }
 
-    // 3. Normal Draft Loading Logic
     if (hasLoadedInitialProgress || isLoadingWizardProgress) return;
 
     if (wizardProgress && wizardProgress.habit_data) {
-      console.log('[HabitWizard] Loading saved progress:', wizardProgress);
+      setSetupPath('guided');
       setCurrentStep(wizardProgress.current_step);
       setWizardData(wizardProgress.habit_data);
       setCurrentMicroStepIndex(0);
@@ -356,7 +355,7 @@ const HabitWizard = () => {
 
   const handleBack = useCallback(async () => {
     if (currentStep === 1 && currentMicroStepIndex === 0) {
-      setShowExitDialog(true);
+      setSetupPath('selection');
       return;
     }
 
@@ -388,9 +387,10 @@ const HabitWizard = () => {
       setCurrentStep(1);
       setCurrentMicroStepIndex(0);
       setHasLoadedInitialProgress(false);
+      setSetupPath('selection');
       discardInProgress.current = false; 
       setIsDiscarding(false);
-      showSuccess('Wizard progress reset.');
+      showSuccess('Progress cleared.');
     } catch (error) {
       showError('Failed to reset progress.');
       discardInProgress.current = false;
@@ -414,27 +414,19 @@ const HabitWizard = () => {
 
   const handleDiscardDraft = useCallback(async () => {
     if (isDiscarding || isSaving) return;
-    console.log('[HabitWizard] handleDiscardDraft called');
-    
-    // IMMEDIATELY lock the loading effect and force local state reset
     setIsDiscarding(true);
     discardInProgress.current = true; 
     setIsSaving(true);
     setHasLoadedInitialProgress(true); 
 
     try {
-      console.log('[HabitWizard] Calling clearProgress to discard draft...');
       await clearProgress();
-      
-      // Clear local state before navigation to be double sure
       setWizardData({});
       setCurrentStep(1);
       setCurrentMicroStepIndex(0);
-
       showSuccess('Draft discarded.');
       navigate('/', { replace: true });
     } catch (error) {
-      console.error('[HabitWizard] Error in handleDiscardDraft:', error);
       showError('Failed to discard draft.');
       discardInProgress.current = false; 
       setIsDiscarding(false);
@@ -453,32 +445,10 @@ const HabitWizard = () => {
   const isMacroStepCompleted = useCallback((stepNumber: number) => {
     if (currentStep > stepNumber) return true;
     if (currentStep < stepNumber) return false;
-
     const microSteps = MICRO_STEPS_MAP[stepNumber];
     if (!microSteps) return false;
-
-    return microSteps.every((microStepId, index) => {
-      if (index < currentMicroStepIndex) return true;
-      
-      switch (microStepId) {
-        case '3.1': return !!wizardData.energy_per_session || wizardData.energy_per_session_skipped;
-        case '3.2': return !!wizardData.consistency_reality || wizardData.consistency_reality_skipped;
-        case '3.3': return !!wizardData.emotional_cost || wizardData.emotional_cost_skipped;
-        case '3.4': return !!wizardData.confidence_check || wizardData.confidence_check_skipped;
-        case '4.1': return (!!wizardData.barriers && wizardData.barriers.length > 0) || wizardData.barriers_skipped;
-        case '4.2': return !!wizardData.missed_day_response || wizardData.missed_day_response_skipped;
-        case '4.3': return !!wizardData.sensitivity_setting || wizardData.sensitivity_setting_skipped;
-        case '5.1': return !!wizardData.time_of_day_fit || wizardData.time_of_day_fit_skipped;
-        case '5.2': return !!wizardData.dependency_check || wizardData.dependency_check_skipped;
-        case '5.3': return !!wizardData.time_pressure_check || wizardData.time_pressure_check_skipped;
-        case '6.1': return !!wizardData.growth_appetite || wizardData.growth_appetite_skipped;
-        case '6.2': return !!wizardData.growth_style || wizardData.growth_style_skipped;
-        case '6.3': return !!wizardData.failure_response || wizardData.failure_response_skipped;
-        case '6.4': return !!wizardData.success_definition || wizardData.success_definition_skipped;
-        default: return false;
-      }
-    });
-  }, [currentStep, currentMicroStepIndex, wizardData]);
+    return microSteps.every((microStepId, index) => index < currentMicroStepIndex);
+  }, [currentStep, currentMicroStepIndex]);
 
   const totalDisplaySteps = MACRO_STEPS.reduce((acc, step) => acc + (MICRO_STEPS_MAP[step]?.length || 1), 0);
   
@@ -535,41 +505,14 @@ const HabitWizard = () => {
         default: return true;
       }
     }
-    if (currentStep === 7) {
-      return !wizardData.name?.trim() || !wizardData.habit_key?.trim();
-    }
     return false;
   }, [currentStep, currentMicroStepIndex, wizardData]);
 
-  const handleUpdateHabitFromModal = useCallback(async (updatedData: Partial<CreateHabitParams>) => {
-    setIsSaving(true);
-    try {
-      const newWizardData = {
-        ...wizardData,
-        ...updatedData,
-        daily_goal: updatedData.current_daily_goal || wizardData.daily_goal,
-        weekly_session_min_duration: updatedData.weekly_session_min_duration || wizardData.weekly_session_min_duration,
-      };
-      setWizardData(newWizardData);
-      await saveProgress({ current_step: currentStep, habit_data: newWizardData });
-      showSuccess('Habit details updated!');
-      setShowEditDetailsModal(true); // Keep modal state consistent or close if needed
-      setShowEditDetailsModal(false);
-    } catch (error) {
-      showError('Failed to update habit details.');
-    } finally {
-      setIsSaving(false);
-    }
-  }, [currentStep, wizardData, saveProgress]);
-
-  if ((isLoadingWizardProgress && !hasLoadedInitialProgress) || isDiscarding) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
-        {isDiscarding && <p className="text-muted-foreground font-medium animate-pulse">Discarding draft...</p>}
-      </div>
-    );
-  }
+  const handleHabitGenerated = (habitData: any) => {
+    setWizardData(habitData);
+    setSetupPath('guided');
+    setCurrentStep(7); // Jump to review
+  };
 
   const renderWizardStepContent = () => {
     if (currentStep === 1) return <HabitWizardStep1 wizardData={wizardData} setWizardData={setWizardData} />;
@@ -608,7 +551,7 @@ const HabitWizard = () => {
           }}
           onSaveAndFinishLater={handleSaveAndFinishLater}
           onCreateHabit={handleSubmitFinal}
-          onDiscardDraft={handleDiscardDraft} // No changes needed here, argument will be ignored
+          onDiscardDraft={handleDiscardDraft}
           isSaving={isSaving}
           isCreating={createHabitMutation.isPending || createTemplateMutation.isPending}
           isTemplateMode={isTemplateCreationMode}
@@ -621,18 +564,82 @@ const HabitWizard = () => {
 
   const isFinalStep = currentStep === MACRO_STEPS[MACRO_STEPS.length - 1];
 
+  if (setupPath === 'selection') {
+    return (
+      <div className="w-full max-w-4xl mx-auto px-4 py-12">
+        <div className="text-center mb-12 space-y-4">
+          <div className="mx-auto w-16 h-16 rounded-3xl bg-primary/10 flex items-center justify-center mb-6">
+            <Compass className="w-8 h-8 text-primary" />
+          </div>
+          <h1 className="text-4xl font-black tracking-tight uppercase italic">Practice Lab</h1>
+          <p className="text-muted-foreground max-w-lg mx-auto font-medium">
+            How would you like to design your next habit?
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <Card 
+            className="rounded-[2.5rem] border-2 border-border hover:border-primary transition-all cursor-pointer group shadow-sm hover:shadow-xl"
+            onClick={() => setSetupPath('guided')}
+          >
+            <CardContent className="p-10 space-y-6 text-center">
+              <div className="w-20 h-20 rounded-[2rem] bg-secondary flex items-center justify-center mx-auto group-hover:scale-110 transition-transform">
+                <Wand2 className="w-10 h-10 text-primary" />
+              </div>
+              <div className="space-y-2">
+                <h2 className="text-2xl font-black uppercase tracking-tight">Guided Setup</h2>
+                <p className="text-muted-foreground text-sm font-medium">
+                  Let the coach interview you to design the perfect habit structure based on your energy and barriers.
+                </p>
+              </div>
+              <Button variant="ghost" className="rounded-full gap-2 font-bold group-hover:translate-x-1 transition-transform">
+                Start Guided <ArrowRight className="w-4 h-4" />
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card 
+            className="rounded-[2.5rem] border-2 border-border hover:border-primary transition-all cursor-pointer group shadow-sm hover:shadow-xl bg-primary/5"
+            onClick={() => setIsAIDialogOpen(true)}
+          >
+            <CardContent className="p-10 space-y-6 text-center">
+              <div className="w-20 h-20 rounded-[2rem] bg-primary text-primary-foreground flex items-center justify-center mx-auto group-hover:scale-110 transition-transform">
+                <Brain className="w-10 h-10" />
+              </div>
+              <div className="space-y-2">
+                <h2 className="text-2xl font-black uppercase tracking-tight">AI Quick Build</h2>
+                <p className="text-muted-foreground text-sm font-medium">
+                  Just describe what you want in natural language and let the AI handle the complex logic.
+                </p>
+              </div>
+              <Button className="rounded-full gap-2 font-bold group-hover:translate-x-1 transition-transform">
+                Open AI Assistant <ArrowRight className="w-4 h-4" />
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+
+        <AIGenerativeDialogue 
+          isOpen={isAIDialogOpen} 
+          onClose={() => setIsAIDialogOpen(false)} 
+          onHabitGenerated={handleHabitGenerated} 
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="w-full max-w-full mx-auto px-4 py-8">
-      <Card className="w-full max-w-6xl mx-auto shadow-2xl rounded-3xl overflow-hidden border-0 bg-card">
-        <CardHeader className="pb-6 pt-8 px-10 bg-gradient-to-b from-primary/5 to-transparent relative">
+      <Card className="w-full max-w-5xl mx-auto shadow-2xl rounded-[3rem] overflow-hidden border-0 bg-card">
+        <CardHeader className="pb-6 pt-10 px-10 bg-gradient-to-b from-primary/5 to-transparent relative">
           <Button 
             variant="ghost" 
             size="icon" 
-            className="absolute top-4 right-4 rounded-full text-muted-foreground hover:text-foreground"
+            className="absolute top-6 right-6 rounded-full text-muted-foreground hover:text-foreground"
             onClick={() => setShowExitDialog(true)}
             disabled={isDiscarding || isSaving}
           >
-            <X className="w-5 h-5" />
+            <X className="w-6 h-6" />
           </Button>
 
           <WizardStepper
@@ -642,128 +649,121 @@ const HabitWizard = () => {
             isStepCompleted={isMacroStepCompleted}
             stepLabels={MACRO_STEP_LABELS}
           />
-          <div className="flex justify-between items-center mb-4 mt-6">
-            <div className="text-sm font-bold text-muted-foreground uppercase tracking-wider">
-              Step {currentDisplayStep} of {totalDisplaySteps}
-            </div>
-            <div className="text-sm font-bold text-primary">{Math.round(progress)}%</div>
-          </div>
-          <div className="w-full bg-secondary rounded-full h-2.5">
-            <div
-              className="bg-primary h-2.5 rounded-full transition-all duration-500 ease-out"
-              style={{ width: `${progress}%` }}
-            />
+          
+          <div className="mt-8 space-y-4">
+             <div className="flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                  <div className="px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest">
+                    Step {currentDisplayStep} of {totalDisplaySteps}
+                  </div>
+                </div>
+                <div className="text-sm font-black text-primary">{Math.round(progress)}%</div>
+             </div>
+             <div className="w-full bg-secondary rounded-full h-2">
+                <div
+                  className="bg-primary h-2 rounded-full transition-all duration-700 ease-out shadow-[0_0_10px_rgba(0,0,0,0.1)]"
+                  style={{ width: `${progress}%` }}
+                />
+             </div>
           </div>
         </CardHeader>
 
-        <div className="flex flex-col min-h-[600px]">
-          <CardContent className="flex-1 px-10 pt-6 pb-32 overflow-y-auto">
-            {renderWizardStepContent()}
-          </CardContent>
-
-          {!isFinalStep && (
-            <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border/50 shadow-lg z-50">
-              <div className="max-w-2xl mx-auto px-10 py-6 flex justify-between items-center">
+        <div className="flex flex-col min-h-[500px]">
+          <CardContent className="flex-1 px-10 pt-6 pb-12 overflow-y-auto">
+            <div className="max-w-3xl mx-auto">
+              {renderWizardStepContent()}
+            </div>
+            
+            {!isFinalStep && (
+              <div className="flex justify-between items-center mt-12 pt-8 border-t border-border/50 max-w-3xl mx-auto">
                 <Button
                   variant="outline"
                   size="lg"
                   onClick={handleBack}
                   disabled={isSaving || isDiscarding}
-                  className="rounded-2xl px-10 py-6 text-base"
+                  className="rounded-2xl h-14 px-8 font-bold gap-2"
                 >
-                  Back
+                  <ArrowLeft className="w-4 h-4" /> Back
                 </Button>
 
                 <Button
                   size="lg"
                   onClick={() => handleSaveAndNext({})}
                   disabled={isSaving || isNextDisabled || isDiscarding}
-                  className="rounded-2xl px-14 py-6 text-base font-semibold shadow-md"
+                  className="rounded-2xl h-14 px-12 text-base font-black uppercase tracking-widest shadow-xl shadow-primary/20 gap-2"
                 >
                   {isSaving ? (
-                    <>
-                      <Loader2 className="w-5 h-5 mr-3 animate-spin" />
-                      Saving...
-                    </>
+                    <Loader2 className="w-5 h-5 animate-spin" />
                   ) : (
-                    'Next'
+                    <>Next <ArrowRight className="w-4 h-4" /></>
                   )}
                 </Button>
               </div>
-            </div>
-          )}
+            )}
+          </CardContent>
         </div>
       </Card>
 
       <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
-        <AlertDialogContent className="rounded-2xl">
+        <AlertDialogContent className="rounded-[2rem]">
           <AlertDialogHeader>
-            <AlertDialogTitle>Exit Habit Wizard?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Would you like to save your progress as a draft and finish later, or discard your current habit draft?
+            <AlertDialogTitle className="text-2xl font-black uppercase italic">Pause Design?</AlertDialogTitle>
+            <AlertDialogDescription className="text-base font-medium">
+              We can save your progress in the lab as a draft, or clear it if you want to start fresh next time.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+          <AlertDialogFooter className="flex-col sm:flex-row gap-3 pt-4">
             <Button
               variant="outline"
-              className="rounded-xl w-full sm:w-auto"
+              className="rounded-2xl h-12 flex-1 font-bold"
               onClick={() => setShowExitDialog(false)}
               disabled={isSaving || isDiscarding}
             >
-              Continue Editing
+              Continue Design
             </Button>
             <Button
               variant="secondary"
-              className="rounded-xl w-full sm:w-auto"
+              className="rounded-2xl h-12 flex-1 font-bold"
               onClick={handleSaveAndFinishLater}
               disabled={isSaving || isDiscarding}
             >
-              Save & Finish Later
+              Save Draft
             </Button>
             <Button
               variant="destructive"
-              className="rounded-xl w-full sm:w-auto"
+              className="rounded-2xl h-12 flex-1 font-bold"
               onClick={handleDiscardDraft}
               disabled={isSaving || isDiscarding}
             >
-              {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Discard Draft'}
+              Discard Draft
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      {wizardProgress && !isDiscarding && (
-        <div className="flex justify-center mt-12">
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="ghost" size="sm" className="text-xs text-muted-foreground hover:text-destructive">
-                <RotateCcw className="w-4 h-4 mr-2" />
-                Reset Wizard Progress
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent className="rounded-2xl">
-              <AlertDialogHeader>
-                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This will permanently delete your saved progress and restart the wizard from the beginning.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleResetProgress} className="rounded-xl bg-destructive hover:bg-destructive/90">
-                  Reset Progress
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
-      )}
-
       <EditHabitDetailsModal
         isOpen={showEditDetailsModal}
         onClose={() => setShowEditDetailsModal(false)}
         initialHabitData={editableHabitData}
-        onSave={handleUpdateHabitFromModal}
+        onSave={async (data) => {
+          setIsSaving(true);
+          try {
+            const newWizardData = {
+              ...wizardData,
+              ...data,
+              daily_goal: data.current_daily_goal || wizardData.daily_goal,
+              weekly_session_min_duration: data.weekly_session_min_duration || wizardData.weekly_session_min_duration,
+            };
+            setWizardData(newWizardData);
+            await saveProgress({ current_step: currentStep, habit_data: newWizardData });
+            showSuccess('Details updated.');
+            setShowEditDetailsModal(false);
+          } catch (e) {
+            showError('Update failed.');
+          } finally {
+            setIsSaving(false);
+          }
+        }}
         isSaving={isSaving}
         isTemplateMode={isTemplateCreationMode}
       />

@@ -4,7 +4,7 @@ import { MadeWithDyad } from "@/components/made-with-dyad";
 import HomeHeader from "@/components/HomeHeader";
 import { 
   CheckCircle2, Target, Anchor, Zap, 
-  Layers, PlusCircle, Lock, ChevronRight,
+  Layers, PlusCircle, Lock,
   AlertCircle, Sparkles, TrendingUp, Clock, Play,
   Check, CalendarDays
 } from "lucide-react";
@@ -12,7 +12,6 @@ import { useDashboardData } from "@/hooks/useDashboardData";
 import { DashboardSkeleton } from "@/components/dashboard/DashboardSkeleton";
 import { HabitCapsule } from "@/components/dashboard/HabitCapsule";
 import { useCapsules } from "@/hooks/useCapsules";
-import { useHabitLog } from "@/hooks/useHabitLog";
 import React, { useState, useMemo, useEffect } from "react";
 import { useOnboardingCheck } from "@/hooks/useOnboardingCheck";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -20,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { TipCard } from "@/components/dashboard/TipCard";
-import { calculateDynamicChunks, calculateDailyParts } from "@/utils/progress-utils";
+import { calculateDynamicChunks } from "@/utils/progress-utils";
 import { MacroGoalProgress } from "@/components/dashboard/MacroGoalProgress";
 import { Progress } from "@/components/ui/progress";
 import { GrowthGuide } from "@/components/dashboard/GrowthGuide";
@@ -29,8 +28,7 @@ import { showError } from "@/utils/toast";
 import { habitIconMap, habitColorMap } from '@/lib/habit-utils';
 import { TrialGuidance } from "@/components/dashboard/TrialGuidance";
 import { WeeklyAnchorCard } from "@/components/dashboard/WeeklyAnchorCard";
-import { AIGenerateButton } from "@/components/dashboard/AIGenerateButton";
-import { FixEmptyHabitKey } from "@/components/fixers/FixEmptyHabitKey"; // Import the fixer
+import { FixEmptyHabitKey } from "@/components/fixers/FixEmptyHabitKey";
 
 const Index = () => {
   const { data, isLoading, isError, refetch } = useDashboardData();
@@ -41,18 +39,16 @@ const Index = () => {
   const [hasInitializedState, setHasInitializedState] = useState(false);
   const [showAllMomentum, setShowAllMomentum] = useState<Record<string, boolean>>({});
 
-  // --- FIX: Check for habits with empty keys ---
   const habitWithEmptyKey = useMemo(() => {
     if (!data?.habits) return null;
     return data.habits.find(h => !h.habit_key || h.habit_key.trim() === '');
   }, [data?.habits]);
-  // --- END FIX ---
 
   const habitGroups = useMemo(() => {
     if (!data?.habits) return [];
 
     return data.habits
-      .filter(h => h.habit_key) // Filter out habits with empty keys from normal display
+      .filter(h => h.habit_key)
       .map(habit => {
       const goal = habit.adjustedDailyGoal;
       const progress = habit.dailyProgress;
@@ -70,7 +66,6 @@ const Index = () => {
         habit.measurement_type
       );
 
-      // For weekly anchors, isOverallComplete is based on weekly_progress >= frequency_per_week (1)
       const isOverallComplete = habit.isComplete;
 
       const capsules = Array.from({ length: numChunks }).map((_, i) => {
@@ -108,7 +103,6 @@ const Index = () => {
       if (a.category === 'anchor' && b.category !== 'anchor') return -1;
       if (a.category !== 'anchor' && b.category === 'anchor') return 1;
       
-      // Sort by daily progress ratio only for non-weekly anchors
       const aIsWeeklyAnchor = a.category === 'anchor' && a.frequency_per_week === 1;
       const bIsWeeklyAnchor = b.category === 'anchor' && b.frequency_per_week === 1;
 
@@ -125,10 +119,8 @@ const Index = () => {
     });
   }, [data?.habits, data?.neurodivergentMode]);
 
-  // --- CORE FIX: Use pre-calculated Daily Momentum Parts ---
   const completedParts = data?.dailyMomentumParts.completed || 0;
   const totalParts = data?.dailyMomentumParts.total || 0;
-  // --- END CORE FIX ---
 
   const suggestedAction = useMemo(() => {
     if (!habitGroups.length) return null;
@@ -136,7 +128,6 @@ const Index = () => {
            habitGroups.find(h => !h.allCompleted && !h.isLockedByDependency);
   }, [habitGroups]);
 
-  // Filter habits for display based on eligibility and visibility
   const visibleHabitsForDisplay = useMemo(() => {
     return habitGroups.filter(h => h.is_visible && (h.isScheduledForToday || h.category === 'anchor'));
   }, [habitGroups]);
@@ -151,7 +142,6 @@ const Index = () => {
       if (stored === 'expanded') return true;
       if (stored === 'collapsed') return false;
       
-      // Only auto-expand daily/multi-session anchors/trials that are incomplete
       const isWeeklyAnchor = h.category === 'anchor' && h.frequency_per_week === 1;
       return !h.allCompleted && !h.isLockedByDependency && (h.category === 'anchor' || h.is_trial_mode) && !isWeeklyAnchor;
     }).map(h => h.key);
@@ -215,7 +205,6 @@ const Index = () => {
   if (isLoading || isOnboardingLoading || isCapsulesLoading) return <DashboardSkeleton />;
   if (isError || !data) return null;
 
-  // --- FIX: Show the fixer component if an empty key is detected ---
   if (habitWithEmptyKey) {
     return (
       <div className="flex flex-col min-h-screen bg-background items-center justify-center p-4">
@@ -229,7 +218,6 @@ const Index = () => {
       </div>
     );
   }
-  // --- END FIX ---
 
   const renderHabitItem = (habit: any) => {
     const isWeeklyAnchor = habit.category === 'anchor' && habit.frequency_per_week === 1;
@@ -246,7 +234,6 @@ const Index = () => {
       );
     }
 
-    // --- Standard Daily/Multi-Session Habit Rendering ---
     const Icon = habitIconMap[habit.key] || habitIconMap.custom_habit;
     const color = habitColorMap[habit.key] || 'blue';
     const isTrial = habit.is_trial_mode;
@@ -424,12 +411,11 @@ const Index = () => {
           lastName={data.lastName}
           xp={data.xp}
           level={data.level}
-          tasksCompletedToday={completedParts} // Use completedParts for tasks completed today
-          dailyChallengeTarget={totalParts} // Use totalParts for the daily challenge target
+          tasksCompletedToday={completedParts}
+          dailyChallengeTarget={totalParts}
         />
 
         <main className="space-y-8">
-          {/* Streak Protection Nudge */}
           {data.patterns.streak > 0 && completedParts === 0 && new Date().getHours() >= 20 && (
             <Card className="bg-destructive/10 border-destructive border-2 rounded-2xl animate-pulse">
               <CardContent className="p-4 flex items-center gap-3">
@@ -442,7 +428,6 @@ const Index = () => {
             </Card>
           )}
 
-          {/* Smart Focus Action Nudge */}
           {suggestedAction && (
             <Card className="rounded-[2.5rem] border-2 border-primary overflow-hidden shadow-xl">
               <CardContent className="p-6 sm:p-8 flex flex-col sm:flex-row items-center gap-6">
@@ -506,10 +491,10 @@ const Index = () => {
                 <div className="w-20 h-20 bg-primary/10 rounded-[2rem] flex items-center justify-center mx-auto"><PlusCircle className="w-10 h-10 text-primary" /></div>
                 <div className="space-y-2">
                   <h3 className="text-2xl font-black tracking-tight">Your Dashboard is Empty</h3>
-                  <p className="text-muted-foreground font-medium max-w-xs mx-auto">Build your routines using the Habit Wizard or explore community templates.</p>
+                  <p className="text-muted-foreground font-medium max-w-xs mx-auto">Build your routines using the Practice Lab or explore community templates.</p>
                 </div>
                 <div className="flex flex-col gap-3">
-                  <Link to="/create-habit"><Button size="lg" className="w-full h-14 rounded-2xl font-black text-base shadow-lg shadow-primary/20">Open Habit Wizard</Button></Link>
+                  <Link to="/create-habit"><Button size="lg" className="w-full h-14 rounded-2xl font-black text-base shadow-lg shadow-primary/20">Open Practice Lab</Button></Link>
                   <Link to="/templates"><Button variant="outline" size="lg" className="w-full h-14 rounded-2xl font-black text-base border-2">Explore Templates</Button></Link>
                 </div>
               </div>
@@ -524,9 +509,6 @@ const Index = () => {
           <MadeWithDyad className="mt-12" />
         </main>
       </div>
-
-      {/* AI Generate Button */}
-      <AIGenerateButton />
     </div>
   );
 };
