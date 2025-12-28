@@ -22,7 +22,7 @@ interface HabitCapsuleProps {
   isCompleted: boolean;
   isHabitComplete?: boolean; 
   isFixed?: boolean; 
-  initialValue?: number; // Represents progress made in the current session
+  initialValue?: number;
   scheduledTime?: string;
   completedTaskId?: string | null;
   onLogProgress: (actualValue: number, isComplete: boolean, mood?: string) => void;
@@ -140,16 +140,13 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
         startInterval();
       }
     } else {
-      // NEW: Calculate initial timeLeft based on carryover value (value) and session progress (initialValue)
-      // If there's session progress (initialValue > 0), subtract it from the goal (value)
-      const remainingInSession = Math.max(0, value - initialValue);
-      setTimeLeft(Math.round(remainingInSession * 60));
+      setTimeLeft(Math.round(value * 60));
     }
     return () => {
         stopInterval();
         window.dispatchEvent(new CustomEvent('habit-timer-update', { detail: null }));
     };
-  }, [isCompleted, storageKey, measurementType, startInterval, value, initialValue]);
+  }, [isCompleted, storageKey, measurementType, startInterval, value]);
 
   useEffect(() => {
     if (measurementType === 'timer' && isTiming && !isCompleted) {
@@ -168,11 +165,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     triggerFeedback('start');
     setIsTiming(true);
     setIsPaused(false);
-    // NEW: If timeLeft is 0, recalculate it from value and initialValue
-    if (timeLeft <= 0) {
-      const remainingInSession = Math.max(0, value - initialValue);
-      setTimeLeft(Math.round(remainingInSession * 60));
-    }
+    if (timeLeft <= 0) setTimeLeft(Math.round(value * 60));
     startInterval();
   };
 
@@ -191,8 +184,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   const handleResetTimer = (e: React.MouseEvent) => {
     e.stopPropagation();
     triggerFeedback('pause');
-    const remainingInSession = Math.max(0, value - initialValue);
-    setTimeLeft(Math.round(remainingInSession * 60));
+    setTimeLeft(Math.round(value * 60));
   };
 
   const handleFinishTiming = (mood?: string, promptMood: boolean = false) => {
@@ -231,9 +223,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     localStorage.removeItem(storageKey);
     onLogProgress(totalSessionValue, true, mood);
     setIsTiming(false);
-    // NEW: Reset timeLeft based on value and initialValue
-    const remainingInSession = Math.max(0, value - initialValue);
-    setTimeLeft(Math.round(remainingInSession * 60));
+    setTimeLeft(Math.round(value * 60));
     setShowMoodPicker(false);
   };
 
