@@ -66,7 +66,7 @@ export const calculateHabitParams = (data: Partial<WizardHabitData>, neurodiverg
   const motivationType = data.motivation_type_skipped ? 'personal_growth' : data.motivation_type;
   const anchorPractice = motivationType === 'routine_building' || motivationType === 'stress_reduction';
 
-  // NEW: Intelligent Chunking initialization
+  // Intelligent Chunking initialization
   const enableChunks = measurementType !== 'binary' && dailyGoal > 5;
   const chunkingMode: ChunkingMode = 'auto';
 
@@ -99,13 +99,10 @@ export const calculateHabitParams = (data: Partial<WizardHabitData>, neurodiverg
   const safetyNetChoice = data.safety_net_choice_skipped ? 'none' : data.safety_net_choice;
   const carryoverEnabled = safetyNetChoice === 'rollover' || safetyNetChoice === 'gentle';
   
-  // NEW: Weekly Session Minimum Duration (for Weekly Anchors)
-  let weeklySessionMinDuration = 10; // Default minimum for time-based anchors
+  let weeklySessionMinDuration = 10; 
   if (unit === 'min') {
-    // If it's a time-based habit, the minimum session duration is the daily goal
     weeklySessionMinDuration = dailyGoal;
   } else if (unit === 'reps' || unit === 'dose') {
-    // For count/binary, the minimum duration is 1 (or the goal itself)
     weeklySessionMinDuration = dailyGoal;
   }
 
@@ -117,13 +114,12 @@ export const calculateHabitParams = (data: Partial<WizardHabitData>, neurodiverg
     measurement_type: measurementType,
     icon_name: data.icon_name || 'Target',
     short_description: data.short_description || '',
-    
     current_daily_goal: dailyGoal,
     frequency_per_week: frequency,
     is_trial_mode: isTrial,
     is_fixed: isFixed,
     anchor_practice: anchorPractice,
-    auto_chunking: true, // Legacy support
+    auto_chunking: true, 
     enable_chunks: enableChunks,
     chunking_mode: chunkingMode,
     xp_per_unit: xpPerUnit,
@@ -135,6 +131,8 @@ export const calculateHabitParams = (data: Partial<WizardHabitData>, neurodiverg
     carryover_enabled: carryoverEnabled,
     growth_type: growthType,
     growth_value: growthValue,
-    weekly_session_min_duration: weeklySessionMinDuration, // Include new field
+    weekly_session_min_duration: weeklySessionMinDuration,
+    complete_on_finish: data.complete_on_finish ?? true,
+    is_weekly_goal: data.is_weekly_goal ?? false,
   };
 };

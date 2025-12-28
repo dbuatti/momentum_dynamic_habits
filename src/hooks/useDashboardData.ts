@@ -9,7 +9,7 @@ import { calculateDynamicChunks, calculateDailyParts } from '@/utils/progress-ut
 const fetchDashboardData = async (userId: string) => {
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('journey_start_date, daily_streak, last_active_at, first_name, last_name, timezone, xp, level, neurodivergent_mode, enable_sound, enable_haptics') // Removed tasks_completed_today, daily_challenge_target
+    .select('journey_start_date, daily_streak, last_active_at, first_name, last_name, timezone, xp, level, neurodivergent_mode, enable_sound, enable_haptics') 
     .eq('id', userId)
     .single();
 
@@ -40,19 +40,13 @@ const fetchDashboardData = async (userId: string) => {
 
   if (profileError || habitsError || completedTodayError) throw new Error('Failed to fetch essential data');
 
-  // Map of habit_key to the number of distinct sessions completed this week
   const weeklySessionCountMap = new Map<string, number>();
-  
   (completedThisWeek || []).forEach(task => {
-    // For weekly tracking, we count distinct sessions. 
-    // Since completedtasks stores one row per log, we just count the rows per habit.
     weeklySessionCountMap.set(task.original_source, (weeklySessionCountMap.get(task.original_source) || 0) + 1);
   });
 
-  // PRE-CALCULATION: Aggregate in seconds first to avoid floating point drift
   const dailySecondsMap = new Map<string, number>();
   const dailyUnitProgressMap = new Map<string, number>();
-  
   const dailyCapsuleTasksMap = new Map<string, Record<number, string>>(); 
   const completedHabitKeysToday = new Set<string>();
 
@@ -80,10 +74,8 @@ const fetchDashboardData = async (userId: string) => {
   });
 
   const processedHabits: ProcessedUserHabit[] = (habits || [])
-    .map(h => { // Do NOT filter here, we need all habits to check dependencies/visibility
+    .map(h => {
     const mType = h.measurement_type || 'timer';
-    
-    // Aggregation logic depends on measurement type
     let rawDailyProgress = 0;
     if (mType === 'timer') {
       rawDailyProgress = (dailySecondsMap.get(h.habit_key) || 0) / 60;
@@ -93,8 +85,6 @@ const fetchDashboardData = async (userId: string) => {
 
     const capsuleTaskMapping = dailyCapsuleTasksMap.get(h.habit_key) || {};
     const baseAdjustedDailyGoal = h.current_daily_goal + (h.carryover_value || 0);
-    
-    // FIX: Ensure days_of_week is an array of numbers, defaulting to empty array if null/undefined
     const activeDays = (h.days_of_week || []).map((d: any) => Number(d));
     const isScheduledForToday = activeDays.includes(currentDayOfWeek);
 
@@ -111,30 +101,22 @@ const fetchDashboardData = async (userId: string) => {
     }
 
     const weeklyCompletions = weeklySessionCountMap.get(h.habit_key) || 0;
-    const weeklyGoal = h.frequency_per_week;
-    
-    const isDependent = !!h.dependent_on_habit_id;
-    const dependentHabit = habits?.find(depH => depH.id === h.dependent_on_habit_id);
-    const isDependencyMet = isDependent ? completedHabitKeysToday.has(dependentHabit?.habit_key || '') : true;
-    const isLockedByDependency = isDependent && !isDependencyMet;
-
+    const isWeeklyAnchor = h.category === 'anchor' && h.frequency_per_week === 1;
     let isComplete = false;
     const unit = h.unit || (mType === 'timer' ? 'min' : (mType === 'binary' ? 'dose' : 'reps'));
 
-    // CRITICAL FIX: Determine completion based on frequency
-    const isWeeklyAnchor = h.category === 'anchor' && h.frequency_per_week === 1;
-    
     if (isWeeklyAnchor) {
-      // For weekly anchors, completion is based on meeting the weekly session count (which is 1)
       isComplete = weeklyCompletions >= 1;
     } else if (mType === 'binary') {
-      // For daily binary habits (like medication/teeth brushing)
       isComplete = completedHabitKeysToday.has(h.habit_key);
     } else {
-      // For daily time/unit habits
       const threshold = mType === 'timer' ? 0.1 : 0.01;
       isComplete = rawDailyProgress >= (baseAdjustedDailyGoal - threshold);
     }
+
+    const isDependent = !!h.dependent_on_habit_id;
+    const dependentHabit = habits?.find(depH => depH.id === h.dependent_on_habit_id);
+    const isDependencyMet = isDependent ? completedHabitKeysToday.has(dependentHabit?.habit_key || '') : true;
 
     return {
       ...h,
@@ -150,7 +132,7 @@ const fetchDashboardData = async (userId: string) => {
       energyCostPerUnit: h.energy_cost_per_unit || (h.unit === 'min' ? 6 : 0.5),
       weekly_completions: weeklyCompletions,
       weekly_goal: (mType === 'binary' ? 1 : h.current_daily_goal) * h.frequency_per_week,
-      weekly_progress: weeklyCompletions, // Use weekly session count
+      weekly_progress: weeklyCompletions, 
       isScheduledForToday,
       isWithinWindow,
       measurement_type: mType, 
@@ -160,32 +142,25 @@ const fetchDashboardData = async (userId: string) => {
         daysRemaining: Math.max(0, h.plateau_days_required - h.completions_in_plateau),
         phase: h.growth_phase
       },
-      isLockedByDependency,
+      isLockedByDependency: isDependent && !isDependencyMet,
       capsuleTaskMapping, 
     } as any;
   });
 
-  // --- NEW: Calculate Daily Momentum Parts based on strict eligibility ---
+  // Filter daily momentum items (excluding weekly goals and anchors)
   const dailyMomentumHabits = processedHabits.filter(h => {
     const isWeeklyAnchor = h.category === 'anchor' && h.frequency_per_week === 1;
+    const isWeeklyObjective = (h as any).is_weekly_goal;
     
-    // 1. Exclude Weekly Anchors
-    if (isWeeklyAnchor) return false; 
-    
-    // 2. Must be visible.
+    if (isWeeklyAnchor || isWeeklyObjective) return false; 
     if (!h.is_visible) return false;
-    
-    // 3. Must be scheduled for today.
     if (!h.isScheduledForToday) return false;
-    
-    // 4. Must not be locked by dependency.
     if (h.isLockedByDependency) return false;
 
     return true;
   });
   
   const dailyMomentumParts = calculateDailyParts(dailyMomentumHabits, profile?.neurodivergent_mode || false);
-  // --- END NEW CALCULATION ---
 
   const calculateTotals = (tasks: any[]) => {
     const totals = { pushups: 0, meditation: 0 };
@@ -200,14 +175,13 @@ const fetchDashboardData = async (userId: string) => {
 
   const currentWeekTotals = calculateTotals(completedThisWeek || []);
   const previousWeekTotals = calculateTotals(completedLastWeek || []);
-
   const startDate = profile?.journey_start_date ? new Date(profile.journey_start_date) : new Date();
   const totalDaysSinceStart = differenceInDays(startOfDay(new Date()), startOfDay(startDate)) + 1;
   const consistency = totalDaysSinceStart > 0 && typeof distinctDays === 'number' ? Math.round((distinctDays / totalDaysSinceStart) * 100) : 0;
 
   return {
     daysActive: totalDaysSinceStart,
-    habits: processedHabits, // Return the full list of processed habits
+    habits: processedHabits,
     neurodivergentMode: profile?.neurodivergent_mode || false,
     enable_sound: profile?.enable_sound ?? true,
     enable_haptics: profile?.enable_haptics ?? true,
@@ -224,7 +198,7 @@ const fetchDashboardData = async (userId: string) => {
     xp: profile?.xp || 0, 
     level: profile?.level || 1, 
     averageDailyTasks: totalSessions && totalDaysSinceStart > 0 ? (totalSessions / totalDaysSinceStart).toFixed(1) : '0.0',
-    dailyMomentumParts, // <-- NEW RETURN VALUE
+    dailyMomentumParts,
   };
 };
 
@@ -236,6 +210,6 @@ export const useDashboardData = () => {
     queryKey: ['dashboardData', userId],
     queryFn: () => fetchDashboardData(userId!),
     enabled: !!userId,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 5,
   });
 };
