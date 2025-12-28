@@ -29,10 +29,11 @@ import { showError } from "@/utils/toast";
 import { habitIconMap, habitColorMap } from '@/lib/habit-utils';
 import { TrialGuidance } from "@/components/dashboard/TrialGuidance";
 import { WeeklyAnchorCard } from "@/components/dashboard/WeeklyAnchorCard";
-import { AIGenerateButton } from "@/components/dashboard/AIGenerateButton"; // Import the AI button
+import { AIGenerateButton } from "@/components/dashboard/AIGenerateButton";
+import { FixEmptyHabitKey } from "@/components/fixers/FixEmptyHabitKey"; // Import the fixer
 
 const Index = () => {
-  const { data, isLoading, isError } = useDashboardData();
+  const { data, isLoading, isError, refetch } = useDashboardData();
   const { isLoading: isCapsulesLoading, logCapsuleProgress, uncompleteCapsule } = useCapsules();
   const { isLoading: isOnboardingLoading } = useOnboardingCheck();
   
@@ -40,10 +41,18 @@ const Index = () => {
   const [hasInitializedState, setHasInitializedState] = useState(false);
   const [showAllMomentum, setShowAllMomentum] = useState<Record<string, boolean>>({});
 
+  // --- FIX: Check for habits with empty keys ---
+  const habitWithEmptyKey = useMemo(() => {
+    if (!data?.habits) return null;
+    return data.habits.find(h => !h.habit_key || h.habit_key.trim() === '');
+  }, [data?.habits]);
+  // --- END FIX ---
+
   const habitGroups = useMemo(() => {
     if (!data?.habits) return [];
 
     return data.habits
+      .filter(h => h.habit_key) // Filter out habits with empty keys from normal display
       .map(habit => {
       const goal = habit.adjustedDailyGoal;
       const progress = habit.dailyProgress;
@@ -205,6 +214,22 @@ const Index = () => {
 
   if (isLoading || isOnboardingLoading || isCapsulesLoading) return <DashboardSkeleton />;
   if (isError || !data) return null;
+
+  // --- FIX: Show the fixer component if an empty key is detected ---
+  if (habitWithEmptyKey) {
+    return (
+      <div className="flex flex-col min-h-screen bg-background items-center justify-center p-4">
+        <div className="max-w-lg w-full">
+          <FixEmptyHabitKey 
+            habitId={habitWithEmptyKey.id} 
+            habitName={habitWithEmptyKey.name} 
+            onComplete={() => refetch()} 
+          />
+        </div>
+      </div>
+    );
+  }
+  // --- END FIX ---
 
   const renderHabitItem = (habit: any) => {
     const isWeeklyAnchor = habit.category === 'anchor' && habit.frequency_per_week === 1;
