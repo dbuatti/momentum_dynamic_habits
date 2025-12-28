@@ -163,17 +163,23 @@ export const useUserHabitWizardTemp = () => {
   const deleteProgressMutation = useMutation({
     mutationFn: async () => {
       if (!userId) throw new Error('User not authenticated');
-      // Synchronously clear the cache first to prevent UI flicker/reload
+      
+      // Stop any active fetches to prevent the draft from "loading back" mid-delete
+      await queryClient.cancelQueries({ queryKey: ['userHabitWizardTemp', userId] });
+      
+      // Synchronously wipe the local cache for immediate UI response
       queryClient.setQueryData(['userHabitWizardTemp', userId], null);
+      
+      // Perform the actual DB deletion
       return clearWizardProgress(userId);
     },
     onSuccess: () => {
-      // Ensure the query is removed and won't be refetched with old data
+      // Ensure the query is completely gone from the cache
       queryClient.removeQueries({ queryKey: ['userHabitWizardTemp', userId] });
     },
     onError: (error) => {
       showError(`Failed to clear wizard progress: ${error.message}`);
-      // On error, we might want to invalidate to restore the data from server
+      // Restore cached state on failure so the user knows it didn't delete
       queryClient.invalidateQueries({ queryKey: ['userHabitWizardTemp', userId] });
     },
   });

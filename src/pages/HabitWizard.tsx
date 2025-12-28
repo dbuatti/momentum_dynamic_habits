@@ -197,8 +197,11 @@
     const [currentMicroStepIndex, setCurrentMicroStepIndex] = useState(0);
     const [wizardData, setWizardData] = useState<Partial<WizardHabitData>>({});
     const [isSaving, setIsSaving] = useState(false);
-    const discardInProgress = useRef(false); // USE REF: For immediate, synchronous status checking
+    
+    // Explicit locks to stop draft loading logic during destruction
+    const discardInProgress = useRef(false); 
     const [hasLoadedInitialProgress, setHasLoadedInitialProgress] = useState(false);
+    
     const [showEditDetailsModal, setShowEditDetailsModal] = useState(false);
     const [editableHabitData, setEditableHabitData] = useState<Partial<CreateHabitParams>>({});
     const [showExitDialog, setShowExitDialog] = useState(false);
@@ -210,7 +213,7 @@
       },
       onSuccess: async () => {
         showSuccess('Habit created successfully!');
-        discardInProgress.current = true; // Block any further loads
+        discardInProgress.current = true; // Lock loading
         await clearProgress();
         queryClient.invalidateQueries({ queryKey: ['dashboardData', session?.user?.id] });
         queryClient.invalidateQueries({ queryKey: ['journeyData', session?.user?.id] });
@@ -382,10 +385,11 @@
         setCurrentStep(1);
         setCurrentMicroStepIndex(0);
         setHasLoadedInitialProgress(false);
-        discardInProgress.current = false; // Allow loading again if we are staying here
+        discardInProgress.current = false; 
         showSuccess('Wizard progress reset.');
       } catch (error) {
         showError('Failed to reset progress.');
+        discardInProgress.current = false;
       }
     }, [clearProgress]);
 
@@ -406,19 +410,20 @@
     const handleDiscardDraft = useCallback(async () => {
       console.log('[HabitWizard] handleDiscardDraft called');
       setIsSaving(true);
-      discardInProgress.current = true; // IMMEDIATELY lock the loading effect
       
-      try {
-        // Reset local state first to clear UI
-        setWizardData({});
-        setCurrentStep(1);
-        setCurrentMicroStepIndex(0);
-        setHasLoadedInitialProgress(true); 
+      // IMMEDIATELY lock the loading effect and force local state reset
+      discardInProgress.current = true; 
+      setWizardData({});
+      setCurrentStep(1);
+      setCurrentMicroStepIndex(0);
+      setHasLoadedInitialProgress(true); 
 
+      try {
         console.log('[HabitWizard] Calling clearProgress to discard draft...');
         await clearProgress();
         
         showSuccess('Draft discarded.');
+        // Use replace: true and navigate immediately to break the lifecycle
         navigate('/', { replace: true });
       } catch (error) {
         console.error('[HabitWizard] Error in handleDiscardDraft:', error);
