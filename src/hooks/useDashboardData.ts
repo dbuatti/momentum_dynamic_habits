@@ -111,16 +111,28 @@ const fetchDashboardData = async (userId: string) => {
     const unit = h.unit || (mType === 'timer' ? 'min' : (mType === 'binary' ? 'dose' : 'reps'));
 
     // NEW LOGIC FOR isComplete:
-    if (h.complete_on_finish) {
+    
+    // 1. If Fixed and not Binary (like 2 min teeth brushing), check if progress meets goal.
+    if (h.is_fixed && mType !== 'binary') {
+      const threshold = mType === 'timer' ? 0.1 : 0.01;
+      isComplete = rawDailyProgress >= (baseAdjustedDailyGoal - threshold);
+    } 
+    // 2. If Binary or Complete-on-Finish (which covers most fixed habits, including the previous case if progress is met)
+    else if (h.complete_on_finish || mType === 'binary') {
+      // Completion is achieved by logging at least one task today.
       isComplete = completedHabitKeysToday.has(h.habit_key);
-    } else if (isWeeklyAnchor) {
+    } 
+    // 3. If Weekly Anchor, check if one session is logged this week.
+    else if (isWeeklyAnchor) {
       isComplete = weeklyCompletions >= 1;
-    } else if (mType === 'binary') {
-      isComplete = completedHabitKeysToday.has(h.habit_key);
-    } else {
+    } 
+    // 4. Default: Growth/Trial habits require meeting the daily goal.
+    else {
       const threshold = mType === 'timer' ? 0.1 : 0.01;
       isComplete = rawDailyProgress >= (baseAdjustedDailyGoal - threshold);
     }
+    
+    // END NEW LOGIC FOR isComplete
 
     const isDependent = !!h.dependent_on_habit_id;
     const dependentHabit = habits?.find(depH => depH.id === h.dependent_on_habit_id);
