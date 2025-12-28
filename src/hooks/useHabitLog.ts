@@ -155,11 +155,17 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
     const surplus = totalDailyProgressAfterLog - userHabitData.current_daily_goal;
     const newCarryoverValue = Math.max(0, surplus);
 
+    console.log(`[useHabitLog] complete_on_finish is FALSE. Calculating carryover.`);
+    console.log(`[useHabitLog] Goal: ${userHabitData.current_daily_goal}, Progress: ${totalDailyProgressAfterLog}, Surplus: ${surplus}`);
+    console.log(`[useHabitLog] New carryover_value to save: ${newCarryoverValue}`);
+
     await supabase.from('user_habits').update({
       carryover_value: newCarryoverValue,
     }).eq('id', userHabitData.id);
   } else if (userHabitData.complete_on_finish) {
     // If complete_on_finish is true, any surplus is consumed by the goal, so reset carryover
+    console.log(`[useHabitLog] complete_on_finish is TRUE. Resetting carryover to 0.`);
+    
     await supabase.from('user_habits').update({
       carryover_value: 0,
     }).eq('id', userHabitData.id);
@@ -360,6 +366,11 @@ const unlogHabit = async ({ userId, completedTaskId }: { userId: string, complet
   if (userHabitData.measurement_type !== 'binary' && !userHabitData.is_fixed) {
     const surplusAfterUnlog = totalDailyProgressAfterUnlog - userHabitData.current_daily_goal;
     const newCarryoverValueAfterUnlog = Math.max(0, surplusAfterUnlog);
+    
+    console.log(`[useHabitLog] UNLOG. Recalculating carryover.`);
+    console.log(`[useHabitLog] Goal: ${userHabitData.current_daily_goal}, Progress: ${totalDailyProgressAfterUnlog}, Surplus: ${surplusAfterUnlog}`);
+    console.log(`[useHabitLog] New carryover_value to save: ${newCarryoverValueAfterUnlog}`);
+
     await supabase.from('user_habits').update({
       carryover_value: newCarryoverValueAfterUnlog,
     }).eq('id', userHabitData.id);
