@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
-import { showError } from '@/utils/toast';
+import { showError, showSuccess } from '@/utils/toast';
 import { MeasurementType } from '@/types/habit';
 
 export interface WizardHabitData {
@@ -25,7 +25,7 @@ export interface WizardHabitData {
   emotional_cost: 'light' | 'some_resistance' | 'heavy' | null;
   emotional_cost_skipped?: boolean;
   confidence_check: number | null; 
-  confidence_check_skipped?: boolean; // Added confidence_check_skipped
+  confidence_check_skipped?: boolean;
 
   barriers: string[];
   barriers_skipped?: boolean;
