@@ -74,6 +74,12 @@ const Index = () => {
         const isCompleted = progress >= (targetValue - threshold);
         const taskId = capsuleMapping[i] || null;
 
+        // NEW: Calculate initialValue for the capsule
+        // This is the progress made towards this specific chunk
+        const previousChunksValue = i * chunkValue;
+        const progressInThisChunk = Math.max(0, progress - previousChunksValue);
+        const initialValue = Math.min(chunkValue, progressInThisChunk);
+
         return {
           id: `${habit.key}-${i}`,
           habitKey: habit.key,
@@ -87,6 +93,7 @@ const Index = () => {
           isFixed: habit.is_fixed,
           completedTaskId: taskId,
           completeOnFinish: (habit as any).complete_on_finish ?? true,
+          initialValue: initialValue, // Pass this to the capsule
         };
       });
 
