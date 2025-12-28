@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { showSuccess, showError } from '@/utils/toast';
 import { calculateLevel } from '@/utils/leveling';
-import { isSameDay, subDays, format, startOfDay, endOfDay } from 'date-fns';
+import { isSameDay, subDays, format, startOfDay, endOfDay, parse } from 'date-fns';
 import { UserHabitRecord } from '@/types/habit';
 
 interface LogHabitParams {
@@ -17,22 +17,40 @@ interface LogHabitParams {
   capsuleIndex?: number;
 }
 
-const checkHabitCompletionOnDay = async (userId: string, habitKey: string, date: Date, userHabitData: UserHabitRecord, timezone: string): Promise<boolean> => {
-  const { data: completedTasksOnDay, error } = await supabase
+// Helper function to get day boundaries using RPC
+const getDayBoundaries = async (userId: string, dateString: string) => {
+  const { data, error } = await supabase.rpc('get_day_boundaries', {
+    p_user_id: userId,
+    p_target_date: dateString,
+  });
+  if (error) throw error;
+  return data[0]; // { start_time: TIMESTAMPTZ, end_time: TIMESTAMPTZ }
+};
+
+const checkHabitCompletionOnDay = async (userId: string, habitKey: string, date: Date, userHabitData: UserHabitRecord): Promise<boolean> => {
+  const dateString = format(date, 'yyyy-MM-dd');
+  
+  // Use the RPC to get the boundaries for the target date, respecting rollover hour and timezone
+  const boundaries = await getDayBoundaries(userId, dateString);
+  
+  if (!boundaries) return false;
+
+  const { data: completedTasksOnDay, error: fetchError } = await supabase
     .from('completedtasks')
     .select('duration_used, xp_earned')
     .eq('user_id', userId)
     .eq('original_source', habitKey)
-    .gte('completed_at', startOfDay(date).toISOString())
-    .lte('completed_at', endOfDay(date).toISOString());
+    .gte('completed_at', boundaries.start_time)
+    .lt('completed_at', boundaries.end_time);
 
-  if (error || !completedTasksOnDay || completedTasksOnDay.length === 0) return false;
+  if (fetchError || !completedTasksOnDay || completedTasksOnDay.length === 0) return false;
 
   // NEW LOGIC: If complete_on_finish is true, any logged task means it's complete for the day.
   if (userHabitData.complete_on_finish) {
-    return completedTasksOnDay.length > 0;
-  }
-
+    return completedTasksOnDay.length >= 1;
+  } 
+  
+  // Existing logic for summing progress
   const isWeeklyAnchor = userHabitData.category === 'anchor' && userHabitData.frequency_per_week === 1;
   const xpPerUnit = userHabitData.xp_per_unit || (userHabitData.unit === 'min' ? 30 : 1);
 
@@ -71,7 +89,7 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
 
   const { data: profileData, error: profileFetchError } = await supabase
     .from('profiles')
-    .select('tasks_completed_today, xp, level, timezone, neurodivergent_mode')
+    .select('tasks_completed_today, xp, level, timezone, neurodivergent_mode, day_rollover_hour')
     .eq('id', userId)
     .single();
 
@@ -185,33 +203,31 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
     const todayDate = new Date();
     const todayDateString = format(todayDate, 'yyyy-MM-dd'); 
 
-    const { data: existingCompletionsToday } = await supabase
-      .from('completedtasks')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('original_source', habitKey)
-      .gte('completed_at', startOfDay(todayDate).toISOString())
-      .lte('completed_at', endOfDay(todayDate).toISOString());
+    // Check if the habit was already marked complete today (using the timezone-aware check)
+    const wasCompletedTodayBeforeLog = await checkHabitCompletionOnDay(userId, habitKey, todayDate, userHabitData);
 
-    const previousValidSessionsToday = (existingCompletionsToday || []).filter(task => task.id !== insertedTask.id);
-    const alreadyCountedForPlateauToday = previousValidSessionsToday.length > 0;
+    const previousValidSessionsToday = wasCompletedTodayBeforeLog; // Simplified check based on the new function
+    const alreadyCountedForPlateauToday = previousValidSessionsToday;
 
     if (!alreadyCountedForPlateauToday) { 
       const plateauRequired = userHabitData.plateau_days_required; 
       const lastPlateauDate = new Date(userHabitData.last_plateau_start_date);
-      const isNewDayForPlateau = !isSameDay(todayDate, lastPlateauDate);
+      
+      // We need to check if the current log falls into a new day boundary compared to the last plateau date.
+      // Since we are using the RPC for today's tasks, we should check if the last plateau date is yesterday.
+      
+      const yesterday = subDays(todayDate, 1); 
+      const wasCompletedYesterday = await checkHabitCompletionOnDay(userId, habitKey, yesterday, userHabitData);
 
-      if (isNewDayForPlateau) {
-        const yesterday = subDays(todayDate, 1); 
-        const wasCompletedYesterday = await checkHabitCompletionOnDay(userId, habitKey, yesterday, userHabitData, timezone);
-
-        if (isSameDay(lastPlateauDate, yesterday) && wasCompletedYesterday) {
-          newCompletionsInPlateau = userHabitData.completions_in_plateau + 1;
-        } else {
-          newCompletionsInPlateau = 1; 
-        }
-        newLastPlateauStartDate = todayDateString;
+      // If the last plateau start date was yesterday, and yesterday was completed, increment streak.
+      // Note: This logic is slightly simplified from a true streak check but works for plateau counting.
+      if (isSameDay(lastPlateauDate, yesterday) && wasCompletedYesterday) {
+        newCompletionsInPlateau = userHabitData.completions_in_plateau + 1;
+      } else {
+        // If yesterday was missed, or last plateau date was older, reset streak to 1 (for today)
+        newCompletionsInPlateau = 1; 
       }
+      newLastPlateauStartDate = todayDateString; // Update last plateau start date to today
 
       if (userHabitData.is_trial_mode && newCompletionsInPlateau >= plateauRequired) {
         newIsTrialMode = false;
@@ -384,7 +400,7 @@ const unlogHabit = async ({ userId, completedTaskId }: { userId: string, complet
   }
 
   const todayDate = new Date();
-  const wasCompletedTodayBeforeUnlog = await checkHabitCompletionOnDay(userId, task.original_source, todayDate, userHabitData, timezone);
+  const wasCompletedTodayBeforeUnlog = await checkHabitCompletionOnDay(userId, task.original_source, todayDate, userHabitData);
 
   if (wasCompletedTodayBeforeUnlog && !isGoalMetAfterUnlog && userHabitData.completions_in_plateau > 0) {
     await supabase.from('user_habits').update({
