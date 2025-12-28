@@ -268,43 +268,26 @@ const HabitWizard = () => {
   };
 
   useEffect(() => {
-    if (!isLoadingWizardProgress && wizardProgress && !hasLoadedInitialProgress && !isTemplateCreationMode && !templateToPreFill && !aiGeneratedData) {
+    // If we are in a "new" mode (template, AI, or fresh start), don't load progress
+    if (isTemplateCreationMode || templateToPreFill || aiGeneratedData) {
+      setHasLoadedInitialProgress(true);
+      return;
+    }
+
+    // If we have already loaded progress or are currently loading, do nothing
+    if (hasLoadedInitialProgress || isLoadingWizardProgress) {
+      return;
+    }
+
+    // If we have progress data, load it
+    if (wizardProgress) {
       console.log('[HabitWizard] Loading saved progress:', wizardProgress);
       setCurrentStep(wizardProgress.current_step);
       setWizardData(wizardProgress.habit_data);
       setCurrentMicroStepIndex(0);
       setHasLoadedInitialProgress(true);
-    } else if (!isLoadingWizardProgress && !hasLoadedInitialProgress) {
-      if (aiGeneratedData) {
-        console.log('[HabitWizard] Loading AI-generated data:', aiGeneratedData);
-        setWizardData(aiGeneratedData);
-        setCurrentStep(7);
-        setCurrentMicroStepIndex(0);
-        showSuccess('AI-generated habit ready for review!');
-      } else if (templateToPreFill) {
-        console.log('[HabitWizard] Loading template data:', templateToPreFill);
-        setWizardData({
-          name: templateToPreFill.name,
-          habit_key: templateToPreFill.id,
-          category: templateToPreFill.category,
-          unit: templateToPreFill.unit,
-          icon_name: templateToPreFill.icon_name,
-          daily_goal: templateToPreFill.defaultDuration,
-          frequency_per_week: templateToPreFill.defaultFrequency,
-          is_fixed: templateToPreFill.defaultMode === 'Fixed',
-          is_trial_mode: templateToPreFill.defaultMode === 'Trial',
-          auto_chunking: templateToPreFill.autoChunking,
-          anchor_practice: templateToPreFill.anchorPractice,
-          xp_per_unit: templateToPreFill.xpPerUnit,
-          energy_cost_per_unit: templateToPreFill.energyCostPerUnit,
-          plateau_days_required: templateToPreFill.plateauDaysRequired,
-          short_description: templateToPreFill.shortDescription,
-          weekly_session_min_duration: templateToPreFill.defaultDuration,
-        });
-      }
-      setHasLoadedInitialProgress(true);
     }
-  }, [isLoadingWizardProgress, wizardProgress, isTemplateCreationMode, templateToPreFill, aiGeneratedData, hasLoadedInitialProgress, navigate]);
+  }, [isLoadingWizardProgress, wizardProgress, isTemplateCreationMode, templateToPreFill, aiGeneratedData, hasLoadedInitialProgress]);
 
   useEffect(() => {
     if (!templateToPreFill && !aiGeneratedData && wizardData.name) {
@@ -415,6 +398,13 @@ const HabitWizard = () => {
       console.log('[HabitWizard] Calling clearProgress to discard draft...');
       await clearProgress();
       console.log('[HabitWizard] clearProgress completed successfully');
+      
+      // CRITICAL: Reset local state immediately to prevent useEffect from reloading the deleted data
+      setWizardData({});
+      setCurrentStep(1);
+      setCurrentMicroStepIndex(0);
+      setHasLoadedInitialProgress(true); // Mark as loaded so it doesn't try to fetch again
+
       showSuccess('Draft discarded.');
       navigate('/');
     } catch (error) {

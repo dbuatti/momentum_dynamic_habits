@@ -166,6 +166,8 @@ export const useUserHabitWizardTemp = () => {
       return clearWizardProgress(userId);
     },
     onSuccess: () => {
+      // Invalidate and remove the data from the cache immediately
+      queryClient.setQueryData(['userHabitWizardTemp', userId], null);
       queryClient.invalidateQueries({ queryKey: ['userHabitWizardTemp', userId] });
     },
     onError: (error) => {
