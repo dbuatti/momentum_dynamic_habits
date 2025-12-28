@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-import { Target, CheckCircle2, Star, ChevronRight, Zap, ListChecks } from 'lucide-react'; 
+import { Target, CheckCircle2, Star, ChevronRight, Zap, ListChecks, CalendarCheck } from 'lucide-react'; 
 import { WizardHabitData } from '@/hooks/useUserHabitWizardTemp';
 
 interface Props {
@@ -64,25 +64,45 @@ export const Step6_SuccessDefinition: React.FC<Props> = ({ wizardData, setWizard
           </div>
         </div>
 
-        {/* NEW: Completion Behavior Toggle */}
+        {/* Behavioral Toggles */}
         <div className="pt-4 border-t border-border space-y-4">
           <div className="flex items-center gap-2 mb-1">
             <ListChecks className="w-5 h-5 text-primary" />
-            <h3 className="font-bold text-lg">Completion Behavior</h3>
+            <h3 className="font-bold text-lg">Behavior & Display</h3>
           </div>
           
-          <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10 flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label className="font-black text-xs uppercase tracking-tight">Complete goal on stop?</Label>
-              <p className="text-[10px] text-muted-foreground leading-tight max-w-[200px]">
-                If ON, finishing a session marks the whole goal done (e.g. Teeth Brushing). 
-                If OFF, it only saves elapsed time (e.g. Reading).
-              </p>
+          <div className="space-y-3">
+            <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10 flex items-center justify-between">
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <CalendarCheck className="w-3.5 h-3.5 text-primary" />
+                  <Label className="font-black text-xs uppercase tracking-tight">Weekly Objective?</Label>
+                </div>
+                <p className="text-[10px] text-muted-foreground leading-tight max-w-[200px]">
+                  Keep this visible on the dashboard until your weekly session goal is met.
+                </p>
+              </div>
+              <Switch 
+                checked={wizardData.is_weekly_goal ?? false}
+                onCheckedChange={(val) => setWizardData(prev => ({ ...prev, is_weekly_goal: val }))}
+              />
             </div>
-            <Switch 
-              checked={wizardData.complete_on_finish ?? true}
-              onCheckedChange={(val) => setWizardData(prev => ({ ...prev, complete_on_finish: val }))}
-            />
+
+            <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10 flex items-center justify-between">
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <Zap className="w-3.5 h-3.5 text-primary" />
+                  <Label className="font-black text-xs uppercase tracking-tight">Complete on finish?</Label>
+                </div>
+                <p className="text-[10px] text-muted-foreground leading-tight max-w-[200px]">
+                  Stopping a timer marks the whole goal done. Turn OFF to save actual time spent.
+                </p>
+              </div>
+              <Switch 
+                checked={wizardData.complete_on_finish ?? true}
+                onCheckedChange={(val) => setWizardData(prev => ({ ...prev, complete_on_finish: val }))}
+              />
+            </div>
           </div>
         </div>
 
