@@ -53,7 +53,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
 }) => {
   const [showMoodPicker, setShowMoodPicker] = useState(false);
   const [isTiming, setIsTiming] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(measurementType === 'timer' ? Math.round(value * 60) : 0);
   const [isPaused, setIsPaused] = useState(false);
   const [completedTaskIdState, setCompletedTaskIdState] = useState<string | null>(initialCompletedTaskId || null);
   const [manualValue, setManualValue] = useState<number>(value);
@@ -68,6 +67,11 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   const { triggerFeedback } = useFeedback();
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const storageKey = `timer_${habitKey}_${label}_${new Date().toISOString().split('T')[0]}`;
+
+  // Calculate the target duration in seconds for this specific capsule
+  const targetDurationSeconds = measurementType === 'timer' ? Math.round(value * 60) : 0;
+  // State for the actual time left, initialized with the target duration
+  const [timeLeft, setTimeLeft] = useState(targetDurationSeconds);
 
   const isLoggingDisabled = isFixed && isHabitComplete && !isCompleted;
   const isBonusMode = !isFixed && isHabitComplete && !isCompleted;
@@ -98,6 +102,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     }, 1000);
   }, []);
 
+  // Effect to dispatch timer updates for FloatingTimer and Tab Title
   useEffect(() => {
     if (measurementType === 'timer' && isTiming) {
       window.dispatchEvent(new CustomEvent('habit-timer-update', {
@@ -115,6 +120,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     }
   }, [timeLeft, isTiming, isPaused, label, value, habitKey, habitName, measurementType]);
 
+  // Effect to handle timer completion
   useEffect(() => {
     if (isTiming && timeLeft === 0) {
       handleFinishTiming(undefined, true);
@@ -122,50 +128,72 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     }
   }, [timeLeft, isTiming, triggerFeedback]);
 
+  // Effect to load/save timer state from/to localStorage
   useEffect(() => {
     if (measurementType !== 'timer') return;
+
+    // If the capsule is marked completed, clear timer state from localStorage
     if (isCompleted) {
       localStorage.removeItem(storageKey);
       setIsTiming(false);
-      setTimeLeft(Math.round(value * 60));
+      setIsPaused(false);
+      setTimeLeft(targetDurationSeconds); // Reset to initial goal for next time
       return;
     }
+
     const saved = localStorage.getItem(storageKey);
     if (saved) {
-      const { timeLeft: savedTimeLeft, paused, timing } = JSON.parse(saved);
+      const { timeLeft: savedTimeLeft, paused, timing, lastUpdated } = JSON.parse(saved);
+      
+      let calculatedTimeLeft = savedTimeLeft;
+      if (timing && !paused && lastUpdated) {
+        // Calculate actual time left based on last update to account for app being closed
+        const elapsedSinceLastUpdate = Math.floor((Date.now() - lastUpdated) / 1000);
+        calculatedTimeLeft = Math.max(0, savedTimeLeft - elapsedSinceLastUpdate);
+      }
+
       setIsPaused(paused);
       setIsTiming(timing);
-      setTimeLeft(savedTimeLeft);
+      setTimeLeft(calculatedTimeLeft);
+      
       if (timing && !paused) {
         startInterval();
       }
     } else {
-      setTimeLeft(Math.round(value * 60));
+      // Only initialize timeLeft to targetDurationSeconds if no saved state exists
+      // This prevents resetting an active timer when 'value' prop changes due to carryover updates
+      setTimeLeft(targetDurationSeconds);
     }
+    
     return () => {
         stopInterval();
         window.dispatchEvent(new CustomEvent('habit-timer-update', { detail: null }));
     };
-  }, [isCompleted, storageKey, measurementType, startInterval, value]);
+  }, [isCompleted, storageKey, measurementType, startInterval, targetDurationSeconds]); // Depend on targetDurationSeconds
 
+  // Effect to save timer state to localStorage when active
   useEffect(() => {
     if (measurementType === 'timer' && isTiming && !isCompleted) {
       localStorage.setItem(storageKey, JSON.stringify({
         timeLeft,
         paused: isPaused,
         timing: isTiming,
-        lastUpdated: Date.now()
+        lastUpdated: Date.now() // Store last updated timestamp
       }));
     }
   }, [timeLeft, isPaused, isTiming, isCompleted, storageKey, measurementType]);
 
+  // Handle Timer Actions
   const handleStartTimer = (e: React.MouseEvent) => {
     if (isLoggingDisabled) return;
     e.stopPropagation();
     triggerFeedback('start');
     setIsTiming(true);
     setIsPaused(false);
-    if (timeLeft <= 0) setTimeLeft(Math.round(value * 60));
+    // Only reset timeLeft to targetDurationSeconds if it's at 0 or its initial full value
+    if (timeLeft <= 0 || timeLeft === targetDurationSeconds) { 
+      setTimeLeft(targetDurationSeconds);
+    }
     startInterval();
   };
 
@@ -184,7 +212,10 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   const handleResetTimer = (e: React.MouseEvent) => {
     e.stopPropagation();
     triggerFeedback('pause');
-    setTimeLeft(Math.round(value * 60));
+    setTimeLeft(targetDurationSeconds); // Reset to the current target duration
+    setIsTiming(false); // Stop timing when reset
+    setIsPaused(false);
+    localStorage.removeItem(storageKey); // Clear from local storage
   };
 
   const handleFinishTiming = (mood?: string, promptMood: boolean = false) => {
@@ -195,13 +226,14 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     if (measurementType === 'timer') {
       // NEW LOGIC: Use completeOnFinish toggle
       if (completeOnFinish) {
-        totalSessionValue = value;
+        totalSessionValue = value; // Use the original 'value' prop (chunk goal)
       } else {
-        const elapsedSeconds = Math.round(value * 60) - timeLeft;
+        const elapsedSeconds = targetDurationSeconds - timeLeft; // Calculate elapsed from target
         totalSessionValue = Number((elapsedSeconds / 60).toFixed(2));
       }
     } else {
-      const elapsedSeconds = Math.round(value * 60) - timeLeft;
+      // This branch should ideally not be hit for timer type, but for safety
+      const elapsedSeconds = targetDurationSeconds - timeLeft;
       totalSessionValue = Number((elapsedSeconds / 60).toFixed(2));
     }
     
@@ -223,7 +255,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     localStorage.removeItem(storageKey);
     onLogProgress(totalSessionValue, true, mood);
     setIsTiming(false);
-    setTimeLeft(Math.round(value * 60));
+    setTimeLeft(targetDurationSeconds); // Reset to target duration after completion
     setShowMoodPicker(false);
   };
 
@@ -232,7 +264,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     
     stopInterval();
     
-    const elapsedSeconds = Math.round(value * 60) - timeLeft;
+    const elapsedSeconds = targetDurationSeconds - timeLeft; // Calculate elapsed from target
     const elapsedMinutes = Number((elapsedSeconds / 60).toFixed(2));
 
     if (measurementType === 'timer' && elapsedSeconds > 2) {
@@ -293,7 +325,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   };
 
   const progressPercent = measurementType === 'timer' 
-    ? Math.min(100, ((Math.round(value * 60) - timeLeft) / (Math.round(value * 60))) * 100)
+    ? Math.min(100, ((targetDurationSeconds - timeLeft) / targetDurationSeconds) * 100)
     : 0;
 
   return (
