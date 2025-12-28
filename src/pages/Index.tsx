@@ -28,6 +28,7 @@ import { showError } from "@/utils/toast";
 import { habitIconMap, habitColorMap } from '@/lib/habit-utils';
 import { TrialGuidance } from "@/components/dashboard/TrialGuidance";
 import { WeeklyAnchorCard } from "@/components/dashboard/WeeklyAnchorCard";
+import { WeeklyObjectiveCard } from "@/components/dashboard/WeeklyObjectiveCard"; // Import new component
 import { FixEmptyHabitKey } from "@/components/fixers/FixEmptyHabitKey";
 
 const Index = () => {
@@ -80,16 +81,15 @@ const Index = () => {
           effectiveValue = chunkValue + habit.carryoverValue;
         }
         
-        let initialRemainingTimeSeconds = Math.round(effectiveValue * 60); // Default to full chunk duration
+        let initialRemainingTimeSeconds = Math.round(effectiveValue * 60);
         
-        // If this capsule is not yet completed, but there's some progress within it
         if (!isCompleted && progress > cumulativeProgressBeforeThisCapsule) {
           const progressWithinThisCapsuleMinutes = progress - cumulativeProgressBeforeThisCapsule;
           const remainingMinutes = effectiveValue - progressWithinThisCapsuleMinutes;
           initialRemainingTimeSeconds = Math.round(Math.max(0, remainingMinutes * 60));
         }
 
-        cumulativeProgressBeforeThisCapsule += effectiveValue; // Update for the next iteration
+        cumulativeProgressBeforeThisCapsule += effectiveValue;
 
         return {
           id: `${habit.key}-${i}`,
@@ -104,7 +104,7 @@ const Index = () => {
           isFixed: habit.is_fixed,
           completedTaskId: taskId,
           completeOnFinish: (habit as any).complete_on_finish ?? true,
-          initialRemainingTimeSeconds: initialRemainingTimeSeconds, // Pass this new prop
+          initialRemainingTimeSeconds: initialRemainingTimeSeconds,
         };
       });
 
@@ -152,9 +152,9 @@ const Index = () => {
   }, [habitGroups]);
 
   // Grouping Logic
-  const anchorHabits = useMemo(() => visibleHabitsForDisplay.filter(h => h.category === 'anchor'), [visibleHabitsForDisplay]);
-  const weeklyHabits = useMemo(() => visibleHabitsForDisplay.filter(h => (h as any).is_weekly_goal && h.category !== 'anchor'), [visibleHabitsForDisplay]);
-  const dailyHabits = useMemo(() => visibleHabitsForDisplay.filter(h => !(h as any).is_weekly_goal && h.category !== 'anchor'), [visibleHabitsForDisplay]);
+  const anchorHabits = useMemo(() => visibleHabitsForDisplay.filter(h => h.category === 'anchor' && h.frequency_per_week === 1), [visibleHabitsForDisplay]);
+  const weeklyObjectives = useMemo(() => visibleHabitsForDisplay.filter(h => (h as any).is_weekly_goal && h.category !== 'anchor'), [visibleHabitsForDisplay]);
+  const dailyMomentumHabits = useMemo(() => visibleHabitsForDisplay.filter(h => !(h as any).is_weekly_goal && h.category !== 'anchor'), [visibleHabitsForDisplay]);
 
   useEffect(() => {
     if (habitGroups.length === 0 || hasInitializedState) return;
@@ -242,6 +242,7 @@ const Index = () => {
 
   const renderHabitItem = (habit: any) => {
     const isWeeklyAnchor = habit.category === 'anchor' && habit.frequency_per_week === 1;
+    const isWeeklyObjective = habit.is_weekly_goal && habit.category !== 'anchor';
     const dependentHabitName = data.habits.find(h => h.id === habit.dependent_on_habit_id)?.name || 'previous habit';
 
     if (isWeeklyAnchor) {
@@ -251,6 +252,18 @@ const Index = () => {
           habit={habit}
           isLocked={habit.isLockedByDependency}
           dependentHabitName={dependentHabitName}
+        />
+      );
+    }
+    
+    if (isWeeklyObjective) {
+      return (
+        <WeeklyObjectiveCard
+          key={habit.key}
+          habit={habit}
+          isLocked={habit.isLockedByDependency}
+          dependentHabitName={dependentHabitName}
+          onFocus={focusHabit}
         />
       );
     }
@@ -502,16 +515,27 @@ const Index = () => {
           </div>
 
           {/* NEW: Weekly Objectives Section */}
-          {weeklyHabits.length > 0 && (
+          {weeklyObjectives.length > 0 && (
             <div className="space-y-4">
               <div className="sticky top-[60px] z-20 bg-background/95 backdrop-blur-sm py-3 flex items-center gap-3 border-b border-border">
                 <CalendarCheck className="w-5 h-5 text-indigo-500" />
                 <h2 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Weekly Objectives</h2>
                 <div className="ml-auto h-px flex-grow bg-border" />
               </div>
-              <Accordion type="multiple" value={expandedItems} onValueChange={handleExpandedChange} className="space-y-4">
-                {weeklyHabits.map(renderHabitItem)}
-              </Accordion>
+              <div className="space-y-4">
+                {weeklyObjectives.map(habit => {
+                  const dependentHabitName = data.habits.find(h => h.id === habit.dependent_on_habit_id)?.name || 'previous habit';
+                  return (
+                    <WeeklyObjectiveCard
+                      key={habit.key}
+                      habit={habit}
+                      isLocked={habit.isLockedByDependency}
+                      dependentHabitName={dependentHabitName}
+                      onFocus={focusHabit}
+                    />
+                  );
+                })}
+              </div>
             </div>
           )}
 
@@ -522,11 +546,11 @@ const Index = () => {
               <div className="ml-auto h-px flex-grow bg-border" />
             </div>
             
-            {dailyHabits.length > 0 ? (
+            {dailyMomentumHabits.length > 0 ? (
               <Accordion type="multiple" value={expandedItems} onValueChange={handleExpandedChange} className="space-y-4">
-                {dailyHabits.map(renderHabitItem)}
+                {dailyMomentumHabits.map(renderHabitItem)}
               </Accordion>
-            ) : !anchorHabits.length && !weeklyHabits.length ? (
+            ) : !anchorHabits.length && !weeklyObjectives.length ? (
               <div className="bg-card border-2 border-primary/20 rounded-[2rem] p-10 text-center space-y-6 shadow-xl">
                 <div className="w-20 h-20 bg-primary/10 rounded-[2rem] flex items-center justify-center mx-auto"><PlusCircle className="w-10 h-10 text-primary" /></div>
                 <div className="space-y-2">
@@ -538,7 +562,7 @@ const Index = () => {
                   <Link to="/templates"><Button variant="outline" size="lg" className="w-full h-14 rounded-2xl font-black text-base border-2">Explore Templates</Button></Link>
                 </div>
               </div>
-            ) : dailyHabits.length === 0 && (
+            ) : dailyMomentumHabits.length === 0 && (
               <div className="p-6 bg-muted/20 border-2 border-dashed border-border rounded-3xl text-center">
                 <p className="text-sm font-bold text-muted-foreground">No additional daily habits scheduled today.</p>
               </div>
