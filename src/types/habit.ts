@@ -96,6 +96,11 @@ export interface ProcessedUserHabit extends UserHabitRecord {
   isWithinWindow: boolean;
   isScheduledForToday: boolean;
   capsuleTaskMapping: Record<number, string>;
+  // Added missing properties
+  allCompleted: boolean;
+  displayProgress: number;
+  numChunks: number;
+  showExtraCapsule: boolean;
 }
 
 export interface PianoHabit extends Habit {

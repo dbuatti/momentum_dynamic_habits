@@ -30,6 +30,7 @@ import { TrialGuidance } from "@/components/dashboard/TrialGuidance";
 import { WeeklyAnchorCard } from "@/components/dashboard/WeeklyAnchorCard";
 import { WeeklyObjectiveCard } from "@/components/dashboard/WeeklyObjectiveCard";
 import { FixEmptyHabitKey } from "@/components/fixers/FixEmptyHabitKey";
+import { ProcessedUserHabit } from "@/types/habit";
 
 const Index = () => {
   const { data, isLoading, isError, refetch } = useDashboardData();
@@ -144,12 +145,6 @@ const Index = () => {
   const completedParts = data?.dailyMomentumParts.completed || 0;
   const totalParts = data?.dailyMomentumParts.total || 0;
 
-  const suggestedAction = useMemo(() => {
-    if (!habitGroups.length) return null;
-    return habitGroups.find(h => !h.allCompleted && !h.isLockedByDependency && h.isWithinWindow) || 
-           habitGroups.find(h => !h.allCompleted && !h.isLockedByDependency);
-  }, [habitGroups]);
-
   const visibleHabitsForDisplay = useMemo(() => {
     return habitGroups.filter(h => h.is_visible && (h.isScheduledForToday || h.category === 'anchor' || (h as any).is_weekly_goal));
   }, [habitGroups]);
@@ -158,6 +153,44 @@ const Index = () => {
   const anchorHabits = useMemo(() => visibleHabitsForDisplay.filter(h => h.category === 'anchor' && h.frequency_per_week === 1), [visibleHabitsForDisplay]);
   const weeklyObjectives = useMemo(() => visibleHabitsForDisplay.filter(h => (h as any).is_weekly_goal && h.category !== 'anchor'), [visibleHabitsForDisplay]);
   const dailyMomentumHabits = useMemo(() => visibleHabitsForDisplay.filter(h => !(h as any).is_weekly_goal && h.category !== 'anchor'), [visibleHabitsForDisplay]);
+
+  const suggestedAction = useMemo(() => {
+    if (!data?.habits || !data.sectionOrder) return null;
+
+    const orderedSectionIds = data.sectionOrder;
+    
+    let firstEligibleHabit: ProcessedUserHabit | null = null;
+
+    for (const sectionId of orderedSectionIds) {
+      let currentSectionHabits: ProcessedUserHabit[] = [];
+      if (sectionId === 'anchor') {
+        currentSectionHabits = anchorHabits;
+      } else if (sectionId === 'weekly_objective') {
+        currentSectionHabits = weeklyObjectives;
+      } else if (sectionId === 'daily_momentum') {
+        currentSectionHabits = dailyMomentumHabits;
+      }
+
+      // The `habitGroups` (and thus `anchorHabits`, `weeklyObjectives`, `dailyMomentumHabits`)
+      // are already sorted by `custom_habit_order` within `useDashboardData`.
+      // So we just need to find the first eligible one in this pre-sorted list.
+      for (const habit of currentSectionHabits) {
+        if (!habit.allCompleted && !habit.isLockedByDependency) {
+          if (habit.isWithinWindow) {
+            // If we find an in-window habit, it's the highest priority. Return it immediately.
+            return habit;
+          }
+          // If no in-window habit found yet, keep track of the first overall eligible one.
+          if (!firstEligibleHabit) {
+            firstEligibleHabit = habit;
+          }
+        }
+      }
+    }
+    
+    // If no in-window habit was found across all sections, return the first overall eligible habit.
+    return firstEligibleHabit;
+  }, [data, anchorHabits, weeklyObjectives, dailyMomentumHabits]);
 
   // Initialize: Start with stored state or collapsed by default
   useEffect(() => {
