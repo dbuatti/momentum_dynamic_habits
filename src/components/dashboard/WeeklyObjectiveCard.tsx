@@ -7,7 +7,8 @@ import { Progress } from '@/components/ui/progress';
 import { 
   CalendarCheck, Target, Play, Lock, 
   CheckCircle2, Clock, RotateCcw, 
-  Pause, Square, Loader2, Sparkles, BarChart3
+  Pause, Square, Loader2, Sparkles, BarChart3,
+  TrendingUp
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProcessedUserHabit } from '@/types/habit';
@@ -274,61 +275,67 @@ export const WeeklyObjectiveCard: React.FC<WeeklyObjectiveCardProps> = ({
             </div>
           </div>
         ) : (
-          <div className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1 p-4 rounded-2xl bg-card/50 border border-border/50 shadow-inner">
-                    <p className="text-[9px] font-black uppercase opacity-50 tracking-widest text-muted-foreground flex items-center gap-1">
-                        <Target className="w-3 h-3" /> Min Session
-                    </p>
-                    <p className="text-xl font-black text-foreground">
-                        {sessionMinDuration} {habit.unit}
-                    </p>
+          <div className="space-y-8">
+            <div className="grid grid-cols-2 gap-4 border-t border-border/30 pt-6">
+                <div className="space-y-2 pl-1">
+                    <p className="text-[9px] font-black uppercase opacity-50 tracking-widest text-muted-foreground">Min Session</p>
+                    <div className="flex items-center gap-2">
+                        <Target className="w-4 h-4 text-muted-foreground" />
+                        <p className="text-xl font-black text-foreground">
+                            {sessionMinDuration} {habit.unit}
+                        </p>
+                    </div>
                 </div>
-                <div className="space-y-1 p-4 rounded-2xl bg-card/50 border border-border/50 shadow-inner">
-                    <p className="text-[9px] font-black uppercase opacity-50 tracking-widest text-muted-foreground flex items-center gap-1">
-                        <CalendarCheck className="w-3 h-3" /> Weekly Progress
-                    </p>
-                    <p className="text-xl font-black text-foreground">
-                        {habit.weekly_progress} / {habit.frequency_per_week}
-                    </p>
+                <div className="space-y-2 pl-1">
+                    <p className="text-[9px] font-black uppercase opacity-50 tracking-widest text-muted-foreground">Weekly Progress</p>
+                    <div className="flex items-center gap-2">
+                        <CalendarCheck className="w-4 h-4 text-muted-foreground" />
+                        <p className="text-xl font-black text-foreground">
+                            {habit.weekly_progress} / {habit.frequency_per_week}
+                        </p>
+                    </div>
                 </div>
             </div>
 
-            {/* Time-based Progress Bar */}
-            <div className="space-y-3 p-4 rounded-2xl bg-card/30 border border-border/30">
-               <div className="flex justify-between items-center mb-1">
-                  <div className="flex items-center gap-2">
-                    <BarChart3 className="w-3.5 h-3.5 text-muted-foreground" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Weekly Time Invested</span>
+            <div className="space-y-6">
+                {/* Time-based Progress Bar */}
+                <div className="space-y-2">
+                   <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <BarChart3 className="w-3.5 h-3.5 text-muted-foreground" />
+                        <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Weekly Time Invested</span>
+                      </div>
+                      <span className="text-[10px] font-black tabular-nums opacity-60">
+                        {Math.round(weeklyTimeProgress)} / {totalWeeklyTimeGoal} {habit.unit}
+                      </span>
+                   </div>
+                   <Progress value={timeProgressPercentage} className={cn("h-1.5", `[&>div]:${colors.accent}`)} />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Sessions Remaining</span>
+                    </div>
+                    <span className="text-[10px] font-black tabular-nums opacity-60">
+                      {habit.frequency_per_week - habit.weekly_progress} sessions
+                    </span>
                   </div>
-                  <span className="text-xs font-black tabular-nums">
-                    {Math.round(weeklyTimeProgress)} / {totalWeeklyTimeGoal} {habit.unit}
-                  </span>
-               </div>
-               <Progress value={timeProgressPercentage} className={cn("h-3", `[&>div]:${colors.accent}`)} />
-            </div>
-
-            <div className="space-y-3 pt-2">
-              <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1">
-                  <span>Session Count Progress</span>
-                  <span>{habit.weekly_progress}/{habit.frequency_per_week}</span>
-              </div>
-              <Progress 
-                value={(habit.weekly_progress / habit.frequency_per_week) * 100} 
-                className={cn("h-1.5 opacity-60", `[&>div]:${colors.accent}`)} 
-              />
-              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground text-center">
-                {habit.frequency_per_week - habit.weekly_progress} sessions remaining this week
-              </p>
+                  <Progress 
+                    value={(habit.weekly_progress / habit.frequency_per_week) * 100} 
+                    className={cn("h-1.5 opacity-60", `[&>div]:${colors.accent}`)} 
+                  />
+                </div>
             </div>
 
             <Button
               size="lg"
-              className="w-full h-16 rounded-[1.25rem] font-black text-lg shadow-xl hover:scale-[1.02] transition-transform active:scale-95"
+              className="w-full h-16 rounded-[1.25rem] font-black text-lg shadow-xl hover:scale-[1.02] transition-transform active:scale-95 mt-2"
               onClick={handleStart}
               disabled={isLocked}
             >
-              {isLogging ? <Loader2 className="w-6 h-6 animate-spin" /> : <><Play className="w-6 h-6 mr-2 fill-current" /> Start Session</>}
+              {isLogging ? <Loader2 className="w-6 h-6 animate-spin" /> : <><Play className="w-5 h-5 mr-2 fill-current" /> Start Session</>}
             </Button>
           </div>
         )}
