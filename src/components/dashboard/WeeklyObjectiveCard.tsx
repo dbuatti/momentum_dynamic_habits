@@ -7,14 +7,14 @@ import { Progress } from '@/components/ui/progress';
 import { 
   CalendarCheck, Target, Play, Lock, 
   CheckCircle2, Clock, RotateCcw, 
-  Pause, Square, Loader2, Sparkles 
+  Pause, Square, Loader2, Sparkles, BarChart3
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProcessedUserHabit } from '@/types/habit';
 import { habitIconMap, habitColorMap } from '@/lib/habit-utils';
 import { useHabitLog } from '@/hooks/useHabitLog';
 import { useFeedback } from '@/hooks/useFeedback';
-import { showSuccess } from '@/utils/toast'; // Added missing import
+import { showSuccess } from '@/utils/toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 
@@ -45,6 +45,11 @@ export const WeeklyObjectiveCard: React.FC<WeeklyObjectiveCardProps> = ({
   const sessionMinDuration = habit.weekly_session_min_duration || habit.current_daily_goal || 10; 
   const isCompleteForWeek = habit.weekly_progress >= habit.frequency_per_week;
   
+  // Weekly total stats
+  const totalWeeklyTimeGoal = habit.frequency_per_week * habit.current_daily_goal;
+  const weeklyTimeProgress = (habit as any).weekly_total_minutes || 0;
+  const timeProgressPercentage = Math.min(100, (weeklyTimeProgress / totalWeeklyTimeGoal) * 100);
+
   // Timer State
   const storageKey = `weeklyObjectiveTimer:${habit.habit_key}`;
   const targetSeconds = sessionMinDuration * 60;
@@ -62,7 +67,6 @@ export const WeeklyObjectiveCard: React.FC<WeeklyObjectiveCardProps> = ({
     red: { bg: 'bg-habit-red/10', border: 'border-habit-red-border/50', text: 'text-habit-red-foreground', fill: 'from-habit-red/40', accent: 'bg-habit-red-foreground' },
   }[colorKey];
 
-  // --- Interval Management ---
   const stopInterval = () => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -82,7 +86,6 @@ export const WeeklyObjectiveCard: React.FC<WeeklyObjectiveCardProps> = ({
     return () => stopInterval();
   }, [isTiming, isPaused, timeLeft]);
 
-  // Handle auto-finish
   useEffect(() => {
     if (isTiming && timeLeft === 0) {
         handleEndSession();
@@ -90,7 +93,6 @@ export const WeeklyObjectiveCard: React.FC<WeeklyObjectiveCardProps> = ({
     }
   }, [timeLeft, isTiming]);
 
-  // Persist State
   useEffect(() => {
     const saved = localStorage.getItem(storageKey);
     if (saved && !isCompleteForWeek) {
@@ -115,7 +117,6 @@ export const WeeklyObjectiveCard: React.FC<WeeklyObjectiveCardProps> = ({
         lastUpdated: Date.now()
       }));
       
-      // Dispatch for FloatingTimer/Tab title
       window.dispatchEvent(new CustomEvent('habit-timer-update', {
         detail: {
           label: 'Weekly Goal',
@@ -128,11 +129,11 @@ export const WeeklyObjectiveCard: React.FC<WeeklyObjectiveCardProps> = ({
       }));
     } else {
       localStorage.removeItem(storageKey);
-      window.dispatchEvent(new CustomEvent('habit-timer-update', { detail: null }));
     }
   }, [timeLeft, isPaused, isTiming]);
 
   const handleStart = () => {
+    if (isLocked) return;
     triggerFeedback('start');
     setIsTiming(true);
     setIsPaused(false);
@@ -147,11 +148,10 @@ export const WeeklyObjectiveCard: React.FC<WeeklyObjectiveCardProps> = ({
       confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
       await logHabit({
         habitKey: habit.habit_key,
-        value: sessionMinDuration, // Log the full session credit
+        value: sessionMinDuration, 
         taskName: `${habit.name} session`,
       });
     } else {
-      // Partial credit if stopped early
       await logHabit({
         habitKey: habit.habit_key,
         value: elapsedMinutes,
@@ -177,7 +177,6 @@ export const WeeklyObjectiveCard: React.FC<WeeklyObjectiveCardProps> = ({
         isCompleteForWeek && "bg-success/5 border-success/30 opacity-80"
       )}
     >
-      {/* Liquid Animation Background */}
       <AnimatePresence>
         {isTiming && (
           <motion.div
@@ -235,7 +234,6 @@ export const WeeklyObjectiveCard: React.FC<WeeklyObjectiveCardProps> = ({
             <p className="text-sm font-bold text-success-foreground">Consistency verified. You've hit your target for this week!</p>
           </div>
         ) : isTiming ? (
-          /* Active Timer View */
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
             <div className="flex flex-col sm:flex-row justify-between items-center gap-6 bg-card/40 p-6 rounded-[1.5rem] border border-white/20 shadow-inner">
                 <div className="flex flex-col items-center sm:items-start">
@@ -276,7 +274,6 @@ export const WeeklyObjectiveCard: React.FC<WeeklyObjectiveCardProps> = ({
             </div>
           </div>
         ) : (
-          /* Idle View */
           <div className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1 p-4 rounded-2xl bg-card/50 border border-border/50 shadow-inner">
@@ -289,7 +286,7 @@ export const WeeklyObjectiveCard: React.FC<WeeklyObjectiveCardProps> = ({
                 </div>
                 <div className="space-y-1 p-4 rounded-2xl bg-card/50 border border-border/50 shadow-inner">
                     <p className="text-[9px] font-black uppercase opacity-50 tracking-widest text-muted-foreground flex items-center gap-1">
-                        <Clock className="w-3 h-3" /> Weekly Progress
+                        <CalendarCheck className="w-3 h-3" /> Weekly Progress
                     </p>
                     <p className="text-xl font-black text-foreground">
                         {habit.weekly_progress} / {habit.frequency_per_week}
@@ -297,10 +294,28 @@ export const WeeklyObjectiveCard: React.FC<WeeklyObjectiveCardProps> = ({
                 </div>
             </div>
 
-            <div className="space-y-3">
+            {/* Time-based Progress Bar */}
+            <div className="space-y-3 p-4 rounded-2xl bg-card/30 border border-border/30">
+               <div className="flex justify-between items-center mb-1">
+                  <div className="flex items-center gap-2">
+                    <BarChart3 className="w-3.5 h-3.5 text-muted-foreground" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Weekly Time Invested</span>
+                  </div>
+                  <span className="text-xs font-black tabular-nums">
+                    {Math.round(weeklyTimeProgress)} / {totalWeeklyTimeGoal} {habit.unit}
+                  </span>
+               </div>
+               <Progress value={timeProgressPercentage} className={cn("h-3", `[&>div]:${colors.accent}`)} />
+            </div>
+
+            <div className="space-y-3 pt-2">
+              <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1">
+                  <span>Session Count Progress</span>
+                  <span>{habit.weekly_progress}/{habit.frequency_per_week}</span>
+              </div>
               <Progress 
                 value={(habit.weekly_progress / habit.frequency_per_week) * 100} 
-                className={cn("h-2", `[&>div]:${colors.accent}`)} 
+                className={cn("h-1.5 opacity-60", `[&>div]:${colors.accent}`)} 
               />
               <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground text-center">
                 {habit.frequency_per_week - habit.weekly_progress} sessions remaining this week

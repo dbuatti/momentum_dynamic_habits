@@ -4,7 +4,7 @@ import { useSession } from '@/contexts/SessionContext';
 import { startOfDay, differenceInDays, startOfWeek, endOfWeek, subWeeks, addMonths, subDays, formatDistanceToNowStrict, isWithinInterval, parse } from 'date-fns';
 import { initialHabits } from '@/lib/habit-data';
 import { ProcessedUserHabit } from '@/types/habit';
-import { calculateDynamicChunks, calculateDailyParts } from '@/utils/progress-utils'; // Import chunk calculator
+import { calculateDynamicChunks, calculateDailyParts } from '@/utils/progress-utils';
 
 const fetchDashboardData = async (userId: string) => {
   const { data: profile, error: profileError } = await supabase
@@ -41,8 +41,22 @@ const fetchDashboardData = async (userId: string) => {
   if (profileError || habitsError || completedTodayError) throw new Error('Failed to fetch essential data');
 
   const weeklySessionCountMap = new Map<string, number>();
+  const weeklyMinutesMap = new Map<string, number>();
+
   (completedThisWeek || []).forEach(task => {
-    weeklySessionCountMap.set(task.original_source, (weeklySessionCountMap.get(task.original_source) || 0) + 1);
+    const key = task.original_source;
+    weeklySessionCountMap.set(key, (weeklySessionCountMap.get(key) || 0) + 1);
+    
+    // Sum up minutes for the week
+    const userHabit = habits?.find(h => h.habit_key === key);
+    if (userHabit?.unit === 'min') {
+      const minutes = (task.duration_used || 0) / 60;
+      weeklyMinutesMap.set(key, (weeklyMinutesMap.get(key) || 0) + minutes);
+    } else if (userHabit) {
+      const xpPerUnit = userHabit.xp_per_unit || 1;
+      const units = (task.xp_earned || 0) / xpPerUnit;
+      weeklyMinutesMap.set(key, (weeklyMinutesMap.get(key) || 0) + units);
+    }
   });
 
   const dailySecondsMap = new Map<string, number>();
@@ -84,9 +98,6 @@ const fetchDashboardData = async (userId: string) => {
     }
 
     const capsuleTaskMapping = dailyCapsuleTasksMap.get(h.habit_key) || {};
-    
-    // NEW: Calculate adjusted daily goal including carryover
-    // Only apply carryover for non-binary, non-fixed habits
     const carryover = (h.measurement_type !== 'binary' && !h.is_fixed) ? (h.carryover_value || 0) : 0;
     const baseAdjustedDailyGoal = h.current_daily_goal + carryover;
 
@@ -106,33 +117,25 @@ const fetchDashboardData = async (userId: string) => {
     }
 
     const weeklyCompletions = weeklySessionCountMap.get(h.habit_key) || 0;
+    const weeklyDuration = weeklyMinutesMap.get(h.habit_key) || 0; // NEW FIELD
     const isWeeklyAnchor = h.category === 'anchor' && h.frequency_per_week === 1;
     let isComplete = false;
     const unit = h.unit || (mType === 'timer' ? 'min' : (mType === 'binary' ? 'dose' : 'reps'));
 
-    // NEW LOGIC FOR isComplete:
-    
-    // 1. If Fixed and not Binary (like 2 min teeth brushing), check if progress meets goal.
     if (h.is_fixed && mType !== 'binary') {
       const threshold = mType === 'timer' ? 0.1 : 0.01;
       isComplete = rawDailyProgress >= (baseAdjustedDailyGoal - threshold);
     } 
-    // 2. If Binary or Complete-on-Finish (which covers most fixed habits, including the previous case if progress is met)
     else if (h.complete_on_finish || mType === 'binary') {
-      // Completion is achieved by logging at least one task today.
       isComplete = completedHabitKeysToday.has(h.habit_key);
     } 
-    // 3. If Weekly Anchor, check if one session is logged this week.
     else if (isWeeklyAnchor) {
       isComplete = weeklyCompletions >= 1;
     } 
-    // 4. Default: Growth/Trial habits require meeting the daily goal.
     else {
       const threshold = mType === 'timer' ? 0.1 : 0.01;
       isComplete = rawDailyProgress >= (baseAdjustedDailyGoal - threshold);
     }
-    
-    // END NEW LOGIC FOR isComplete
 
     const isDependent = !!h.dependent_on_habit_id;
     const dependentHabit = habits?.find(depH => depH.id === h.dependent_on_habit_id);
@@ -151,6 +154,7 @@ const fetchDashboardData = async (userId: string) => {
       xpPerUnit: h.xp_per_unit || (h.unit === 'min' ? 30 : 1),
       energyCostPerUnit: h.energy_cost_per_unit || (h.unit === 'min' ? 6 : 0.5),
       weekly_completions: weeklyCompletions,
+      weekly_total_minutes: weeklyDuration, // PASS TO COMPONENT
       weekly_goal: (mType === 'binary' ? 1 : h.current_daily_goal) * h.frequency_per_week,
       weekly_progress: weeklyCompletions, 
       isScheduledForToday,
@@ -167,7 +171,6 @@ const fetchDashboardData = async (userId: string) => {
     } as any;
   });
 
-  // Filter daily momentum items (excluding weekly goals and anchors)
   const dailyMomentumHabits = processedHabits.filter(h => {
     const isWeeklyAnchor = h.category === 'anchor' && h.frequency_per_week === 1;
     const isWeeklyObjective = (h as any).is_weekly_goal;
@@ -219,7 +222,7 @@ const fetchDashboardData = async (userId: string) => {
     level: profile?.level || 1, 
     averageDailyTasks: totalSessions && totalDaysSinceStart > 0 ? (totalSessions / totalDaysSinceStart).toFixed(1) : '0.0',
     dailyMomentumParts,
-    dayRolloverHour: profile?.day_rollover_hour || 0, // Added
+    dayRolloverHour: profile?.day_rollover_hour || 0,
   };
 };
 
