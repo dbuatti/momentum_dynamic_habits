@@ -9,7 +9,7 @@ import { calculateDynamicChunks, calculateDailyParts } from '@/utils/progress-ut
 const fetchDashboardData = async (userId: string) => {
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('journey_start_date, daily_streak, last_active_at, first_name, last_name, timezone, xp, level, neurodivergent_mode, enable_sound, enable_haptics, day_rollover_hour') 
+    .select('journey_start_date, daily_streak, last_active_at, first_name, last_name, timezone, xp, level, neurodivergent_mode, enable_sound, enable_haptics, day_rollover_hour, custom_habit_order') 
     .eq('id', userId)
     .single();
 
@@ -171,6 +171,31 @@ const fetchDashboardData = async (userId: string) => {
     } as any;
   });
 
+  // Apply custom sorting order if available
+  const customOrder = profile?.custom_habit_order;
+  if (customOrder && customOrder.length > 0) {
+    processedHabits.sort((a, b) => {
+      const indexA = customOrder.indexOf(a.habit_key);
+      const indexB = customOrder.indexOf(b.habit_key);
+
+      // If both are in custom order, sort by their index
+      if (indexA !== -1 && indexB !== -1) {
+        return indexA - indexB;
+      }
+      // If only A is in custom order, A comes first
+      if (indexA !== -1) {
+        return -1;
+      }
+      // If only B is in custom order, B comes first
+      if (indexB !== -1) {
+        return 1;
+      }
+      // If neither are in custom order, maintain original sort (or secondary sort)
+      return 0;
+    });
+  }
+
+
   const dailyMomentumHabits = processedHabits.filter(h => {
     const isWeeklyAnchor = h.category === 'anchor' && h.frequency_per_week === 1;
     const isWeeklyObjective = (h as any).is_weekly_goal;
@@ -223,6 +248,7 @@ const fetchDashboardData = async (userId: string) => {
     averageDailyTasks: totalSessions && totalDaysSinceStart > 0 ? (totalSessions / totalDaysSinceStart).toFixed(1) : '0.0',
     dailyMomentumParts,
     dayRolloverHour: profile?.day_rollover_hour || 0,
+    customHabitOrder: profile?.custom_habit_order || [], // Include custom order
   };
 };
 

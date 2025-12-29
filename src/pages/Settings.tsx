@@ -35,6 +35,7 @@ import { NewHabitModal } from '@/components/habits/NewHabitModal';
 import { ResetEverythingCard } from '@/components/settings/ResetEverythingCard';
 import { ResetExperienceCard } from '@/components/settings/ResetExperienceCard';
 import { useDashboardData } from '@/hooks/useDashboardData';
+import { HabitOrderSettings } from '@/components/settings/HabitOrderSettings'; // Import the new component
 
 const commonTimezones = [
   'UTC', 'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles',
@@ -318,6 +319,9 @@ const Settings = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* New Habit Order Settings Card */}
+      <HabitOrderSettings />
 
       <div className="space-y-10">
         {anchors.length > 0 && (
