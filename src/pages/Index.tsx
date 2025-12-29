@@ -12,7 +12,7 @@ import { useDashboardData } from "@/hooks/useDashboardData";
 import { DashboardSkeleton } from "@/components/dashboard/DashboardSkeleton";
 import { HabitCapsule } from "@/components/dashboard/HabitCapsule";
 import { useCapsules } from "@/hooks/useCapsules";
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useOnboardingCheck } from "@/hooks/useOnboardingCheck";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
@@ -39,6 +39,9 @@ const Index = () => {
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [hasInitializedState, setHasInitializedState] = useState(false);
   const [showAllMomentum, setShowAllMomentum] = useState<Record<string, boolean>>({});
+  
+  // Track previous completion states to detect transitions
+  const prevCompletionsRef = useRef<Record<string, boolean>>({});
 
   const habitWithEmptyKey = useMemo(() => {
     if (!data?.habits) return null;
@@ -156,26 +159,36 @@ const Index = () => {
   const weeklyObjectives = useMemo(() => visibleHabitsForDisplay.filter(h => (h as any).is_weekly_goal && h.category !== 'anchor'), [visibleHabitsForDisplay]);
   const dailyMomentumHabits = useMemo(() => visibleHabitsForDisplay.filter(h => !(h as any).is_weekly_goal && h.category !== 'anchor'), [visibleHabitsForDisplay]);
 
+  // Initialize: Start with all collapsed by default
   useEffect(() => {
-    if (habitGroups.length === 0 || hasInitializedState) return;
-    const initialExpanded = habitGroups.filter(h => {
-      const stored = localStorage.getItem(`habitAccordionState:${h.key}`);
-      if (stored === 'expanded') return true;
-      if (stored === 'collapsed') return false;
-      
-      const isWeeklyAnchor = h.category === 'anchor' && h.frequency_per_week === 1;
-      return !h.allCompleted && !h.isLockedByDependency && (h.category === 'anchor' || h.is_trial_mode) && !isWeeklyAnchor;
-    }).map(h => h.key);
-    setExpandedItems(initialExpanded);
+    if (!data || hasInitializedState) return;
+    setExpandedItems([]); 
     setHasInitializedState(true);
-  }, [habitGroups, hasInitializedState]);
+  }, [data, hasInitializedState]);
+
+  // Auto-collapse on completion logic
+  useEffect(() => {
+    if (!data?.habits) return;
+    
+    const newCompletions: Record<string, boolean> = {};
+    
+    data.habits.forEach(habit => {
+      const wasComplete = prevCompletionsRef.current[habit.habit_key] || false;
+      const isComplete = habit.isComplete;
+      
+      // If it just transitioned to completed, remove its key from expanded items
+      if (!wasComplete && isComplete) {
+        setExpandedItems(prev => prev.filter(key => key !== habit.habit_key));
+      }
+      
+      newCompletions[habit.habit_key] = isComplete;
+    });
+    
+    prevCompletionsRef.current = newCompletions;
+  }, [data?.habits]);
 
   const handleExpandedChange = (newValues: string[]) => {
     setExpandedItems(newValues);
-    habitGroups.forEach(h => {
-      const isNowExpanded = newValues.includes(h.key);
-      localStorage.setItem(`habitAccordionState:${h.key}`, isNowExpanded ? 'expanded' : 'collapsed');
-    });
   };
 
   const focusHabit = (habitKey: string) => {
