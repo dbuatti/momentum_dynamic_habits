@@ -331,51 +331,47 @@ const Index = () => {
         )}
       >
         <AccordionTrigger className="px-6 py-5 hover:no-underline group">
-          <div className="flex flex-col w-full text-left gap-2">
-            <div className="flex items-center gap-5 text-left w-full">
-              <div className={cn(
-                "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border border-border transition-transform group-hover:scale-105",
-                habit.allCompleted ? "bg-success/20 text-success" : "bg-card/90"
-              )}>
-                <Icon className="w-6 h-6" />
-              </div>
-              <div className="min-w-0 flex-grow pr-2">
-                <div className="flex items-center justify-between gap-2">
-                  <h3 className="font-black text-lg flex items-center gap-2 leading-tight truncate">
-                    {habit.name}
-                    {habit.allCompleted && <CheckCircle2 className="w-5 h-5 text-success" />}
-                  </h3>
-                </div>
-                <div className="flex flex-wrap items-center gap-2 mt-1">
-                  <span className={cn(
-                    "text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border",
-                    habit.allCompleted ? "bg-success text-success-foreground border-transparent" : habit.isWithinWindow ? "bg-primary text-primary-foreground border-transparent" : "bg-muted text-muted-foreground border-transparent"
-                  )}>
-                    {habit.allCompleted ? "Goal Reached" : (habit.isWithinWindow ? "Ready Now" : "Restricted")}
-                  </span>
-                  {habit.is_weekly_goal && (
-                    <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border-primary/20 border flex items-center gap-1">
-                      <CalendarCheck className="w-3 h-3" /> Weekly Goal
-                    </span>
-                  )}
-                  {!habit.isScheduledForToday && !habit.allCompleted && !habit.is_weekly_goal && (
-                    <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-muted/50 text-muted-foreground border-transparent border flex items-center gap-1">
-                      <CalendarDays className="w-3 h-3" /> Extra Session
-                    </span>
-                  )}
-                </div>
-                <p className={cn("text-sm font-bold mt-2", habit.allCompleted ? "text-success-foreground" : "text-foreground")}>
-                  Progress: {Math.round(habit.displayProgress)}/{Math.round(habit.adjustedDailyGoal)} {habit.unit}
-                </p>
-              </div>
+          <div className="flex items-center gap-5 text-left w-full">
+            <div className={cn(
+              "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border border-border transition-transform group-hover:scale-105",
+              habit.allCompleted ? "bg-success/20 text-success" : "bg-card/90"
+            )}>
+              <Icon className="w-6 h-6" />
             </div>
-            {isLocked && (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2 ml-[72px]">
-                <Lock className="w-3.5 h-3.5" />
-                <span>Locked. Complete {dependentHabitName} first.</span>
+            <div className="min-w-0 flex-grow pr-2">
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="font-black text-lg flex items-center gap-2 leading-tight truncate">
+                  {habit.name}
+                  {habit.allCompleted && <CheckCircle2 className="w-5 h-5 text-success" />}
+                </h3>
               </div>
-            )}
+              <div className="flex flex-wrap items-center gap-2 mt-1">
+                <span className={cn(
+                  "text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border",
+                  habit.allCompleted ? "bg-success text-success-foreground border-transparent" : habit.isWithinWindow ? "bg-primary text-primary-foreground border-transparent" : "bg-muted text-muted-foreground border-transparent"
+                )}>
+                  {habit.allCompleted ? "Goal Reached" : (habit.isWithinWindow ? "Ready Now" : "Restricted")}
+                </span>
+                {habit.is_weekly_goal && (
+                  <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border-primary/20 border flex items-center gap-1">
+                    <CalendarCheck className="w-3 h-3" /> Weekly Goal
+                  </span>
+                )}
+                {!habit.isScheduledForToday && !habit.allCompleted && !habit.is_weekly_goal && (
+                  <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-muted/50 text-muted-foreground border-transparent border flex items-center gap-1">
+                    <CalendarDays className="w-3 h-3" /> Extra Session
+                  </span>
+                )}
+              </div>
+              {/* Removed the progress line from here to make the card more compact */}
+            </div>
           </div>
+          {isLocked && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2 ml-[72px]">
+              <Lock className="w-3.5 h-3.5" />
+              <span>Locked. Complete {dependentHabitName} first.</span>
+            </div>
+          )}
         </AccordionTrigger>
         <AccordionContent className="px-6 pb-6 pt-2 space-y-6">
           {showTrialGuidance && (

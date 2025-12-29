@@ -27,8 +27,8 @@ export const HabitOrderSettings: React.FC = () => {
       );
 
       const sorted = [...sortableHabits].sort((a, b) => {
-        const orderA = customOrderMap.has(a.habit_key) ? customOrderMap.get(a.habit_key) : Infinity;
-        const orderB = customOrderMap.has(b.habit_key) ? customOrderMap.get(b.habit_key) : Infinity;
+        const orderA = customOrderMap.has(a.habit_key) ? customOrderMap.get(a.habit_key)! : Infinity;
+        const orderB = customOrderMap.has(b.habit_key) ? customOrderMap.get(b.habit_key)! : Infinity;
         
         if (orderA === Infinity && orderB === Infinity) {
           // If neither are in custom order, sort by name
