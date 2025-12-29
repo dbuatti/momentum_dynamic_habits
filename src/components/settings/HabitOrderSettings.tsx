@@ -34,7 +34,7 @@ export const HabitOrderSettings: React.FC = () => {
           // If neither are in custom order, sort by name
           return a.name.localeCompare(b.name);
         }
-        // Cast Infinity to number to satisfy TypeScript
+        // Cast to number to fix TS2362 and TS2363
         return (orderA as number) - (orderB as number);
       });
       setOrderedHabits(sorted);
