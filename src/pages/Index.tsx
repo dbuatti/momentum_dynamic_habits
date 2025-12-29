@@ -159,12 +159,19 @@ const Index = () => {
   const weeklyObjectives = useMemo(() => visibleHabitsForDisplay.filter(h => (h as any).is_weekly_goal && h.category !== 'anchor'), [visibleHabitsForDisplay]);
   const dailyMomentumHabits = useMemo(() => visibleHabitsForDisplay.filter(h => !(h as any).is_weekly_goal && h.category !== 'anchor'), [visibleHabitsForDisplay]);
 
-  // Initialize: Start with all collapsed by default
+  // Initialize: Start with stored state or collapsed by default
   useEffect(() => {
     if (!data || hasInitializedState) return;
-    setExpandedItems([]); 
+    
+    // Check if we have manually set expanded items in localStorage
+    const stored = habitGroups.filter(h => {
+        const state = localStorage.getItem(`habitAccordionState:${h.key}`);
+        return state === 'expanded';
+    }).map(h => h.key);
+    
+    setExpandedItems(stored); 
     setHasInitializedState(true);
-  }, [data, hasInitializedState]);
+  }, [data, habitGroups, hasInitializedState]);
 
   // Auto-collapse on completion logic
   useEffect(() => {
@@ -178,7 +185,12 @@ const Index = () => {
       
       // If it just transitioned to completed, remove its key from expanded items
       if (!wasComplete && isComplete) {
-        setExpandedItems(prev => prev.filter(key => key !== habit.habit_key));
+        setExpandedItems(prev => {
+          const next = prev.filter(key => key !== habit.habit_key);
+          // Also update the local storage to reflect the auto-collapse
+          localStorage.setItem(`habitAccordionState:${habit.habit_key}`, 'collapsed');
+          return next;
+        });
       }
       
       newCompletions[habit.habit_key] = isComplete;
@@ -189,6 +201,11 @@ const Index = () => {
 
   const handleExpandedChange = (newValues: string[]) => {
     setExpandedItems(newValues);
+    // Persist individual states
+    habitGroups.forEach(h => {
+      const isNowExpanded = newValues.includes(h.key);
+      localStorage.setItem(`habitAccordionState:${h.key}`, isNowExpanded ? 'expanded' : 'collapsed');
+    });
   };
 
   const focusHabit = (habitKey: string) => {

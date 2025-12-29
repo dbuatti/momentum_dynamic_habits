@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Anchor, Calendar, CheckCircle2, Target, Play, Lock, Info, Loader2, Check, Pause, Square, RotateCcw, Clock, Sparkles, FlaskConical } from 'lucide-react';
+import { Anchor, Calendar, CheckCircle2, Target, Play, Lock, Info, Loader2, Check, Pause, Square, RotateCcw, Clock, Sparkles, FlaskConical, BarChart3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProcessedUserHabit } from '@/types/habit';
 import { habitIconMap, habitColorMap } from '@/lib/habit-utils';
@@ -44,6 +44,11 @@ export const WeeklyAnchorCard: React.FC<WeeklyAnchorCardProps> = ({
   const isCompleteForWeek = habit.weekly_progress >= habit.frequency_per_week;
   const progressPercentage = Math.min(100, (habit.weekly_progress / habit.frequency_per_week) * 100);
   
+  // Weekly total stats
+  const totalWeeklyTimeGoal = habit.frequency_per_week * habit.current_daily_goal;
+  const weeklyTimeProgress = (habit as any).weekly_total_minutes || 0;
+  const timeProgressPercentage = Math.min(100, (weeklyTimeProgress / totalWeeklyTimeGoal) * 100);
+
   // Timer State Management
   const storageKey = `weeklyAnchorTimer:${habit.habit_key}`;
   const [isTiming, setIsTiming] = useState(false);
@@ -51,7 +56,6 @@ export const WeeklyAnchorCard: React.FC<WeeklyAnchorCardProps> = ({
   const [elapsedTime, setElapsedTime] = useState(0); // In seconds
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // --- Interval Management Refactored ---
   const stopInterval = () => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -71,9 +75,7 @@ export const WeeklyAnchorCard: React.FC<WeeklyAnchorCardProps> = ({
 
     return () => stopInterval();
   }, [isTiming, isPaused, isCompleteForWeek]);
-  // --------------------------------------
 
-  // Load/Save state from localStorage (Modified)
   useEffect(() => {
     if (isCompleteForWeek) {
       localStorage.removeItem(storageKey);
@@ -89,7 +91,6 @@ export const WeeklyAnchorCard: React.FC<WeeklyAnchorCardProps> = ({
       
       let calculatedElapsed = elapsed;
       if (timing && !paused) {
-        // Recalculate elapsed time since last save
         calculatedElapsed += Math.floor((now - startTime) / 1000);
       }
       
@@ -97,8 +98,6 @@ export const WeeklyAnchorCard: React.FC<WeeklyAnchorCardProps> = ({
       setIsTiming(timing);
       setElapsedTime(calculatedElapsed);
     }
-    
-    return () => {}; 
   }, [isCompleteForWeek, storageKey]);
 
   useEffect(() => {
@@ -107,12 +106,11 @@ export const WeeklyAnchorCard: React.FC<WeeklyAnchorCardProps> = ({
         elapsed: elapsedTime,
         paused: isPaused,
         timing: isTiming,
-        startTime: Date.now() - (elapsedTime * 1000) // Approximate start time
+        startTime: Date.now() - (elapsedTime * 1000)
       }));
     }
   }, [elapsedTime, isPaused, isTiming, isCompleteForWeek, storageKey]);
 
-  // Handle Timer Actions
   const handleStartSession = () => {
     if (isLocked) {
       showError(`Please complete ${dependentHabitName} first.`);
@@ -121,19 +119,16 @@ export const WeeklyAnchorCard: React.FC<WeeklyAnchorCardProps> = ({
     triggerFeedback('start');
     setIsTiming(true);
     setIsPaused(false);
-    // Interval starts via dedicated useEffect
   };
 
   const handlePauseSession = () => {
     triggerFeedback('pause');
     setIsPaused(true);
-    // Interval stops via dedicated useEffect
   };
 
   const handleResumeSession = () => {
     triggerFeedback('start');
     setIsPaused(false);
-    // Interval starts via dedicated useEffect
   };
 
   const handleEndSession = (mood?: string) => {
@@ -142,8 +137,6 @@ export const WeeklyAnchorCard: React.FC<WeeklyAnchorCardProps> = ({
     localStorage.removeItem(storageKey);
     
     const elapsedMinutes = elapsedTime / 60;
-    
-    // Rule 4: Check if elapsed time meets minimum duration
     const sessionMinDuration = habit.weekly_session_min_duration || 10; 
     const isSessionComplete = elapsedMinutes >= sessionMinDuration;
 
@@ -151,16 +144,15 @@ export const WeeklyAnchorCard: React.FC<WeeklyAnchorCardProps> = ({
       triggerFeedback('completion');
       confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
       
-      // Log the actual elapsed time, but mark it as a full session completion for the weekly goal logic in useHabitLog
       logHabit({
         habitKey: habit.habit_key,
-        value: elapsedMinutes, // Log actual minutes
+        value: elapsedMinutes,
         taskName: `${habit.name} session`,
         note: mood,
       });
     } else {
       showError(`Session too short (${Math.round(elapsedMinutes)} min). Must be at least ${sessionMinDuration} minutes to count as a full session.`);
-      setElapsedTime(0); // Reset timer if failed
+      setElapsedTime(0);
     }
   };
 
@@ -172,12 +164,12 @@ export const WeeklyAnchorCard: React.FC<WeeklyAnchorCardProps> = ({
   };
 
   const colors = {
-    indigo: { bg: 'bg-habit-indigo/10', border: 'border-habit-indigo-border/50', text: 'text-habit-indigo-foreground', progress: 'bg-habit-indigo-foreground' },
-    orange: { bg: 'bg-habit-orange/10', border: 'border-habit-orange-border/50', text: 'text-habit-orange-foreground', progress: 'bg-habit-orange-foreground' },
-    blue: { bg: 'bg-habit-blue/10', border: 'border-habit-blue-border/50', text: 'text-habit-blue-foreground', progress: 'bg-habit-blue-foreground' },
-    green: { bg: 'bg-habit-green/10', border: 'border-habit-green-border/50', text: 'text-habit-green-foreground', progress: 'bg-habit-green-foreground' },
-    purple: { bg: 'bg-habit-purple/10', border: 'border-habit-purple-border/50', text: 'text-habit-purple-foreground', progress: 'bg-habit-purple-foreground' },
-    red: { bg: 'bg-habit-red/10', border: 'border-habit-red-border/50', text: 'text-habit-red-foreground', progress: 'bg-habit-red-foreground' },
+    indigo: { bg: 'bg-habit-indigo/10', border: 'border-habit-indigo-border/50', text: 'text-habit-indigo-foreground', progress: 'bg-habit-indigo-foreground', accent: 'bg-habit-indigo-foreground' },
+    orange: { bg: 'bg-habit-orange/10', border: 'border-habit-orange-border/50', text: 'text-habit-orange-foreground', progress: 'bg-habit-orange-foreground', accent: 'bg-habit-orange-foreground' },
+    blue: { bg: 'bg-habit-blue/10', border: 'border-habit-blue-border/50', text: 'text-habit-blue-foreground', progress: 'bg-habit-blue-foreground', accent: 'bg-habit-blue-foreground' },
+    green: { bg: 'bg-habit-green/10', border: 'border-habit-green-border/50', text: 'text-habit-green-foreground', progress: 'bg-habit-green-foreground', accent: 'bg-habit-green-foreground' },
+    purple: { bg: 'bg-habit-purple/10', border: 'border-habit-purple-border/50', text: 'text-habit-purple-foreground', progress: 'bg-habit-purple-foreground', accent: 'bg-habit-purple-foreground' },
+    red: { bg: 'bg-habit-red/10', border: 'border-habit-red-border/50', text: 'text-habit-red-foreground', progress: 'bg-habit-red-foreground', accent: 'bg-habit-red-foreground' },
   }[colorKey];
 
   const progressToGoal = Math.min(100, (elapsedTime / (goalDuration * 60)) * 100);
@@ -235,7 +227,6 @@ export const WeeklyAnchorCard: React.FC<WeeklyAnchorCardProps> = ({
             <p className="text-sm font-semibold text-success-foreground">Weekly goal met! You are consistent.</p>
           </div>
         ) : isTiming ? (
-          // Timer View
           <div className="space-y-4 pt-3 border-t border-border/50">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2">
@@ -258,62 +249,52 @@ export const WeeklyAnchorCard: React.FC<WeeklyAnchorCardProps> = ({
             </div>
 
             <div className="flex gap-3 pt-2">
-              <Button 
-                variant="outline" 
-                size="icon" 
-                className="h-12 w-12 rounded-2xl"
-                onClick={handleResetTimer}
-                title="Reset Timer"
-              >
+              <Button variant="outline" size="icon" className="h-12 w-12 rounded-2xl" onClick={handleResetTimer} title="Reset Timer">
                 <RotateCcw className="w-5 h-5" />
               </Button>
-              <Button 
-                variant={isPaused ? "default" : "outline"} 
-                size="icon" 
-                className="h-12 w-12 rounded-2xl"
-                onClick={isPaused ? handleResumeSession : handlePauseSession}
-              >
+              <Button variant={isPaused ? "default" : "outline"} size="icon" className="h-12 w-12 rounded-2xl" onClick={isPaused ? handleResumeSession : handlePauseSession}>
                 {isPaused ? <Play className="w-6 h-6 ml-0.5 fill-current" /> : <Pause className="w-6 h-6 fill-current" />}
               </Button>
-              <Button 
-                size="lg" 
-                className="flex-1 h-12 rounded-2xl font-black text-base shadow-md" 
-                onClick={() => handleEndSession()}
-                disabled={isLogging}
-              >
+              <Button size="lg" className="flex-1 h-12 rounded-2xl font-black text-base shadow-md" onClick={() => handleEndSession()} disabled={isLogging}>
                 {isLogging ? <Loader2 className="w-5 h-5 animate-spin" /> : <Square className="w-4 h-4 mr-2 fill-current" />}
                 End Session
               </Button>
             </div>
           </div>
         ) : (
-          // Idle View
-          <div className="space-y-4">
-            {/* Trial Framing Block (D) */}
+          <div className="space-y-6">
             {habit.is_trial_mode && (
               <div className="p-4 bg-info-background/50 rounded-xl border border-info-border/50 space-y-2">
                 <div className="flex items-center gap-2">
                   <FlaskConical className="w-4 h-4 text-info" />
                   <span className="text-xs font-black uppercase tracking-widest text-info-foreground">Trial Mode Active</span>
                 </div>
-                <p className="text-sm font-medium text-foreground leading-tight">
-                  Goal: 1 session · {minDuration} {habit.unit} minimum
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Focus on consistency. {daysRemainingInPlateau} days left in trial plateau.
-                  <Link to="/help" className="text-primary ml-1 hover:underline">Learn why.</Link>
-                </p>
+                <p className="text-sm font-medium text-foreground leading-tight">Goal: 1 session · {minDuration} {habit.unit} minimum</p>
+                <p className="text-xs text-muted-foreground">Focus on consistency. {daysRemainingInPlateau} days left in trial plateau.</p>
               </div>
             )}
-            
-            <div className="space-y-3 pt-3 border-t border-border/50">
-              <div className="flex justify-between items-center text-sm font-bold">
-                <span className="text-muted-foreground">Sessions Logged This Week</span>
-                <span className="text-foreground tabular-nums">
-                  {habit.weekly_progress} / {habit.frequency_per_week}
-                </span>
-              </div>
-              <Progress value={progressPercentage} className={cn("h-2", `[&>div]:${colors.progress}`)} />
+
+            <div className="space-y-4 pt-3 border-t border-border/50">
+                <div className="space-y-3">
+                   <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <BarChart3 className="w-3.5 h-3.5 text-muted-foreground" />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Weekly Time Invested</span>
+                      </div>
+                      <span className="text-[10px] font-black tabular-nums opacity-60">
+                        {Math.round(weeklyTimeProgress)} / {totalWeeklyTimeGoal} {habit.unit}
+                      </span>
+                   </div>
+                   <Progress value={timeProgressPercentage} className={cn("h-1.5", `[&>div]:${colors.accent}`)} />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center text-sm font-bold">
+                    <span className="text-muted-foreground">Sessions Completed</span>
+                    <span className="text-foreground tabular-nums">{habit.weekly_progress} / {habit.frequency_per_week}</span>
+                  </div>
+                  <Progress value={progressPercentage} className={cn("h-1.5", `[&>div]:${colors.accent}`)} />
+                </div>
             </div>
 
             <Button
@@ -322,13 +303,7 @@ export const WeeklyAnchorCard: React.FC<WeeklyAnchorCardProps> = ({
               onClick={handleStartSession}
               disabled={isLocked || isLogging}
             >
-              {isLogging ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <>
-                  <Play className="w-5 h-5 mr-2 fill-current" /> Start Session
-                </>
-              )}
+              {isLogging ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Play className="w-5 h-5 mr-2 fill-current" /> Start Session</>}
             </Button>
           </div>
         )}
