@@ -551,7 +551,7 @@ const Index = () => {
                 <h2 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Weekly Objectives</h2>
                 <div className="ml-auto h-px flex-grow bg-border" />
               </div>
-              <div className="space-y-4">
+              <Accordion type="multiple" value={expandedItems} onValueChange={handleExpandedChange} className="space-y-4">
                 {weeklyObjectives.map(habit => {
                   const dependentHabitName = data.habits.find(h => h.id === habit.dependent_on_habit_id)?.name || 'previous habit';
                   return (
@@ -563,7 +563,7 @@ const Index = () => {
                     />
                   );
                 })}
-              </div>
+              </Accordion>
             </div>
           )}
 
