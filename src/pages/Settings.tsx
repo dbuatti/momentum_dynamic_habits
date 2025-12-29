@@ -35,7 +35,8 @@ import { NewHabitModal } from '@/components/habits/NewHabitModal';
 import { ResetEverythingCard } from '@/components/settings/ResetEverythingCard';
 import { ResetExperienceCard } from '@/components/settings/ResetExperienceCard';
 import { useDashboardData } from '@/hooks/useDashboardData';
-import { HabitOrderSettings } from '@/components/settings/HabitOrderSettings'; // Import the new component
+import { HabitOrderSettings } from '@/components/settings/HabitOrderSettings';
+import { SectionOrderSettings } from '@/components/settings/SectionOrderSettings'; // Import the new component
 
 const commonTimezones = [
   'UTC', 'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles',
@@ -301,7 +302,7 @@ const Settings = () => {
               </div>
               <Switch 
                 checked={profile?.neurodivergent_mode} 
-                onCheckedChange={(val) => updateProfile({ neurodiverdivergent_mode: val })} 
+                onCheckedChange={(val) => updateProfile({ neurodivergent_mode: val })} 
               />
             </div>
           </CardContent>
@@ -319,6 +320,9 @@ const Settings = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* New Section Order Settings Card */}
+      <SectionOrderSettings />
 
       {/* New Habit Order Settings Card */}
       <HabitOrderSettings />

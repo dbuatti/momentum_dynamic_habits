@@ -24,8 +24,7 @@ BEGIN
     initial_session_duration_preference,
     initial_allow_chunks,
     initial_weekly_frequency,
-    day_rollover_hour,
-    section_order -- Added new field
+    day_rollover_hour -- Added new field
   )
   VALUES (
     new.id,
@@ -39,8 +38,7 @@ BEGIN
     'medium',
     TRUE,
     4,
-    0,
-    ARRAY['anchor', 'weekly_objective', 'daily_momentum'] -- Default for section_order
+    0 -- Default for day_rollover_hour
   );
 
   RETURN new;
