@@ -44,6 +44,7 @@ export const WeeklyObjectiveCard: React.FC<WeeklyObjectiveCardProps> = ({
   const totalWeeklyTimeGoal = habit.frequency_per_week * habit.current_daily_goal;
   const weeklyTimeProgress = (habit as any).weekly_total_minutes || 0;
   const timeProgressPercentage = Math.min(100, (weeklyTimeProgress / totalWeeklyTimeGoal) * 100);
+  const weeklyProgressPercentage = Math.min(100, (habit.weekly_progress / habit.frequency_per_week) * 100); // Renamed variable
 
   const storageKey = `weeklyObjectiveTimer:${habit.habit_key}`;
   const targetSeconds = sessionMinDuration * 60;
@@ -244,7 +245,7 @@ export const WeeklyObjectiveCard: React.FC<WeeklyObjectiveCardProps> = ({
                       <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Session Progress</span>
                       <span className="text-[10px] font-black opacity-60">{habit.weekly_progress} / {habit.frequency_per_week}</span>
                    </div>
-                   <Progress value={progressPercentage} className={cn("h-1.5 opacity-60", `[&>div]:${colors.accent}`)} />
+                   <Progress value={weeklyProgressPercentage} className={cn("h-1.5 opacity-60", `[&>div]:${colors.accent}`)} />
                 </div>
             </div>
 
