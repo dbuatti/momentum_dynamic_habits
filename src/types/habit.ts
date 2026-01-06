@@ -101,6 +101,7 @@ export interface ProcessedUserHabit extends UserHabitRecord {
   displayProgress: number;
   numChunks: number;
   showExtraCapsule: boolean;
+  capsules: any[]; // Added this line
 }
 
 export interface PianoHabit extends Habit {

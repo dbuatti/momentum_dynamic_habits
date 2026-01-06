@@ -31,6 +31,7 @@ import { WeeklyAnchorCard } from "@/components/dashboard/WeeklyAnchorCard";
 import { WeeklyObjectiveCard } from "@/components/dashboard/WeeklyObjectiveCard";
 import { FixEmptyHabitKey } from "@/components/fixers/FixEmptyHabitKey";
 import { ProcessedUserHabit } from "@/types/habit";
+import { HabitAccordionItem } from "@/components/dashboard/HabitAccordionItem"; // Import the new component
 
 const Index = () => {
   const { data, isLoading, isError, refetch } = useDashboardData();
@@ -254,13 +255,6 @@ const Index = () => {
     }, 100);
   };
 
-  const handleCapsuleProgress = async (habit: any, capsule: any, actualValue: number, isComplete: boolean, mood?: string) => {
-    await logCapsuleProgress.mutateAsync({ 
-      habitKey: habit.key, index: capsule.index, value: actualValue, mood, 
-      taskName: `${habit.name} session`, isComplete: isComplete,
-    });
-  };
-
   const handleLogRemaining = async (habit: any) => {
     const remaining = Math.max(0, habit.adjustedDailyGoal - habit.displayProgress);
     if (remaining <= 0) return;
@@ -272,14 +266,6 @@ const Index = () => {
       taskName: `${habit.name} completion`,
       isComplete: true
     });
-  };
-
-  const handleCapsuleUncomplete = (habit: any, capsule: any) => {
-    if (capsule.completedTaskId) {
-      uncompleteCapsule.mutate({ habitKey: habit.key, index: capsule.index, completedTaskId: capsule.completedTaskId });
-    } else {
-      showError("No specific log found for this part. You can still undo recent activity from the History page.");
-    }
   };
 
   const toggleShowAll = (habitKey: string) => {
@@ -303,238 +289,111 @@ const Index = () => {
     );
   }
 
-  const renderHabitItem = (habit: any) => {
-    const isWeeklyAnchor = habit.category === 'anchor' && habit.frequency_per_week === 1;
-    const isWeeklyObjective = habit.is_weekly_goal && habit.category !== 'anchor';
-    const dependentHabitName = data.habits.find(h => h.id === habit.dependent_on_habit_id)?.name || 'previous habit';
+  const renderSection = (sectionId: string) => {
+    const sectionTitleMap: Record<string, string> = {
+      'anchor': 'Anchor Practices',
+      'weekly_objective': 'Weekly Objectives',
+      'daily_momentum': 'Daily Momentum',
+    };
 
-    if (isWeeklyAnchor) {
+    const sectionIconMap: Record<string, React.ElementType> = {
+      'anchor': Anchor,
+      'weekly_objective': CalendarCheck,
+      'daily_momentum': Zap,
+    };
+
+    const sectionColorMap: Record<string, string> = {
+      'anchor': 'text-primary',
+      'weekly_objective': 'text-indigo-500',
+      'daily_momentum': 'text-warning',
+    };
+
+    const IconComponent = sectionIconMap[sectionId];
+    const title = sectionTitleMap[sectionId];
+    const colorClass = sectionColorMap[sectionId];
+
+    let habitsToRender: ProcessedUserHabit[] = [];
+    let emptyStateMessage: string = '';
+    let emptyStateLinkText: string = '';
+
+    if (sectionId === 'anchor') {
+      habitsToRender = anchorHabits;
+      emptyStateMessage = 'No anchor practices yet.';
+      emptyStateLinkText = 'Design your first anchor →';
+    } else if (sectionId === 'weekly_objective') {
+      habitsToRender = weeklyObjectives;
+      emptyStateMessage = 'No weekly objectives yet.';
+      emptyStateLinkText = 'Design your first weekly objective →';
+    } else if (sectionId === 'daily_momentum') {
+      habitsToRender = dailyMomentumHabits;
+      emptyStateMessage = 'No additional daily habits scheduled today.';
+      emptyStateLinkText = 'Design your first daily habit →';
+    }
+
+    if (sectionId === 'daily_momentum' && habitsToRender.length === 0 && anchorHabits.length === 0 && weeklyObjectives.length === 0) {
       return (
-        <WeeklyAnchorCard 
-          key={habit.key}
-          habit={habit}
-          isLocked={habit.isLockedByDependency}
-          dependentHabitName={dependentHabitName}
-        />
+        <div className="bg-card border-2 border-primary/20 rounded-[2rem] p-10 text-center space-y-6 shadow-xl">
+          <div className="w-20 h-20 bg-primary/10 rounded-[2rem] flex items-center justify-center mx-auto"><PlusCircle className="w-10 h-10 text-primary" /></div>
+          <div className="space-y-2">
+            <h3 className="text-2xl font-black tracking-tight">Your Dashboard is Empty</h3>
+            <p className="text-muted-foreground font-medium max-w-xs mx-auto">Build your routines using the Practice Lab or explore community templates.</p>
+          </div>
+          <div className="flex flex-col gap-3">
+            <Link to="/create-habit"><Button size="lg" className="w-full h-14 rounded-2xl font-black text-base shadow-lg shadow-primary/20">Open Practice Lab</Button></Link>
+            <Link to="/templates"><Button variant="outline" size="lg" className="w-full h-14 rounded-2xl font-black text-base border-2">Explore Templates</Button></Link>
+          </div>
+        </div>
       );
     }
-    
-    if (isWeeklyObjective) {
-      return (
-        <WeeklyObjectiveCard
-          key={habit.key}
-          habit={habit}
-          isLocked={habit.isLockedByDependency}
-          dependentHabitName={dependentHabitName}
-        />
-      );
-    }
-
-    const Icon = habitIconMap[habit.key] || habitIconMap.custom_habit;
-    const color = habitColorMap[habit.key] || 'blue';
-    const isTrial = habit.is_trial_mode;
-    
-    const accentColorClasses = {
-        orange: 'bg-habit-orange border-habit-orange-border text-habit-orange-foreground',
-        blue: 'bg-habit-blue border-habit-blue-border text-habit-blue-foreground',
-        green: 'bg-habit-green border-habit-green-border text-habit-green-foreground',
-        purple: 'bg-habit-purple border-habit-purple-border text-habit-purple-foreground',
-        red: 'bg-habit-red border-habit-red-border text-habit-red-foreground',
-        indigo: 'bg-habit-indigo border-habit-indigo-border text-habit-indigo-foreground',
-    }[color];
-
-    const nextCapsule = habit.capsules.find((c: any) => !c.isCompleted);
-    const showOnlyNext = !showAllMomentum[habit.key] && habit.numChunks > 1;
-    const isLocked = habit.isLockedByDependency;
-    
-    const canQuickFinish = !habit.allCompleted && !isLocked;
-
-    const showTrialGuidance = (habit.is_trial_mode || habit.anchor_practice) && !habit.allCompleted;
 
     return (
-      <AccordionItem
-        key={habit.key}
-        value={habit.key}
-        id={`habit-card-${habit.key}`}
-        className={cn(
-          "border-2 rounded-3xl mb-4 overflow-hidden transition-all duration-500",
-          habit.allCompleted ? "opacity-75 border-success/30 bg-success/5 shadow-none" : cn(accentColorClasses, "shadow-md"),
-          !habit.isWithinWindow && !habit.allCompleted && "opacity-75",
-          isLocked && "opacity-40 grayscale-[0.5]"
-        )}
-      >
-        <AccordionTrigger className="px-6 py-5 hover:no-underline group">
-          <div className="flex items-center gap-5 text-left w-full">
-            <div className={cn(
-              "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border border-border transition-transform group-hover:scale-105",
-              habit.allCompleted ? "bg-success/20 text-success" : "bg-card/90"
-            )}>
-              <Icon className="w-6 h-6" />
-            </div>
-            <div className="min-w-0 flex-grow pr-2">
-              <div className="flex items-center justify-between gap-2">
-                <h3 className="font-black text-lg flex items-center gap-2 leading-tight truncate">
-                  {habit.name}
-                  {habit.allCompleted && <CheckCircle2 className="w-5 h-5 text-success inline-block ml-2" />}
-                </h3>
-              </div>
-              <div className="flex flex-wrap items-center gap-2 mt-1">
-                <span className={cn(
-                  "text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border",
-                  habit.allCompleted ? "bg-success text-success-foreground border-transparent" : habit.isWithinWindow ? "bg-primary text-primary-foreground border-transparent" : "bg-muted text-muted-foreground border-transparent"
-                )}>
-                  {habit.allCompleted ? "Goal Reached" : (habit.isWithinWindow ? "Ready Now" : "Restricted")}
-                </span>
-                {habit.is_weekly_goal && (
-                  <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border-primary/20 border flex items-center gap-1">
-                    <CalendarCheck className="w-3 h-3" /> Weekly Goal
-                  </span>
-                )}
-                {!habit.isScheduledForToday && !habit.allCompleted && !habit.is_weekly_goal && (
-                  <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-muted/50 text-muted-foreground border-transparent border flex items-center gap-1">
-                    <CalendarDays className="w-3 h-3" /> Extra Session
-                  </span>
-                )}
-              </div>
-              {/* Removed the progress line from here to make the card more compact */}
-            </div>
-          </div>
-          {isLocked && (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2 ml-[72px]">
-              <Lock className="w-3.5 h-3.5" />
-              <span>Locked. Complete {dependentHabitName} first.</span>
-            </div>
-          )}
-        </AccordionTrigger>
-        <AccordionContent className="px-6 pb-6 pt-2 space-y-6">
-          {showTrialGuidance && (
-            <TrialGuidance
-              habitKey={habit.key}
-              habitName={habit.name}
-              isTrial={habit.is_trial_mode}
-              isAnchor={habit.anchor_practice}
-              completionsInPlateau={habit.completions_in_plateau}
-              plateauDaysRequired={habit.plateau_days_required}
-              dailyGoal={habit.dailyGoal}
-              unit={habit.unit}
-              frequency={habit.frequency_per_week}
-            />
-          )}
-
-          <div className="grid grid-cols-2 gap-4 border-t border-border pt-4">
-              <div className="space-y-1">
-                  <p className="text-[9px] font-black uppercase opacity-50 tracking-widest text-muted-foreground">{isTrial ? "Session Target" : "Daily Goal"}</p>
-                  <div className="flex items-center gap-2">
-                      <Target className="w-3.5 h-3.5 text-muted-foreground" />
-                      <p className="text-sm font-black text-foreground">
-                        {Math.round(habit.dailyGoal)} {habit.unit}
-                        {habit.carryoverValue > 0 && <span className="ml-1 text-[10px] font-bold text-success"> (+{Math.round(habit.carryoverValue)} carryover)</span>}
-                      </p>
-                  </div>
-              </div>
-              <div className="space-y-1">
-                  <p className="text-[9px] font-black uppercase opacity-50 tracking-widest text-muted-foreground">Weekly Goal</p>
-                  <div className="flex items-center gap-2">
-                      <TrendingUp className="w-3.5 h-3.5 text-muted-foreground" />
-                      <p className="text-sm font-black text-foreground">{Math.round(habit.weekly_goal)} {habit.unit}</p>
-                  </div>
-              </div>
-          </div>
-          <div className="w-full">
-            <MacroGoalProgress current={habit.weekly_completions} total={habit.frequency_per_week} label={isTrial ? "Weekly Session Log" : "Weekly Consistency"} />
-          </div>
-          <div className="w-full mt-4 mb-6">
-            <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">Daily Progress</p>
-            <Progress value={Math.min(100, (habit.displayProgress / habit.adjustedDailyGoal) * 100)} className="h-1.5 [&>div]:bg-primary" />
-          </div>
-          
-          {canQuickFinish && (
-            <Button 
-              size="lg" variant="secondary" className="w-full h-12 px-3 rounded-2xl text-sm font-black uppercase tracking-wider shadow-sm hover:scale-[1.005] transition-transform mb-4"
-              onClick={() => handleLogRemaining(habit)}
-            >
-              <Check className="w-4 h-4 mr-2" /> Quick Finish Remaining ({Math.round(Math.max(0, habit.adjustedDailyGoal - habit.displayProgress))} {habit.unit})
-            </Button>
-          )}
-
-          {!habit.allCompleted && (
-            <div className="grid gap-3">
-              {showOnlyNext && nextCapsule ? (
-                <>
-                  <div className="relative">
-                      <div className="absolute left-3 top-0 bottom-0 w-px bg-muted/40 z-0" />
-                      <HabitCapsule key={nextCapsule.id} {...nextCapsule} habitName={habit.name} color={color} onLogProgress={(actual, isComplete, mood) => handleCapsuleProgress(habit, nextCapsule, actual, isComplete, mood)} onUncomplete={() => handleCapsuleUncomplete(habit, nextCapsule)} showMood={data.neurodivergentMode} />
-                  </div>
-                  <Button variant="outline" size="sm" className="w-full text-[10px] font-black uppercase tracking-widest h-9 rounded-xl border-dashed text-muted-foreground" onClick={() => toggleShowAll(habit.key)}>
-                    <Layers className="w-3.5 h-3.5 mr-2" /> View all session parts ({habit.numChunks})
-                  </Button>
-                </>
-              ) : (
-                <div className="space-y-3">
-                  {habit.capsules.map((capsule: any) => (
-                    <HabitCapsule key={capsule.id} {...capsule} habitName={habit.name} color={color} onLogProgress={(actual, isComplete, mood) => handleCapsuleProgress(habit, capsule, actual, isComplete, mood)} onUncomplete={() => handleCapsuleUncomplete(habit, capsule)} showMood={data.neurodivergentMode} />
-                  ))}
-                  {habit.numChunks > 1 && (
-                    <Button variant="ghost" size="sm" className="w-full text-[10px] font-black uppercase opacity-40 h-8" onClick={() => toggleShowAll(habit.key)}>Simplify View (Focus Next)</Button>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-          {habit.allCompleted && !habit.is_fixed && (
-            <div className="p-5 bg-success/10 rounded-[28px] border-2 border-dashed border-success/30 flex flex-col items-center gap-4 text-center animate-in zoom-in-95">
-              <div className="w-14 h-14 rounded-2xl bg-success/20 flex items-center justify-center text-success"><Sparkles className="w-8 h-8" /></div>
-              <div className="space-y-1">
-                <h4 className="font-black text-lg text-success">Goal Crushed!</h4>
-                <p className="text-sm font-medium text-success-foreground opacity-80">You've hit your target for today.</p>
-              </div>
-              <div className="w-full">
-                <HabitCapsule id={`${habit.key}-bonus`} habitKey={habit.key} habitName={habit.name} label="Bonus Session" value={habit.capsules[0]?.value || 10} unit={habit.unit} measurementType={habit.measurement_type} isCompleted={false} isHabitComplete={true} isFixed={false} color={color} onLogProgress={(actual, isComplete, mood) => handleCapsuleProgress(habit, { index: 99 }, actual, isComplete, mood)} onUncomplete={() => {}} showMood={data.neurodivergentMode} />
-              </div>
-            </div>
-          )}
-        </AccordionContent>
-      </AccordionItem>
-    );
-  };
-
-  const sectionComponents = {
-    anchor: (
       <div className="space-y-4">
         <div className="sticky top-[60px] z-20 bg-background/95 backdrop-blur-sm py-3 flex items-center gap-3 border-b border-border">
-          <Anchor className="w-5 h-5 text-primary" />
-          <h2 className="text-xs font-black uppercase tracking-[0.2em] text-primary/80">Anchor Practices</h2>
+          <IconComponent className={cn("w-5 h-5", colorClass)} />
+          <h2 className={cn("text-xs font-black uppercase tracking-[0.2em]", colorClass)}>{title}</h2>
           <div className="ml-auto h-px flex-grow bg-border" />
         </div>
         
-        {anchorHabits.length > 0 ? (
+        {habitsToRender.length > 0 ? (
           <Accordion type="multiple" value={expandedItems} onValueChange={handleExpandedChange} className="space-y-4">
-            {anchorHabits.map(renderHabitItem)}
-          </Accordion>
-        ) : (
-          <div className="p-6 bg-muted/20 border-2 border-dashed border-border rounded-3xl text-center">
-            <p className="text-sm font-bold text-muted-foreground">No anchor practices yet.</p>
-            <Link to="/create-habit"><Button variant="link" className="text-xs font-black uppercase text-primary mt-1">Design your first anchor →</Button></Link>
-          </div>
-        )}
-      </div>
-    ),
-    weekly_objective: (
-      <div className="space-y-4">
-        <div className="sticky top-[60px] z-20 bg-background/95 backdrop-blur-sm py-3 flex items-center gap-3 border-b border-border">
-          <CalendarCheck className="w-5 h-5 text-indigo-500" />
-          <h2 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Weekly Objectives</h2>
-          <div className="ml-auto h-px flex-grow bg-border" />
-        </div>
-        {weeklyObjectives.length > 0 ? (
-          <Accordion type="multiple" value={expandedItems} onValueChange={handleExpandedChange} className="space-y-4">
-            {weeklyObjectives.map(habit => {
+            {habitsToRender.map(habit => {
               const dependentHabitName = data.habits.find(h => h.id === habit.dependent_on_habit_id)?.name || 'previous habit';
+              
+              if (habit.category === 'anchor' && habit.frequency_per_week === 1) {
+                return (
+                  <WeeklyAnchorCard 
+                    key={habit.key}
+                    habit={habit}
+                    isLocked={habit.isLockedByDependency}
+                    dependentHabitName={dependentHabitName}
+                  />
+                );
+              }
+              
+              if (habit.is_weekly_goal && habit.category !== 'anchor') {
+                return (
+                  <WeeklyObjectiveCard
+                    key={habit.key}
+                    habit={habit}
+                    isLocked={habit.isLockedByDependency}
+                    dependentHabitName={dependentHabitName}
+                  />
+                );
+              }
+
+              // Default to HabitAccordionItem for daily momentum habits
               return (
-                <WeeklyObjectiveCard
+                <HabitAccordionItem
                   key={habit.key}
                   habit={habit}
-                  isLocked={habit.isLockedByDependency}
+                  neurodivergentMode={data.neurodivergentMode}
+                  expandedItems={expandedItems}
+                  handleExpandedChange={handleExpandedChange}
+                  logCapsuleProgress={logCapsuleProgress}
+                  uncompleteCapsule={uncompleteCapsule}
+                  showAllMomentum={showAllMomentum}
+                  toggleShowAll={toggleShowAll}
+                  handleLogRemaining={handleLogRemaining}
                   dependentHabitName={dependentHabitName}
                 />
               );
@@ -542,43 +401,12 @@ const Index = () => {
           </Accordion>
         ) : (
           <div className="p-6 bg-muted/20 border-2 border-dashed border-border rounded-3xl text-center">
-            <p className="text-sm font-bold text-muted-foreground">No weekly objectives yet.</p>
-            <Link to="/create-habit"><Button variant="link" className="text-xs font-black uppercase text-primary mt-1">Design your first weekly objective →</Button></Link>
+            <p className="text-sm font-bold text-muted-foreground">{emptyStateMessage}</p>
+            <Link to="/create-habit"><Button variant="link" className="text-xs font-black uppercase text-primary mt-1">{emptyStateLinkText}</Button></Link>
           </div>
         )}
       </div>
-    ),
-    daily_momentum: (
-      <div className="space-y-4">
-        <div className="sticky top-[60px] z-20 bg-background/95 backdrop-blur-sm py-3 flex items-center gap-3 border-b border-border">
-          <Zap className="w-5 h-5 text-warning" />
-          <h2 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Daily Momentum</h2>
-          <div className="ml-auto h-px flex-grow bg-border" />
-        </div>
-        
-        {dailyMomentumHabits.length > 0 ? (
-          <Accordion type="multiple" value={expandedItems} onValueChange={handleExpandedChange} className="space-y-4">
-            {dailyMomentumHabits.map(renderHabitItem)}
-          </Accordion>
-        ) : !anchorHabits.length && !weeklyObjectives.length ? (
-          <div className="bg-card border-2 border-primary/20 rounded-[2rem] p-10 text-center space-y-6 shadow-xl">
-            <div className="w-20 h-20 bg-primary/10 rounded-[2rem] flex items-center justify-center mx-auto"><PlusCircle className="w-10 h-10 text-primary" /></div>
-            <div className="space-y-2">
-              <h3 className="text-2xl font-black tracking-tight">Your Dashboard is Empty</h3>
-              <p className="text-muted-foreground font-medium max-w-xs mx-auto">Build your routines using the Practice Lab or explore community templates.</p>
-            </div>
-            <div className="flex flex-col gap-3">
-              <Link to="/create-habit"><Button size="lg" className="w-full h-14 rounded-2xl font-black text-base shadow-lg shadow-primary/20">Open Practice Lab</Button></Link>
-              <Link to="/templates"><Button variant="outline" size="lg" className="w-full h-14 rounded-2xl font-black text-base border-2">Explore Templates</Button></Link>
-            </div>
-          </div>
-        ) : dailyMomentumHabits.length === 0 && (
-          <div className="p-6 bg-muted/20 border-2 border-dashed border-border rounded-3xl text-center">
-            <p className="text-sm font-bold text-muted-foreground">No additional daily habits scheduled today.</p>
-          </div>
-        )}
-      </div>
-    ),
+    );
   };
 
   return (
@@ -638,7 +466,7 @@ const Index = () => {
 
           {data.sectionOrder.map(sectionId => (
             <React.Fragment key={sectionId}>
-              {sectionComponents[sectionId]}
+              {renderSection(sectionId)}
             </React.Fragment>
           ))}
 
