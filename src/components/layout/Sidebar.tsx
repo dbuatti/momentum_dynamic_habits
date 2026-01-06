@@ -25,13 +25,13 @@ interface NavLinkProps {
 const NavLink: React.FC<NavLinkProps> = ({ to, icon: Icon, label, currentPath, isCollapsed, onClick }) => {
   const isActive = currentPath === to;
   return (
-    <Link 
-      to={to} 
+    <Link
+      to={to}
       onClick={onClick}
       className={cn(
         "flex items-center gap-3 rounded-lg px-3 py-2.5 transition-all hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-        isActive 
-          ? "bg-sidebar-primary text-sidebar-primary-foreground font-medium" 
+        isActive
+          ? "bg-sidebar-primary text-sidebar-primary-foreground font-medium"
           : "text-sidebar-foreground",
         isCollapsed && "justify-center px-2"
       )}
@@ -75,8 +75,8 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick, isCollapse
     { to: "/help", icon: HelpCircle, label: "Help" },
   ];
 
-  const displayName = dashboardData?.firstName && dashboardData?.lastName 
-    ? `${dashboardData.firstName} ${dashboardData.lastName}` 
+  const displayName = dashboardData?.firstName && dashboardData?.lastName
+    ? `${dashboardData.firstName} ${dashboardData.lastName}`
     : dashboardData?.firstName || session?.user?.email;
 
   return (
@@ -98,14 +98,14 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick, isCollapse
           isCollapsed ? "px-2" : "px-4 lg:px-6"
         )}>
           {navItems.map((item) => (
-            <NavLink 
-              key={item.to} 
-              to={item.to} 
-              icon={item.icon} 
-              label={item.label} 
-              currentPath={location.pathname} 
+            <NavLink
+              key={item.to}
+              to={item.to}
+              icon={item.icon}
+              label={item.label}
+              currentPath={location.pathname}
               isCollapsed={isCollapsed}
-              onClick={onLinkClick} 
+              onClick={onLinkClick}
             />
           ))}
         </nav>
@@ -135,9 +135,9 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick, isCollapse
           "flex gap-2",
           isCollapsed && "flex-col gap-2"
         )}>
-          <Button 
-            variant="secondary" 
-            className={cn("flex-1", isCollapsed && "w-full")} 
+          <Button
+            variant="secondary"
+            className={cn("flex-1", isCollapsed && "w-full")}
             onClick={handleSignOut}
           >
             <LogOut className={cn("h-4 w-4", !isCollapsed && "mr-2")} />
@@ -148,10 +148,10 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick, isCollapse
           </Button>
         </div>
         {!isMobile && (
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={onToggleCollapse} 
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onToggleCollapse}
             className={cn(
               "mt-4 w-full rounded-lg",
               isCollapsed ? "h-10" : "h-8"
@@ -165,39 +165,33 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick, isCollapse
   );
 };
 
-export const Sidebar: React.FC<{ children: React.ReactNode; isCollapsed: boolean; onToggleCollapse: () => void }> = ({ children, isCollapsed, onToggleCollapse }) => {
+export const Sidebar: React.FC<{ isCollapsed: boolean; onToggleCollapse: () => void }> = ({ isCollapsed, onToggleCollapse }) => {
   const isMobile = useIsMobile();
   const [open, setOpen] = React.useState(false);
 
   if (isMobile) {
     return (
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetTrigger asChild>
-          <Button variant="ghost" size="icon" className="fixed top-4 left-4 z-[100] rounded-full">
-            <Menu className="h-6 w-6" />
-          </Button>
-        </SheetTrigger>
-        <SheetContent side="left" className="flex flex-col w-[280px] p-0 bg-sidebar-background text-sidebar-foreground border-sidebar-border">
-          <SidebarContent onLinkClick={() => setOpen(false)} isCollapsed={false} onToggleCollapse={onToggleCollapse} isMobile={isMobile} />
-        </SheetContent>
-        <main className="flex flex-1 flex-col overflow-hidden">
-          {children}
-        </main>
-      </Sheet>
+      <>
+        <Sheet open={open} onOpenChange={setOpen}>
+          <SheetTrigger asChild>
+            <Button variant="ghost" size="icon" className="fixed top-4 left-4 z-[100] rounded-full">
+              <Menu className="h-6 w-6" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="flex flex-col w-[280px] p-0 bg-sidebar-background text-sidebar-foreground border-sidebar-border">
+            <SidebarContent onLinkClick={() => setOpen(false)} isCollapsed={false} onToggleCollapse={onToggleCollapse} isMobile={isMobile} />
+          </SheetContent>
+        </Sheet>
+      </>
     );
   }
 
   return (
-    <>
-      <div className={cn(
-        "hidden border-r bg-sidebar-background",
-        isCollapsed ? "lg:block lg:w-16" : "lg:block lg:w-[280px]"
-      )}>
-        <SidebarContent isCollapsed={isCollapsed} onToggleCollapse={onToggleCollapse} isMobile={isMobile} />
-      </div>
-      <main className="flex flex-1 flex-col overflow-hidden">
-        {children}
-      </main>
-    </>
+    <div className={cn(
+      "hidden border-r bg-sidebar-background",
+      isCollapsed ? "lg:block lg:w-16" : "lg:block lg:w-[280px]"
+    )}>
+      <SidebarContent isCollapsed={isCollapsed} onToggleCollapse={onToggleCollapse} isMobile={isMobile} />
+    </div>
   );
 };

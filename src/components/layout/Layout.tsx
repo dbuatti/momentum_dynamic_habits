@@ -24,12 +24,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       !isMobile && "grid",
       isSidebarCollapsed ? "lg:grid-cols-[64px_1fr]" : "lg:grid-cols-[280px_1fr]"
     )}>
-      <Sidebar 
-        isCollapsed={isSidebarCollapsed} 
-        onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)} 
-      >
+      {/* Render Sidebar component */}
+      <Sidebar
+        isCollapsed={isSidebarCollapsed}
+        onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+      />
+      {/* Main content area */}
+      <main className="flex flex-1 flex-col overflow-hidden">
         {children}
-      </Sidebar>
+      </main>
       <NavigationProgressToast />
       <FloatingTimer />
     </div>
