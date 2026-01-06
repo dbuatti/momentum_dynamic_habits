@@ -33,6 +33,14 @@ interface HabitCapsuleProps {
   initialRemainingTimeSeconds?: number; // NEW PROP
 }
 
+// Helper function to format time
+const formatTimeDisplay = (totalSeconds: number) => {
+  const roundedTotalSeconds = Math.round(totalSeconds); 
+  const mins = Math.floor(roundedTotalSeconds / 60);
+  const secs = roundedTotalSeconds % 60;
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
+
 export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   habitKey,
   habitName,
@@ -144,7 +152,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     }
   }, [timeLeft, isTiming, triggerFeedback]);
 
-  // Effect to load/save timer state from/to localStorage (Modified to remove interval logic)
+  // Effect to load/save timer state from/to localStorage
   useEffect(() => {
     if (measurementType !== 'timer') return;
 
@@ -156,35 +164,29 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
       return;
     }
 
-    // Only update timeLeft from props/localStorage if timer is not actively running
-    if (!isTiming) { 
-      const saved = localStorage.getItem(storageKey);
-      if (saved) {
-        const { timeLeft: savedTimeLeft, paused, timing, lastUpdated } = JSON.parse(saved);
-        
-        let calculatedTimeLeft = savedTimeLeft;
-        if (timing && !paused && lastUpdated) {
-          // Calculate actual time left based on last update to account for app being closed
-          const elapsedSinceLastUpdate = Math.floor((Date.now() - lastUpdated) / 1000);
-          calculatedTimeLeft = Math.max(0, savedTimeLeft - elapsedSinceLastUpdate);
-        }
-
-        setIsPaused(paused);
-        setIsTiming(timing);
-        setTimeLeft(calculatedTimeLeft);
-        
-      } else {
-        // If no saved state, initialize with the prop, or default to targetDurationSeconds
-        const initialTime = initialRemainingTimeSeconds !== undefined ? initialRemainingTimeSeconds : targetDurationSeconds;
-        setTimeLeft(initialTime);
+    const saved = localStorage.getItem(storageKey);
+    if (saved) {
+      const { timeLeft: savedTimeLeft, paused, timing, lastUpdated } = JSON.parse(saved);
+      
+      let calculatedTimeLeft = savedTimeLeft;
+      if (timing && !paused && lastUpdated) {
+        const elapsedSinceLastUpdate = Math.floor((Date.now() - lastUpdated) / 1000);
+        calculatedTimeLeft = Math.max(0, savedTimeLeft - elapsedSinceLastUpdate);
       }
+
+      setIsPaused(paused);
+      setIsTiming(timing);
+      setTimeLeft(calculatedTimeLeft);
+      
+    } else {
+      const initialTime = initialRemainingTimeSeconds !== undefined ? initialRemainingTimeSeconds : targetDurationSeconds;
+      setTimeLeft(initialTime);
     }
     
-    // Cleanup for unmount (interval cleanup is handled by the dedicated useEffect)
     return () => {
         window.dispatchEvent(new CustomEvent('habit-timer-update', { detail: null }));
     };
-  }, [isCompleted, storageKey, measurementType, targetDurationSeconds, initialRemainingTimeSeconds, isTiming]); 
+  }, [isCompleted, storageKey, measurementType, targetDurationSeconds, initialRemainingTimeSeconds]); 
 
   // Effect to save timer state to localStorage when active (Runs on every tick)
   useEffect(() => {
@@ -345,12 +347,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     red: { light: 'from-habit-red/60', mid: 'via-habit-red/80', dark: 'to-habit-red', text: 'text-habit-red-foreground', border: 'border-habit-red-border' },
     indigo: { light: 'from-habit-indigo/60', mid: 'via-habit-indigo/80', dark: 'to-habit-indigo', text: 'text-habit-indigo-foreground', border: 'border-habit-indigo-border' },
   }[color];
-
-  const formatTimeDisplay = (totalSeconds: number) => {
-    const mins = Math.floor(totalSeconds / 60);
-    const secs = totalSeconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
 
   const progressPercent = measurementType === 'timer' 
     ? Math.min(100, ((targetDurationSeconds - timeLeft) / targetDurationSeconds) * 100)

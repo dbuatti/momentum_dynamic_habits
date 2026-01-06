@@ -110,7 +110,7 @@ const fetchDashboardData = async (userId: string) => {
       try {
         const start = parse(h.window_start, 'HH:mm', now);
         const end = parse(h.window_end, 'HH:mm', now);
-        isWithinInterval(now, { start, end });
+        isWithinWindow = isWithinInterval(now, { start, end }); // Corrected assignment
       } catch (e) {
         console.error("Window parsing error", e);
       }

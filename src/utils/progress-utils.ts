@@ -32,7 +32,7 @@ export const calculateDynamicChunks = (
     const num = Math.ceil(goal / preferredDuration);
     return {
       numChunks: Math.max(1, num),
-      chunkValue: preferredDuration
+      chunkValue: Number((goal / Math.max(1, num)).toFixed(1)) // Ensure sum of chunks equals goal
     };
   }
 
@@ -40,7 +40,7 @@ export const calculateDynamicChunks = (
   if (chunkingMode === 'by_parts' && preferredCount && preferredCount > 0) {
     return {
       numChunks: preferredCount,
-      chunkValue: Number((goal / preferredCount).toFixed(1))
+      chunkValue: Number((goal / preferredCount).toFixed(1)) // Ensure sum of chunks equals goal
     };
   }
 
