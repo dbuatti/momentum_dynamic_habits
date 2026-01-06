@@ -12,7 +12,7 @@ import {
   Anchor, Target, Sparkles, ShieldCheck, Calendar, 
   Clock, Dumbbell, Wind, BookOpen, Music, 
   Home, Code, Pill, Timer, BarChart3, Layers, Zap, Info, Eye, EyeOff, Link as LinkIcon, FlaskConical,
-  Trash2, ChevronDown, ChevronUp, CheckCircle2, ListOrdered, ListChecks, CalendarDays
+  Trash2, ChevronDown, ChevronUp, CheckCircle2, ListOrdered, ListChecks, CalendarDays, CalendarCheck // Added CalendarCheck
 } from 'lucide-react';
 import { UserHabitRecord, MeasurementType, ChunkingMode } from '@/types/habit';
 import { useUpdateHabitVisibility } from '@/hooks/useUpdateHabitVisibility';
@@ -110,6 +110,7 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
   const countOptions = [2, 3, 4, 5, 6, 8, 10, 12];
   
   const isWeeklyAnchor = habit.category === 'anchor' && habit.frequency_per_week === 1;
+  const showMinDurationInput = (isWeeklyAnchor || habit.is_weekly_goal) && habit.unit === 'min';
 
   return (
     <AccordionItem 
@@ -155,7 +156,7 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
                  </span>
                  {habit.is_weekly_goal && (
                    <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full border bg-primary/10 text-primary border-primary/20">
-                     Weekly
+                     <CalendarCheck className="w-3 h-3 inline-block mr-1" /> Weekly
                    </span>
                  )}
               </div>
@@ -235,7 +236,7 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
               </div>
             </div>
 
-            {isWeeklyAnchor && habit.unit === 'min' && (
+            {showMinDurationInput && (
               <div className="space-y-2 bg-info-background/50 p-4 rounded-2xl border border-info-border/50">
                 <Label className="text-[10px] font-black uppercase opacity-60 ml-1 flex items-center gap-1">
                   <Clock className="w-3.5 h-3.5" /> Minimum Session Duration (min)
