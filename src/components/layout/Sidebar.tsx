@@ -11,7 +11,6 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useSession } from '@/contexts/SessionContext';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useTheme } from '@/contexts/ThemeContext';
-import { habitIconMap } from '@/lib/habit-utils';
 
 interface NavLinkProps {
   to: string;
