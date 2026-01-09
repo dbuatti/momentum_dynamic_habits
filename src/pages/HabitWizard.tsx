@@ -48,6 +48,7 @@ import { HabitReviewStep } from '@/pages/HabitReview';
 import { WizardStepper } from '@/components/habits/wizard/WizardStepper';
 import { EditHabitDetailsModal } from '@/components/habits/wizard/EditHabitDetailsModal';
 import AIGenerativeDialogue from '@/components/habits/AIGenerativeDialogue';
+import { timeOptions } from '@/utils/time-utils'; // Import from new utility
 
 export interface CreateHabitParams {
   name: string;
@@ -613,7 +614,7 @@ const HabitWizard = () => {
               </div>
               <div className="space-y-2">
                 <h2 className="text-2xl font-black uppercase tracking-tight">AI Quick Build</h2>
-                <p className="text-muted-foreground text-sm font-medium">
+                <p className="text-muted-foreground text-sm font-w-full font-medium">
                   Just describe what you want in natural language and let the AI handle the complex logic.
                 </p>
               </div>

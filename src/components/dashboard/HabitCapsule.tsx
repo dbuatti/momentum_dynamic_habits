@@ -10,6 +10,7 @@ import { useFeedback } from '@/hooks/useFeedback';
 import { Input } from '@/components/ui/input';
 import { MeasurementType } from '@/types/habit';
 import confetti from 'canvas-confetti';
+import { formatTimeDisplay } from '@/utils/time-utils'; // Import from new utility
 
 interface HabitCapsuleProps {
   id: string;
@@ -32,14 +33,6 @@ interface HabitCapsuleProps {
   completeOnFinish?: boolean; // NEW PROP
   initialRemainingTimeSeconds?: number; // NEW PROP
 }
-
-// Helper function to format time
-const formatTimeDisplay = (totalSeconds: number) => {
-  const roundedTotalSeconds = Math.round(totalSeconds); 
-  const mins = Math.floor(roundedTotalSeconds / 60);
-  const secs = roundedTotalSeconds % 60;
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
-};
 
 export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   habitKey,

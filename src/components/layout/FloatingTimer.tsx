@@ -6,6 +6,7 @@ import { Timer, Square, Play, Pause, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { formatTimeDisplay } from '@/utils/time-utils'; // Import from new utility
 
 export const FloatingTimer = () => {
   const [activeTimer, setActiveTimer] = useState<{ label: string; remaining: number; isPaused: boolean; habitKey: string } | null>(null);
@@ -22,13 +23,6 @@ export const FloatingTimer = () => {
   }, []);
 
   if (!activeTimer) return null;
-
-  const formatTime = (totalSeconds: number) => {
-    const roundedTotalSeconds = Math.round(totalSeconds); 
-    const mins = Math.floor(roundedTotalSeconds / 60);
-    const secs = roundedTotalSeconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
 
   return (
     <AnimatePresence>
@@ -50,7 +44,7 @@ export const FloatingTimer = () => {
             <div className="flex items-baseline gap-1">
               <span className="text-[8px] font-black uppercase opacity-40">Rem:</span>
               <p className="text-xl font-black tabular-nums">
-                {formatTime(activeTimer.remaining)}
+                {formatTimeDisplay(activeTimer.remaining)}
               </p>
             </div>
           </div>

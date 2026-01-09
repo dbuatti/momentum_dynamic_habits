@@ -12,19 +12,13 @@ import { useHabitLog } from '@/hooks/useHabitLog';
 import { showError } from '@/utils/toast';
 import { useFeedback } from '@/hooks/useFeedback';
 import confetti from 'canvas-confetti';
+import { formatTimeDisplay } from '@/utils/time-utils'; // Import from new utility
 
 interface WeeklyAnchorCardProps {
   habit: ProcessedUserHabit;
   isLocked: boolean;
   dependentHabitName: string;
 }
-
-const formatTime = (totalSeconds: number) => {
-  const roundedTotalSeconds = Math.round(totalSeconds); 
-  const mins = Math.floor(roundedTotalSeconds / 60);
-  const secs = roundedTotalSeconds % 60;
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
-};
 
 export const WeeklyAnchorCard: React.FC<WeeklyAnchorCardProps> = ({ 
   habit, 
@@ -189,7 +183,7 @@ export const WeeklyAnchorCard: React.FC<WeeklyAnchorCardProps> = ({
             <div className="flex justify-between items-center bg-card/40 p-5 rounded-2xl border border-white/20">
               <div className="flex flex-col">
                 <span className="text-[9px] font-black uppercase opacity-60 tracking-widest">Time Lapsed</span>
-                <p className="text-3xl font-black tabular-nums">{formatTime(elapsedTime)}</p>
+                <p className="text-3xl font-black tabular-nums">{formatTimeDisplay(elapsedTime)}</p>
               </div>
               <div className="flex gap-2">
                 <Button variant="outline" size="icon" className="h-12 w-12 rounded-xl" onClick={(e) => { e.stopPropagation(); setIsPaused(!isPaused); }}>

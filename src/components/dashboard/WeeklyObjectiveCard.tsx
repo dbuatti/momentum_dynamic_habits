@@ -13,19 +13,13 @@ import { useFeedback } from '@/hooks/useFeedback';
 import { showSuccess } from '@/utils/toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
+import { formatTimeDisplay } from '@/utils/time-utils'; // Import from new utility
 
 interface WeeklyObjectiveCardProps {
   habit: ProcessedUserHabit;
   isLocked: boolean;
   dependentHabitName: string;
 }
-
-const formatTime = (totalSeconds: number) => {
-  const roundedTotalSeconds = Math.round(totalSeconds); 
-  const mins = Math.floor(roundedTotalSeconds / 60);
-  const secs = roundedTotalSeconds % 60;
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
-};
 
 export const WeeklyObjectiveCard: React.FC<WeeklyObjectiveCardProps> = ({ 
   habit, 
@@ -204,7 +198,7 @@ export const WeeklyObjectiveCard: React.FC<WeeklyObjectiveCardProps> = ({
              <div className="flex flex-col sm:flex-row justify-between items-center gap-6 bg-card/40 p-5 rounded-2xl border border-white/20">
                 <div className="flex flex-col">
                     <span className="text-[9px] font-black uppercase opacity-60 tracking-widest">Time Remaining</span>
-                    <p className="text-3xl font-black tabular-nums">{formatTime(timeLeft)}</p>
+                    <p className="text-3xl font-black tabular-nums">{formatTimeDisplay(timeLeft)}</p>
                 </div>
                 <div className="flex gap-2">
                   <Button variant="outline" size="icon" className="h-12 w-12 rounded-xl" onClick={(e) => { e.stopPropagation(); setIsPaused(!isPaused); }}>

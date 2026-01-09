@@ -1,6 +1,7 @@
 import { WizardHabitData } from '@/hooks/useUserHabitWizardTemp';
 import { CreateHabitParams } from '@/pages/HabitWizard';
 import { HabitCategory, MeasurementType, GrowthType, ChunkingMode } from '@/types/habit';
+import { timeOptions as allTimeOptions } from '@/utils/time-utils'; // Import allTimeOptions
 
 export const timeOfDayOptions = [
   { id: 'morning', label: 'Morning', icon: 'Sunrise', start: '06:00', end: '10:00' },

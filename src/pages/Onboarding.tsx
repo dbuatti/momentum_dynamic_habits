@@ -12,17 +12,11 @@ import { Dumbbell, Wind, BookOpen, Music, Home, Code, Target, Clock, User, Spark
 import { useNavigate } from 'react-router-dom';
 import { Switch } from '@/components/ui/switch';
 import { useInitializeMissingHabits } from '@/hooks/useInitializeMissingHabits';
-import { habitTemplates, habitCategories, habitUnits, habitModes } from '@/lib/habit-templates';
+import { habitTemplates, habitCategories } from '@/lib/habit-templates';
 import { Slider } from '@/components/ui/slider';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-
-const commonTimezones = [
-  'UTC', 'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles',
-  'Europe/London', 'Europe/Paris', 'Europe/Berlin', 'Asia/Tokyo', 'Asia/Shanghai', 'Australia/Sydney',
-];
-
-const timeOptions = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0') + ':00');
+import { commonTimezones, timeOptions } from '@/utils/time-utils'; // Import from new utility
 
 const OnboardingFlow = ({ onComplete }: { onComplete: () => void }) => {
   const [step, setStep] = useState(1);

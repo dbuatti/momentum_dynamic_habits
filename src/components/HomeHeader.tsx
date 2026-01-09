@@ -8,6 +8,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { getXpForNextLevel, getXpForCurrentLevelStart } from '@/utils/leveling';
+import { formatTimeDisplay } from '@/utils/time-utils'; // Import from new utility
 
 interface HomeHeaderProps {
   dayCounter: number;

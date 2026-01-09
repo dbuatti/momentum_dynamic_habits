@@ -22,6 +22,7 @@ import { UserHabitRecord, HabitCategory as HabitCategoryType, MeasurementType, G
 import { useJourneyData } from '@/hooks/useJourneyData';
 import { CreateHabitParams } from '@/pages/HabitWizard';
 import { habitIconMap } from '@/lib/habit-utils';
+import { timeOptions } from '@/utils/time-utils'; // Import from new utility
 
 interface EditHabitDetailsModalProps {
   isOpen: boolean;
@@ -31,8 +32,6 @@ interface EditHabitDetailsModalProps {
   isSaving: boolean;
   isTemplateMode?: boolean;
 }
-
-const timeOptions = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0') + ':00');
 
 const getHabitIconComponent = (iconName: string) => {
   return habitIcons.find(i => i.value === iconName)?.icon || Target;

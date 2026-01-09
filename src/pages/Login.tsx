@@ -7,6 +7,7 @@ import { useEffect } from 'react';
 import { Loader2, Target } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { useOnboardingCheck } from '@/hooks/useOnboardingCheck'; // Import useOnboardingCheck
+import { commonTimezones } from '@/utils/time-utils'; // Import commonTimezones
 
 const Login = () => {
   const { session, loading: isSessionLoading } = useSession();

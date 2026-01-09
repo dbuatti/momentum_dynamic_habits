@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { calculateDailyParts } from '@/utils/progress-utils';
+import { formatTimeDisplay } from '@/utils/time-utils'; // Import from new utility
 
 export const useTabProgress = () => {
   const { data } = useDashboardData();
@@ -27,9 +28,7 @@ export const useTabProgress = () => {
     let title = "";
 
     if (activeTimer) {
-      const mins = Math.floor(activeTimer.remaining / 60);
-      const secs = (activeTimer.remaining % 60).toString().padStart(2, '0');
-      const timeStr = `${mins}:${secs}`;
+      const timeStr = formatTimeDisplay(activeTimer.remaining);
       // Updated title to show remaining time countdown
       title = `${timeStr} rem ↓ ${activeTimer.habitName} – ${activeTimer.label} | Adaptive Growth`;
     } else {

@@ -37,11 +37,7 @@ import { ResetExperienceCard } from '@/components/settings/ResetExperienceCard';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { HabitOrderSettings } from '@/components/settings/HabitOrderSettings';
 import { SectionOrderSettings } from '@/components/settings/SectionOrderSettings'; // Import the new component
-
-const commonTimezones = [
-  'UTC', 'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles',
-  'Europe/London', 'Europe/Paris', 'Europe/Berlin', 'Asia/Tokyo', 'Asia/Shanghai', 'Australia/Sydney',
-];
+import { commonTimezones } from '@/utils/time-utils'; // Import from new utility
 
 const Settings = () => {
   const { session, signOut } = useSession();

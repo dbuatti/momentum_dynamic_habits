@@ -7,8 +7,8 @@ import { Separator } from '@/components/ui/separator';
 import { WizardHabitData } from '@/hooks/useUserHabitWizardTemp';
 import { habitCategories, habitUnits, habitModes, habitIcons } from '@/lib/habit-templates';
 import { habitIconMap } from '@/lib/habit-utils';
-import { timeOfDayOptions } from '@/utils/habit-wizard-utils';
 import { useJourneyData } from '@/hooks/useJourneyData';
+import { timeOptions } from '@/utils/time-utils'; // Import from new utility
 
 interface StructuredOverviewProps {
   wizardData: Partial<WizardHabitData>;

@@ -11,6 +11,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useSession } from '@/contexts/SessionContext';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useTheme } from '@/contexts/ThemeContext';
+import { commonTimezones } from '@/utils/time-utils'; // Import commonTimezones
 
 interface NavLinkProps {
   to: string;
