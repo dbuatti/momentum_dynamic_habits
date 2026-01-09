@@ -6,13 +6,13 @@ import {
   CheckCircle2, Target, Anchor, Zap, 
   Layers, PlusCircle, Lock,
   AlertCircle, Sparkles, TrendingUp, Clock, Play,
-  Check, CalendarDays, CalendarCheck
+  Check, CalendarDays, CalendarCheck, ChevronDown, ChevronUp
 } from "lucide-react";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { DashboardSkeleton } from "@/components/dashboard/DashboardSkeleton";
 import { HabitCapsule } from "@/components/dashboard/HabitCapsule";
 import { useCapsules } from "@/hooks/useCapsules";
-import React, { useState, useMemo, useEffect, useRef } from "react";
+import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useOnboardingCheck } from "@/hooks/useOnboardingCheck";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,7 @@ import { WeeklyObjectiveCard } from "@/components/dashboard/WeeklyObjectiveCard"
 import { FixEmptyHabitKey } from "@/components/fixers/FixEmptyHabitKey";
 import { ProcessedUserHabit } from "@/types/habit";
 import { HabitAccordionItem } from "@/components/dashboard/HabitAccordionItem"; // Import the new component
+import { motion, AnimatePresence } from 'framer-motion'; // Import motion and AnimatePresence
 
 const Index = () => {
   const { data, isLoading, isError, refetch } = useDashboardData();
@@ -41,6 +42,7 @@ const Index = () => {
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [hasInitializedState, setHasInitializedState] = useState(false);
   const [showAllMomentum, setShowAllMomentum] = useState<Record<string, boolean>>({});
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({}); // New state for section collapse
   
   // Track previous completion states to detect transitions
   const prevCompletionsRef = useRef<Record<string, boolean>>({});
@@ -198,12 +200,21 @@ const Index = () => {
     if (!data || hasInitializedState) return;
     
     // Check if we have manually set expanded items in localStorage
-    const stored = habitGroups.filter(h => {
+    const storedExpanded = habitGroups.filter(h => {
         const state = localStorage.getItem(`habitAccordionState:${h.key}`);
         return state === 'expanded';
     }).map(h => h.key);
     
-    setExpandedItems(stored); 
+    setExpandedItems(storedExpanded); 
+
+    // Load collapsed state for sections
+    const initialCollapsedState: Record<string, boolean> = {};
+    data.sectionOrder.forEach(sectionId => {
+      const storedState = localStorage.getItem(`sectionCollapsed:${sectionId}`);
+      initialCollapsedState[sectionId] = storedState === 'true'; // Default to false (not collapsed) if not found
+    });
+    setCollapsedSections(initialCollapsedState);
+
     setHasInitializedState(true);
   }, [data, habitGroups, hasInitializedState]);
 
@@ -242,7 +253,35 @@ const Index = () => {
     });
   };
 
+  // Save collapsed state for sections whenever it changes
+  useEffect(() => {
+    Object.entries(collapsedSections).forEach(([sectionId, isCollapsed]) => {
+      localStorage.setItem(`sectionCollapsed:${sectionId}`, String(isCollapsed));
+    });
+  }, [collapsedSections]);
+
+  const toggleSectionCollapse = (sectionId: string) => {
+    setCollapsedSections(prev => ({
+      ...prev,
+      [sectionId]: !prev[sectionId]
+    }));
+  };
+
   const focusHabit = (habitKey: string) => {
+    // Ensure the section containing the habit is expanded
+    const habitSection = data?.sectionOrder.find(sectionId => {
+      let sectionHabits: ProcessedUserHabit[] = [];
+      if (sectionId === 'anchor') sectionHabits = anchorHabits;
+      else if (sectionId === 'weekly_objective') sectionHabits = weeklyObjectives;
+      else if (sectionId === 'daily_momentum') sectionHabits = dailyMomentumHabits;
+      return sectionHabits.some(h => h.key === habitKey);
+    });
+
+    if (habitSection && collapsedSections[habitSection]) {
+      toggleSectionCollapse(habitSection);
+    }
+
+    // Then expand the habit itself
     if (!expandedItems.includes(habitKey)) {
       handleExpandedChange([...expandedItems, habitKey]);
     }
@@ -311,6 +350,7 @@ const Index = () => {
     const IconComponent = sectionIconMap[sectionId];
     const title = sectionTitleMap[sectionId];
     const colorClass = sectionColorMap[sectionId];
+    const isSectionCollapsed = collapsedSections[sectionId];
 
     let habitsToRender: ProcessedUserHabit[] = [];
     let emptyStateMessage: string = '';
@@ -348,63 +388,80 @@ const Index = () => {
 
     return (
       <div className="space-y-4">
-        <div className="sticky top-[60px] z-20 bg-background/95 backdrop-blur-sm py-3 flex items-center gap-3 border-b border-border">
+        <div
+          className="sticky top-[60px] z-20 bg-background/95 backdrop-blur-sm py-3 flex items-center gap-3 border-b border-border cursor-pointer"
+          onClick={() => toggleSectionCollapse(sectionId)}
+        >
           <IconComponent className={cn("w-5 h-5", colorClass)} />
           <h2 className={cn("text-xs font-black uppercase tracking-[0.2em]", colorClass)}>{title}</h2>
           <div className="ml-auto h-px flex-grow bg-border" />
+          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
+            {isSectionCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+          </Button>
         </div>
         
-        {habitsToRender.length > 0 ? (
-          <Accordion type="multiple" value={expandedItems} onValueChange={handleExpandedChange} className="space-y-4">
-            {habitsToRender.map(habit => {
-              const dependentHabitName = data.habits.find(h => h.id === habit.dependent_on_habit_id)?.name || 'previous habit';
-              
-              if (habit.category === 'anchor' && habit.frequency_per_week === 1) {
-                return (
-                  <WeeklyAnchorCard 
-                    key={habit.key}
-                    habit={habit}
-                    isLocked={habit.isLockedByDependency}
-                    dependentHabitName={dependentHabitName}
-                  />
-                );
-              }
-              
-              if (habit.is_weekly_goal && habit.category !== 'anchor') {
-                return (
-                  <WeeklyObjectiveCard
-                    key={habit.key}
-                    habit={habit}
-                    isLocked={habit.isLockedByDependency}
-                    dependentHabitName={dependentHabitName}
-                  />
-                );
-              }
+        <AnimatePresence>
+          {!isSectionCollapsed && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3, ease: "easeInOut" }}
+              className="overflow-hidden"
+            >
+              {habitsToRender.length > 0 ? (
+                <Accordion type="multiple" value={expandedItems} onValueChange={handleExpandedChange} className="space-y-4">
+                  {habitsToRender.map(habit => {
+                    const dependentHabitName = data.habits.find(h => h.id === habit.dependent_on_habit_id)?.name || 'previous habit';
+                    
+                    if (habit.category === 'anchor' && habit.frequency_per_week === 1) {
+                      return (
+                        <WeeklyAnchorCard 
+                          key={habit.key}
+                          habit={habit}
+                          isLocked={habit.isLockedByDependency}
+                          dependentHabitName={dependentHabitName}
+                        />
+                      );
+                    }
+                    
+                    if (habit.is_weekly_goal && habit.category !== 'anchor') {
+                      return (
+                        <WeeklyObjectiveCard
+                          key={habit.key}
+                          habit={habit}
+                          isLocked={habit.isLockedByDependency}
+                          dependentHabitName={dependentHabitName}
+                        />
+                      );
+                    }
 
-              // Default to HabitAccordionItem for daily momentum habits
-              return (
-                <HabitAccordionItem
-                  key={habit.key}
-                  habit={habit}
-                  neurodivergentMode={data.neurodivergentMode}
-                  expandedItems={expandedItems}
-                  handleExpandedChange={handleExpandedChange}
-                  logCapsuleProgress={logCapsuleProgress}
-                  uncompleteCapsule={uncompleteCapsule}
-                  showAllMomentum={showAllMomentum}
-                  toggleShowAll={toggleShowAll}
-                  handleLogRemaining={handleLogRemaining}
-                  dependentHabitName={dependentHabitName}
-                />
-              );
-            })}
-          </Accordion>
-        ) : (
-          <div className="p-6 bg-muted/20 border-2 border-dashed border-border rounded-3xl text-center">
-            <p className="text-sm font-bold text-muted-foreground">{emptyStateMessage}</p>
-            <Link to="/create-habit"><Button variant="link" className="text-xs font-black uppercase text-primary mt-1">{emptyStateLinkText}</Button></Link>
-          </div>
-        )}
+                    return (
+                      <HabitAccordionItem
+                        key={habit.key}
+                        habit={habit}
+                        neurodivergentMode={data.neurodivergentMode}
+                        expandedItems={expandedItems}
+                        handleExpandedChange={handleExpandedChange}
+                        logCapsuleProgress={logCapsuleProgress}
+                        uncompleteCapsule={uncompleteCapsule}
+                        showAllMomentum={showAllMomentum}
+                        toggleShowAll={toggleShowAll}
+                        handleLogRemaining={handleLogRemaining}
+                        dependentHabitName={dependentHabitName}
+                      />
+                    );
+                  })}
+                </Accordion>
+              ) : (
+                <div className="p-6 bg-muted/20 border-2 border-dashed border-border rounded-3xl text-center">
+                  <p className="text-sm font-bold text-muted-foreground">{emptyStateMessage}</p>
+                  <Link to="/create-habit"><Button variant="link" className="text-xs font-black uppercase text-primary mt-1">{emptyStateLinkText}</Button></Link>
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     );
   };
