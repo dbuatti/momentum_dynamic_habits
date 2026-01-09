@@ -87,10 +87,12 @@ const Settings = () => {
     });
   };
 
+  // Modified to return a promise
   const updateHabitField = async (habitId: string, updates: any) => {
     const { error } = await supabase.from('user_habits').update(updates).eq('id', habitId);
     if (error) {
       showError('Failed to update settings');
+      throw error; // Re-throw to allow caller to catch
     } else {
       showSuccess('Settings saved');
       queryClient.invalidateQueries({ queryKey: ['journeyData'] });

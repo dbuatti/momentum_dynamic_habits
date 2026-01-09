@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,7 +12,7 @@ import {
   Anchor, Target, Sparkles, ShieldCheck, Calendar, 
   Clock, Dumbbell, Wind, BookOpen, Music, 
   Home, Code, Pill, Timer, BarChart3, Layers, Zap, Info, Eye, EyeOff, Link as LinkIcon, FlaskConical,
-  Trash2, ChevronDown, ChevronUp, CheckCircle2, ListOrdered, ListChecks, CalendarDays, CalendarCheck // Added CalendarCheck
+  Trash2, ChevronDown, ChevronUp, CheckCircle2, ListOrdered, ListChecks, CalendarDays, CalendarCheck, Loader2
 } from 'lucide-react';
 import { UserHabitRecord, MeasurementType, ChunkingMode } from '@/types/habit';
 import { useUpdateHabitVisibility } from '@/hooks/useUpdateHabitVisibility';
@@ -56,6 +56,7 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
 
   const [editedHabitName, setEditedHabitName] = useState(habit.name || habit.habit_key.replace(/_/g, ' '));
   const [minDuration, setMinDuration] = useState(habit.weekly_session_min_duration || 10);
+  const [savingFields, setSavingFields] = useState<Record<string, boolean>>({}); // New state for field-specific saving
 
   useEffect(() => {
     setEditedHabitName(habit.name || habit.habit_key.replace(/_/g, ' '));
@@ -69,7 +70,19 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
     deleteHabit({ habitId: habit.id, habitKey: habit.habit_key });
   };
 
-  const handleUnitChange = (newUnit: 'min' | 'reps' | 'dose') => {
+  const handleFieldUpdate = async (field: string, value: any) => {
+    setSavingFields(prev => ({ ...prev, [field]: true }));
+    try {
+      await onUpdateHabitField(habit.id, { [field]: value });
+    } catch (error) {
+      // Error handled by onUpdateHabitField, just ensure loading state is cleared
+    } finally {
+      setSavingFields(prev => ({ ...prev, [field]: false }));
+    }
+  };
+
+  const handleUnitChange = async (newUnit: 'min' | 'reps' | 'dose') => {
+    setSavingFields(prev => ({ ...prev, unit: true }));
     const updates: any = { unit: newUnit };
     if (newUnit === 'dose') {
       updates.measurement_type = 'binary';
@@ -80,12 +93,16 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
     } else if (newUnit === 'reps') {
       updates.measurement_type = 'unit';
     }
-    onUpdateHabitField(habit.id, updates);
+    try {
+      await onUpdateHabitField(habit.id, updates);
+    } finally {
+      setSavingFields(prev => ({ ...prev, unit: false }));
+    }
   };
 
   const handleMinDurationBlur = () => {
     if (minDuration !== habit.weekly_session_min_duration) {
-      onUpdateHabitField(habit.id, { weekly_session_min_duration: Math.round(minDuration) });
+      handleFieldUpdate('weekly_session_min_duration', Math.round(minDuration));
     }
   };
 
@@ -131,17 +148,21 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
               <Icon className="w-6 h-6" />
             </div>
             <div className="flex-grow">
-              <Input
-                value={editedHabitName}
-                onChange={(e) => setEditedHabitName(e.target.value)}
-                onBlur={() => {
-                  if (editedHabitName.trim() !== (habit.name || habit.habit_key.replace(/_/g, ' ')).trim()) {
-                    onUpdateHabitField(habit.id, { name: editedHabitName.trim() });
-                  }
-                }}
-                onClick={(e) => e.stopPropagation()}
-                className="h-10 rounded-xl font-bold text-base bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-0 py-0"
-              />
+              <div className="relative flex items-center">
+                <Input
+                  value={editedHabitName}
+                  onChange={(e) => setEditedHabitName(e.target.value)}
+                  onBlur={() => {
+                    if (editedHabitName.trim() !== (habit.name || habit.habit_key.replace(/_/g, ' ')).trim()) {
+                      handleFieldUpdate('name', editedHabitName.trim());
+                    }
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="h-10 rounded-xl font-bold text-base bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-0 py-0 pr-8"
+                  disabled={savingFields['name']}
+                />
+                {savingFields['name'] && <Loader2 className="w-4 h-4 animate-spin text-primary absolute right-0" />}
+              </div>
               <div className="flex items-center gap-2 mt-0.5">
                  <span className={cn(
                    "text-[9px] font-black uppercase px-2 py-0.5 rounded-full border",
@@ -180,25 +201,32 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
                  <div className="relative flex items-center gap-2">
                    <Input 
                      type="number" 
-                     className="h-11 rounded-xl font-bold text-base flex-grow" 
+                     className="h-11 rounded-xl font-bold text-base flex-grow pr-8" 
                      defaultValue={habit.current_daily_goal} 
-                     onBlur={(e) => onUpdateHabitField(habit.id, { current_daily_goal: Math.round(parseInt(e.target.value)) })}
+                     onBlur={(e) => handleFieldUpdate('current_daily_goal', Math.round(parseInt(e.target.value)))}
+                     disabled={savingFields['current_daily_goal']}
                    />
-                   <Select value={habit.unit} onValueChange={(v: any) => handleUnitChange(v)}>
+                   {savingFields['current_daily_goal'] && <Loader2 className="w-4 h-4 animate-spin text-primary absolute right-20" />}
+                   <Select value={habit.unit} onValueChange={(v: any) => handleUnitChange(v)} disabled={savingFields['unit']}>
                      <SelectTrigger className="h-11 w-[100px] rounded-xl font-bold text-base"><SelectValue /></SelectTrigger>
                      <SelectContent>{habitUnits.map(u => <SelectItem key={u.value} value={u.value}>{u.label}</SelectItem>)}</SelectContent>
                    </Select>
+                   {savingFields['unit'] && <Loader2 className="w-4 h-4 animate-spin text-primary absolute right-2" />}
                  </div>
                </div>
                <div className="space-y-2">
                  <Label className="text-[10px] font-black uppercase opacity-60 ml-1">Weekly Sessions</Label>
-                 <Input 
-                    type="number" 
-                    min="1" max="7"
-                    className="h-11 rounded-xl font-bold text-base" 
-                    defaultValue={habit.frequency_per_week}
-                    onBlur={(e) => onUpdateHabitField(habit.id, { frequency_per_week: Math.round(parseInt(e.target.value)) })}
-                  />
+                 <div className="relative flex items-center">
+                   <Input 
+                      type="number" 
+                      min="1" max="7"
+                      className="h-11 rounded-xl font-bold text-base pr-8" 
+                      defaultValue={habit.frequency_per_week}
+                      onBlur={(e) => handleFieldUpdate('frequency_per_week', Math.round(parseInt(e.target.value)))}
+                      disabled={savingFields['frequency_per_week']}
+                    />
+                    {savingFields['frequency_per_week'] && <Loader2 className="w-4 h-4 animate-spin text-primary absolute right-2" />}
+                 </div>
                </div>
             </div>
             
@@ -213,10 +241,14 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
                     <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">Show as a weekly goal until finished.</p>
                   </div>
                 </div>
-                <Switch 
-                  checked={habit.is_weekly_goal} 
-                  onCheckedChange={(val) => onUpdateHabitField(habit.id, { is_weekly_goal: val })} 
-                />
+                <div className="relative flex items-center">
+                  <Switch 
+                    checked={habit.is_weekly_goal} 
+                    onCheckedChange={(val) => handleFieldUpdate('is_weekly_goal', val)} 
+                    disabled={savingFields['is_weekly_goal']}
+                  />
+                  {savingFields['is_weekly_goal'] && <Loader2 className="w-4 h-4 animate-spin text-primary absolute -left-8" />}
+                </div>
               </div>
 
               <div className="flex items-center justify-between p-4 rounded-2xl bg-primary/5 border border-primary/10">
@@ -229,10 +261,14 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
                     <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">Finish marked as 100% completion.</p>
                   </div>
                 </div>
-                <Switch 
-                  checked={habit.complete_on_finish} 
-                  onCheckedChange={(val) => onUpdateHabitField(habit.id, { complete_on_finish: val })} 
-                />
+                <div className="relative flex items-center">
+                  <Switch 
+                    checked={habit.complete_on_finish} 
+                    onCheckedChange={(val) => handleFieldUpdate('complete_on_finish', val)} 
+                    disabled={savingFields['complete_on_finish']}
+                  />
+                  {savingFields['complete_on_finish'] && <Loader2 className="w-4 h-4 animate-spin text-primary absolute -left-8" />}
+                </div>
               </div>
             </div>
 
@@ -241,14 +277,18 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
                 <Label className="text-[10px] font-black uppercase opacity-60 ml-1 flex items-center gap-1">
                   <Clock className="w-3.5 h-3.5" /> Minimum Session Duration (min)
                 </Label>
-                <Input 
-                  type="number" 
-                  min="1" 
-                  className="h-11 rounded-xl font-bold text-base" 
-                  value={minDuration}
-                  onChange={(e) => setMinDuration(Number(e.target.value))}
-                  onBlur={handleMinDurationBlur}
-                />
+                <div className="relative flex items-center">
+                  <Input 
+                    type="number" 
+                    min="1" 
+                    className="h-11 rounded-xl font-bold text-base pr-8" 
+                    value={minDuration}
+                    onChange={(e) => setMinDuration(Number(e.target.value))}
+                    onBlur={handleMinDurationBlur}
+                    disabled={savingFields['weekly_session_min_duration']}
+                  />
+                  {savingFields['weekly_session_min_duration'] && <Loader2 className="w-4 h-4 animate-spin text-primary absolute right-2" />}
+                </div>
                 <p className="text-[10px] text-muted-foreground mt-1">
                   A session must be at least this long to count as 1 completed weekly session.
                 </p>
@@ -262,24 +302,23 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
                   <button
                     key={mode.value}
                     type="button"
-                    onClick={() => onUpdateHabitField(habit.id, { 
-                      is_trial_mode: mode.value === 'Trial', 
-                      is_fixed: mode.value === 'Fixed' 
-                    })}
+                    onClick={() => handleFieldUpdate('is_trial_mode', mode.value === 'Trial') && handleFieldUpdate('is_fixed', mode.value === 'Fixed')}
                     className={cn(
                       "flex items-start gap-4 p-4 rounded-2xl border-2 text-left transition-all",
                       (habit.is_trial_mode && mode.value === 'Trial') || (habit.is_fixed && mode.value === 'Fixed') || (!habit.is_trial_mode && !habit.is_fixed && mode.value === 'Growth')
                         ? "border-primary bg-primary/[0.02] shadow-sm"
                         : "border-transparent bg-muted/30"
                     )}
+                    disabled={savingFields['is_trial_mode'] || savingFields['is_fixed']}
                   >
-                    <div className={cn("p-2 rounded-lg", (habit.is_trial_mode && mode.value === 'Trial') || (habit.is_fixed && mode.value === 'Fixed') || (!habit.is_trial_mode && !habit.is_fixed && mode.value === 'Growth') ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground")}>
+                    <div className={cn("p-2 rounded-lg", ((habit.is_trial_mode && mode.value === 'Trial') || (habit.is_fixed && mode.value === 'Fixed') || (!habit.is_trial_mode && !habit.is_fixed && mode.value === 'Growth')) ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground")}>
                         <mode.icon className="w-5 h-5" />
                     </div>
                     <div>
                       <p className="text-xs font-black uppercase leading-none">{mode.label}</p>
                       <p className="text-[10px] text-muted-foreground mt-1.5 leading-relaxed">{mode.description}</p>
                     </div>
+                    {(savingFields['is_trial_mode'] || savingFields['is_fixed']) && <Loader2 className="w-4 h-4 animate-spin text-primary ml-auto" />}
                   </button>
                 ))}
               </div>
@@ -296,10 +335,12 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
                     variant={habit.days_of_week?.includes(idx) ? "default" : "ghost"}
                     className={cn("h-10 w-10 rounded-xl font-black text-xs", habit.days_of_week?.includes(idx) && "shadow-md")}
                     onClick={() => onToggleDay(habit.id, habit.days_of_week || [], idx)}
+                    disabled={savingFields['days_of_week']}
                   >
                     {day}
                   </Button>
                 ))}
+                {savingFields['days_of_week'] && <Loader2 className="w-4 h-4 animate-spin text-primary" />}
               </div>
             </div>
           </TabsContent>
@@ -317,10 +358,14 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
                      <p className="text-sm font-bold">Enable Chunking</p>
                      <p className="text-[10px] text-muted-foreground">Break session into manageable parts.</p>
                    </div>
-                   <Switch 
-                     checked={habit.enable_chunks} 
-                     onCheckedChange={(v) => onUpdateHabitField(habit.id, { enable_chunks: v })} 
-                   />
+                   <div className="relative flex items-center">
+                     <Switch 
+                       checked={habit.enable_chunks} 
+                       onCheckedChange={(v) => handleFieldUpdate('enable_chunks', v)} 
+                       disabled={savingFields['enable_chunks']}
+                     />
+                     {savingFields['enable_chunks'] && <Loader2 className="w-4 h-4 animate-spin text-primary absolute -left-8" />}
+                   </div>
                  </div>
 
                  {habit.enable_chunks && (
@@ -337,11 +382,13 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
                              key={m.id}
                              variant={habit.chunking_mode === m.id ? "default" : "outline"}
                              className="h-10 rounded-xl text-[10px] font-bold uppercase gap-2"
-                             onClick={() => onUpdateHabitField(habit.id, { chunking_mode: m.id })}
+                             onClick={() => handleFieldUpdate('chunking_mode', m.id)}
+                             disabled={savingFields['chunking_mode']}
                            >
                              <m.icon className="w-3.5 h-3.5" /> {m.label}
                            </Button>
                          ))}
+                         {savingFields['chunking_mode'] && <Loader2 className="w-4 h-4 animate-spin text-primary" />}
                        </div>
                      </div>
 
@@ -354,11 +401,13 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
                                key={d}
                                variant={habit.preferred_chunk_duration === d ? "secondary" : "outline"}
                                className={cn("h-9 px-3 rounded-lg text-xs font-bold", habit.preferred_chunk_duration === d && "ring-2 ring-primary")}
-                               onClick={() => onUpdateHabitField(habit.id, { preferred_chunk_duration: d })}
+                               onClick={() => handleFieldUpdate('preferred_chunk_duration', d)}
+                               disabled={savingFields['preferred_chunk_duration']}
                              >
                                {d} {habit.unit}
                              </Button>
                            ))}
+                           {savingFields['preferred_chunk_duration'] && <Loader2 className="w-4 h-4 animate-spin text-primary" />}
                          </div>
                        </div>
                      )}
@@ -372,11 +421,13 @@ export const HabitSettingsCard: React.FC<HabitSettingsCardProps> = ({
                                key={c}
                                variant={habit.preferred_chunk_count === c ? "secondary" : "outline"}
                                className={cn("h-9 px-4 rounded-lg text-xs font-bold", habit.preferred_chunk_count === c && "ring-2 ring-primary")}
-                               onClick={() => onUpdateHabitField(habit.id, { preferred_chunk_count: c })}
+                               onClick={() => handleFieldUpdate('preferred_chunk_count', c)}
+                               disabled={savingFields['preferred_chunk_count']}
                              >
                                {c}
                              </Button>
                            ))}
+                           {savingFields['preferred_chunk_count'] && <Loader2 className="w-4 h-4 animate-spin text-primary" />}
                          </div>
                        </div>
                      )}
