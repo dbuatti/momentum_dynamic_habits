@@ -24,6 +24,7 @@ import { UserHabitRecord, HabitCategory as HabitCategoryType, MeasurementType, G
 import { useJourneyData } from '@/hooks/useJourneyData';
 import { useCreateTemplate, CreateTemplateParams } from '@/hooks/useCreateTemplate';
 import { CreateHabitParams } from '@/pages/HabitWizard';
+import { timeOptions } from '@/utils/time-utils'; // Import from new utility
 
 interface NewHabitModalProps {
   isOpen: boolean;
@@ -311,7 +312,7 @@ export const NewHabitModal: React.FC<NewHabitModalProps> = ({ isOpen, onClose, t
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="habitName">Name *</Label>
-                <Input id="habitName" value={habitName} onChange={(e) => setHabitName(e.target.value)} required className="h-12 rounded-xl" />
+                <Input id="habitName" value={habitName} onChange={(e) => setHabitName(e.target.value)} required className="h-12 rounded-xl" autoFocus />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="unit">Unit</Label>

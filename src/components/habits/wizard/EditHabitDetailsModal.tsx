@@ -157,7 +157,7 @@ export const EditHabitDetailsModal: React.FC<EditHabitDetailsModalProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="habitName">Name *</Label>
-                <Input id="habitName" value={habitName} onChange={(e) => setHabitName(e.target.value)} required className="h-12 rounded-xl" />
+                <Input id="habitName" value={habitName} onChange={(e) => setHabitName(e.target.value)} required className="h-12 rounded-xl" autoFocus />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="unit">Unit</Label>
