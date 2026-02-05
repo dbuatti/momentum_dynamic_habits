@@ -6,6 +6,16 @@ import { initialHabits } from '@/lib/habit-data';
 import { ProcessedUserHabit } from '@/types/habit';
 import { calculateDynamicChunks, calculateDailyParts } from '@/utils/progress-utils';
 
+// Helper function to get day boundaries using RPC (copied from useHabitLog for self-containment)
+const getDayBoundaries = async (userId: string, dateString: string) => {
+  const { data, error } = await supabase.rpc('get_day_boundaries', {
+    p_user_id: userId,
+    p_target_date: dateString,
+  });
+  if (error) throw error;
+  return data[0]; // { start_time: TIMESTAMPTZ, end_time: TIMESTAMPTZ }
+};
+
 const fetchDashboardData = async (userId: string) => {
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
@@ -17,6 +27,12 @@ const fetchDashboardData = async (userId: string) => {
   const timezone = profile?.timezone || 'UTC';
   const today = new Date();
   const currentDayOfWeek = today.getDay();
+  const todayDateString = today.toISOString().split('T')[0];
+
+  // 1. Get today's timezone-aware boundaries
+  const boundaries = await getDayBoundaries(userId, todayDateString);
+  const startTime = boundaries.start_time;
+  const endTime = boundaries.end_time;
 
   const [
     { data: habits, error: habitsError },
@@ -29,7 +45,8 @@ const fetchDashboardData = async (userId: string) => {
     { data: randomTip, error: randomTipError },
   ] = await Promise.all([
     supabase.from('user_habits').select('*, measurement_type').eq('user_id', userId),
-    supabase.rpc('get_completed_tasks_today', { p_user_id: userId, p_timezone: timezone }),
+    // 2. Fetch completed tasks within today's boundaries
+    supabase.from('completedtasks').select('id, original_source, duration_used, xp_earned, completed_at, capsule_index').eq('user_id', userId).gte('completed_at', startTime).lt('completed_at', endTime),
     supabase.from('completedtasks').select('id, original_source, duration_used, xp_earned, completed_at').eq('user_id', userId).gte('completed_at', startOfWeek(today).toISOString()).lte('completed_at', endOfWeek(today).toISOString()),
     supabase.from('completedtasks').select('original_source, duration_used, xp_earned').eq('user_id', userId).gte('completed_at', startOfWeek(subWeeks(today, 1)).toISOString()).lte('completed_at', endOfWeek(subWeeks(today, 1)).toISOString()),
     supabase.from('completedtasks').select('id', { count: 'exact' }),
@@ -251,16 +268,4 @@ const fetchDashboardData = async (userId: string) => {
     customHabitOrder: profile?.custom_habit_order || [],
     sectionOrder: profile?.section_order || ['anchor', 'weekly_objective', 'daily_momentum'], // Include section order
   };
-};
-
-export const useDashboardData = () => {
-  const { session } = useSession();
-  const userId = session?.user?.id;
-
-  return useQuery({
-    queryKey: ['dashboardData', userId],
-    queryFn: () => fetchDashboardData(userId!),
-    enabled: !!userId,
-    staleTime: 1000 * 60 * 5,
-  });
 };

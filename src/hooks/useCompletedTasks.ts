@@ -17,20 +17,7 @@ interface CompletedTask {
 }
 
 const fetchCompletedTasks = async (userId: string): Promise<CompletedTask[]> => {
-  // Fetch profile to get timezone
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('timezone')
-    .eq('id', userId)
-    .single();
-
-  if (profileError) {
-    console.error('Error fetching profile for completed tasks:', profileError);
-    // Proceed with UTC if profile fetch fails, but log error
-  }
-  
-  // Note: We don't use the timezone for filtering here, only for consistency if needed later.
-  // We fetch ALL completed tasks for the history page.
+  // Note: We fetch ALL completed tasks for the history page.
   
   const { data, error } = await supabase
     .from('completedtasks')
