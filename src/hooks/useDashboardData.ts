@@ -16,7 +16,7 @@ const getDayBoundaries = async (userId: string, dateString: string) => {
   return data[0]; // { start_time: TIMESTAMPTZ, end_time: TIMESTAMPTZ }
 };
 
-const fetchDashboardData = async (userId: string) => {
+export const fetchDashboardData = async (userId: string) => {
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('journey_start_date, daily_streak, last_active_at, first_name, last_name, timezone, xp, level, neurodivergent_mode, enable_sound, enable_haptics, day_rollover_hour, custom_habit_order, section_order') 
@@ -268,4 +268,16 @@ const fetchDashboardData = async (userId: string) => {
     customHabitOrder: profile?.custom_habit_order || [],
     sectionOrder: profile?.section_order || ['anchor', 'weekly_objective', 'daily_momentum'], // Include section order
   };
+};
+
+export const useDashboardData = () => {
+  const { session } = useSession();
+  const userId = session?.user?.id;
+
+  return useQuery({
+    queryKey: ['dashboardData', userId],
+    queryFn: () => fetchDashboardData(userId!),
+    enabled: !!userId,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
 };
