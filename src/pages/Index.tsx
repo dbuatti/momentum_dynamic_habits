@@ -31,8 +31,8 @@ import { WeeklyAnchorCard } from "@/components/dashboard/WeeklyAnchorCard";
 import { WeeklyObjectiveCard } from "@/components/dashboard/WeeklyObjectiveCard";
 import { FixEmptyHabitKey } from "@/components/fixers/FixEmptyHabitKey";
 import { ProcessedUserHabit } from "@/types/habit";
-import { HabitAccordionItem } from "@/components/dashboard/HabitAccordionItem"; // Import the new component
-import { motion, AnimatePresence } from 'framer-motion'; // Import motion and AnimatePresence
+import { HabitAccordionItem } from "@/components/dashboard/HabitAccordionItem";
+import { motion, AnimatePresence } from 'framer-motion';
 
 const Index = () => {
   const { data, isLoading, isError, refetch } = useDashboardData();
@@ -42,9 +42,9 @@ const Index = () => {
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [hasInitializedState, setHasInitializedState] = useState(false);
   const [showAllMomentum, setShowAllMomentum] = useState<Record<string, boolean>>({});
-  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({}); // New state for section collapse
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
   
-  // Track previous completion states to detect transitions
+  // Track previous completion states to detect transitions for auto-collapse
   const prevCompletionsRef = useRef<Record<string, boolean>>({});
 
   const habitWithEmptyKey = useMemo(() => {
@@ -174,16 +174,11 @@ const Index = () => {
         currentSectionHabits = dailyMomentumHabits;
       }
 
-      // The `habitGroups` (and thus `anchorHabits`, `weeklyObjectives`, `dailyMomentumHabits`)
-      // are already sorted by `custom_habit_order` within `useDashboardData`.
-      // So we just need to find the first eligible one in this pre-sorted list.
       for (const habit of currentSectionHabits) {
         if (!habit.allCompleted && !habit.isLockedByDependency) {
           if (habit.isWithinWindow) {
-            // If we find an in-window habit, it's the highest priority. Return it immediately.
             return habit;
           }
-          // If no in-window habit found yet, keep track of the first overall eligible one.
           if (!firstEligibleHabit) {
             firstEligibleHabit = habit;
           }
@@ -191,7 +186,6 @@ const Index = () => {
       }
     }
     
-    // If no in-window habit was found across all sections, return the first overall eligible habit.
     return firstEligibleHabit;
   }, [data, anchorHabits, weeklyObjectives, dailyMomentumHabits]);
 
@@ -199,7 +193,6 @@ const Index = () => {
   useEffect(() => {
     if (!data || hasInitializedState) return;
     
-    // Check if we have manually set expanded items in localStorage
     const storedExpanded = habitGroups.filter(h => {
         const state = localStorage.getItem(`habitAccordionState:${h.key}`);
         return state === 'expanded';
@@ -207,11 +200,10 @@ const Index = () => {
     
     setExpandedItems(storedExpanded); 
 
-    // Load collapsed state for sections
     const initialCollapsedState: Record<string, boolean> = {};
     data.sectionOrder.forEach(sectionId => {
       const storedState = localStorage.getItem(`sectionCollapsed:${sectionId}`);
-      initialCollapsedState[sectionId] = storedState === 'true'; // Default to false (not collapsed) if not found
+      initialCollapsedState[sectionId] = storedState === 'true';
     });
     setCollapsedSections(initialCollapsedState);
 
@@ -228,11 +220,9 @@ const Index = () => {
       const wasComplete = prevCompletionsRef.current[habit.habit_key] || false;
       const isComplete = habit.isComplete;
       
-      // If it just transitioned to completed, remove its key from expanded items
       if (!wasComplete && isComplete) {
         setExpandedItems(prev => {
           const next = prev.filter(key => key !== habit.habit_key);
-          // Also update the local storage to reflect the auto-collapse
           localStorage.setItem(`habitAccordionState:${habit.habit_key}`, 'collapsed');
           return next;
         });
@@ -246,14 +236,12 @@ const Index = () => {
 
   const handleExpandedChange = (newValues: string[]) => {
     setExpandedItems(newValues);
-    // Persist individual states
     habitGroups.forEach(h => {
       const isNowExpanded = newValues.includes(h.key);
       localStorage.setItem(`habitAccordionState:${h.key}`, isNowExpanded ? 'expanded' : 'collapsed');
     });
   };
 
-  // Save collapsed state for sections whenever it changes
   useEffect(() => {
     Object.entries(collapsedSections).forEach(([sectionId, isCollapsed]) => {
       localStorage.setItem(`sectionCollapsed:${sectionId}`, String(isCollapsed));
@@ -268,7 +256,6 @@ const Index = () => {
   };
 
   const focusHabit = (habitKey: string) => {
-    // Ensure the section containing the habit is expanded
     const habitSection = data?.sectionOrder.find(sectionId => {
       let sectionHabits: ProcessedUserHabit[] = [];
       if (sectionId === 'anchor') sectionHabits = anchorHabits;
@@ -281,7 +268,6 @@ const Index = () => {
       toggleSectionCollapse(habitSection);
     }
 
-    // Then expand the habit itself
     if (!expandedItems.includes(habitKey)) {
       handleExpandedChange([...expandedItems, habitKey]);
     }
@@ -389,10 +375,10 @@ const Index = () => {
     return (
       <div className="space-y-4">
         <div
-          className="sticky top-[60px] z-20 bg-background/95 backdrop-blur-sm py-3 flex items-center gap-3 border-b border-border cursor-pointer"
+          className="sticky top-[60px] z-20 bg-background/95 backdrop-blur-sm py-3 flex items-center gap-3 border-b border-border cursor-pointer group"
           onClick={() => toggleSectionCollapse(sectionId)}
         >
-          <IconComponent className={cn("w-5 h-5", colorClass)} />
+          <IconComponent className={cn("w-5 h-5 transition-transform group-hover:scale-110", colorClass)} />
           <h2 className={cn("text-xs font-black uppercase tracking-[0.2em]", colorClass)}>{title}</h2>
           <div className="ml-auto h-px flex-grow bg-border" />
           <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
@@ -400,7 +386,7 @@ const Index = () => {
           </Button>
         </div>
         
-        <AnimatePresence>
+        <AnimatePresence initial={false}>
           {!isSectionCollapsed && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
@@ -410,7 +396,7 @@ const Index = () => {
               className="overflow-hidden"
             >
               {habitsToRender.length > 0 ? (
-                <Accordion type="multiple" value={expandedItems} onValueChange={handleExpandedChange} className="space-y-4">
+                <Accordion type="multiple" value={expandedItems} onValueChange={handleExpandedChange} className="space-y-4 pb-4">
                   {habitsToRender.map(habit => {
                     const dependentHabitName = data.habits.find(h => h.id === habit.dependent_on_habit_id)?.name || 'previous habit';
                     
@@ -454,7 +440,7 @@ const Index = () => {
                   })}
                 </Accordion>
               ) : (
-                <div className="p-6 bg-muted/20 border-2 border-dashed border-border rounded-3xl text-center">
+                <div className="p-6 bg-muted/20 border-2 border-dashed border-border rounded-3xl text-center mb-4">
                   <p className="text-sm font-bold text-muted-foreground">{emptyStateMessage}</p>
                   <Link to="/create-habit"><Button variant="link" className="text-xs font-black uppercase text-primary mt-1">{emptyStateLinkText}</Button></Link>
                 </div>
