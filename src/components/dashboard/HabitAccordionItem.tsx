@@ -1,15 +1,10 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
-import { Card } from '@/components/ui/card';
+import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Check, Clock, Smile, Meh, Frown, Undo2, Play, Pause, Square, RotateCcw, Plus, Minus, Lock, Sparkles, ChevronDown, Target, TrendingUp, CalendarDays, CheckCircle2, Layers, CalendarCheck } from 'lucide-react';
+import { Check, Lock, CheckCircle2, Layers, CalendarCheck, CalendarDays } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useFeedback } from '@/hooks/useFeedback';
-import { Input } from '@/components/ui/input';
-import { MeasurementType, ProcessedUserHabit } from '@/types/habit';
-import confetti from 'canvas-confetti';
+import { ProcessedUserHabit } from '@/types/habit';
 import { useCapsules } from '@/hooks/useCapsules';
 import { showError } from '@/utils/toast';
 import { Progress } from '@/components/ui/progress';
@@ -17,7 +12,8 @@ import { MacroGoalProgress } from '@/components/dashboard/MacroGoalProgress';
 import { TrialGuidance } from '@/components/dashboard/TrialGuidance';
 import { AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { habitIconMap, habitColorMap } from '@/lib/habit-utils';
-import { HabitCapsule } from './HabitCapsule'; // Ensure HabitCapsule is imported
+import { HabitCapsule } from './HabitCapsule';
+import confetti from 'canvas-confetti';
 
 interface HabitAccordionItemProps {
   habit: ProcessedUserHabit;
@@ -63,7 +59,29 @@ export const HabitAccordionItem: React.FC<HabitAccordionItemProps> = ({
   
   const canQuickFinish = !habit.allCompleted && !isLocked;
 
-  const showTrialGuidance = (habit.is_trial_mode || habit.anchor_practice) && !habit.allCompleted;
+  const handleQuickCheck = async (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent accordion from toggling
+    if (isLocked || habit.allCompleted) return;
+
+    if (nextCapsule) {
+      await logCapsuleProgress.mutateAsync({ 
+        habitKey: habit.key, 
+        index: nextCapsule.index, 
+        value: nextCapsule.value, 
+        taskName: `${habit.name} session`, 
+        isComplete: true,
+      });
+      
+      if (habit.capsules.filter(c => !c.isCompleted).length === 1) {
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#6366f1', '#a855f7', '#22c55e']
+        });
+      }
+    }
+  };
 
   const handleCapsuleProgress = async (capsule: any, actualValue: number, isComplete: boolean, mood?: string) => {
     await logCapsuleProgress.mutateAsync({ 
@@ -119,13 +137,20 @@ export const HabitAccordionItem: React.FC<HabitAccordionItemProps> = ({
                   <CalendarCheck className="w-3 h-3" /> Weekly Goal
                 </span>
               )}
-              {!habit.isScheduledForToday && !habit.allCompleted && !habit.is_weekly_goal && (
-                <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-muted/50 text-muted-foreground border-transparent border flex items-center gap-1">
-                  <CalendarDays className="w-3 h-3" /> Extra Session
-                </span>
-              )}
             </div>
           </div>
+          
+          {!habit.allCompleted && !isLocked && (
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-10 w-10 rounded-xl bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all shrink-0 ml-2"
+              onClick={handleQuickCheck}
+              title="Quick Log"
+            >
+              <Check className="w-5 h-5" />
+            </Button>
+          )}
         </div>
         {isLocked && (
           <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2 ml-[72px]">
@@ -135,7 +160,7 @@ export const HabitAccordionItem: React.FC<HabitAccordionItemProps> = ({
         )}
       </AccordionTrigger>
       <AccordionContent className="px-6 pb-6 pt-2 space-y-6">
-        {showTrialGuidance && (
+        {(habit.is_trial_mode || habit.anchor_practice) && !habit.allCompleted && (
           <TrialGuidance
             habitKey={habit.key}
             habitName={habit.name}
@@ -153,24 +178,24 @@ export const HabitAccordionItem: React.FC<HabitAccordionItemProps> = ({
             <div className="space-y-1">
                 <p className="text-[9px] font-black uppercase opacity-50 tracking-widest text-muted-foreground">{isTrial ? "Session Target" : "Daily Goal"}</p>
                 <div className="flex items-center gap-2">
-                    <Target className="w-3.5 h-3.5 text-muted-foreground" />
                     <p className="text-sm font-black text-foreground">
                       {Math.round(habit.dailyGoal)} {habit.unit}
-                      {habit.carryoverValue > 0 && <span className="ml-1 text-[10px] font-bold text-success"> (+{Math.round(habit.carryoverValue)} carryover)</span>}
+                      {habit.carryoverValue > 0 && <span className="ml-1 text-[10px] font-bold text-success"> (+{Math.round(habit.carryoverValue)})</span>}
                     </p>
                 </div>
             </div>
             <div className="space-y-1">
                 <p className="text-[9px] font-black uppercase opacity-50 tracking-widest text-muted-foreground">Weekly Goal</p>
                 <div className="flex items-center gap-2">
-                    <TrendingUp className="w-3.5 h-3.5 text-muted-foreground" />
                     <p className="text-sm font-black text-foreground">{Math.round(habit.weekly_goal)} {habit.unit}</p>
                 </div>
             </div>
         </div>
+        
         <div className="w-full">
           <MacroGoalProgress current={habit.weekly_completions} total={habit.frequency_per_week} label={isTrial ? "Weekly Session Log" : "Weekly Consistency"} />
         </div>
+        
         <div className="w-full mt-4 mb-6">
           <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">Daily Progress</p>
           <Progress value={Math.min(100, (habit.displayProgress / habit.adjustedDailyGoal) * 100)} className="h-1.5 [&>div]:bg-primary" />
@@ -209,6 +234,7 @@ export const HabitAccordionItem: React.FC<HabitAccordionItemProps> = ({
             )}
           </div>
         )}
+        
         {habit.allCompleted && !habit.is_fixed && (
           <div className="p-5 bg-success/10 rounded-[28px] border-2 border-dashed border-success/30 flex flex-col items-center gap-4 text-center animate-in zoom-in-95">
             <div className="w-14 h-14 rounded-2xl bg-success/20 flex items-center justify-center text-success"><Sparkles className="w-8 h-8" /></div>
