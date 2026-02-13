@@ -69,7 +69,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   
   const { triggerFeedback } = useFeedback();
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const hasTriggeredCompletion = useRef(false); // Ref to prevent double-triggering completion
+  const hasTriggeredCompletion = useRef(false); 
   const storageKey = `timer_${habitKey}_${label}_${new Date().toISOString().split('T')[0]}`;
 
   const targetDurationSeconds = measurementType === 'timer' ? Math.round(value * 60) : 0;
@@ -84,7 +84,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     setCompletedTaskIdState(initialCompletedTaskId || null);
   }, [initialCompletedTaskId]);
 
-  // Reset completion trigger ref when timer is reset or started
   useEffect(() => {
     if (isTiming && timeLeft > 0) {
       hasTriggeredCompletion.current = false;
@@ -139,16 +138,10 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     }
   }, [timeLeft, isTiming, isPaused, label, value, habitKey, habitName, measurementType]);
 
-  // Effect to handle timer completion
   useEffect(() => {
     if (isTiming && timeLeft === 0 && !hasTriggeredCompletion.current) {
       hasTriggeredCompletion.current = true;
-      
-      // Trigger sound feedback FIRST before any state changes (like showing mood picker)
-      // to ensure it's not blocked or interrupted by re-renders.
       triggerFeedback('goal_reached');
-      
-      // Then handle the actual completion logic
       handleFinishTiming(undefined, true);
     }
   }, [timeLeft, isTiming, triggerFeedback]);
@@ -245,12 +238,13 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
       totalSessionValue = Number((elapsedSeconds / 60).toFixed(2));
     }
     
-    if (promptMood && showMood && mood === undefined) {
+    // Always show mood picker on timer completion if promptMood is true, 
+    // regardless of showMood setting, to ensure reflection happens.
+    if (promptMood && mood === undefined) {
       setShowMoodPicker(true);
       return;
     }
 
-    // Only trigger 'completion' feedback if it wasn't already triggered by 'goal_reached'
     if (timeLeft > 0) {
       triggerFeedback('completion');
     }
@@ -310,7 +304,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
 
   const handleLogManual = (mood?: string, promptMood: boolean = false) => {
     if (isLoggingDisabled) return;
-    if (promptMood && showMood && mood === undefined) {
+    if (promptMood && mood === undefined) {
       setShowMoodPicker(true);
       return;
     }
@@ -323,7 +317,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
 
   const handleLogBinary = (mood?: string, promptMood: boolean = false) => {
     if (isLoggingDisabled) return;
-    if (promptMood && showMood && mood === undefined) {
+    if (promptMood && mood === undefined) {
       setShowMoodPicker(true);
       return;
     }
