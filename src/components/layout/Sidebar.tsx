@@ -11,7 +11,6 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useSession } from '@/contexts/SessionContext';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useTheme } from '@/contexts/ThemeContext';
-import { commonTimezones } from '@/utils/time-utils'; // Import commonTimezones
 
 interface NavLinkProps {
   to: string;
@@ -80,7 +79,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick, isCollapse
     : dashboardData?.firstName || session?.user?.email;
 
   return (
-    <div className="flex h-full max-h-screen flex-col gap-2">
+    <div className="flex h-full max-h-screen flex-col gap-2 bg-sidebar-background">
       <div className={cn(
         "flex h-16 items-center border-b px-4 lg:h-[60px]",
         isCollapsed ? "justify-center px-2" : "lg:px-6"
