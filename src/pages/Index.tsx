@@ -29,6 +29,7 @@ import { ProcessedUserHabit } from "@/types/habit";
 import { HabitAccordionItem } from "@/components/dashboard/HabitAccordionItem";
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
+import { getTodayDateString } from "@/utils/time-utils";
 
 const Index = () => {
   const { data, isLoading, isError, refetch } = useDashboardData();
@@ -39,10 +40,13 @@ const Index = () => {
   const [hasInitializedState, setHasInitializedState] = useState(false);
   const [showAllMomentum, setShowAllMomentum] = useState<Record<string, boolean>>({});
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
+  const [skippedHabits, setSkippedHabits] = useState<string[]>([]);
   
   const prevCompletionsRef = useRef<Record<string, boolean>>({});
   const prevSectionCompletionsRef = useRef<Record<string, boolean>>({});
   const hasInitializedCompletions = useRef(false);
+
+  const todayStr = useMemo(() => getTodayDateString(data?.timezone), [data?.timezone]);
 
   const habitWithEmptyKey = useMemo(() => {
     if (!data?.habits) return null;
@@ -146,8 +150,12 @@ const Index = () => {
   const totalParts = data?.dailyMomentumParts.total || 0;
 
   const visibleHabitsForDisplay = useMemo(() => {
-    return habitGroups.filter(h => h.is_visible && (h.isScheduledForToday || h.category === 'anchor' || (h as any).is_weekly_goal));
-  }, [habitGroups]);
+    return habitGroups.filter(h => 
+      h.is_visible && 
+      !skippedHabits.includes(h.habit_key) &&
+      (h.isScheduledForToday || h.category === 'anchor' || (h as any).is_weekly_goal)
+    );
+  }, [habitGroups, skippedHabits]);
 
   const anchorHabits = useMemo(() => visibleHabitsForDisplay.filter(h => h.category === 'anchor' && h.frequency_per_week === 1), [visibleHabitsForDisplay]);
   const weeklyObjectives = useMemo(() => visibleHabitsForDisplay.filter(h => (h as any).is_weekly_goal && h.category !== 'anchor'), [visibleHabitsForDisplay]);
@@ -176,6 +184,11 @@ const Index = () => {
 
   useEffect(() => {
     if (!data || hasInitializedState) return;
+    
+    // Load skipped habits for today
+    const savedSkipped = localStorage.getItem(`skippedHabits:${todayStr}`);
+    if (savedSkipped) setSkippedHabits(JSON.parse(savedSkipped));
+
     const storedExpanded = habitGroups.filter(h => localStorage.getItem(`habitAccordionState:${h.key}`) === 'expanded').map(h => h.key);
     setExpandedItems(storedExpanded); 
     const initialCollapsedState: Record<string, boolean> = {};
@@ -184,7 +197,7 @@ const Index = () => {
     });
     setCollapsedSections(initialCollapsedState);
     setHasInitializedState(true);
-  }, [data, habitGroups, hasInitializedState]);
+  }, [data, habitGroups, hasInitializedState, todayStr]);
 
   useEffect(() => {
     if (!data?.habits) return;
@@ -193,7 +206,6 @@ const Index = () => {
       const wasComplete = prevCompletionsRef.current[habit.habit_key] || false;
       const isComplete = habit.isComplete;
       
-      // Only collapse if it's a NEW completion (not on mount)
       if (hasInitializedCompletions.current && !wasComplete && isComplete) {
         setExpandedItems(prev => {
           const next = prev.filter(key => key !== habit.habit_key);
@@ -211,7 +223,6 @@ const Index = () => {
       daily_momentum: dailyMomentumHabits.length > 0 && dailyMomentumHabits.every(h => h.allCompleted),
     };
 
-    // Only trigger confetti if we've already initialized the completion state once
     if (hasInitializedCompletions.current) {
       Object.entries(sectionCompletions).forEach(([sectionId, isComplete]) => {
         if (isComplete && !prevSectionCompletionsRef.current[sectionId]) {
@@ -219,7 +230,6 @@ const Index = () => {
         }
       });
     } else {
-      // Mark as initialized so subsequent updates can trigger confetti
       hasInitializedCompletions.current = true;
     }
     
@@ -239,6 +249,12 @@ const Index = () => {
       localStorage.setItem(`sectionCollapsed:${sectionId}`, String(next[sectionId]));
       return next;
     });
+  };
+
+  const handleSkipHabit = (habitKey: string) => {
+    const newSkipped = [...skippedHabits, habitKey];
+    setSkippedHabits(newSkipped);
+    localStorage.setItem(`skippedHabits:${todayStr}`, JSON.stringify(newSkipped));
   };
 
   const focusHabit = (habitKey: string) => {
@@ -323,7 +339,7 @@ const Index = () => {
                     const dependentHabitName = data.habits.find(h => h.id === habit.dependent_on_habit_id)?.name || 'previous habit';
                     if (habit.category === 'anchor' && habit.frequency_per_week === 1) return <WeeklyAnchorCard key={habit.key} habit={habit} isLocked={habit.isLockedByDependency} dependentHabitName={dependentHabitName} />;
                     if (habit.is_weekly_goal && habit.category !== 'anchor') return <WeeklyObjectiveCard key={habit.key} habit={habit} isLocked={habit.isLockedByDependency} dependentHabitName={dependentHabitName} />;
-                    return <HabitAccordionItem key={habit.key} habit={habit} neurodivergentMode={data.neurodivergentMode} expandedItems={expandedItems} handleExpandedChange={handleExpandedChange} logCapsuleProgress={logCapsuleProgress} uncompleteCapsule={uncompleteCapsule} showAllMomentum={showAllMomentum} toggleShowAll={toggleShowAll} handleLogRemaining={handleLogRemaining} dependentHabitName={dependentHabitName} />;
+                    return <HabitAccordionItem key={habit.key} habit={habit} neurodivergentMode={data.neurodivergentMode} expandedItems={expandedItems} handleExpandedChange={handleExpandedChange} logCapsuleProgress={logCapsuleProgress} uncompleteCapsule={uncompleteCapsule} showAllMomentum={showAllMomentum} toggleShowAll={toggleShowAll} handleLogRemaining={handleLogRemaining} dependentHabitName={dependentHabitName} onSkip={handleSkipHabit} />;
                   })}
                 </Accordion>
               ) : (
@@ -355,6 +371,22 @@ const Index = () => {
           )}
           <TipCard tip={data.tip} bestTime={data.patterns.bestTime} isNeurodivergent={data.neurodivergentMode} />
           {data.sectionOrder.map(sectionId => <React.Fragment key={sectionId}>{renderSection(sectionId)}</React.Fragment>)}
+          
+          {skippedHabits.length > 0 && (
+            <div className="pt-4 text-center">
+              <Button 
+                variant="ghost" 
+                className="text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary"
+                onClick={() => {
+                  setSkippedHabits([]);
+                  localStorage.removeItem(`skippedHabits:${todayStr}`);
+                }}
+              >
+                <RotateCcw className="w-3 h-3 mr-2" /> Restore {skippedHabits.length} skipped habits
+              </Button>
+            </div>
+          )}
+
           <GrowthGuide />
           <MadeWithDyad className="mt-12" />
         </main>

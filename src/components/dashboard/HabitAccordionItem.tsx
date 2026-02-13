@@ -2,11 +2,11 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Check, Lock, CheckCircle2, Layers, CalendarCheck, CalendarDays, Sparkles } from 'lucide-react';
+import { Check, Lock, CheckCircle2, Layers, CalendarCheck, CalendarDays, Sparkles, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProcessedUserHabit } from '@/types/habit';
 import { useCapsules } from '@/hooks/useCapsules';
-import { showError } from '@/utils/toast';
+import { showError, showSuccess } from '@/utils/toast';
 import { Progress } from '@/components/ui/progress';
 import { MacroGoalProgress } from '@/components/dashboard/MacroGoalProgress';
 import { TrialGuidance } from '@/components/dashboard/TrialGuidance';
@@ -26,6 +26,7 @@ interface HabitAccordionItemProps {
   toggleShowAll: (habitKey: string) => void;
   handleLogRemaining: (habit: ProcessedUserHabit) => Promise<void>;
   dependentHabitName: string;
+  onSkip?: (habitKey: string) => void;
 }
 
 export const HabitAccordionItem: React.FC<HabitAccordionItemProps> = ({
@@ -39,6 +40,7 @@ export const HabitAccordionItem: React.FC<HabitAccordionItemProps> = ({
   toggleShowAll,
   handleLogRemaining,
   dependentHabitName,
+  onSkip,
 }) => {
   const Icon = habitIconMap[habit.habit_key] || habitIconMap.custom_habit;
   const color = habitColorMap[habit.habit_key] || 'blue';
@@ -80,6 +82,14 @@ export const HabitAccordionItem: React.FC<HabitAccordionItemProps> = ({
           colors: ['#6366f1', '#a855f7', '#22c55e']
         });
       }
+    }
+  };
+
+  const handleSkipClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onSkip) {
+      onSkip(habit.key);
+      showSuccess(`${habit.name} hidden for today.`);
     }
   };
 
@@ -140,17 +150,30 @@ export const HabitAccordionItem: React.FC<HabitAccordionItemProps> = ({
             </div>
           </div>
           
-          {!habit.allCompleted && !isLocked && (
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-10 w-10 rounded-xl bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all shrink-0 ml-2"
-              onClick={handleQuickCheck}
-              title="Quick Log"
-            >
-              <Check className="w-5 h-5" />
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            {!habit.allCompleted && !isLocked && (
+              <>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-10 w-10 rounded-xl bg-muted/50 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all shrink-0"
+                  onClick={handleSkipClick}
+                  title="Skip for Today"
+                >
+                  <EyeOff className="w-4 h-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-10 w-10 rounded-xl bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all shrink-0"
+                  onClick={handleQuickCheck}
+                  title="Quick Log"
+                >
+                  <Check className="w-5 h-5" />
+                </Button>
+              </>
+            )}
+          </div>
         </div>
         {isLocked && (
           <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2 ml-[72px]">

@@ -1,11 +1,11 @@
 "use client";
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Home, Trophy, Settings, Menu, LogOut, BarChart, Moon, Sun, Target, PlusCircle, BarChart3, LayoutTemplate, ChevronLeft, ChevronRight, HelpCircle } from 'lucide-react';
+import { Home, Trophy, Settings, Menu, LogOut, BarChart, Moon, Sun, Target, PlusCircle, BarChart3, LayoutTemplate, ChevronLeft, ChevronRight, HelpCircle, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useSession } from '@/contexts/SessionContext';
@@ -52,6 +52,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick, isCollapse
   const { session, signOut } = useSession();
   const { data: dashboardData, isLoading: isDashboardLoading } = useDashboardData();
   const location = useLocation();
+  const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
 
   const handleSignOut = async () => {
@@ -78,6 +79,10 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick, isCollapse
     ? `${dashboardData.firstName} ${dashboardData.lastName}`
     : dashboardData?.firstName || session?.user?.email;
 
+  const completed = dashboardData?.dailyMomentumParts?.completed || 0;
+  const total = dashboardData?.dailyMomentumParts?.total || 0;
+  const progressPercent = total > 0 ? (completed / total) * 100 : 0;
+
   return (
     <div className="flex h-full max-h-screen flex-col gap-2 bg-sidebar-background">
       <div className={cn(
@@ -88,9 +93,23 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick, isCollapse
           <div className="bg-primary w-8 h-8 rounded-lg flex items-center justify-center">
             <Target className="h-5 w-5 text-primary-foreground" />
           </div>
-          {!isCollapsed && <span className="text-lg">Adaptive Growth</span>}
+          {!isCollapsed && <span className="text-lg tracking-tighter font-black uppercase italic">Adaptive</span>}
         </Link>
       </div>
+
+      <div className="px-4 py-4">
+        <Button 
+          className={cn("w-full justify-start gap-2 rounded-xl h-11 font-bold shadow-sm", isCollapsed && "justify-center px-0")}
+          onClick={() => {
+            navigate('/create-habit');
+            if (onLinkClick) onLinkClick();
+          }}
+        >
+          <Plus className="h-5 w-5" />
+          {!isCollapsed && "New Practice"}
+        </Button>
+      </div>
+
       <ScrollArea className="flex-1 overflow-auto py-2">
         <nav className={cn(
           "grid items-start text-sm font-medium gap-1",
@@ -109,6 +128,22 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick, isCollapse
           ))}
         </nav>
       </ScrollArea>
+
+      {!isCollapsed && total > 0 && (
+        <div className="px-6 py-4 space-y-2">
+          <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+            <span>Daily Progress</span>
+            <span>{completed}/{total}</span>
+          </div>
+          <div className="h-1.5 w-full bg-secondary rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-primary transition-all duration-500" 
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+        </div>
+      )}
+
       <div className={cn(
         "mt-auto p-4 border-t border-sidebar-border",
         isCollapsed && "flex flex-col items-center p-2"
@@ -118,14 +153,14 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick, isCollapse
             "flex items-center gap-3 mb-4",
             isCollapsed && "flex-col gap-1 mb-2"
           )}>
-            <Avatar className="h-10 w-10">
+            <Avatar className="h-10 w-10 border-2 border-primary/10">
               <AvatarImage src={session.user.user_metadata?.avatar_url} />
-              <AvatarFallback>{displayName?.charAt(0).toUpperCase() || '?'}</AvatarFallback>
+              <AvatarFallback className="bg-primary text-primary-foreground font-bold">{displayName?.charAt(0).toUpperCase() || '?'}</AvatarFallback>
             </Avatar>
             {!isCollapsed && (
               <div className="flex-grow min-w-0">
-                <p className="font-semibold text-sm truncate">{displayName}</p>
-                <p className="text-xs text-muted-foreground truncate">Logged in</p>
+                <p className="font-bold text-sm truncate">{displayName}</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Level {dashboardData?.level || 1}</p>
               </div>
             )}
           </div>
@@ -136,13 +171,13 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick, isCollapse
         )}>
           <Button
             variant="secondary"
-            className={cn("flex-1", isCollapsed && "w-full")}
+            className={cn("flex-1 rounded-xl", isCollapsed && "w-full")}
             onClick={handleSignOut}
           >
             <LogOut className={cn("h-4 w-4", !isCollapsed && "mr-2")} />
             {!isCollapsed && "Sign Out"}
           </Button>
-          <Button variant="outline" size="icon" onClick={toggleTheme} aria-label="Toggle theme">
+          <Button variant="outline" size="icon" className="rounded-xl" onClick={toggleTheme} aria-label="Toggle theme">
             {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
         </div>
@@ -173,7 +208,7 @@ export const Sidebar: React.FC<{ isCollapsed: boolean; onToggleCollapse: () => v
       <>
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="fixed top-4 left-4 z-[100] rounded-full">
+            <Button variant="ghost" size="icon" className="fixed top-4 left-4 z-[100] rounded-full bg-background/80 backdrop-blur-sm border shadow-sm">
               <Menu className="h-6 w-6" />
             </Button>
           </SheetTrigger>
@@ -187,7 +222,7 @@ export const Sidebar: React.FC<{ isCollapsed: boolean; onToggleCollapse: () => v
 
   return (
     <div className={cn(
-      "hidden border-r bg-sidebar-background",
+      "hidden border-r bg-sidebar-background transition-all duration-300",
       isCollapsed ? "lg:block lg:w-16" : "lg:block lg:w-[280px]"
     )}>
       <SidebarContent isCollapsed={isCollapsed} onToggleCollapse={onToggleCollapse} isMobile={isMobile} />
