@@ -6,7 +6,7 @@ import {
   CheckCircle2, Target, Anchor, Zap, 
   Layers, PlusCircle, Lock,
   AlertCircle, Sparkles, TrendingUp, Clock, Play,
-  Check, CalendarDays, CalendarCheck, ChevronDown, ChevronUp
+  Check, CalendarDays, CalendarCheck, ChevronDown, ChevronUp, RotateCcw
 } from "lucide-react";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { DashboardSkeleton } from "@/components/dashboard/DashboardSkeleton";

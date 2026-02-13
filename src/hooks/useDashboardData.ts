@@ -266,6 +266,7 @@ export const fetchDashboardData = async (userId: string) => {
     dayRolloverHour: profile?.day_rollover_hour || 0,
     customHabitOrder: profile?.custom_habit_order || [],
     sectionOrder: profile?.section_order || ['anchor', 'weekly_objective', 'daily_momentum'], 
+    timezone: timezone, // Added timezone to the return object
   };
 };
 
