@@ -5,6 +5,7 @@ import { startOfDay, differenceInDays, startOfWeek, endOfWeek, subWeeks, addMont
 import { initialHabits } from '@/lib/habit-data';
 import { ProcessedUserHabit } from '@/types/habit';
 import { calculateDynamicChunks, calculateDailyParts } from '@/utils/progress-utils';
+import { getTodayDateString } from '@/utils/time-utils';
 
 // Helper function to get day boundaries using RPC (copied from useHabitLog for self-containment)
 const getDayBoundaries = async (userId: string, dateString: string) => {
@@ -27,7 +28,9 @@ export const fetchDashboardData = async (userId: string) => {
   const timezone = profile?.timezone || 'UTC';
   const today = new Date();
   const currentDayOfWeek = today.getDay();
-  const todayDateString = today.toISOString().split('T')[0];
+  
+  // Use timezone-aware date string
+  const todayDateString = getTodayDateString(timezone);
 
   // 1. Get today's timezone-aware boundaries
   const boundaries = await getDayBoundaries(userId, todayDateString);
@@ -127,14 +130,14 @@ export const fetchDashboardData = async (userId: string) => {
       try {
         const start = parse(h.window_start, 'HH:mm', now);
         const end = parse(h.window_end, 'HH:mm', now);
-        isWithinWindow = isWithinInterval(now, { start, end }); // Corrected assignment
+        isWithinWindow = isWithinInterval(now, { start, end }); 
       } catch (e) {
         console.error("Window parsing error", e);
       }
     }
 
     const weeklyCompletions = weeklySessionCountMap.get(h.habit_key) || 0;
-    const weeklyDuration = weeklyMinutesMap.get(h.habit_key) || 0; // NEW FIELD
+    const weeklyDuration = weeklyMinutesMap.get(h.habit_key) || 0; 
     const isWeeklyAnchor = h.category === 'anchor' && h.frequency_per_week === 1;
     let isComplete = false;
     const unit = h.unit || (mType === 'timer' ? 'min' : (mType === 'binary' ? 'dose' : 'reps'));
@@ -171,7 +174,7 @@ export const fetchDashboardData = async (userId: string) => {
       xpPerUnit: h.xp_per_unit || (h.unit === 'min' ? 30 : 1),
       energyCostPerUnit: h.energy_cost_per_unit || (h.unit === 'min' ? 6 : 0.5),
       weekly_completions: weeklyCompletions,
-      weekly_total_minutes: weeklyDuration, // PASS TO COMPONENT
+      weekly_total_minutes: weeklyDuration, 
       weekly_goal: (mType === 'binary' ? 1 : h.current_daily_goal) * h.frequency_per_week,
       weekly_progress: weeklyCompletions, 
       isScheduledForToday,
@@ -195,19 +198,15 @@ export const fetchDashboardData = async (userId: string) => {
       const indexA = customOrder.indexOf(a.habit_key);
       const indexB = customOrder.indexOf(b.habit_key);
 
-      // If both are in custom order, sort by their index
       if (indexA !== -1 && indexB !== -1) {
         return indexA - indexB;
       }
-      // If only A is in custom order, A comes first
       if (indexA !== -1) {
         return -1;
       }
-      // If only B is in custom order, B comes first
       if (indexB !== -1) {
         return 1;
       }
-      // If neither are in custom order, maintain original sort (or secondary sort)
       return 0;
     });
   }
@@ -266,7 +265,7 @@ export const fetchDashboardData = async (userId: string) => {
     dailyMomentumParts,
     dayRolloverHour: profile?.day_rollover_hour || 0,
     customHabitOrder: profile?.custom_habit_order || [],
-    sectionOrder: profile?.section_order || ['anchor', 'weekly_objective', 'daily_momentum'], // Include section order
+    sectionOrder: profile?.section_order || ['anchor', 'weekly_objective', 'daily_momentum'], 
   };
 };
 
@@ -278,6 +277,6 @@ export const useDashboardData = () => {
     queryKey: ['dashboardData', userId],
     queryFn: () => fetchDashboardData(userId!),
     enabled: !!userId,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 5, 
   });
 };

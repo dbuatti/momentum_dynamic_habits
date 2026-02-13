@@ -7,15 +7,7 @@ import { showSuccess, showError } from '@/utils/toast';
 import { calculateLevel } from '@/utils/leveling';
 import { isSameDay, subDays, format, startOfDay, endOfDay, parse } from 'date-fns';
 import { UserHabitRecord } from '@/types/habit';
-
-interface LogHabitParams {
-  habitKey: string;
-  value: number;
-  taskName: string;
-  difficultyRating?: number;
-  note?: string;
-  capsuleIndex?: number;
-}
+import { getTodayDateString } from '@/utils/time-utils';
 
 // Helper function to get day boundaries using RPC
 const getDayBoundaries = async (userId: string, dateString: string) => {
@@ -27,8 +19,14 @@ const getDayBoundaries = async (userId: string, dateString: string) => {
   return data[0]; // { start_time: TIMESTAMPTZ, end_time: TIMESTAMPTZ }
 };
 
-const checkHabitCompletionOnDay = async (userId: string, habitKey: string, date: Date, userHabitData: UserHabitRecord): Promise<boolean> => {
-  const dateString = format(date, 'yyyy-MM-dd');
+const checkHabitCompletionOnDay = async (userId: string, habitKey: string, date: Date, userHabitData: UserHabitRecord, timezone: string): Promise<boolean> => {
+  // Get the date string relative to the user's timezone
+  const dateString = new Intl.DateTimeFormat('en-CA', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(date);
   
   // Use the RPC to get the boundaries for the target date, respecting rollover hour and timezone
   const boundaries = await getDayBoundaries(userId, dateString);
@@ -45,12 +43,10 @@ const checkHabitCompletionOnDay = async (userId: string, habitKey: string, date:
 
   if (fetchError || !completedTasksOnDay || completedTasksOnDay.length === 0) return false;
 
-  // NEW LOGIC: If complete_on_finish is true, any logged task means it's complete for the day.
   if (userHabitData.complete_on_finish) {
     return completedTasksOnDay.length >= 1;
   } 
   
-  // Existing logic for summing progress
   const isWeeklyAnchor = userHabitData.category === 'anchor' && userHabitData.frequency_per_week === 1;
   const xpPerUnit = userHabitData.xp_per_unit || (userHabitData.unit === 'min' ? 30 : 1);
 
@@ -96,9 +92,6 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
   if (profileFetchError) throw profileFetchError;
   const timezone = profileData.timezone || 'UTC';
   
-  // NEW: Logic for complete_on_finish
-  // If complete_on_finish is true, we always credit the target 'value' (usually the capsule size or goal).
-  // If false, we credit the 'value' passed (which is the actual elapsed duration/reps).
   const xpBaseValue = value; 
   let lifetimeProgressIncrementValue;
   let durationUsedForDB = null; 
@@ -124,7 +117,7 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
     duration_used: durationUsedForDB,
     xp_earned: xpEarned,
     energy_cost: energyCost, 
-    difficulty_rating: difficultyRating || null,
+    difficulty_rating: difficulty_rating || null,
     completed_at: new Date().toISOString(),
     note: note || null,
     capsule_index: capsuleIndex !== undefined ? capsuleIndex : null,
@@ -141,8 +134,8 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
   let totalDailyProgressAfterLog = 0;
 
   if (userHabitData.complete_on_finish) {
-    isGoalMetAfterLog = true; // If complete_on_finish is true, any log means goal is met for the day
-    totalDailyProgressAfterLog = userHabitData.current_daily_goal; // For display purposes, assume full goal
+    isGoalMetAfterLog = true; 
+    totalDailyProgressAfterLog = userHabitData.current_daily_goal; 
   } else if (isWeeklyAnchor && userHabitData.measurement_type === 'timer') {
     const minDuration = userHabitData.weekly_session_min_duration || 10;
     if (value >= minDuration) {
@@ -175,8 +168,6 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
     isGoalMetAfterLog = totalDailyProgressAfterLog >= (userHabitData.current_daily_goal - threshold);
   }
 
-  // NEW: Carryover Logic
-  // Only apply carryover for non-binary, non-fixed habits when complete_on_finish is false
   if (userHabitData.measurement_type !== 'binary' && !userHabitData.is_fixed && !userHabitData.complete_on_finish) {
     const surplus = totalDailyProgressAfterLog - userHabitData.current_daily_goal;
     const newCarryoverValue = Math.max(0, surplus);
@@ -185,8 +176,6 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
       carryover_value: newCarryoverValue,
     }).eq('id', userHabitData.id);
   } else if (userHabitData.complete_on_finish) {
-    // If complete_on_finish is true, any surplus is consumed by the goal, so reset carryover
-    
     await supabase.from('user_habits').update({
       carryover_value: 0,
     }).eq('id', userHabitData.id);
@@ -201,33 +190,23 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
 
   if (isGoalMetAfterLog) {
     const todayDate = new Date();
-    const todayDateString = format(todayDate, 'yyyy-MM-dd'); 
+    const todayDateString = getTodayDateString(timezone); 
 
-    // Check if the habit was already marked complete today (using the timezone-aware check)
-    const wasCompletedTodayBeforeLog = await checkHabitCompletionOnDay(userId, habitKey, todayDate, userHabitData);
+    const wasCompletedTodayBeforeLog = await checkHabitCompletionOnDay(userId, habitKey, todayDate, userHabitData, timezone);
 
-    const previousValidSessionsToday = wasCompletedTodayBeforeLog; // Simplified check based on the new function
-    const alreadyCountedForPlateauToday = previousValidSessionsToday;
-
-    if (!alreadyCountedForPlateauToday) { 
+    if (!wasCompletedTodayBeforeLog) { 
       const plateauRequired = userHabitData.plateau_days_required; 
       const lastPlateauDate = new Date(userHabitData.last_plateau_start_date);
       
-      // We need to check if the current log falls into a new day boundary compared to the last plateau date.
-      // Since we are using the RPC for today's tasks, we should check if the last plateau date is yesterday.
-      
       const yesterday = subDays(todayDate, 1); 
-      const wasCompletedYesterday = await checkHabitCompletionOnDay(userId, habitKey, yesterday, userHabitData);
+      const wasCompletedYesterday = await checkHabitCompletionOnDay(userId, habitKey, yesterday, userHabitData, timezone);
 
-      // If the last plateau start date was yesterday, and yesterday was completed, increment streak.
-      // Note: This logic is slightly simplified from a true streak check but works for plateau counting.
       if (isSameDay(lastPlateauDate, yesterday) && wasCompletedYesterday) {
         newCompletionsInPlateau = userHabitData.completions_in_plateau + 1;
       } else {
-        // If yesterday was missed, or last plateau date was older, reset streak to 1 (for today)
         newCompletionsInPlateau = 1; 
       }
-      newLastPlateauStartDate = todayDateString; // Update last plateau start date to today
+      newLastPlateauStartDate = todayDateString; 
 
       if (userHabitData.is_trial_mode && newCompletionsInPlateau >= plateauRequired) {
         newIsTrialMode = false;
@@ -393,14 +372,13 @@ const unlogHabit = async ({ userId, completedTaskId }: { userId: string, complet
       carryover_value: newCarryoverValueAfterUnlog,
     }).eq('id', userHabitData.id);
   } else if (userHabitData.complete_on_finish) {
-    // If complete_on_finish is true, any surplus is consumed by the goal, so reset carryover
     await supabase.from('user_habits').update({
       carryover_value: 0,
     }).eq('id', userHabitData.id);
   }
 
   const todayDate = new Date();
-  const wasCompletedTodayBeforeUnlog = await checkHabitCompletionOnDay(userId, task.original_source, todayDate, userHabitData);
+  const wasCompletedTodayBeforeUnlog = await checkHabitCompletionOnDay(userId, task.original_source, todayDate, userHabitData, timezone);
 
   if (wasCompletedTodayBeforeUnlog && !isGoalMetAfterUnlog && userHabitData.completions_in_plateau > 0) {
     await supabase.from('user_habits').update({

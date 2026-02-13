@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { useHabitLog } from './useHabitLog';
+import { getTodayDateString } from '@/utils/time-utils';
 
 export interface Capsule {
   id?: string;
@@ -24,7 +25,18 @@ export const useCapsules = () => {
   const queryClient = useQueryClient();
   const userId = session?.user?.id;
 
-  const today = new Date().toISOString().split('T')[0];
+  // Fetch profile to get timezone for date calculation
+  const { data: profile } = useQuery({
+    queryKey: ['profile', userId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('profiles').select('timezone').eq('id', userId).single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!userId,
+  });
+
+  const today = getTodayDateString(profile?.timezone);
 
   const fetchCapsules = async (): Promise<Capsule[]> => {
     if (!userId) return [];
@@ -47,8 +59,8 @@ export const useCapsules = () => {
   const { data: dbCapsules = [], isLoading } = useQuery({
     queryKey: ['habitCapsules', userId, today],
     queryFn: fetchCapsules,
-    enabled: !!userId,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    enabled: !!userId && !!today,
+    staleTime: 1000 * 60 * 5, 
   });
 
   const { mutate: logHabit, unlog: unlogHabitFromHook } = useHabitLog();
@@ -71,16 +83,14 @@ export const useCapsules = () => {
     }) => {
       if (!userId) throw new Error('User not authenticated');
 
-      // 1. Log the habit WITH the capsuleIndex
-      const { completedTaskId } = await logHabit({ // Await the logHabit call
+      const { completedTaskId } = await logHabit({ 
         habitKey, 
         value, 
         taskName, 
         note: mood,
-        capsuleIndex: index // PASS THE INDEX
+        capsuleIndex: index 
       });
 
-      // 2. Legacy support for habit_capsules table
       const upsertData: Partial<Capsule> = {
         user_id: userId,
         habit_key: habitKey,
@@ -104,9 +114,9 @@ export const useCapsules = () => {
         throw error;
       }
     },
-    onSuccess: async () => { // Added async here
-      await queryClient.refetchQueries({ queryKey: ['habitCapsules', userId, today] }); // Explicit refetch
-      await queryClient.refetchQueries({ queryKey: ['dashboardData', userId] }); // Explicit refetch
+    onSuccess: async () => { 
+      await queryClient.refetchQueries({ queryKey: ['habitCapsules', userId, today] }); 
+      await queryClient.refetchQueries({ queryKey: ['dashboardData', userId] }); 
     },
     onError: (error) => {
       console.error('[useCapsules] logCapsuleProgress onError:', error);
@@ -125,10 +135,8 @@ export const useCapsules = () => {
     }) => {
       if (!userId) throw new Error('User not authenticated');
 
-      // 1. Unlog using the task ID
       await unlogHabitFromHook({ completedTaskId });
 
-      // 2. Update legacy table
       const { error } = await supabase
         .from('habit_capsules')
         .update({ is_completed: false, mood: null, completed_task_id: null })
@@ -142,9 +150,9 @@ export const useCapsules = () => {
         throw error;
       }
     },
-    onSuccess: async () => { // Added async here
-      await queryClient.refetchQueries({ queryKey: ['habitCapsules', userId, today] }); // Explicit refetch
-      await queryClient.refetchQueries({ queryKey: ['dashboardData', userId] }); // Explicit refetch
+    onSuccess: async () => { 
+      await queryClient.refetchQueries({ queryKey: ['habitCapsules', userId, today] }); 
+      await queryClient.refetchQueries({ queryKey: ['dashboardData', userId] }); 
     },
     onError: (error) => {
       console.error('[useCapsules] uncompleteCapsule onError:', error);
