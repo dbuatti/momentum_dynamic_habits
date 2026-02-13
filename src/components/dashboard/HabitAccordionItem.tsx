@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Check, Lock, CheckCircle2, Layers, CalendarCheck, CalendarDays } from 'lucide-react';
+import { Check, Lock, CheckCircle2, Layers, CalendarCheck, CalendarDays, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProcessedUserHabit } from '@/types/habit';
 import { useCapsules } from '@/hooks/useCapsules';
