@@ -42,6 +42,7 @@ const Index = () => {
   
   const prevCompletionsRef = useRef<Record<string, boolean>>({});
   const prevSectionCompletionsRef = useRef<Record<string, boolean>>({});
+  const hasInitializedCompletions = useRef(false);
 
   const habitWithEmptyKey = useMemo(() => {
     if (!data?.habits) return null;
@@ -191,7 +192,9 @@ const Index = () => {
     data.habits.forEach(habit => {
       const wasComplete = prevCompletionsRef.current[habit.habit_key] || false;
       const isComplete = habit.isComplete;
-      if (!wasComplete && isComplete) {
+      
+      // Only collapse if it's a NEW completion (not on mount)
+      if (hasInitializedCompletions.current && !wasComplete && isComplete) {
         setExpandedItems(prev => {
           const next = prev.filter(key => key !== habit.habit_key);
           localStorage.setItem(`habitAccordionState:${habit.habit_key}`, 'collapsed');
@@ -208,11 +211,18 @@ const Index = () => {
       daily_momentum: dailyMomentumHabits.length > 0 && dailyMomentumHabits.every(h => h.allCompleted),
     };
 
-    Object.entries(sectionCompletions).forEach(([sectionId, isComplete]) => {
-      if (isComplete && !prevSectionCompletionsRef.current[sectionId]) {
-        confetti({ particleCount: 150, spread: 100, origin: { y: 0.7 }, colors: ['#6366f1', '#a855f7', '#22c55e'] });
-      }
-    });
+    // Only trigger confetti if we've already initialized the completion state once
+    if (hasInitializedCompletions.current) {
+      Object.entries(sectionCompletions).forEach(([sectionId, isComplete]) => {
+        if (isComplete && !prevSectionCompletionsRef.current[sectionId]) {
+          confetti({ particleCount: 150, spread: 100, origin: { y: 0.7 }, colors: ['#6366f1', '#a855f7', '#22c55e'] });
+        }
+      });
+    } else {
+      // Mark as initialized so subsequent updates can trigger confetti
+      hasInitializedCompletions.current = true;
+    }
+    
     prevSectionCompletionsRef.current = sectionCompletions;
   }, [data?.habits, anchorHabits, weeklyObjectives, dailyMomentumHabits]);
 
