@@ -9,6 +9,15 @@ import { isSameDay, subDays, format, startOfDay, endOfDay, parse } from 'date-fn
 import { UserHabitRecord } from '@/types/habit';
 import { getTodayDateString } from '@/utils/time-utils';
 
+interface LogHabitParams {
+  habitKey: string;
+  value: number;
+  taskName: string;
+  difficultyRating?: number;
+  note?: string;
+  capsuleIndex?: number;
+}
+
 // Helper function to get day boundaries using RPC
 const getDayBoundaries = async (userId: string, dateString: string) => {
   const { data, error } = await supabase.rpc('get_day_boundaries', {
@@ -117,7 +126,7 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
     duration_used: durationUsedForDB,
     xp_earned: xpEarned,
     energy_cost: energyCost, 
-    difficulty_rating: difficulty_rating || null,
+    difficulty_rating: difficultyRating || null,
     completed_at: new Date().toISOString(),
     note: note || null,
     capsule_index: capsuleIndex !== undefined ? capsuleIndex : null,
