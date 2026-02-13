@@ -10,14 +10,14 @@ import { useFeedback } from '@/hooks/useFeedback';
 import { Input } from '@/components/ui/input';
 import { MeasurementType } from '@/types/habit';
 import confetti from 'canvas-confetti';
-import { formatTimeDisplay } from '@/utils/time-utils'; // Import from new utility
+import { formatTimeDisplay } from '@/utils/time-utils';
 
 interface HabitCapsuleProps {
   id: string;
   habitKey: string;
   habitName: string;
   label: string;
-  value: number; // This is the goal/chunk value in units (min, reps, etc), now including carryover for the first chunk
+  value: number;
   unit: string;
   measurementType: MeasurementType;
   isCompleted: boolean;
@@ -30,8 +30,8 @@ interface HabitCapsuleProps {
   onUncomplete: (completedTaskId: string) => void;
   color: 'orange' | 'blue' | 'green' | 'purple' | 'red' | 'indigo';
   showMood?: boolean;
-  completeOnFinish?: boolean; // NEW PROP
-  initialRemainingTimeSeconds?: number; // NEW PROP
+  completeOnFinish?: boolean;
+  initialRemainingTimeSeconds?: number;
 }
 
 export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
@@ -51,8 +51,8 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   onUncomplete,
   color,
   showMood,
-  completeOnFinish = true, // Default to true
-  initialRemainingTimeSeconds, // NEW PROP
+  completeOnFinish = true,
+  initialRemainingTimeSeconds,
 }) => {
   const [showMoodPicker, setShowMoodPicker] = useState(false);
   const [isTiming, setIsTiming] = useState(false);
@@ -69,11 +69,10 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   
   const { triggerFeedback } = useFeedback();
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const hasTriggeredCompletion = useRef(false); // Ref to prevent double-triggering completion
   const storageKey = `timer_${habitKey}_${label}_${new Date().toISOString().split('T')[0]}`;
 
-  // Calculate the target duration in seconds for this specific capsule
   const targetDurationSeconds = measurementType === 'timer' ? Math.round(value * 60) : 0;
-  // State for the actual time left, initialized with the target duration
   const [timeLeft, setTimeLeft] = useState(initialRemainingTimeSeconds !== undefined ? initialRemainingTimeSeconds : targetDurationSeconds);
 
   const isLoggingDisabled = isFixed && isHabitComplete && !isCompleted;
@@ -85,7 +84,13 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     setCompletedTaskIdState(initialCompletedTaskId || null);
   }, [initialCompletedTaskId]);
 
-  // --- Interval Management Refactored ---
+  // Reset completion trigger ref when timer is reset or started
+  useEffect(() => {
+    if (isTiming && timeLeft > 0) {
+      hasTriggeredCompletion.current = false;
+    }
+  }, [isTiming, timeLeft]);
+
   const stopInterval = () => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -97,7 +102,7 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     if (measurementType !== 'timer') return;
 
     if (isTiming && !isPaused && !isCompleted) {
-      stopInterval(); // Clear any existing interval before starting a new one
+      stopInterval();
       timerRef.current = setInterval(() => {
         setTimeLeft((prev) => {
           if (prev <= 1) {
@@ -111,15 +116,12 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
       stopInterval();
     }
 
-    // Cleanup function runs on unmount or when dependencies change
     return () => {
       stopInterval();
       window.dispatchEvent(new CustomEvent('habit-timer-update', { detail: null }));
     };
   }, [isTiming, isPaused, isCompleted, measurementType]);
-  // --------------------------------------
 
-  // Effect to dispatch timer updates for FloatingTimer and Tab Title
   useEffect(() => {
     if (measurementType === 'timer' && isTiming) {
       window.dispatchEvent(new CustomEvent('habit-timer-update', {
@@ -139,13 +141,18 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
 
   // Effect to handle timer completion
   useEffect(() => {
-    if (isTiming && timeLeft === 0) {
-      handleFinishTiming(undefined, true);
+    if (isTiming && timeLeft === 0 && !hasTriggeredCompletion.current) {
+      hasTriggeredCompletion.current = true;
+      
+      // Trigger sound feedback FIRST before any state changes (like showing mood picker)
+      // to ensure it's not blocked or interrupted by re-renders.
       triggerFeedback('goal_reached');
+      
+      // Then handle the actual completion logic
+      handleFinishTiming(undefined, true);
     }
   }, [timeLeft, isTiming, triggerFeedback]);
 
-  // Effect to load/save timer state from/to localStorage
   useEffect(() => {
     if (measurementType !== 'timer') return;
 
@@ -181,7 +188,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     };
   }, [isCompleted, storageKey, measurementType, targetDurationSeconds, initialRemainingTimeSeconds]); 
 
-  // Effect to save timer state to localStorage when active (Runs on every tick)
   useEffect(() => {
     if (measurementType === 'timer' && isTiming && !isCompleted) {
       const state = {
@@ -194,18 +200,15 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     }
   }, [timeLeft, isPaused, isTiming, isCompleted, storageKey, measurementType]);
 
-  // Handle Timer Actions
   const handleStartTimer = (e: React.MouseEvent) => {
     if (isLoggingDisabled) return;
     e.stopPropagation();
     triggerFeedback('start');
     
-    // If starting from 0, set the time first.
     if (timeLeft <= 0) { 
       setTimeLeft(targetDurationSeconds); 
     }
     
-    // Set timing state. The dedicated useEffect will start the interval on the next render.
     setIsTiming(true);
     setIsPaused(false);
   };
@@ -213,7 +216,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
   const handlePauseTimer = (e: React.MouseEvent) => {
     e.stopPropagation();
     triggerFeedback('pause');
-    // Toggle isPaused. The dedicated useEffect will stop/start the interval.
     setIsPaused(prev => !prev);
   };
 
@@ -233,7 +235,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     const elapsedSecondsForThisTimerRun = targetDurationSeconds - timeLeft;
 
     if (measurementType === 'timer') {
-      // NEW LOGIC: Use completeOnFinish toggle
       if (completeOnFinish) {
         totalSessionValue = value; 
       } else {
@@ -248,7 +249,11 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
       setShowMoodPicker(true);
       return;
     }
-    triggerFeedback('completion');
+
+    // Only trigger 'completion' feedback if it wasn't already triggered by 'goal_reached'
+    if (timeLeft > 0) {
+      triggerFeedback('completion');
+    }
     
     if (measurementType === 'timer' && (completeOnFinish || timeLeft === 0)) {
       confetti({
@@ -267,15 +272,11 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
       localStorage.removeItem(storageKey);
       setShowMoodPicker(false);
     } else {
-      // For partial logging (completeOnFinish: false)
-      // Timer continues to run. `timeLeft` will be updated by the prop on re-render.
-      // We need to update localStorage with the new remaining time.
-      // The `useEffect` will then pick this up if the component unmounts/remounts.
       const newRemainingTime = initialRemainingTimeSeconds !== undefined ? initialRemainingTimeSeconds : targetDurationSeconds;
       localStorage.setItem(storageKey, JSON.stringify({
-        timeLeft: newRemainingTime, // Store the new remaining time from the prop
+        timeLeft: newRemainingTime,
         paused: isPaused,
-        timing: isTiming, // Should still be true
+        timing: isTiming,
         lastUpdated: Date.now()
       }));
       setShowMoodPicker(false);
@@ -315,7 +316,6 @@ export const HabitCapsule: React.FC<HabitCapsuleProps> = ({
     }
     triggerFeedback('completion');
     
-    // Manual entry usually logs exactly what is entered, but we can treat 'Complete' as full goal if requested
     const logValue = completeOnFinish ? value : manualValue;
     onLogProgress(logValue, true, mood);
     setShowMoodPicker(false);
