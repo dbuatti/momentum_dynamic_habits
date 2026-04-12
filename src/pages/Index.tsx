@@ -111,8 +111,8 @@ export default function Index() {
   }
 
   const handleDragEnd = (event: any, info: PanInfo) => {
-    const swipeThreshold = 30;
-    const velocityThreshold = 200;
+    const swipeThreshold = 50;
+    const velocityThreshold = 500;
     const { offset, velocity } = info;
 
     if (offset.x < -swipeThreshold || velocity.x < -velocityThreshold) {
@@ -135,10 +135,10 @@ export default function Index() {
         className="flex w-[300%] h-full"
         animate={controls}
         initial={{ x: getXOffset() }}
-        transition={{ type: "spring", stiffness: 250, damping: 30 }}
+        transition={{ type: "spring", stiffness: 300, damping: 35 }}
         drag="x"
         dragConstraints={{ left: 0, right: 0 }}
-        dragElastic={0.1}
+        dragElastic={0.05}
         onDragEnd={handleDragEnd}
         dragMomentum={false}
       >
@@ -150,21 +150,21 @@ export default function Index() {
         {/* Task View (Center) */}
         <div className="w-screen min-h-screen pb-48 overflow-y-auto relative">
           {/* Top Right Action Area */}
-          <div className="absolute top-8 right-8 z-50">
+          <div className="absolute top-6 right-6 z-50">
             <ScreenBreakTimer />
           </div>
 
-          <div className="container max-w-2xl pt-32 px-8 space-y-10">
+          <div className="container max-w-2xl pt-20 px-8 space-y-10">
             {!isOverrideMode && eligibleTasks.length > 1 && (
               <div className="flex justify-center animate-in fade-in slide-in-from-top-4 duration-700">
                 <Button 
                   onClick={shuffleTask} 
                   variant="ghost" 
                   size="icon"
-                  className="w-12 h-12 rounded-full text-white/40 hover:text-white hover:bg-white/10 transition-all active:rotate-180 duration-500"
+                  className="w-10 h-10 rounded-full text-white/20 hover:text-white hover:bg-white/10 transition-all active:rotate-180 duration-500"
                   title="Shuffle Task"
                 >
-                  <RefreshCw className="w-6 h-6" />
+                  <RefreshCw className="w-5 h-5" />
                 </Button>
               </div>
             )}
@@ -195,13 +195,13 @@ export default function Index() {
             </div>
 
             {/* Swipe Indicators */}
-            <div className="flex justify-between items-center px-4 pt-8 opacity-40">
+            <div className="flex justify-between items-center px-4 pt-8 opacity-20">
               <div className="flex items-center gap-1">
                 <ChevronLeft className="w-3 h-3 text-white" />
-                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white">Lab</span>
+                <span className="text-[8px] font-black uppercase tracking-[0.2em] text-white">Lab</span>
               </div>
               <div className="flex items-center gap-1">
-                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white">Day</span>
+                <span className="text-[8px] font-black uppercase tracking-[0.2em] text-white">Day</span>
                 <ChevronRight className="w-3 h-3 text-white" />
               </div>
             </div>

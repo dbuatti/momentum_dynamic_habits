@@ -171,7 +171,7 @@ export function HabitLab() {
   const Icon = config.icon;
 
   return (
-    <div className="w-full min-h-screen flex flex-col items-center justify-center p-8 space-y-12 relative">
+    <div className="w-full min-h-screen flex flex-col items-center pt-20 p-8 space-y-12 relative">
       <div className="text-center space-y-4">
         <div className="mx-auto w-20 h-20 rounded-[2rem] bg-white/20 flex items-center justify-center mb-6">
           <Compass className="w-10 h-10 text-white" />
