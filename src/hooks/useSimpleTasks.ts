@@ -62,7 +62,8 @@ export function useSimpleTasks() {
 
     const templates = [
       { user_id: user.id, name: 'Pushups', task_type: 'count', current_value: 1, increment_value: 1 },
-      { user_id: user.id, name: 'Be Still', task_type: 'time', current_value: 5, increment_value: 5 }
+      { user_id: user.id, name: 'Be Still', task_type: 'time', current_value: 300, increment_value: 60 },
+      { user_id: user.id, name: 'Walking', task_type: 'time', current_value: 600, increment_value: 300 }
     ];
 
     const { error } = await supabase.from('simple_tasks').insert(templates);

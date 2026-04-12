@@ -9,30 +9,40 @@ import {
   Pause, 
   RotateCcw,
   Compass,
-  Loader2
+  Loader2,
+  TrendingUp,
+  Zap,
+  Target
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatTimeDisplay } from "@/utils/time-utils";
 import { audioManager } from "@/utils/audio";
 import { useLabSession, LabStage } from "@/hooks/useLabSession";
-import { supabase } from "@/integrations/supabase/client";
+import { useSimpleTasks } from "@/hooks/useSimpleTasks";
 import { useSession } from "@/contexts/SessionContext";
 import confetti from 'canvas-confetti';
 import { toast } from "sonner";
+import { Progress } from "@/components/ui/progress";
 
 export function HabitLab() {
   const { session } = useSession();
-  const { stage, seconds, loading, updateSession, resetSession } = useLabSession();
+  const { stage, seconds, loading: sessionLoading, updateSession, resetSession } = useLabSession();
+  const { tasks, completeTask, loading: tasksLoading } = useSimpleTasks();
   const [isActive, setIsActive] = useState(false);
   const [localSeconds, setLocalSeconds] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Find the Walking task to get the current goal
+  const walkingTask = tasks.find(t => t.name === 'Walking');
+  const currentGoalSeconds = walkingTask?.current_value || 600; // Default 10 mins
+  const stabilityProgress = walkingTask?.current_progress || 0;
+
   // Sync local timer with DB state on load
   useEffect(() => {
-    if (!loading) {
+    if (!sessionLoading) {
       setLocalSeconds(seconds);
     }
-  }, [loading, seconds]);
+  }, [sessionLoading, seconds]);
 
   const handleStepOutside = async () => {
     audioManager.playSuccess();
@@ -52,7 +62,6 @@ export function HabitLab() {
       }, 1000);
     } else {
       if (timerRef.current) clearInterval(timerRef.current);
-      // Sync current time to DB when pausing
       updateSession('walking', localSeconds);
     }
     setIsActive(!isActive);
@@ -62,28 +71,27 @@ export function HabitLab() {
     if (timerRef.current) clearInterval(timerRef.current);
     setIsActive(false);
     
-    // Log the completion to simple_task_logs or a generic activity log
-    if (session?.user?.id) {
-      const { error } = await supabase.from('simple_task_logs').insert({
-        user_id: session.user.id,
-        value_at_completion: localSeconds,
-        increased: false // Walking lab is currently time-based and doesn't auto-level yet
+    if (walkingTask) {
+      const result = await completeTask(walkingTask.id);
+      
+      audioManager.playSuccess();
+      confetti({
+        particleCount: 150,
+        spread: 100,
+        origin: { y: 0.6 }
       });
 
-      if (error) {
-        console.error('Error logging walk:', error);
-        toast.error("Couldn't save your walk to history.");
+      if (result?.increased) {
+        toast.success("Level Up!", {
+          description: `Your walking goal increased to ${Math.floor(result.newValue / 60)} minutes!`,
+        });
       } else {
-        toast.success("Walk saved to your history!");
+        toast.success("Walk Logged!", {
+          description: `${result?.progress}/3 steps to your next goal increase.`,
+        });
       }
     }
 
-    audioManager.playSuccess();
-    confetti({
-      particleCount: 150,
-      spread: 100,
-      origin: { y: 0.6 }
-    });
     await updateSession('complete', localSeconds);
   };
 
@@ -94,13 +102,16 @@ export function HabitLab() {
     await resetSession();
   };
 
-  if (loading) {
+  if (sessionLoading || tasksLoading) {
     return (
       <div className="w-full min-h-screen flex items-center justify-center">
         <Loader2 className="w-12 h-12 animate-spin text-white/50" />
       </div>
     );
   }
+
+  const progressToGoal = Math.min(100, (localSeconds / currentGoalSeconds) * 100);
+  const isGoalMet = localSeconds >= currentGoalSeconds;
 
   return (
     <div className="w-full min-h-screen flex flex-col items-center justify-center p-8 space-y-12">
@@ -109,7 +120,14 @@ export function HabitLab() {
           <Compass className="w-10 h-10 text-white" />
         </div>
         <h2 className="text-5xl font-black tracking-tighter text-white uppercase italic">Practice Lab</h2>
-        <p className="text-lg font-bold text-white/60 uppercase tracking-widest">Robust Habit Building</p>
+        
+        <div className="max-w-[200px] mx-auto space-y-2">
+          <div className="flex justify-between text-[9px] font-black uppercase tracking-[0.2em] text-white/50">
+            <span>Stability</span>
+            <span>{stabilityProgress}/3</span>
+          </div>
+          <Progress value={(stabilityProgress / 3) * 100} className="h-1.5 bg-white/10 [&>div]:bg-white shadow-sm" />
+        </div>
       </div>
 
       <Card className="w-full max-w-md bg-white/10 border-white/20 rounded-[3rem] overflow-hidden shadow-2xl">
@@ -136,11 +154,22 @@ export function HabitLab() {
             <div className="space-y-8 text-center animate-in slide-in-from-right-8 duration-500">
               <div className="space-y-2">
                 <h3 className="text-3xl font-black text-white uppercase">Step 2: Move</h3>
-                <p className="text-white/60 font-bold">Enjoy the air. No pressure on distance.</p>
+                <div className="flex items-center justify-center gap-2 text-white/60 font-bold uppercase text-xs tracking-widest">
+                  <Target className="w-4 h-4" />
+                  Goal: {Math.floor(currentGoalSeconds / 60)}m
+                </div>
               </div>
               
-              <div className="text-7xl font-black text-white tabular-nums tracking-tighter">
-                {formatTimeDisplay(localSeconds)}
+              <div className="relative py-4">
+                <div className={cn(
+                  "text-7xl font-black tabular-nums tracking-tighter transition-colors duration-500",
+                  isGoalMet ? "text-white" : "text-white/90"
+                )}>
+                  {formatTimeDisplay(localSeconds)}
+                </div>
+                <div className="mt-4 px-4">
+                  <Progress value={progressToGoal} className="h-2 bg-white/10 [&>div]:bg-white" />
+                </div>
               </div>
 
               <div className="flex gap-4">
@@ -153,11 +182,21 @@ export function HabitLab() {
                 </Button>
                 <Button 
                   onClick={handleFinish}
-                  className="flex-[2] h-20 text-xl font-black rounded-[2rem] bg-white text-orange-500"
+                  disabled={!isGoalMet}
+                  className={cn(
+                    "flex-[2] h-20 text-xl font-black rounded-[2rem] bg-white text-orange-500 transition-all",
+                    !isGoalMet && "opacity-50 grayscale cursor-not-allowed"
+                  )}
                 >
-                  FINISH WALK
+                  {isGoalMet ? "FINISH WALK" : "KEEP GOING!"}
                 </Button>
               </div>
+              
+              {!isGoalMet && (
+                <p className="text-[10px] font-black uppercase tracking-widest text-white/40">
+                  {Math.ceil((currentGoalSeconds - localSeconds) / 60)} mins remaining to hit goal
+                </p>
+              )}
             </div>
           )}
 
@@ -169,9 +208,14 @@ export function HabitLab() {
               <div className="space-y-2">
                 <h3 className="text-3xl font-black text-white uppercase">Victory!</h3>
                 <p className="text-white/60 font-bold">You showed up for yourself today.</p>
-                <p className="text-sm font-black text-white/40 uppercase tracking-widest pt-4">
-                  Total Time: {Math.floor(localSeconds / 60)}m {localSeconds % 60}s
-                </p>
+                <div className="flex flex-col items-center gap-2 pt-4">
+                  <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/10">
+                    <Zap className="w-4 h-4 text-yellow-400" />
+                    <span className="text-xs font-black text-white uppercase tracking-widest">
+                      {Math.floor(localSeconds / 60)}m {localSeconds % 60}s Logged
+                    </span>
+                  </div>
+                </div>
               </div>
               <Button 
                 onClick={handleReset}
