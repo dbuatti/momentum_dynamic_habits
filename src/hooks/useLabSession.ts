@@ -9,7 +9,7 @@ export function useLabSession() {
   const queryClient = useQueryClient();
   const userId = session?.user?.id;
 
-  const { data: sessionData, isLoading: loading } = useQuery({
+  const { data: sessionData, isLoading: loading, error: queryError } = useQuery({
     queryKey: ['labSession', userId],
     queryFn: async () => {
       if (!userId) return null;
@@ -18,9 +18,10 @@ export function useLabSession() {
         .from('lab_sessions')
         .select('*')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle(); // Use maybeSingle to avoid errors when no row exists
 
       if (error) {
+        // Handle common Supabase errors gracefully
         if (error.code === 'PGRST116' || error.code === '42P01') return null;
         throw error;
       }
@@ -28,6 +29,7 @@ export function useLabSession() {
       return data;
     },
     enabled: !!userId,
+    retry: false, // Don't retry on 406 errors to avoid spamming
   });
 
   const updateSessionMutation = useMutation({
@@ -42,7 +44,7 @@ export function useLabSession() {
           stage: stage,
           seconds_elapsed: seconds,
           last_updated_at: new Date().toISOString()
-        });
+        }, { onConflict: 'user_id' });
 
       if (error) throw error;
     },
@@ -72,6 +74,7 @@ export function useLabSession() {
     labType: sessionData?.lab_type || null, 
     seconds: sessionData?.seconds_elapsed || 0, 
     loading, 
+    error: queryError,
     updateSession: (labType: string, stage: LabStage, seconds: number) => updateSessionMutation.mutateAsync({ labType, stage, seconds }), 
     resetSession: resetSessionMutation.mutateAsync 
   };
