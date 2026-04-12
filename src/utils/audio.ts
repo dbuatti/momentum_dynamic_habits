@@ -3,9 +3,10 @@
  * Includes a 'prime' function to unlock audio on iOS/mobile devices.
  */
 
-const TIMER_END_SOUND = "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"; // Bubbly chime
-const SUCCESS_SOUND = "https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3"; // Sparkle sound
-const START_SOUND = "https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3"; // Soft pop
+// Using bright glockenspiel and melodic chime sounds
+const TIMER_END_SOUND = "https://assets.mixkit.co/active_storage/sfx/1110/1110-preview.mp3"; // Bright glockenspiel chime
+const SUCCESS_SOUND = "https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3"; // Melodic success chime
+const START_SOUND = "https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3"; // Keeping the soft pop for start as it's unobtrusive
 
 class AudioManager {
   private timerAudio: HTMLAudioElement | null = null;
