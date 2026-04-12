@@ -21,7 +21,6 @@ export function SimpleTaskCard({ task, onComplete, onShuffle, showShuffle }: Sim
   const [hasStarted, setHasStarted] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Reset state when task changes
   useEffect(() => {
     setTimeLeft(task.current_value);
     setIsActive(false);
@@ -49,7 +48,7 @@ export function SimpleTaskCard({ task, onComplete, onShuffle, showShuffle }: Sim
   }, [isActive, timeLeft, task.name]);
 
   const startTimer = () => {
-    audioManager.prime(); // Unlock audio on first tap
+    audioManager.prime();
     setIsActive(true);
     setHasStarted(true);
     audioManager.playStart();
@@ -78,7 +77,7 @@ export function SimpleTaskCard({ task, onComplete, onShuffle, showShuffle }: Sim
       audioManager.playSuccess();
       if (result.increased) {
         toast.success(`Yay! Level up! Now ${result.newValue} ${task.task_type === 'time' ? 'seconds' : 'reps'}!`, {
-          icon: <Sparkles className="text-yellow-500" />,
+          icon: <Sparkles className="text-orange-500" />,
         });
       } else {
         toast.success("Task done! You're amazing! ✨");
@@ -91,72 +90,72 @@ export function SimpleTaskCard({ task, onComplete, onShuffle, showShuffle }: Sim
   const canComplete = !isTimeTask || isTimerFinished;
 
   return (
-    <Card className="w-full max-w-md mx-auto border-4 border-primary/10 shadow-xl rounded-[2.5rem] overflow-hidden bg-card/50 backdrop-blur-sm">
-      <CardHeader className="text-center pt-8">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-secondary mb-4 animate-bounce">
-          <Sparkles className="w-8 h-8 text-primary" />
+    <Card className="w-full max-w-md mx-auto border-4 border-primary/10 shadow-2xl rounded-[3rem] overflow-hidden bg-card/60 backdrop-blur-md">
+      <CardHeader className="text-center pt-10">
+        <div className="inline-flex items-center justify-center w-20 h-20 rounded-[2rem] bg-secondary mb-6 animate-bounce">
+          <Sparkles className="w-10 h-10 text-primary" />
         </div>
-        <CardTitle className="text-4xl font-black tracking-tight text-primary">{task.name}</CardTitle>
-        <CardDescription className="text-lg font-medium text-muted-foreground/80">
+        <CardTitle className="text-4xl font-black tracking-tight text-primary uppercase italic">{task.name}</CardTitle>
+        <CardDescription className="text-lg font-bold text-muted-foreground/70">
           {isTimeTask ? (hasStarted ? (isActive ? 'Focusing...' : 'Paused') : 'Ready when you are!') : `Let's get moving!`}
         </CardDescription>
       </CardHeader>
       
-      <CardContent className="flex flex-col items-center justify-center py-6">
+      <CardContent className="flex flex-col items-center justify-center py-8">
         <button 
           onClick={toggleTimer}
           disabled={!isTimeTask || isTimerFinished}
           className={cn(
-            "relative group transition-transform active:scale-95",
+            "relative group transition-transform active:scale-90",
             !isTimeTask && "cursor-default"
           )}
         >
           <div className={cn(
-            "absolute -inset-8 bg-primary/5 rounded-full blur-2xl transition-opacity",
+            "absolute -inset-12 bg-primary/10 rounded-full blur-3xl transition-opacity",
             isActive ? "opacity-100 animate-pulse" : "opacity-0"
           )} />
           <div className="relative flex items-baseline justify-center">
             <span className={cn(
-              "text-8xl font-black text-foreground tabular-nums transition-colors",
+              "text-9xl font-black text-foreground tabular-nums transition-colors",
               isActive && "text-primary"
             )}>
               {isTimeTask ? timeLeft : task.current_value}
             </span>
-            <span className="text-2xl ml-2 font-bold text-primary uppercase tracking-widest">
+            <span className="text-3xl ml-3 font-black text-primary uppercase tracking-tighter">
               {isTimeTask ? 'sec' : 'reps'}
             </span>
           </div>
         </button>
 
         {isTimeTask && hasStarted && !isTimerFinished && (
-          <div className="flex gap-4 mt-8 animate-in fade-in slide-in-from-top-2">
+          <div className="flex gap-6 mt-10 animate-in fade-in slide-in-from-top-4">
             <Button 
               variant="secondary" 
               size="icon" 
-              className="w-14 h-14 rounded-full btn-bubbly"
+              className="w-16 h-16 rounded-full btn-bubbly shadow-lg"
               onClick={toggleTimer}
             >
-              {isActive ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-1" />}
+              {isActive ? <Pause className="w-8 h-8" /> : <Play className="w-8 h-8 ml-1" />}
             </Button>
             <Button 
               variant="outline" 
               size="icon" 
-              className="w-14 h-14 rounded-full btn-bubbly"
+              className="w-16 h-16 rounded-full btn-bubbly border-2"
               onClick={resetTimer}
             >
-              <RotateCcw className="w-6 h-6" />
+              <RotateCcw className="w-8 h-8" />
             </Button>
           </div>
         )}
       </CardContent>
 
-      <CardFooter className="flex flex-col gap-4 p-8 pt-4">
+      <CardFooter className="flex flex-col gap-4 p-10 pt-4">
         {isTimeTask && !hasStarted ? (
           <Button 
             onClick={startTimer}
-            className="w-full h-20 text-2xl font-black rounded-[2rem] gap-3 shadow-[0_8px_0_0_rgba(0,0,0,0.1)] active:shadow-none active:translate-y-1 transition-all btn-bubbly bg-secondary text-secondary-foreground hover:bg-secondary/90"
+            className="w-full h-24 text-3xl font-black rounded-[2.5rem] gap-4 shadow-[0_12px_0_0_rgba(0,0,0,0.05)] active:shadow-none active:translate-y-2 transition-all btn-bubbly bg-secondary text-secondary-foreground hover:bg-secondary/90"
           >
-            <Timer className="w-8 h-8" />
+            <Timer className="w-10 h-10" />
             START!
           </Button>
         ) : (
@@ -164,11 +163,11 @@ export function SimpleTaskCard({ task, onComplete, onShuffle, showShuffle }: Sim
             onClick={handleComplete} 
             disabled={completing || !canComplete}
             className={cn(
-              "w-full h-20 text-2xl font-black rounded-[2rem] gap-3 shadow-[0_8px_0_0_rgba(0,0,0,0.1)] active:shadow-none active:translate-y-1 transition-all btn-bubbly",
+              "w-full h-24 text-3xl font-black rounded-[2.5rem] gap-4 shadow-[0_12px_0_0_rgba(0,0,0,0.05)] active:shadow-none active:translate-y-2 transition-all btn-bubbly",
               !canComplete && "opacity-50 cursor-not-allowed grayscale"
             )}
           >
-            <Check className="w-8 h-8 stroke-[3]" />
+            <Check className="w-10 h-10 stroke-[4]" />
             DONE!
           </Button>
         )}
@@ -177,7 +176,7 @@ export function SimpleTaskCard({ task, onComplete, onShuffle, showShuffle }: Sim
           <Button 
             variant="ghost" 
             onClick={onShuffle}
-            className="w-full h-12 gap-2 font-bold text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-2xl btn-bubbly"
+            className="w-full h-14 gap-3 font-black text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-3xl btn-bubbly uppercase tracking-widest text-xs"
           >
             <Shuffle className="w-5 h-5" />
             Try something else?
