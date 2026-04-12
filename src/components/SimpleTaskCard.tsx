@@ -39,7 +39,7 @@ export function SimpleTaskCard({ task, onComplete, onShuffle, showShuffle }: Sim
       setIsActive(false);
       audioManager.playTimerEnd();
       if (timerRef.current) clearInterval(timerRef.current);
-      toast.info("Time's up! ✨", {
+      toast.info("Time's up!", {
         description: `You finished your ${task.name} session!`,
       });
     }
@@ -78,7 +78,7 @@ export function SimpleTaskCard({ task, onComplete, onShuffle, showShuffle }: Sim
     if (result) {
       audioManager.playSuccess();
       if (result.increased) {
-        toast.success(`Level Up! 🚀 Now ${result.newValue} ${task.task_type === 'time' ? 'seconds' : 'reps'}!`);
+        toast.success(`Level Up! Now ${result.newValue} ${task.task_type === 'time' ? 'seconds' : 'reps'}!`);
       } else {
         toast.success(`Great job! ${result.progress}/${result.threshold} steps to level up!`);
       }

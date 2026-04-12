@@ -24,9 +24,29 @@ export default function Index() {
 
   const shuffleTask = () => {
     if (tasks.length > 0) {
-      const randomIndex = Math.floor(Math.random() * tasks.length);
-      setRandomTask(tasks[randomIndex]);
+      // If we have multiple tasks, try to pick a different one than the current one
+      if (tasks.length > 1 && randomTask) {
+        const otherTasks = tasks.filter(t => t.id !== randomTask.id);
+        const randomIndex = Math.floor(Math.random() * otherTasks.length);
+        setRandomTask(otherTasks[randomIndex]);
+      } else {
+        const randomIndex = Math.floor(Math.random() * tasks.length);
+        setRandomTask(tasks[randomIndex]);
+      }
     }
+  };
+
+  const handleComplete = async (taskId: string) => {
+    const result = await completeTask(taskId);
+    
+    // If in random mode, queue up the next task after a short delay
+    if (result && !isOverrideMode) {
+      setTimeout(() => {
+        shuffleTask();
+      }, 2000); // 2 second delay so the user can see the success state
+    }
+    
+    return result;
   };
 
   useEffect(() => {
@@ -95,7 +115,7 @@ export default function Index() {
                 <SimpleTaskCard 
                   key={task.id} 
                   task={task} 
-                  onComplete={completeTask} 
+                  onComplete={handleComplete} 
                 />
               ))}
             </div>
@@ -104,7 +124,7 @@ export default function Index() {
               <div className="animate-in zoom-in-95 duration-500">
                 <SimpleTaskCard 
                   task={randomTask} 
-                  onComplete={completeTask} 
+                  onComplete={handleComplete} 
                   onShuffle={shuffleTask}
                   showShuffle={tasks.length > 1}
                 />
