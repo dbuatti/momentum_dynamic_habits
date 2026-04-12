@@ -4,9 +4,10 @@ import { TemplateOnboarding } from '@/components/TemplateOnboarding';
 import { SimpleTaskCard } from '@/components/SimpleTaskCard';
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Loader2, LayoutGrid, Sparkles } from "lucide-react";
+import { Loader2, LayoutGrid, Sparkles, Zap, RefreshCw } from "lucide-react";
 import { useSession } from '@/contexts/SessionContext';
 import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 
 export default function Index() {
   const { session, loading: sessionLoading } = useSession();
@@ -57,7 +58,7 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-background pb-32">
-      <div className="container max-w-2xl pt-12 px-8 space-y-12">
+      <div className="container max-w-2xl pt-12 px-8 space-y-10">
         <header className="flex flex-col items-center text-center space-y-4">
           <div className="flex items-center gap-2 px-6 py-2 rounded-full bg-white/40 text-primary font-black text-xs uppercase tracking-[0.2em]">
             <Sparkles className="w-4 h-4" />
@@ -65,6 +66,27 @@ export default function Index() {
           </div>
           <h1 className="text-4xl font-black tracking-tighter uppercase italic text-foreground/80">What's next?</h1>
         </header>
+
+        {!isOverrideMode && (
+          <div className="bg-primary/5 p-6 rounded-[2.5rem] border border-primary/10 text-center space-y-3 animate-in fade-in slide-in-from-top-4 duration-700">
+            <div className="flex items-center justify-center gap-2 text-primary">
+              <Zap className="w-4 h-4 fill-current" />
+              <span className="text-[10px] font-black uppercase tracking-[0.2em]">Momentum Shift</span>
+            </div>
+            <p className="text-sm font-bold text-muted-foreground/80">
+              Stuck in a loop? Break the cycle with a quick win.
+            </p>
+            <Button 
+              onClick={shuffleTask} 
+              variant="secondary" 
+              size="sm"
+              className="rounded-full h-10 px-6 font-black uppercase tracking-widest text-[10px] bg-white/60 hover:bg-white shadow-sm"
+            >
+              <RefreshCw className="w-3 h-3 mr-2" />
+              Shift Gears
+            </Button>
+          </div>
+        )}
 
         <div className="space-y-12">
           {isOverrideMode ? (
