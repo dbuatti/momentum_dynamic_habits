@@ -14,8 +14,15 @@ import {
   Target,
   Languages,
   BookOpen,
-  Smartphone
+  RefreshCw,
+  ChevronDown
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { formatTimeDisplay } from "@/utils/time-utils";
 import { audioManager } from "@/utils/audio";
@@ -146,7 +153,43 @@ export function HabitLab() {
   const Icon = config.icon;
 
   return (
-    <div className="w-full min-h-screen flex flex-col items-center justify-center p-8 space-y-12">
+    <div className="w-full min-h-screen flex flex-col items-center justify-center p-8 space-y-12 relative">
+      {/* Manual Lab Selector */}
+      <div className="absolute top-8 left-8 z-10">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-white/60 hover:text-white font-black uppercase tracking-widest text-[10px] gap-2 bg-white/10 rounded-full px-4 h-10 border border-white/10 backdrop-blur-md"
+            >
+              <RefreshCw className="w-3 h-3" />
+              Switch Lab
+              <ChevronDown className="w-3 h-3 opacity-50" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="bg-orange-600 border-white/20 text-white rounded-2xl p-2 min-w-[160px] shadow-2xl">
+            {labTasks.map(task => (
+              <DropdownMenuItem 
+                key={task.id}
+                onClick={() => {
+                  if (timerRef.current) clearInterval(timerRef.current);
+                  setIsActive(false);
+                  updateSession(task.name, 'start', 0);
+                }}
+                className={cn(
+                  "focus:bg-white/20 focus:text-white cursor-pointer font-bold rounded-xl px-4 py-3 mb-1 last:mb-0",
+                  labType === task.name && "bg-white/10"
+                )}
+              >
+                {task.name}
+                {labType === task.name && <div className="ml-auto w-2 h-2 rounded-full bg-white" />}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
       <div className="text-center space-y-4">
         <div className="mx-auto w-20 h-20 rounded-[2rem] bg-white/20 flex items-center justify-center mb-6">
           <Compass className="w-10 h-10 text-white" />
