@@ -7,11 +7,13 @@ import { HabitLab } from '@/components/HabitLab';
 import { ScreenBreakTimer } from '@/components/ScreenBreakTimer';
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Loader2, LayoutGrid, RefreshCw, ChevronRight, ChevronLeft } from "lucide-react";
+import { Loader2, LayoutGrid, RefreshCw, ChevronRight, ChevronLeft, Moon, Sparkles } from "lucide-react";
 import { useSession } from '@/contexts/SessionContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { motion, useAnimation, PanInfo } from 'framer-motion';
+import { motion, useAnimation, PanInfo, AnimatePresence } from 'framer-motion';
+import { getTodayDateString } from '@/utils/time-utils';
+import { cn } from '@/lib/utils';
 
 export default function Index() {
   const { session, loading: sessionLoading } = useSession();
@@ -19,6 +21,7 @@ export default function Index() {
   const [isOverrideMode, setIsOverrideMode] = useState(false);
   const [randomTask, setRandomTask] = useState<SimpleTask | null>(null);
   const [view, setView] = useState<'lab' | 'task' | 'day'>('task');
+  const [skippedToday, setSkippedToday] = useState<string[]>([]);
   const navigate = useNavigate();
   const controls = useAnimation();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -28,6 +31,23 @@ export default function Index() {
       navigate('/login');
     }
   }, [session, sessionLoading, navigate]);
+
+  // Load skipped tasks from local storage
+  useEffect(() => {
+    const today = getTodayDateString();
+    const saved = localStorage.getItem(`skipped_tasks_${today}`);
+    if (saved) {
+      setSkippedToday(JSON.parse(saved));
+    }
+  }, []);
+
+  const handleSkip = (taskId: string) => {
+    const today = getTodayDateString();
+    const newSkipped = [...skippedToday, taskId];
+    setSkippedToday(newSkipped);
+    localStorage.setItem(`skipped_tasks_${today}`, JSON.stringify(newSkipped));
+    shuffleTask();
+  };
 
   const eligibleTasks = useMemo(() => {
     const currentHour = new Date().getHours();
@@ -49,16 +69,37 @@ export default function Index() {
     });
   }, [tasks]);
 
+  const labTasks = useMemo(() => {
+    return tasks.filter(t => ['Walking', 'Duolingo', 'Reading'].includes(t.name));
+  }, [tasks]);
+
+  // Tier 1: Central tasks done (completed or skipped)
+  const isCentralDone = useMemo(() => {
+    if (eligibleTasks.length === 0) return false;
+    return eligibleTasks.every(t => t.completed_today || skippedToday.includes(t.id));
+  }, [eligibleTasks, skippedToday]);
+
+  // Tier 2: Lab tasks also done
+  const isLabDone = useMemo(() => {
+    if (labTasks.length === 0) return false;
+    return labTasks.every(t => t.completed_today);
+  }, [labTasks]);
+
+  const isAllDone = isCentralDone && isLabDone;
+
   const shuffleTask = () => {
-    if (eligibleTasks.length > 0) {
-      if (eligibleTasks.length > 1 && randomTask) {
-        const otherTasks = eligibleTasks.filter(t => t.id !== randomTask.id);
+    const remainingTasks = eligibleTasks.filter(t => !t.completed_today && !skippedToday.includes(t.id));
+    if (remainingTasks.length > 0) {
+      if (remainingTasks.length > 1 && randomTask) {
+        const otherTasks = remainingTasks.filter(t => t.id !== randomTask.id);
         const randomIndex = Math.floor(Math.random() * otherTasks.length);
         setRandomTask(otherTasks[randomIndex]);
       } else {
-        const randomIndex = Math.floor(Math.random() * eligibleTasks.length);
-        setRandomTask(eligibleTasks[randomIndex]);
+        const randomIndex = Math.floor(Math.random() * remainingTasks.length);
+        setRandomTask(remainingTasks[randomIndex]);
       }
+    } else {
+      setRandomTask(null);
     }
   };
 
@@ -76,7 +117,7 @@ export default function Index() {
     if (eligibleTasks.length > 0 && !randomTask) {
       shuffleTask();
     }
-  }, [eligibleTasks]);
+  }, [eligibleTasks, skippedToday]);
 
   const getXOffset = () => {
     if (view === 'lab') return '0%';
@@ -129,10 +170,33 @@ export default function Index() {
   };
 
   return (
-    <div className="min-h-screen bg-background overflow-hidden touch-none">
+    <div className={cn(
+      "min-h-screen transition-colors duration-1000 overflow-hidden touch-none",
+      isAllDone ? "bg-black" : isCentralDone ? "bg-[#1a0d00]" : "bg-background"
+    )}>
+      {/* Darkness Overlays */}
+      <AnimatePresence>
+        {isCentralDone && !isAllDone && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-0 pointer-events-none bg-black/40"
+          />
+        )}
+        {isAllDone && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-0 pointer-events-none bg-black/80"
+          />
+        )}
+      </AnimatePresence>
+
       <motion.div 
         ref={containerRef}
-        className="flex w-[300%] h-full"
+        className="flex w-[300%] h-full relative z-10"
         animate={controls}
         initial={{ x: getXOffset() }}
         transition={{ type: "spring", stiffness: 300, damping: 35 }}
@@ -143,21 +207,38 @@ export default function Index() {
         dragMomentum={false}
       >
         {/* Lab View (Left) */}
-        <div className="w-screen min-h-screen overflow-y-auto">
+        <div className={cn(
+          "w-screen min-h-screen overflow-y-auto transition-opacity duration-700",
+          isAllDone ? "opacity-20" : "opacity-100"
+        )}>
           <HabitLab />
         </div>
 
         {/* Task View (Center) */}
         <div className="w-screen h-screen relative overflow-hidden">
-          {/* Fixed elements for this screen only - stays visible while scrolling habits */}
+          {/* Fixed elements for this screen only */}
           <div className="absolute top-10 right-10 z-[100]">
             <ScreenBreakTimer />
           </div>
           
           {/* Scrollable content area */}
           <div className="h-full overflow-y-auto pb-48">
-            <div className="container max-w-2xl pt-20 px-8 space-y-10">
-              {!isOverrideMode && eligibleTasks.length > 1 && (
+            <div className={cn(
+              "container max-w-2xl pt-20 px-8 space-y-10 transition-all duration-1000",
+              isAllDone ? "opacity-10 scale-95 grayscale" : isCentralDone ? "opacity-30 scale-98" : "opacity-100"
+            )}>
+              
+              {isCentralDone && (
+                <div className="text-center space-y-2 animate-in fade-in zoom-in duration-1000">
+                  <div className="mx-auto w-16 h-16 rounded-full bg-white/10 flex items-center justify-center mb-4">
+                    <Moon className="w-8 h-8 text-white/40" />
+                  </div>
+                  <h3 className="text-2xl font-black text-white/40 uppercase italic tracking-tighter">Done for now</h3>
+                  <p className="text-xs font-bold text-white/20 uppercase tracking-[0.3em]">Central tasks complete</p>
+                </div>
+              )}
+
+              {!isOverrideMode && eligibleTasks.length > 1 && !isCentralDone && (
                 <div className="flex justify-center animate-in fade-in slide-in-from-top-4 duration-700">
                   <Button 
                     onClick={shuffleTask} 
@@ -188,7 +269,7 @@ export default function Index() {
                       <SimpleTaskCard 
                         task={randomTask} 
                         onComplete={handleComplete} 
-                        onShuffle={shuffleTask}
+                        onShuffle={() => handleSkip(randomTask.id)}
                         showShuffle={true}
                       />
                     </div>
@@ -212,29 +293,41 @@ export default function Index() {
         </div>
 
         {/* Day Reminder View (Right) */}
-        <div className="w-screen h-screen overflow-hidden">
+        <div className={cn(
+          "w-screen h-screen overflow-hidden transition-opacity duration-700",
+          isAllDone ? "opacity-10" : "opacity-100"
+        )}>
           <DayReminder />
         </div>
       </motion.div>
 
       {/* Bottom Control Bar - Floating Glass */}
-      <div className="fixed bottom-10 left-1/2 -translate-x-1/2 w-[calc(100%-4rem)] max-w-md z-50">
+      <div className={cn(
+        "fixed bottom-10 left-1/2 -translate-x-1/2 w-[calc(100%-4rem)] max-w-md z-50 transition-all duration-1000",
+        isAllDone ? "opacity-20 translate-y-4 grayscale" : "opacity-100"
+      )}>
         <div className="bg-white/20 backdrop-blur-3xl p-5 rounded-[2.5rem] flex items-center justify-between shadow-2xl border border-white/20">
           <div className="flex items-center gap-4">
             <div className="p-3 rounded-2xl bg-white/20">
-              <LayoutGrid className="w-6 h-6 text-white" />
+              {isAllDone ? <Sparkles className="w-6 h-6 text-white" /> : <LayoutGrid className="w-6 h-6 text-white" />}
             </div>
             <div className="flex flex-col">
-              <Label htmlFor="override-mode" className="text-sm font-black uppercase tracking-widest text-white">Show All</Label>
-              <p className="text-[10px] font-bold text-white/60 uppercase">Override random</p>
+              <Label htmlFor="override-mode" className="text-sm font-black uppercase tracking-widest text-white">
+                {isAllDone ? "Day Complete" : "Show All"}
+              </Label>
+              <p className="text-[10px] font-bold text-white/60 uppercase">
+                {isAllDone ? "Rest well" : "Override random"}
+              </p>
             </div>
           </div>
-          <Switch 
-            id="override-mode" 
-            checked={isOverrideMode} 
-            onCheckedChange={setIsOverrideMode}
-            className="data-[state=checked]:bg-white data-[state=unchecked]:bg-white/20 scale-125"
-          />
+          {!isAllDone && (
+            <Switch 
+              id="override-mode" 
+              checked={isOverrideMode} 
+              onCheckedChange={setIsOverrideMode}
+              className="data-[state=checked]:bg-white data-[state=unchecked]:bg-white/20 scale-125"
+            />
+          )}
         </div>
       </div>
     </div>

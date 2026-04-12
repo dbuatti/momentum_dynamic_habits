@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
+import { getTodayDateString } from '@/utils/time-utils';
 
 export interface SimpleTask {
   id: string;
@@ -10,6 +11,7 @@ export interface SimpleTask {
   increment_value: number;
   is_active: boolean;
   current_progress: number; 
+  completed_today: boolean; // Added field
 }
 
 const STABILITY_THRESHOLD = 3; 
@@ -24,6 +26,9 @@ export function useSimpleTasks() {
     queryFn: async () => {
       if (!userId) return [];
 
+      const { data: profile } = await supabase.from('profiles').select('timezone').eq('id', userId).single();
+      const today = getTodayDateString(profile?.timezone);
+
       const { data: tasksData, error: tasksError } = await supabase
         .from('simple_tasks')
         .select('*')
@@ -33,15 +38,25 @@ export function useSimpleTasks() {
       if (tasksError) throw tasksError;
 
       const tasksWithProgress = await Promise.all((tasksData || []).map(async (task) => {
-        const { count } = await supabase
+        // Stability progress (logs for current value)
+        const { count: stabilityCount } = await supabase
           .from('simple_task_logs')
           .select('*', { count: 'exact', head: true })
           .eq('task_id', task.id)
           .eq('value_at_completion', task.current_value);
         
+        // Daily completion check
+        const { count: dailyCount } = await supabase
+          .from('simple_task_logs')
+          .select('*', { count: 'exact', head: true })
+          .eq('task_id', task.id)
+          .gte('completed_at', `${today}T00:00:00Z`)
+          .lte('completed_at', `${today}T23:59:59Z`);
+        
         return {
           ...task,
-          current_progress: count || 0
+          current_progress: stabilityCount || 0,
+          completed_today: (dailyCount || 0) > 0
         };
       }));
 
