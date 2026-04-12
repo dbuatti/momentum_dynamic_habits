@@ -22,8 +22,13 @@ export function useLabSession() {
         .single();
 
       if (error) {
-        // Handle missing table (404/42P01) or no record found (PGRST116)
-        if (error.code === 'PGRST116' || error.code === '42P01' || error.message?.includes('not found')) {
+        // Handle missing table (404/42P01/PGRST205) or no record found (PGRST116)
+        if (
+          error.code === 'PGRST116' || 
+          error.code === '42P01' || 
+          error.code === 'PGRST205' ||
+          error.message?.includes('not found')
+        ) {
           setLoading(false);
           return;
         }
@@ -36,7 +41,8 @@ export function useLabSession() {
         setSeconds(data.seconds_elapsed);
       }
     } catch (err) {
-      console.warn('[LabSession] Error fetching session:', err);
+      // Silently fail for schema issues to prevent app crashes
+      console.debug('[LabSession] Session persistence unavailable:', err);
     } finally {
       setLoading(false);
     }
@@ -54,7 +60,7 @@ export function useLabSession() {
     setSeconds(newSeconds);
 
     try {
-      await supabase
+      const { error } = await supabase
         .from('lab_sessions')
         .upsert({
           user_id: session.user.id,
@@ -63,8 +69,12 @@ export function useLabSession() {
           seconds_elapsed: newSeconds,
           last_updated_at: new Date().toISOString()
         });
+        
+      if (error && (error.code === '42P01' || error.code === 'PGRST205')) {
+        console.debug('[LabSession] Table missing, progress not saved to cloud.');
+      }
     } catch (err) {
-      console.error('[LabSession] Failed to save session:', err);
+      console.warn('[LabSession] Failed to save session:', err);
     }
   };
 
