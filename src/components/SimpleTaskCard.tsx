@@ -91,7 +91,7 @@ export function SimpleTaskCard({ task, onComplete, onShuffle, showShuffle }: Sim
   return (
     <div className="w-full max-w-md mx-auto flex flex-col items-center space-y-8 py-4">
       <div className="text-center space-y-4">
-        <div className="inline-flex items-center justify-center w-24 h-24 rounded-[2.5rem] bg-white/40 mb-2 animate-bounce">
+        <div className="inline-flex items-center justify-center w-24 h-24 rounded-[2.5rem] bg-white/40 mb-2">
           <Sparkles className="w-12 h-12 text-primary" />
         </div>
         <h2 className="text-5xl font-black tracking-tighter text-primary uppercase italic">{task.name}</h2>
