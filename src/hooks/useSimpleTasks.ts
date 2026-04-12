@@ -63,7 +63,10 @@ export function useSimpleTasks() {
       { user_id: user.id, name: 'Be Still', task_type: 'time', current_value: 300, increment_value: 60 },
       { user_id: user.id, name: 'Walking', task_type: 'time', current_value: 600, increment_value: 300 },
       { user_id: user.id, name: 'Duolingo', task_type: 'time', current_value: 180, increment_value: 60 },
-      { user_id: user.id, name: 'Reading', task_type: 'time', current_value: 300, increment_value: 300 }
+      { user_id: user.id, name: 'Reading', task_type: 'time', current_value: 300, increment_value: 300 },
+      { user_id: user.id, name: 'Shower', task_type: 'time', current_value: 900, increment_value: 0 },
+      { user_id: user.id, name: 'Brush Teeth (Morning)', task_type: 'time', current_value: 120, increment_value: 0 },
+      { user_id: user.id, name: 'Brush Teeth (Evening)', task_type: 'time', current_value: 120, increment_value: 0 }
     ];
 
     const { error } = await supabase.from('simple_tasks').insert(templates);
@@ -82,7 +85,7 @@ export function useSimpleTasks() {
     if (!task) return;
 
     const currentCompletions = task.current_progress;
-    const shouldIncrease = currentCompletions + 1 >= STABILITY_THRESHOLD;
+    const shouldIncrease = task.increment_value > 0 && currentCompletions + 1 >= STABILITY_THRESHOLD;
     const newValue = shouldIncrease ? task.current_value + task.increment_value : task.current_value;
 
     const { error: logError } = await supabase.from('simple_task_logs').insert({

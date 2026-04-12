@@ -94,7 +94,8 @@ export function SimpleTaskCard({ task, onComplete, onShuffle, showShuffle }: Sim
 
   const isTimeTask = task.task_type === 'time';
   const isTimerFinished = isTimeTask && timeLeft === 0;
-  const canComplete = !isTimeTask || isTimerFinished;
+  const isNonProgressive = task.increment_value === 0;
+  const canComplete = !isTimeTask || isTimerFinished || isNonProgressive;
 
   const progressPercent = (task.current_progress / STABILITY_THRESHOLD) * 100;
 
@@ -128,7 +129,7 @@ export function SimpleTaskCard({ task, onComplete, onShuffle, showShuffle }: Sim
           disabled={!isTimeTask || isTimerFinished}
           className={cn(
             "relative group transition-transform active:scale-90",
-            !isTimeTask && "cursor-default"
+            (!isTimeTask || isTimerFinished) && "cursor-default"
           )}
         >
           <div className={cn(
@@ -172,13 +173,24 @@ export function SimpleTaskCard({ task, onComplete, onShuffle, showShuffle }: Sim
 
       <div className="flex flex-col gap-4 w-full pt-4">
         {isTimeTask && !hasStarted ? (
-          <Button 
-            onClick={startTimer}
-            className="w-full h-24 text-3xl font-black rounded-[3rem] gap-4 bg-white text-orange-500 shadow-[0_20px_50px_rgba(0,0,0,0.2)] hover:scale-105 active:scale-95 transition-all"
-          >
-            <Timer className="w-10 h-10" />
-            START!
-          </Button>
+          <div className="flex flex-col gap-4">
+            <Button 
+              onClick={startTimer}
+              className="w-full h-24 text-3xl font-black rounded-[3rem] gap-4 bg-white text-orange-500 shadow-[0_20px_50px_rgba(0,0,0,0.2)] hover:scale-105 active:scale-95 transition-all"
+            >
+              <Timer className="w-10 h-10" />
+              START!
+            </Button>
+            {isNonProgressive && (
+              <Button 
+                variant="ghost"
+                onClick={handleComplete}
+                className="w-full h-12 font-black text-white/60 hover:text-white hover:bg-white/10 rounded-[2rem] uppercase tracking-widest text-xs"
+              >
+                <Check className="w-4 h-4 mr-2" /> Mark as Done
+              </Button>
+            )}
+          </div>
         ) : (
           <Button 
             onClick={handleComplete} 
