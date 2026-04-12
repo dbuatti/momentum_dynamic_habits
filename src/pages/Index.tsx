@@ -60,29 +60,29 @@ export default function Index() {
     <div className="min-h-screen bg-background pb-32">
       <div className="container max-w-2xl pt-12 px-8 space-y-10">
         <header className="flex flex-col items-center text-center space-y-4">
-          <div className="flex items-center gap-2 px-6 py-2 rounded-full bg-white/20 text-white font-black text-xs uppercase tracking-[0.2em]">
-            <Zap className="w-4 h-4 fill-current" />
+          <div className="flex items-center gap-2 px-6 py-2 rounded-full bg-white/20 text-white font-black text-[10px] uppercase tracking-[0.2em] border border-white/10">
+            <Zap className="w-3 h-3 fill-current" />
             Daily Momentum
           </div>
-          <h1 className="text-4xl font-black tracking-tighter uppercase italic text-white/90">What's next?</h1>
+          <h1 className="text-5xl font-black tracking-tighter uppercase italic text-white">What's next?</h1>
         </header>
 
         {!isOverrideMode && (
-          <div className="bg-white/10 p-6 rounded-[2.5rem] border border-white/10 text-center space-y-3 animate-in fade-in slide-in-from-top-4 duration-700">
-            <div className="flex items-center justify-center gap-2 text-white">
+          <div className="bg-white/10 backdrop-blur-md p-8 rounded-[3rem] border border-white/20 text-center space-y-4 animate-in fade-in slide-in-from-top-4 duration-700 shadow-2xl">
+            <div className="flex items-center justify-center gap-2 text-white/90">
               <Zap className="w-4 h-4 fill-current" />
               <span className="text-[10px] font-black uppercase tracking-[0.2em]">Momentum Shift</span>
             </div>
-            <p className="text-sm font-bold text-white/80">
+            <p className="text-base font-bold text-white/80 leading-tight">
               Stuck in a loop? Break the cycle with a quick win.
             </p>
             <Button 
               onClick={shuffleTask} 
               variant="secondary" 
               size="sm"
-              className="rounded-full h-10 px-6 font-black uppercase tracking-widest text-[10px] bg-white text-orange-500 hover:bg-white/90 shadow-sm"
+              className="rounded-full h-12 px-8 font-black uppercase tracking-widest text-[10px] bg-white text-orange-500 hover:bg-white/90 shadow-xl transition-all active:scale-95"
             >
-              <RefreshCw className="w-3 h-3 mr-2" />
+              <RefreshCw className="w-4 h-4 mr-2" />
               Shift Gears
             </Button>
           </div>
@@ -113,9 +113,9 @@ export default function Index() {
           )}
         </div>
 
-        {/* Bottom Control Bar - Borderless & Floating */}
+        {/* Bottom Control Bar - Floating Glass */}
         <div className="fixed bottom-8 left-1/2 -translate-x-1/2 w-[calc(100%-4rem)] max-w-md z-50">
-          <div className="bg-white/20 backdrop-blur-2xl p-5 rounded-[2.5rem] flex items-center justify-between shadow-2xl border border-white/10">
+          <div className="bg-white/20 backdrop-blur-3xl p-5 rounded-[2.5rem] flex items-center justify-between shadow-2xl border border-white/20">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-2xl bg-white/20">
                 <LayoutGrid className="w-6 h-6 text-white" />
