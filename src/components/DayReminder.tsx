@@ -10,14 +10,14 @@ export function DayReminder() {
       <div className="flex flex-col items-center justify-center w-full h-full p-4">
         {/* The "Block" container for the day */}
         <div className={cn(
-          "bg-white/10 backdrop-blur-md rounded-[4rem] flex items-center justify-center transition-all duration-700",
+          "bg-white/10 backdrop-blur-md rounded-[5rem] flex items-center justify-center transition-all duration-700",
           "w-[85vw] h-[85vw] max-w-[500px] max-h-[500px]",
           "landscape:w-full landscape:h-full landscape:max-w-none landscape:max-h-none landscape:rounded-none landscape:bg-transparent"
         )}>
           <h1 className={cn(
-            "font-black italic tracking-tighter text-white leading-none text-center",
+            "font-black tracking-tighter text-white leading-none text-center",
             "text-[25vw] sm:text-[12rem]",
-            "landscape:text-[70vh] landscape:tracking-[-0.05em]"
+            "landscape:text-[70vh] landscape:tracking-[-0.02em]"
           )}>
             {day}
           </h1>
