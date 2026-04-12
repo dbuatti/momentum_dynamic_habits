@@ -26,6 +26,13 @@ export default function Index() {
   const navigate = useNavigate();
   const controls = useAnimation();
   const containerRef = useRef<HTMLDivElement>(null);
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 390);
+
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     if (!sessionLoading && !session) {
@@ -62,13 +69,11 @@ export default function Index() {
     return tasks.filter(t => ['Walking', 'Duolingo', 'Reading'].includes(t.name));
   }, [tasks]);
 
-  // Tier 1: Central tasks done (completed or skipped)
   const isCentralDone = useMemo(() => {
     if (eligibleTasks.length === 0) return false;
     return eligibleTasks.every(t => t.completed_today || isTaskSkippedToday(t));
   }, [eligibleTasks]);
 
-  // Tier 2: Lab tasks also done
   const isLabDone = useMemo(() => {
     if (labTasks.length === 0) return false;
     return labTasks.every(t => t.completed_today);
@@ -114,15 +119,15 @@ export default function Index() {
   }, [eligibleTasks]);
 
   const getXOffset = () => {
-    if (view === 'lab') return '0%';
-    if (view === 'task') return '-33.333%';
-    if (view === 'day') return '-66.666%';
-    return '-33.333%';
+    if (view === 'lab') return 0;
+    if (view === 'task') return -windowWidth;
+    if (view === 'day') return -windowWidth * 2;
+    return -windowWidth;
   };
 
   useEffect(() => {
     controls.start({ x: getXOffset() });
-  }, [view, controls]);
+  }, [view, controls, windowWidth]);
 
   if (sessionLoading || tasksLoading) {
     return (
@@ -142,7 +147,8 @@ export default function Index() {
     const velocityThreshold = 500;
     const { offset, velocity } = info;
 
-    if (Math.abs(offset.x) > Math.abs(offset.y)) {
+    // Horizontal swipe detection
+    if (Math.abs(offset.x) > 20) {
       if (offset.x < -swipeThreshold || velocity.x < -velocityThreshold) {
         // Swiping Left (Next View)
         if (view === 'lab') setView('task');
@@ -154,7 +160,6 @@ export default function Index() {
       }
     }
     
-    // Always snap to the correct position for the current view
     controls.start({ x: getXOffset() });
   };
 
@@ -163,7 +168,6 @@ export default function Index() {
       "h-screen transition-colors duration-1000 overflow-hidden touch-pan-y select-none",
       isAllDone ? "bg-black" : isCentralDone ? "bg-[#1a0d00]" : "bg-background"
     )}>
-      {/* Darkness Overlays */}
       <AnimatePresence>
         {isCentralDone && !isAllDone && (
           <motion.div 
@@ -190,12 +194,11 @@ export default function Index() {
         initial={{ x: getXOffset() }}
         transition={{ type: "spring", stiffness: 300, damping: 35 }}
         drag="x"
-        dragDirectionLock
-        dragElastic={0.1}
+        dragConstraints={{ left: -windowWidth * 2, right: 0 }}
+        dragElastic={0.2}
         onDragEnd={handleDragEnd}
         dragMomentum={false}
       >
-        {/* Lab View (Left) */}
         <div className={cn(
           "w-screen h-full overflow-y-auto transition-opacity duration-700",
           isAllDone ? "opacity-20" : "opacity-100"
@@ -203,7 +206,6 @@ export default function Index() {
           <HabitLab />
         </div>
 
-        {/* Task View (Center) */}
         <div className="w-screen h-full relative overflow-hidden">
           <div className="absolute top-10 right-10 z-[100]">
             <ScreenBreakTimer />
@@ -298,7 +300,6 @@ export default function Index() {
           </div>
         </div>
 
-        {/* Day Reminder View (Right) */}
         <div className={cn(
           "w-screen h-full overflow-hidden transition-opacity duration-700",
           isAllDone ? "opacity-10" : "opacity-100"

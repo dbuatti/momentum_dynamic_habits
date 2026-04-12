@@ -13,7 +13,7 @@ export interface SimpleTask {
   is_active: boolean;
   current_progress: number; 
   completed_today: boolean;
-  last_skipped_at: string | null; // Added field
+  last_skipped_at: string | null;
 }
 
 const STABILITY_THRESHOLD = 3; 
@@ -29,7 +29,17 @@ export function useSimpleTasks() {
       if (!userId) return [];
 
       const { data: profile } = await supabase.from('profiles').select('timezone').eq('id', userId).single();
-      const today = getTodayDateString(profile?.timezone);
+      const tz = profile?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const todayStr = getTodayDateString(tz);
+
+      // Get timezone-aware boundaries for today
+      const { data: boundaries, error: boundaryError } = await supabase.rpc('get_day_boundaries', {
+        p_user_id: userId,
+        p_target_date: todayStr
+      });
+
+      if (boundaryError) throw boundaryError;
+      const { start_time, end_time } = boundaries[0];
 
       const { data: tasksData, error: tasksError } = await supabase
         .from('simple_tasks')
@@ -47,13 +57,13 @@ export function useSimpleTasks() {
           .eq('task_id', task.id)
           .eq('value_at_completion', task.current_value);
         
-        // Daily completion check
+        // Daily completion check using timezone-aware boundaries
         const { count: dailyCount } = await supabase
           .from('simple_task_logs')
           .select('*', { count: 'exact', head: true })
           .eq('task_id', task.id)
-          .gte('completed_at', `${today}T00:00:00Z`)
-          .lte('completed_at', `${today}T23:59:59Z`);
+          .gte('completed_at', start_time)
+          .lt('completed_at', end_time);
         
         return {
           ...task,
@@ -125,7 +135,7 @@ export function useSimpleTasks() {
     tasks, 
     loading, 
     completeTask: completeTaskMutation.mutateAsync,
-    skipTask: skipTaskMutation.mutateAsync, // Export skipTask
+    skipTask: skipTaskMutation.mutateAsync,
     refresh: () => queryClient.invalidateQueries({ queryKey: ['simpleTasks', userId] })
   };
 }
