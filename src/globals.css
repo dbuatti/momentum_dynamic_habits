@@ -4,186 +4,68 @@
 
 @layer base {
   :root {
-    --background: 220 13% 98%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 30 50% 98%; /* Soft cream */
+    --foreground: 240 10% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 240 10% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 240 10% 10%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 322 81% 65%; /* Bubbly Pink */
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 199 89% 82%; /* Soft Sky Blue */
+    --secondary-foreground: 240 10% 10%;
 
-    --muted: 210 40% 97%;
-    --muted-foreground: 215 16% 35%;
+    --muted: 240 10% 96%;
+    --muted-foreground: 240 10% 40%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 45 100% 85%; /* Soft Yellow */
+    --accent-foreground: 240 10% 10%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --success: 145 63.8% 42.8%;
-    --success-foreground: 210 40% 98%;
-    --success-background: 145 63.8% 90%;
-    --success-border: 145 63.8% 70%;
+    --success: 150 60% 50%; /* Mint Green */
+    --success-foreground: 0 0% 100%;
 
-    --info: 220 80% 50%;
-    --info-foreground: 220 80% 20%;
-    --info-background: 220 80% 90%;
-    --info-border: 220 80% 70%;
+    --border: 240 10% 90%;
+    --input: 240 10% 90%;
+    --ring: 322 81% 65%;
 
-    --warning: 40 95% 50%;
-    --warning-foreground: 222.2 84% 4.9%;
-    --warning-background: 40 95% 90%;
-    --warning-border: 40 95% 70%;
-
-    --radius: 0.5rem;
-
-    /* Adjusted Sidebar Colors for better contrast */
-    --sidebar-background: 0 0% 100%; /* Pure white for light mode */
-    --sidebar-foreground: 222.2 84% 4.9%; /* Dark grey for text in light mode */
-    --sidebar-primary: 222.2 47.4% 11.2%; /* Dark blue for active background in light mode */
-    --sidebar-primary-foreground: 0 0% 100%; /* Pure white for active text in light mode */
-    --sidebar-accent: 210 40% 96.1%; /* Light grey for hover background in light mode */
-    --sidebar-accent-foreground: 222.2 47.4% 11.2%; /* Dark blue for hover text in light mode */
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-
-    --habit-green: 145 73% 94%;
-    --habit-green-foreground: 145 40% 30%;
-    --habit-green-border: 145 50% 80%;
-    --habit-purple: 250 100% 97%;
-    --habit-purple-foreground: 250 50% 50%;
-    --habit-purple-border: 250 70% 85%;
-    --habit-orange: 25 95% 95%;
-    --habit-orange-foreground: 25 95% 40%;
-    --habit-orange-border: 25 95% 80%;
-    --habit-blue: 220 80% 95%;
-    --habit-blue-foreground: 220 80% 40%;
-    --habit-blue-border: 220 80% 80%;
-    
-    --habit-red: 0 90% 95%;
-    --habit-red-foreground: 0 70% 40%;
-    --habit-red-border: 0 80% 85%;
-
-    --habit-indigo: 240 70% 95%;
-    --habit-indigo-foreground: 240 50% 40%;
-    --habit-indigo-border: 240 60% 85%;
-
-    /* Standardized Landing Variables */
-    --landing-background: 240 10% 3.9%;
-    --landing-foreground: 0 0% 98%;
-    --landing-muted-foreground: 240 5% 64.9%;
-    --landing-primary: 0 0% 98%;
-    --landing-primary-foreground: 240 5.9% 10%;
-    --landing-accent: 240 3.7% 15.9%;
-    --landing-accent-foreground: 0 0% 98%;
-    --landing-border: 240 3.7% 15.9%;
-    --landing-indigo: 240 70% 60%;
-    --landing-purple: 262 83% 58%;
-    --landing-green: 142 71% 45%;
-    --landing-orange: 25 95% 53%;
-    --landing-yellow: 48 96% 53%;
-    --landing-red: 0 84% 60%;
+    --radius: 1.75rem; /* Extra bubbly corners */
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --success: 145 63.8% 42.8%;
-    --success-foreground: 210 40% 98%;
-    --success-background: 145 63.8% 20%;
-    --success-border: 145 63.8% 30%;
-
-    --info: 220 80% 50%;
-    --info-foreground: 210 40% 98%;
-    --info-background: 220 80% 20%;
-    --info-border: 220 80% 30%;
-
-    --warning: 40 95% 50%;
-    --warning-foreground: 222.2 84% 4.9%;
-    --warning-background: 40 95% 20%;
-    --warning-border: 40 95% 30%;
-
-    /* Adjusted Sidebar Colors for better contrast */
-    --sidebar-background: 222.2 84% 4.9%; /* Very dark grey for dark mode */
-    --sidebar-foreground: 210 40% 98%; /* Very light grey for text in dark mode */
-    --sidebar-primary: 210 40% 98%; /* Very light grey for active background in dark mode */
-    --sidebar-primary-foreground: 222.2 47.4% 11.2%; /* Dark blue for active text in dark mode */
-    --sidebar-accent: 217.2 32.6% 17.5%; /* Darker grey for hover background in dark mode */
-    --sidebar-accent-foreground: 210 40% 98%; /* Very light grey for hover text in dark mode */
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-
-    --habit-purple: 250 50% 15%;
-    --habit-purple-foreground: 250 70% 70%;
-    --habit-purple-border: 250 40% 30%;
-    --habit-green: 145 50% 15%;
-    --habit-green-foreground: 145 70% 70%;
-    --habit-green-border: 145 40% 30%;
-    --habit-orange: 25 95% 15%;
-    --habit-orange-foreground: 25 95% 70%;
-    --habit-orange-border: 25 95% 30%;
-    --habit-blue: 220 80% 15%;
-    --habit-blue-foreground: 220 80% 70%;
-    --habit-blue-border: 220 80% 30%;
-    --habit-red: 0 70% 15%;
-    --habit-red-foreground: 0 70% 70%;
-    --habit-red-border: 0 70% 30%;
-    --habit-indigo: 240 50% 15%;
-    --habit-indigo-foreground: 240 70% 70%;
-    --habit-indigo-border: 240 40% 30%;
-  }
-
-  /* Force consistent Dark Theme for Landing Page */
-  .landing-page-theme {
-    --background: 240 10% 3.9%;
+    --background: 240 10% 4%;
     --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
+
+    --card: 240 10% 6%;
     --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
+
+    --popover: 240 10% 4%;
     --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 5.9% 10%;
-    --secondary: 240 3.7% 15.9%;
+
+    --primary: 322 81% 65%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 240 10% 15%;
     --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
+
+    --muted: 240 10% 15%;
+    --muted-foreground: 240 10% 65%;
+
+    --accent: 240 10% 15%;
     --accent-foreground: 0 0% 98%;
+
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
+
+    --border: 240 10% 15%;
+    --input: 240 10% 15%;
+    --ring: 322 81% 65%;
   }
 }
 
@@ -193,6 +75,12 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv11", "ss01";
+  }
+
+  /* Bubbly button effect */
+  .btn-bubbly {
+    @apply transition-all duration-200 active:scale-95 hover:shadow-lg;
   }
 }
