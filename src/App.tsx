@@ -3,6 +3,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { SessionContextProvider, useSession } from "./contexts/SessionContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
 import Layout from "./components/layout/Layout";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
@@ -51,12 +52,14 @@ const AppRoutes = () => {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <SessionContextProvider>
-      <TooltipProvider>
-        <Toaster />
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
-      </TooltipProvider>
+      <ThemeProvider>
+        <TooltipProvider>
+          <Toaster />
+          <BrowserRouter>
+            <AppRoutes />
+          </BrowserRouter>
+        </TooltipProvider>
+      </ThemeProvider>
     </SessionContextProvider>
   </QueryClientProvider>
 );
