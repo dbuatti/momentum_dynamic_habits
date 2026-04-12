@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
-import { MonitorOff, Square, Loader2 } from "lucide-react";
+import { MonitorOff, Square, Loader2, Coffee } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatTimeDisplay } from "@/utils/time-utils";
 import { useSimpleTasks } from "@/hooks/useSimpleTasks";
@@ -13,7 +13,7 @@ import { useSession } from '@/contexts/SessionContext';
 
 export function ScreenBreakTimer() {
   const { session } = useSession();
-  const { tasks, completeTask } = useSimpleTasks();
+  const { tasks, completeTask, refresh } = useSimpleTasks();
   const [isTiming, setIsTiming] = useState(false);
   const [startTime, setStartTime] = useState<number | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -22,6 +22,28 @@ export function ScreenBreakTimer() {
   
   const screenBreakTask = tasks.find(t => t.name === 'Screen Break');
   const targetSeconds = screenBreakTask?.current_value || 5;
+
+  // Ensure the task exists if it's missing
+  useEffect(() => {
+    const ensureTaskExists = async () => {
+      if (!session?.user?.id || tasks.length === 0 || screenBreakTask) return;
+      
+      // If tasks are loaded but Screen Break is missing, create it
+      const { error } = await supabase
+        .from('simple_tasks')
+        .insert({
+          user_id: session.user.id,
+          name: 'Screen Break',
+          task_type: 'time',
+          current_value: 5,
+          increment_value: 5
+        });
+      
+      if (!error) refresh();
+    };
+
+    ensureTaskExists();
+  }, [tasks, screenBreakTask, session, refresh]);
 
   // Fetch active timer from Supabase on mount
   useEffect(() => {
@@ -113,33 +135,32 @@ export function ScreenBreakTimer() {
     setIsSyncing(false);
   };
 
-  if (!screenBreakTask) return null;
-
   return (
-    <div className="flex flex-col items-end gap-1">
+    <div className="flex flex-col items-end gap-2">
       <Button
         onClick={handleToggle}
         disabled={isSyncing}
         variant="ghost"
         className={cn(
-          "h-10 w-10 rounded-full p-0 transition-all duration-500 border border-white/10",
+          "h-12 w-12 rounded-full p-0 transition-all duration-500 border-2",
           isTiming 
-            ? "bg-white text-orange-500 shadow-lg scale-110 animate-pulse" 
-            : "bg-white/5 text-white/40 hover:bg-white/10 hover:text-white"
+            ? "bg-white text-orange-500 shadow-xl scale-110 border-white animate-pulse" 
+            : "bg-white/10 text-white/60 hover:bg-white/20 hover:text-white border-white/10"
         )}
+        title={isTiming ? "Stop Break" : "Start Screen Break"}
       >
         {isSyncing ? (
-          <Loader2 className="w-4 h-4 animate-spin" />
+          <Loader2 className="w-5 h-5 animate-spin" />
         ) : isTiming ? (
-          <Square className="w-4 h-4 fill-current" />
+          <Square className="w-5 h-5 fill-current" />
         ) : (
-          <MonitorOff className="w-5 h-5" />
+          <Coffee className="w-6 h-6" />
         )}
       </Button>
       
       {isTiming && (
-        <div className="bg-black/20 backdrop-blur-md px-2 py-0.5 rounded-full border border-white/5 animate-in fade-in slide-in-from-top-1">
-          <p className="text-[8px] font-black text-white/60 uppercase tabular-nums">
+        <div className="bg-black/30 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 shadow-lg animate-in fade-in slide-in-from-top-2">
+          <p className="text-[10px] font-black text-white uppercase tabular-nums tracking-widest">
             {formatTimeDisplay(elapsedSeconds)}
           </p>
         </div>

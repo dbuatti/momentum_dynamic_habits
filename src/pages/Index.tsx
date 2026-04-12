@@ -149,8 +149,8 @@ export default function Index() {
 
         {/* Task View (Center) */}
         <div className="w-screen min-h-screen pb-48 overflow-y-auto relative">
-          {/* Top Right Action Area */}
-          <div className="absolute top-6 right-6 z-50">
+          {/* Fixed Top Right Action Area - Stays visible while scrolling */}
+          <div className="fixed top-6 right-6 z-[100]">
             <ScreenBreakTimer />
           </div>
 
