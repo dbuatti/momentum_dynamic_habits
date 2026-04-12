@@ -2,21 +2,21 @@ import { useState, useEffect } from 'react';
 import { useSimpleTasks, SimpleTask } from '@/hooks/useSimpleTasks';
 import { TemplateOnboarding } from '@/components/TemplateOnboarding';
 import { SimpleTaskCard } from '@/components/SimpleTaskCard';
-import { WeeklyOverview } from '@/components/WeeklyOverview';
+import { DayReminder } from '@/components/DayReminder';
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Loader2, LayoutGrid, Zap, RefreshCw, ChevronRight, ChevronLeft } from "lucide-react";
+import { Loader2, LayoutGrid, Zap, RefreshCw, ChevronRight } from "lucide-react";
 import { useSession } from '@/contexts/SessionContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 export default function Index() {
   const { session, loading: sessionLoading } = useSession();
   const { tasks, loading: tasksLoading, createTemplates, completeTask } = useSimpleTasks();
   const [isOverrideMode, setIsOverrideMode] = useState(false);
   const [randomTask, setRandomTask] = useState<SimpleTask | null>(null);
-  const [view, setView] = useState<'task' | 'weekly'>('task');
+  const [view, setView] = useState<'task' | 'day'>('task');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -86,8 +86,8 @@ export default function Index() {
         drag="x"
         dragConstraints={{ left: -window.innerWidth, right: 0 }}
         onDragEnd={(_, info) => {
-          if (info.offset.x < -50 && view === 'task') setView('weekly');
-          if (info.offset.x > 50 && view === 'weekly') setView('task');
+          if (info.offset.x < -50 && view === 'task') setView('day');
+          if (info.offset.x > 50 && view === 'day') setView('task');
         }}
       >
         {/* Task View */}
@@ -135,18 +135,16 @@ export default function Index() {
             {/* Swipe Indicator */}
             <div className="flex flex-col items-center gap-2 pt-8 opacity-40">
               <div className="flex items-center gap-1">
-                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white">Swipe for Week</span>
+                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white">Swipe for Day</span>
                 <ChevronRight className="w-3 h-3 text-white animate-bounce-x" />
               </div>
             </div>
           </div>
         </div>
 
-        {/* Weekly View */}
-        <div className="w-screen min-h-screen pb-48">
-          <div className="container max-w-2xl pt-20 px-8">
-            <WeeklyOverview />
-          </div>
+        {/* Day Reminder View */}
+        <div className="w-screen h-screen">
+          <DayReminder />
         </div>
       </motion.div>
 
