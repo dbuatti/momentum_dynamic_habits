@@ -1,15 +1,26 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useSimpleTasks, SimpleTask } from '@/hooks/useSimpleTasks';
 import { TemplateOnboarding } from '@/components/TemplateOnboarding';
 import { SimpleTaskCard } from '@/components/SimpleTaskCard';
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
+import { useSession } from '@/contexts/SessionContext';
+import { useNavigate } from 'react-router-dom';
 
 export default function Index() {
-  const { tasks, loading, createTemplates, completeTask } = useSimpleTasks();
+  const { session, loading: sessionLoading } = useSession();
+  const { tasks, loading: tasksLoading, createTemplates, completeTask } = useSimpleTasks();
   const [isOverrideMode, setIsOverrideMode] = useState(false);
   const [randomTask, setRandomTask] = useState<SimpleTask | null>(null);
+  const navigate = useNavigate();
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!sessionLoading && !session) {
+      navigate('/login');
+    }
+  }, [session, sessionLoading, navigate]);
 
   // Pick a random task when tasks change or when shuffle is clicked
   const shuffleTask = () => {
@@ -25,13 +36,15 @@ export default function Index() {
     }
   }, [tasks]);
 
-  if (loading) {
+  if (sessionLoading || tasksLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
+
+  if (!session) return null;
 
   if (tasks.length === 0) {
     return (
