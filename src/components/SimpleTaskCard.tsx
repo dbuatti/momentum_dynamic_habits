@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { SimpleTask } from "@/hooks/useSimpleTasks";
-import { Check, Shuffle, Sparkles, Play, Pause, RotateCcw } from "lucide-react";
+import { Check, Shuffle, Sparkles, Play, Pause, RotateCcw, Timer } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { audioManager } from "@/utils/audio";
@@ -18,12 +18,14 @@ export function SimpleTaskCard({ task, onComplete, onShuffle, showShuffle }: Sim
   const [completing, setCompleting] = useState(false);
   const [timeLeft, setTimeLeft] = useState(task.current_value);
   const [isActive, setIsActive] = useState(false);
+  const [hasStarted, setHasStarted] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Reset timer when task changes
+  // Reset state when task changes
   useEffect(() => {
     setTimeLeft(task.current_value);
     setIsActive(false);
+    setHasStarted(false);
     if (timerRef.current) clearInterval(timerRef.current);
   }, [task.id, task.current_value]);
 
@@ -46,15 +48,24 @@ export function SimpleTaskCard({ task, onComplete, onShuffle, showShuffle }: Sim
     };
   }, [isActive, timeLeft, task.name]);
 
+  const startTimer = () => {
+    audioManager.prime(); // Unlock audio on first tap
+    setIsActive(true);
+    setHasStarted(true);
+    audioManager.playStart();
+  };
+
   const toggleTimer = () => {
-    if (!isActive) {
-      audioManager.prime(); // Unlock audio on first tap
+    if (!hasStarted) {
+      startTimer();
+    } else {
+      setIsActive(!isActive);
     }
-    setIsActive(!isActive);
   };
 
   const resetTimer = () => {
     setIsActive(false);
+    setHasStarted(false);
     setTimeLeft(task.current_value);
   };
 
@@ -76,6 +87,8 @@ export function SimpleTaskCard({ task, onComplete, onShuffle, showShuffle }: Sim
   };
 
   const isTimeTask = task.task_type === 'time';
+  const isTimerFinished = isTimeTask && timeLeft === 0;
+  const canComplete = !isTimeTask || isTimerFinished;
 
   return (
     <Card className="w-full max-w-md mx-auto border-4 border-primary/10 shadow-xl rounded-[2.5rem] overflow-hidden bg-card/50 backdrop-blur-sm">
@@ -85,13 +98,23 @@ export function SimpleTaskCard({ task, onComplete, onShuffle, showShuffle }: Sim
         </div>
         <CardTitle className="text-4xl font-black tracking-tight text-primary">{task.name}</CardTitle>
         <CardDescription className="text-lg font-medium text-muted-foreground/80">
-          {isTimeTask ? `Stay still for a bit...` : `Let's get moving!`}
+          {isTimeTask ? (hasStarted ? (isActive ? 'Focusing...' : 'Paused') : 'Ready when you are!') : `Let's get moving!`}
         </CardDescription>
       </CardHeader>
       
       <CardContent className="flex flex-col items-center justify-center py-6">
-        <div className="relative">
-          <div className="absolute -inset-4 bg-primary/5 rounded-full blur-2xl" />
+        <button 
+          onClick={toggleTimer}
+          disabled={!isTimeTask || isTimerFinished}
+          className={cn(
+            "relative group transition-transform active:scale-95",
+            !isTimeTask && "cursor-default"
+          )}
+        >
+          <div className={cn(
+            "absolute -inset-8 bg-primary/5 rounded-full blur-2xl transition-opacity",
+            isActive ? "opacity-100 animate-pulse" : "opacity-0"
+          )} />
           <div className="relative flex items-baseline justify-center">
             <span className={cn(
               "text-8xl font-black text-foreground tabular-nums transition-colors",
@@ -103,10 +126,10 @@ export function SimpleTaskCard({ task, onComplete, onShuffle, showShuffle }: Sim
               {isTimeTask ? 'sec' : 'reps'}
             </span>
           </div>
-        </div>
+        </button>
 
-        {isTimeTask && (
-          <div className="flex gap-4 mt-8">
+        {isTimeTask && hasStarted && !isTimerFinished && (
+          <div className="flex gap-4 mt-8 animate-in fade-in slide-in-from-top-2">
             <Button 
               variant="secondary" 
               size="icon" 
@@ -128,17 +151,27 @@ export function SimpleTaskCard({ task, onComplete, onShuffle, showShuffle }: Sim
       </CardContent>
 
       <CardFooter className="flex flex-col gap-4 p-8 pt-4">
-        <Button 
-          onClick={handleComplete} 
-          disabled={completing || (isTimeTask && timeLeft > 0)}
-          className={cn(
-            "w-full h-20 text-2xl font-black rounded-[2rem] gap-3 shadow-[0_8px_0_0_rgba(0,0,0,0.1)] active:shadow-none active:translate-y-1 transition-all btn-bubbly",
-            isTimeTask && timeLeft > 0 && "opacity-50 cursor-not-allowed grayscale"
-          )}
-        >
-          <Check className="w-8 h-8 stroke-[3]" />
-          DONE!
-        </Button>
+        {isTimeTask && !hasStarted ? (
+          <Button 
+            onClick={startTimer}
+            className="w-full h-20 text-2xl font-black rounded-[2rem] gap-3 shadow-[0_8px_0_0_rgba(0,0,0,0.1)] active:shadow-none active:translate-y-1 transition-all btn-bubbly bg-secondary text-secondary-foreground hover:bg-secondary/90"
+          >
+            <Timer className="w-8 h-8" />
+            START!
+          </Button>
+        ) : (
+          <Button 
+            onClick={handleComplete} 
+            disabled={completing || !canComplete}
+            className={cn(
+              "w-full h-20 text-2xl font-black rounded-[2rem] gap-3 shadow-[0_8px_0_0_rgba(0,0,0,0.1)] active:shadow-none active:translate-y-1 transition-all btn-bubbly",
+              !canComplete && "opacity-50 cursor-not-allowed grayscale"
+            )}
+          >
+            <Check className="w-8 h-8 stroke-[3]" />
+            DONE!
+          </Button>
+        )}
         
         {showShuffle && (
           <Button 
