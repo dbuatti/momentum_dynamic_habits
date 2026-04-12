@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
-import { MonitorOff, Square, Loader2, Coffee } from "lucide-react";
+import { Square, Loader2, Coffee, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatTimeDisplay } from "@/utils/time-utils";
 import { useSimpleTasks } from "@/hooks/useSimpleTasks";
@@ -23,12 +23,10 @@ export function ScreenBreakTimer() {
   const screenBreakTask = tasks.find(t => t.name === 'Screen Break');
   const targetSeconds = screenBreakTask?.current_value || 5;
 
-  // Ensure the task exists if it's missing
   useEffect(() => {
     const ensureTaskExists = async () => {
       if (!session?.user?.id || tasks.length === 0 || screenBreakTask) return;
       
-      // If tasks are loaded but Screen Break is missing, create it
       const { error } = await supabase
         .from('simple_tasks')
         .insert({
@@ -45,7 +43,6 @@ export function ScreenBreakTimer() {
     ensureTaskExists();
   }, [tasks, screenBreakTask, session, refresh]);
 
-  // Fetch active timer from Supabase on mount
   useEffect(() => {
     const fetchActiveTimer = async () => {
       if (!session?.user?.id) return;
@@ -68,7 +65,6 @@ export function ScreenBreakTimer() {
     fetchActiveTimer();
   }, [session]);
 
-  // Local ticker
   useEffect(() => {
     if (isTiming && startTime) {
       if (timerRef.current) clearInterval(timerRef.current);
@@ -95,7 +91,6 @@ export function ScreenBreakTimer() {
     setIsSyncing(true);
 
     if (!isTiming) {
-      // Start: Save to Supabase
       const now = new Date().toISOString();
       const { error } = await supabase
         .from('active_timers')
@@ -112,7 +107,6 @@ export function ScreenBreakTimer() {
         toast.info("Break started. Step away!");
       }
     } else {
-      // Stop: Remove from Supabase and log completion
       const { error } = await supabase
         .from('active_timers')
         .delete()
@@ -137,26 +131,35 @@ export function ScreenBreakTimer() {
 
   return (
     <div className="flex flex-col items-end gap-2">
-      <Button
-        onClick={handleToggle}
-        disabled={isSyncing}
-        variant="ghost"
-        className={cn(
-          "h-12 w-12 rounded-full p-0 transition-all duration-500 border-2",
-          isTiming 
-            ? "bg-white text-orange-500 shadow-xl scale-110 border-white animate-pulse" 
-            : "bg-white/10 text-white/60 hover:bg-white/20 hover:text-white border-white/10"
+      <div className="relative">
+        <Button
+          onClick={handleToggle}
+          disabled={isSyncing}
+          variant="ghost"
+          className={cn(
+            "h-14 w-14 rounded-full p-0 transition-all duration-500 border-2",
+            isTiming 
+              ? "bg-white text-orange-500 shadow-xl scale-110 border-white animate-pulse" 
+              : "bg-white/10 text-white/60 hover:bg-white/20 hover:text-white border-white/10"
+          )}
+          title={isTiming ? "Stop Break" : "Start Screen Break"}
+        >
+          {isSyncing ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : isTiming ? (
+            <Square className="w-5 h-5 fill-current" />
+          ) : (
+            <Coffee className="w-6 h-6" />
+          )}
+        </Button>
+        
+        {!isTiming && !isSyncing && (
+          <div className="absolute -bottom-1 -right-1 bg-white text-orange-500 text-[8px] font-black px-1.5 py-0.5 rounded-full shadow-sm border border-orange-100 flex items-center gap-0.5">
+            <Target className="w-2 h-2" />
+            {targetSeconds}s
+          </div>
         )}
-        title={isTiming ? "Stop Break" : "Start Screen Break"}
-      >
-        {isSyncing ? (
-          <Loader2 className="w-5 h-5 animate-spin" />
-        ) : isTiming ? (
-          <Square className="w-5 h-5 fill-current" />
-        ) : (
-          <Coffee className="w-6 h-6" />
-        )}
-      </Button>
+      </div>
       
       {isTiming && (
         <div className="bg-black/30 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 shadow-lg animate-in fade-in slide-in-from-top-2">
