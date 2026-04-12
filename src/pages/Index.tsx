@@ -38,8 +38,8 @@ export default function Index() {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-12 h-12 animate-spin text-primary" />
-          <p className="font-bold text-primary animate-pulse">Getting things ready...</p>
+          <Loader2 className="w-16 h-16 animate-spin text-primary" />
+          <p className="text-xl font-black text-primary uppercase tracking-widest animate-pulse">Loading...</p>
         </div>
       </div>
     );
@@ -49,26 +49,26 @@ export default function Index() {
 
   if (tasks.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="min-h-screen flex items-center justify-center p-6">
         <TemplateOnboarding onAccept={createTemplates} />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <div className="container max-w-2xl pt-8 px-6 space-y-8">
-        <header className="flex flex-col items-center text-center space-y-2 mb-4">
-          <div className="flex items-center gap-2 px-4 py-1 rounded-full bg-primary/10 text-primary font-black text-xs uppercase tracking-widest">
-            <Sparkles className="w-3 h-3" />
+    <div className="min-h-screen bg-background pb-32">
+      <div className="container max-w-2xl pt-12 px-8 space-y-12">
+        <header className="flex flex-col items-center text-center space-y-4">
+          <div className="flex items-center gap-2 px-6 py-2 rounded-full bg-white/40 text-primary font-black text-xs uppercase tracking-[0.2em]">
+            <Sparkles className="w-4 h-4" />
             Daily Momentum
           </div>
-          <h1 className="text-3xl font-black tracking-tight">What's next?</h1>
+          <h1 className="text-4xl font-black tracking-tighter uppercase italic text-foreground/80">What's next?</h1>
         </header>
 
-        <div className="space-y-6">
+        <div className="space-y-12">
           {isOverrideMode ? (
-            <div className="grid gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="grid gap-16 animate-in fade-in slide-in-from-bottom-8 duration-700">
               {tasks.map(task => (
                 <SimpleTaskCard 
                   key={task.id} 
@@ -79,7 +79,7 @@ export default function Index() {
             </div>
           ) : (
             randomTask && (
-              <div className="animate-in zoom-in-95 duration-300">
+              <div className="animate-in zoom-in-95 duration-500">
                 <SimpleTaskCard 
                   task={randomTask} 
                   onComplete={completeTask} 
@@ -91,23 +91,23 @@ export default function Index() {
           )}
         </div>
 
-        {/* Bottom Control Bar for Mobile */}
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-3rem)] max-w-md z-50">
-          <div className="bg-card/80 backdrop-blur-xl border-2 border-primary/10 p-4 rounded-[2rem] shadow-2xl flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-secondary">
-                <LayoutGrid className="w-5 h-5 text-primary" />
+        {/* Bottom Control Bar - Borderless & Floating */}
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 w-[calc(100%-4rem)] max-w-md z-50">
+          <div className="bg-white/30 backdrop-blur-2xl p-5 rounded-[2.5rem] flex items-center justify-between shadow-2xl shadow-primary/10">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-2xl bg-white/60">
+                <LayoutGrid className="w-6 h-6 text-primary" />
               </div>
               <div className="flex flex-col">
-                <Label htmlFor="override-mode" className="text-sm font-black uppercase tracking-tight">Show All</Label>
-                <p className="text-[10px] font-bold text-muted-foreground">Override random</p>
+                <Label htmlFor="override-mode" className="text-sm font-black uppercase tracking-widest text-primary">Show All</Label>
+                <p className="text-[10px] font-bold text-muted-foreground/60 uppercase">Override random</p>
               </div>
             </div>
             <Switch 
               id="override-mode" 
               checked={isOverrideMode} 
               onCheckedChange={setIsOverrideMode}
-              className="data-[state=checked]:bg-primary"
+              className="data-[state=checked]:bg-primary scale-125"
             />
           </div>
         </div>

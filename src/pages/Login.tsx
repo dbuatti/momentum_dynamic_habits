@@ -5,7 +5,6 @@ import { useNavigate } from 'react-router-dom';
 import { useSession } from '@/contexts/SessionContext';
 import { useEffect } from 'react';
 import { Loader2, Sparkles } from 'lucide-react';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { useOnboardingCheck } from '@/hooks/useOnboardingCheck';
 
 const Login = () => {
@@ -28,61 +27,67 @@ const Login = () => {
   if (isSessionLoading || isOnboardingCheckLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <Loader2 className="h-16 w-16 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="bg-background min-h-screen flex items-center justify-center p-6">
-      <div className="max-w-md w-full space-y-8">
-        <div className="text-center space-y-4">
-          <div className="mx-auto w-20 h-20 rounded-[2rem] bg-primary/10 flex items-center justify-center animate-pulse">
-            <Sparkles className="w-10 h-10 text-primary" />
+    <div className="bg-background min-h-screen flex items-center justify-center p-8">
+      <div className="max-w-md w-full space-y-12">
+        <div className="text-center space-y-6">
+          <div className="mx-auto w-24 h-24 rounded-[2.5rem] bg-white/40 flex items-center justify-center animate-pulse">
+            <Sparkles className="w-12 h-12 text-primary" />
           </div>
-          <div className="space-y-1">
-            <h2 className="text-4xl font-black tracking-tighter text-foreground uppercase italic">
+          <div className="space-y-2">
+            <h2 className="text-6xl font-black tracking-tighter text-primary uppercase italic">
               Momentum
             </h2>
-            <p className="text-lg font-bold text-muted-foreground">
+            <p className="text-xl font-bold text-muted-foreground/60">
               Your bubbly growth coach
             </p>
           </div>
         </div>
 
-        <Card className="p-8 rounded-[2.5rem] shadow-2xl border-4 border-primary/5 bg-card/50 backdrop-blur-sm">
-          <CardHeader className="p-0 mb-8">
-            <h3 className="text-xl font-black text-center uppercase tracking-widest text-primary">Welcome Back!</h3>
-          </CardHeader>
-          <CardContent className="p-0">
-            <Auth
-              supabaseClient={supabase}
-              appearance={{
-                theme: ThemeSupa,
-                style: {
-                  button: {
-                    borderRadius: '1.5rem',
-                    padding: '0.875rem 1rem',
-                    fontWeight: '800',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                    fontSize: '0.875rem',
-                  },
-                  input: {
-                    borderRadius: '1.25rem',
-                    padding: '0.875rem 1rem',
-                    border: '2px solid transparent',
-                    backgroundColor: 'rgba(0,0,0,0.03)',
-                  }
+        <div className="p-2">
+          <Auth
+            supabaseClient={supabase}
+            appearance={{
+              theme: ThemeSupa,
+              style: {
+                button: {
+                  borderRadius: '2rem',
+                  padding: '1.25rem 1rem',
+                  fontWeight: '900',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.1em',
+                  fontSize: '1rem',
+                  border: 'none',
+                  boxShadow: '0 10px 20px -5px rgba(255, 120, 0, 0.2)',
+                },
+                input: {
+                  borderRadius: '1.5rem',
+                  padding: '1rem 1.25rem',
+                  border: 'none',
+                  backgroundColor: 'rgba(255,255,255,0.4)',
+                  fontSize: '1rem',
+                },
+                label: {
+                  fontWeight: '800',
+                  textTransform: 'uppercase',
+                  fontSize: '0.75rem',
+                  letterSpacing: '0.05em',
+                  color: 'rgba(0,0,0,0.4)',
+                  marginBottom: '0.5rem',
                 }
-              }}
-              providers={['google']}
-              theme="light"
-            />
-          </CardContent>
-        </Card>
+              }
+            }}
+            providers={['google']}
+            theme="light"
+          />
+        </div>
 
-        <p className="text-center text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
+        <p className="text-center text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/40">
           Small steps lead to big changes
         </p>
       </div>

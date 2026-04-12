@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Sparkles, Target, Zap } from "lucide-react";
 
 interface TemplateOnboardingProps {
@@ -8,44 +7,44 @@ interface TemplateOnboardingProps {
 
 export function TemplateOnboarding({ onAccept }: TemplateOnboardingProps) {
   return (
-    <Card className="w-full max-w-md border-4 border-primary/10 shadow-2xl rounded-[2.5rem] overflow-hidden bg-card/50 backdrop-blur-sm">
-      <CardHeader className="text-center pt-8">
-        <div className="mx-auto w-20 h-20 rounded-[2rem] bg-primary/10 flex items-center justify-center mb-4">
-          <Sparkles className="w-10 h-10 text-primary" />
+    <div className="w-full max-w-md mx-auto flex flex-col items-center space-y-10 py-8">
+      <div className="text-center space-y-4">
+        <div className="mx-auto w-24 h-24 rounded-[2.5rem] bg-white/40 flex items-center justify-center mb-6 animate-pulse">
+          <Sparkles className="w-12 h-12 text-primary" />
         </div>
-        <CardTitle className="text-3xl font-black tracking-tight">Welcome!</CardTitle>
-        <CardDescription className="text-lg font-medium">
+        <h1 className="text-5xl font-black tracking-tighter text-primary uppercase italic">Welcome!</h1>
+        <p className="text-xl font-bold text-muted-foreground/60">
           Ready to build some momentum?
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4 px-8">
-        <div className="p-5 rounded-[1.5rem] bg-secondary/30 border-2 border-secondary flex items-center gap-4">
-          <div className="p-2 rounded-xl bg-white shadow-sm">
-            <Zap className="w-6 h-6 text-primary" />
+        </p>
+      </div>
+
+      <div className="w-full space-y-4">
+        <div className="p-6 rounded-[2rem] bg-white/30 flex items-center gap-5 transition-transform hover:scale-105">
+          <div className="p-3 rounded-2xl bg-white shadow-sm">
+            <Zap className="w-8 h-8 text-primary" />
           </div>
           <div>
-            <h3 className="font-black text-sm uppercase tracking-tight">Pushups</h3>
-            <p className="text-xs font-bold text-muted-foreground">Start small, grow big.</p>
+            <h3 className="font-black text-lg uppercase tracking-tight text-primary">Pushups</h3>
+            <p className="text-sm font-bold text-muted-foreground/70">Start small, grow big.</p>
           </div>
         </div>
-        <div className="p-5 rounded-[1.5rem] bg-accent/30 border-2 border-accent flex items-center gap-4">
-          <div className="p-2 rounded-xl bg-white shadow-sm">
-            <Target className="w-6 h-6 text-primary" />
+        <div className="p-6 rounded-[2rem] bg-white/30 flex items-center gap-5 transition-transform hover:scale-105">
+          <div className="p-3 rounded-2xl bg-white shadow-sm">
+            <Target className="w-8 h-8 text-primary" />
           </div>
           <div>
-            <h3 className="font-black text-sm uppercase tracking-tight">Be Still</h3>
-            <p className="text-xs font-bold text-muted-foreground">Master your focus.</p>
+            <h3 className="font-black text-lg uppercase tracking-tight text-primary">Be Still</h3>
+            <p className="text-sm font-bold text-muted-foreground/70">Master your focus.</p>
           </div>
         </div>
-      </CardContent>
-      <CardFooter className="p-8 pt-4">
-        <Button 
-          onClick={onAccept} 
-          className="w-full h-16 text-xl font-black rounded-[2rem] shadow-[0_8px_0_0_rgba(0,0,0,0.1)] active:shadow-none active:translate-y-1 transition-all btn-bubbly"
-        >
-          Let's Go!
-        </Button>
-      </CardFooter>
-    </Card>
+      </div>
+
+      <Button 
+        onClick={onAccept} 
+        className="w-full h-24 text-3xl font-black rounded-[3rem] bg-primary text-white shadow-2xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
+      >
+        Let's Go!
+      </Button>
+    </div>
   );
 }
