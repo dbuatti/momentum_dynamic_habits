@@ -156,22 +156,28 @@ export default function Index() {
     const velocityThreshold = 500;
     const { offset, velocity } = info;
 
-    if (offset.x < -swipeThreshold || velocity.x < -velocityThreshold) {
-      if (view === 'lab') setView('task');
-      else if (view === 'task') setView('day');
-      else controls.start({ x: getXOffset() });
-    } else if (offset.x > swipeThreshold || velocity.x > velocityThreshold) {
-      if (view === 'day') setView('task');
-      else if (view === 'task') setView('lab');
-      else controls.start({ x: getXOffset() });
+    // Only trigger horizontal view changes if the swipe was primarily horizontal
+    if (Math.abs(offset.x) > Math.abs(offset.y)) {
+      if (offset.x < -swipeThreshold || velocity.x < -velocityThreshold) {
+        if (view === 'lab') setView('task');
+        else if (view === 'task') setView('day');
+        else controls.start({ x: getXOffset() });
+      } else if (offset.x > swipeThreshold || velocity.x > velocityThreshold) {
+        if (view === 'day') setView('task');
+        else if (view === 'task') setView('lab');
+        else controls.start({ x: getXOffset() });
+      } else {
+        controls.start({ x: getXOffset() });
+      }
     } else {
+      // If it was a vertical swipe, just snap back to current view
       controls.start({ x: getXOffset() });
     }
   };
 
   return (
     <div className={cn(
-      "min-h-screen transition-colors duration-1000 overflow-hidden touch-none",
+      "h-screen transition-colors duration-1000 overflow-hidden touch-pan-y select-none",
       isAllDone ? "bg-black" : isCentralDone ? "bg-[#1a0d00]" : "bg-background"
     )}>
       {/* Darkness Overlays */}
@@ -201,6 +207,7 @@ export default function Index() {
         initial={{ x: getXOffset() }}
         transition={{ type: "spring", stiffness: 300, damping: 35 }}
         drag="x"
+        dragDirectionLock
         dragConstraints={{ left: 0, right: 0 }}
         dragElastic={0.05}
         onDragEnd={handleDragEnd}
@@ -208,14 +215,14 @@ export default function Index() {
       >
         {/* Lab View (Left) */}
         <div className={cn(
-          "w-screen min-h-screen overflow-y-auto transition-opacity duration-700",
+          "w-screen h-full overflow-y-auto transition-opacity duration-700",
           isAllDone ? "opacity-20" : "opacity-100"
         )}>
           <HabitLab />
         </div>
 
         {/* Task View (Center) */}
-        <div className="w-screen h-screen relative overflow-hidden">
+        <div className="w-screen h-full relative overflow-hidden">
           {/* Fixed elements for this screen only */}
           <div className="absolute top-10 right-10 z-[100]">
             <ScreenBreakTimer />
@@ -294,7 +301,7 @@ export default function Index() {
 
         {/* Day Reminder View (Right) */}
         <div className={cn(
-          "w-screen h-screen overflow-hidden transition-opacity duration-700",
+          "w-screen h-full overflow-hidden transition-opacity duration-700",
           isAllDone ? "opacity-10" : "opacity-100"
         )}>
           <DayReminder />

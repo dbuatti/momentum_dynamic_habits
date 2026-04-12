@@ -47,9 +47,17 @@
     @apply border-border;
   }
 
-  body {
+  html, body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "cv11", "ss01";
+    /* Prevent pull-to-refresh and bounce effects that break custom swipes */
+    overscroll-behavior-y: none;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  #root {
+    height: 100%;
   }
 
   .glass-panel {
