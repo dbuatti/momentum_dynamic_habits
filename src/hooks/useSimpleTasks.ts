@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { getTodayDateString } from '@/utils/time-utils';
+import { isSameDay } from 'date-fns';
 
 export interface SimpleTask {
   id: string;
@@ -11,7 +12,8 @@ export interface SimpleTask {
   increment_value: number;
   is_active: boolean;
   current_progress: number; 
-  completed_today: boolean; // Added field
+  completed_today: boolean;
+  last_skipped_at: string | null; // Added field
 }
 
 const STABILITY_THRESHOLD = 3; 
@@ -65,22 +67,13 @@ export function useSimpleTasks() {
     enabled: !!userId,
   });
 
-  const createTemplatesMutation = useMutation({
-    mutationFn: async () => {
+  const skipTaskMutation = useMutation({
+    mutationFn: async (taskId: string) => {
       if (!userId) return;
-
-      const templates = [
-        { user_id: userId, name: 'Pushups', task_type: 'count', current_value: 1, increment_value: 1 },
-        { user_id: userId, name: 'Be Still', task_type: 'time', current_value: 300, increment_value: 60 },
-        { user_id: userId, name: 'Walking', task_type: 'time', current_value: 600, increment_value: 300 },
-        { user_id: userId, name: 'Duolingo', task_type: 'time', current_value: 180, increment_value: 60 },
-        { user_id: userId, name: 'Reading', task_type: 'time', current_value: 300, increment_value: 300 },
-        { user_id: userId, name: 'Shower', task_type: 'time', current_value: 900, increment_value: 0 },
-        { user_id: userId, name: 'Brush Teeth (Morning)', task_type: 'time', current_value: 120, increment_value: 0 },
-        { user_id: userId, name: 'Brush Teeth (Evening)', task_type: 'time', current_value: 120, increment_value: 0 }
-      ];
-
-      const { error } = await supabase.from('simple_tasks').insert(templates);
+      const { error } = await supabase
+        .from('simple_tasks')
+        .update({ last_skipped_at: new Date().toISOString() })
+        .eq('id', taskId);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -131,8 +124,8 @@ export function useSimpleTasks() {
   return { 
     tasks, 
     loading, 
-    createTemplates: createTemplatesMutation.mutateAsync, 
     completeTask: completeTaskMutation.mutateAsync,
+    skipTask: skipTaskMutation.mutateAsync, // Export skipTask
     refresh: () => queryClient.invalidateQueries({ queryKey: ['simpleTasks', userId] })
   };
 }

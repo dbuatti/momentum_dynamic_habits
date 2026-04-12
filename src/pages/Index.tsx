@@ -14,14 +14,14 @@ import { Button } from '@/components/ui/button';
 import { motion, useAnimation, PanInfo, AnimatePresence } from 'framer-motion';
 import { getTodayDateString } from '@/utils/time-utils';
 import { cn } from '@/lib/utils';
+import { isSameDay } from 'date-fns';
 
 export default function Index() {
   const { session, loading: sessionLoading } = useSession();
-  const { tasks, loading: tasksLoading, createTemplates, completeTask } = useSimpleTasks();
+  const { tasks, loading: tasksLoading, skipTask, completeTask } = useSimpleTasks();
   const [isOverrideMode, setIsOverrideMode] = useState(false);
   const [randomTask, setRandomTask] = useState<SimpleTask | null>(null);
   const [view, setView] = useState<'lab' | 'task' | 'day'>('task');
-  const [skippedToday, setSkippedToday] = useState<string[]>([]);
   const navigate = useNavigate();
   const controls = useAnimation();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -32,21 +32,9 @@ export default function Index() {
     }
   }, [session, sessionLoading, navigate]);
 
-  // Load skipped tasks from local storage
-  useEffect(() => {
-    const today = getTodayDateString();
-    const saved = localStorage.getItem(`skipped_tasks_${today}`);
-    if (saved) {
-      setSkippedToday(JSON.parse(saved));
-    }
-  }, []);
-
-  const handleSkip = (taskId: string) => {
-    const today = getTodayDateString();
-    const newSkipped = [...skippedToday, taskId];
-    setSkippedToday(newSkipped);
-    localStorage.setItem(`skipped_tasks_${today}`, JSON.stringify(newSkipped));
-    shuffleTask();
+  const isTaskSkippedToday = (task: SimpleTask) => {
+    if (!task.last_skipped_at) return false;
+    return isSameDay(new Date(task.last_skipped_at), new Date());
   };
 
   const eligibleTasks = useMemo(() => {
@@ -76,8 +64,8 @@ export default function Index() {
   // Tier 1: Central tasks done (completed or skipped)
   const isCentralDone = useMemo(() => {
     if (eligibleTasks.length === 0) return false;
-    return eligibleTasks.every(t => t.completed_today || skippedToday.includes(t.id));
-  }, [eligibleTasks, skippedToday]);
+    return eligibleTasks.every(t => t.completed_today || isTaskSkippedToday(t));
+  }, [eligibleTasks]);
 
   // Tier 2: Lab tasks also done
   const isLabDone = useMemo(() => {
@@ -88,7 +76,7 @@ export default function Index() {
   const isAllDone = isCentralDone && isLabDone;
 
   const shuffleTask = () => {
-    const remainingTasks = eligibleTasks.filter(t => !t.completed_today && !skippedToday.includes(t.id));
+    const remainingTasks = eligibleTasks.filter(t => !t.completed_today && !isTaskSkippedToday(t));
     if (remainingTasks.length > 0) {
       if (remainingTasks.length > 1 && randomTask) {
         const otherTasks = remainingTasks.filter(t => t.id !== randomTask.id);
@@ -113,11 +101,16 @@ export default function Index() {
     return result;
   };
 
+  const handleSkip = async (taskId: string) => {
+    await skipTask(taskId);
+    shuffleTask();
+  };
+
   useEffect(() => {
     if (eligibleTasks.length > 0 && !randomTask) {
       shuffleTask();
     }
-  }, [eligibleTasks, skippedToday]);
+  }, [eligibleTasks]);
 
   const getXOffset = () => {
     if (view === 'lab') return '0%';
@@ -143,20 +136,11 @@ export default function Index() {
 
   if (!session) return null;
 
-  if (tasks.length === 0) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-6">
-        <TemplateOnboarding onAccept={createTemplates} />
-      </div>
-    );
-  }
-
   const handleDragEnd = (event: any, info: PanInfo) => {
     const swipeThreshold = 50;
     const velocityThreshold = 500;
     const { offset, velocity } = info;
 
-    // Only trigger horizontal view changes if the swipe was primarily horizontal
     if (Math.abs(offset.x) > Math.abs(offset.y)) {
       if (offset.x < -swipeThreshold || velocity.x < -velocityThreshold) {
         if (view === 'lab') setView('task');
@@ -170,7 +154,6 @@ export default function Index() {
         controls.start({ x: getXOffset() });
       }
     } else {
-      // If it was a vertical swipe, just snap back to current view
       controls.start({ x: getXOffset() });
     }
   };
@@ -223,12 +206,10 @@ export default function Index() {
 
         {/* Task View (Center) */}
         <div className="w-screen h-full relative overflow-hidden">
-          {/* Fixed elements for this screen only */}
           <div className="absolute top-10 right-10 z-[100]">
             <ScreenBreakTimer />
           </div>
           
-          {/* Scrollable content area */}
           <div className="h-full overflow-y-auto pb-48">
             <div className={cn(
               "container max-w-2xl pt-20 px-8 space-y-10 transition-all duration-1000",
@@ -284,7 +265,6 @@ export default function Index() {
                 )}
               </div>
 
-              {/* Swipe Indicators */}
               <div className="flex justify-between items-center px-4 pt-8 opacity-20">
                 <div className="flex items-center gap-1">
                   <ChevronLeft className="w-3 h-3 text-white" />
@@ -308,7 +288,6 @@ export default function Index() {
         </div>
       </motion.div>
 
-      {/* Bottom Control Bar - Floating Glass */}
       <div className={cn(
         "fixed bottom-10 left-1/2 -translate-x-1/2 w-[calc(100%-4rem)] max-w-md z-50 transition-all duration-1000",
         isAllDone ? "opacity-20 translate-y-4 grayscale" : "opacity-100"
