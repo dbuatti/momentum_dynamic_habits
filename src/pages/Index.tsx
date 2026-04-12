@@ -148,61 +148,64 @@ export default function Index() {
         </div>
 
         {/* Task View (Center) */}
-        <div className="w-screen min-h-screen pb-48 overflow-y-auto relative">
-          {/* Fixed Top Right Action Area - Stays visible while scrolling */}
-          <div className="fixed top-6 right-6 z-[100]">
+        <div className="w-screen h-screen relative overflow-hidden">
+          {/* Fixed elements for this screen only - stays visible while scrolling habits */}
+          <div className="absolute top-10 right-10 z-[100]">
             <ScreenBreakTimer />
           </div>
-
-          <div className="container max-w-2xl pt-20 px-8 space-y-10">
-            {!isOverrideMode && eligibleTasks.length > 1 && (
-              <div className="flex justify-center animate-in fade-in slide-in-from-top-4 duration-700">
-                <Button 
-                  onClick={shuffleTask} 
-                  variant="ghost" 
-                  size="icon"
-                  className="w-10 h-10 rounded-full text-white/20 hover:text-white hover:bg-white/10 transition-all active:rotate-180 duration-500"
-                  title="Shuffle Task"
-                >
-                  <RefreshCw className="w-5 h-5" />
-                </Button>
-              </div>
-            )}
-
-            <div className="space-y-12">
-              {isOverrideMode ? (
-                <div className="grid gap-16 animate-in fade-in slide-in-from-bottom-8 duration-700">
-                  {eligibleTasks.map(task => (
-                    <SimpleTaskCard 
-                      key={task.id} 
-                      task={task} 
-                      onComplete={handleComplete} 
-                    />
-                  ))}
+          
+          {/* Scrollable content area */}
+          <div className="h-full overflow-y-auto pb-48">
+            <div className="container max-w-2xl pt-20 px-8 space-y-10">
+              {!isOverrideMode && eligibleTasks.length > 1 && (
+                <div className="flex justify-center animate-in fade-in slide-in-from-top-4 duration-700">
+                  <Button 
+                    onClick={shuffleTask} 
+                    variant="ghost" 
+                    size="icon"
+                    className="w-10 h-10 rounded-full text-white/20 hover:text-white hover:bg-white/10 transition-all active:rotate-180 duration-500"
+                    title="Shuffle Task"
+                  >
+                    <RefreshCw className="w-5 h-5" />
+                  </Button>
                 </div>
-              ) : (
-                randomTask && (
-                  <div className="animate-in zoom-in-95 duration-500">
-                    <SimpleTaskCard 
-                      task={randomTask} 
-                      onComplete={handleComplete} 
-                      onShuffle={shuffleTask}
-                      showShuffle={true}
-                    />
-                  </div>
-                )
               )}
-            </div>
 
-            {/* Swipe Indicators */}
-            <div className="flex justify-between items-center px-4 pt-8 opacity-20">
-              <div className="flex items-center gap-1">
-                <ChevronLeft className="w-3 h-3 text-white" />
-                <span className="text-[8px] font-black uppercase tracking-[0.2em] text-white">Lab</span>
+              <div className="space-y-12">
+                {isOverrideMode ? (
+                  <div className="grid gap-16 animate-in fade-in slide-in-from-bottom-8 duration-700">
+                    {eligibleTasks.map(task => (
+                      <SimpleTaskCard 
+                        key={task.id} 
+                        task={task} 
+                        onComplete={handleComplete} 
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  randomTask && (
+                    <div className="animate-in zoom-in-95 duration-500">
+                      <SimpleTaskCard 
+                        task={randomTask} 
+                        onComplete={handleComplete} 
+                        onShuffle={shuffleTask}
+                        showShuffle={true}
+                      />
+                    </div>
+                  )
+                )}
               </div>
-              <div className="flex items-center gap-1">
-                <span className="text-[8px] font-black uppercase tracking-[0.2em] text-white">Day</span>
-                <ChevronRight className="w-3 h-3 text-white" />
+
+              {/* Swipe Indicators */}
+              <div className="flex justify-between items-center px-4 pt-8 opacity-20">
+                <div className="flex items-center gap-1">
+                  <ChevronLeft className="w-3 h-3 text-white" />
+                  <span className="text-[8px] font-black uppercase tracking-[0.2em] text-white">Lab</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-[8px] font-black uppercase tracking-[0.2em] text-white">Day</span>
+                  <ChevronRight className="w-3 h-3 text-white" />
+                </div>
               </div>
             </div>
           </div>
