@@ -1,68 +1,106 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { 
-  Footprints, 
   Timer, 
   Check, 
-  ArrowRight, 
   CloudSun, 
   Play, 
   Pause, 
   RotateCcw,
-  Sparkles,
-  Compass
+  Compass,
+  Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatTimeDisplay } from "@/utils/time-utils";
 import { audioManager } from "@/utils/audio";
+import { useLabSession, LabStage } from "@/hooks/useLabSession";
+import { supabase } from "@/integrations/supabase/client";
+import { useSession } from "@/contexts/SessionContext";
 import confetti from 'canvas-confetti';
+import { toast } from "sonner";
 
 export function HabitLab() {
-  const [stage, setStage] = useState<'outside' | 'walking' | 'complete'>('outside');
-  const [seconds, setSeconds] = useState(0);
+  const { session } = useSession();
+  const { stage, seconds, loading, updateSession, resetSession } = useLabSession();
   const [isActive, setIsActive] = useState(false);
-  const timerRef = React.useRef<NodeJS.Timeout | null>(null);
+  const [localSeconds, setLocalSeconds] = useState(0);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const handleStepOutside = () => {
+  // Sync local timer with DB state on load
+  useEffect(() => {
+    if (!loading) {
+      setLocalSeconds(seconds);
+    }
+  }, [loading, seconds]);
+
+  const handleStepOutside = async () => {
     audioManager.playSuccess();
     confetti({
       particleCount: 100,
       spread: 70,
       origin: { y: 0.6 }
     });
-    setStage('walking');
+    await updateSession('walking', 0);
   };
 
   const toggleTimer = () => {
     if (!isActive) {
       audioManager.playStart();
       timerRef.current = setInterval(() => {
-        setSeconds(prev => prev + 1);
+        setLocalSeconds(prev => prev + 1);
       }, 1000);
     } else {
       if (timerRef.current) clearInterval(timerRef.current);
+      // Sync current time to DB when pausing
+      updateSession('walking', localSeconds);
     }
     setIsActive(!isActive);
   };
 
-  const handleFinish = () => {
+  const handleFinish = async () => {
     if (timerRef.current) clearInterval(timerRef.current);
     setIsActive(false);
+    
+    // Log the completion to simple_task_logs or a generic activity log
+    if (session?.user?.id) {
+      const { error } = await supabase.from('simple_task_logs').insert({
+        user_id: session.user.id,
+        value_at_completion: localSeconds,
+        increased: false // Walking lab is currently time-based and doesn't auto-level yet
+      });
+
+      if (error) {
+        console.error('Error logging walk:', error);
+        toast.error("Couldn't save your walk to history.");
+      } else {
+        toast.success("Walk saved to your history!");
+      }
+    }
+
     audioManager.playSuccess();
     confetti({
       particleCount: 150,
       spread: 100,
       origin: { y: 0.6 }
     });
-    setStage('complete');
+    await updateSession('complete', localSeconds);
   };
 
-  const resetLab = () => {
-    setStage('outside');
-    setSeconds(0);
+  const handleReset = async () => {
+    if (timerRef.current) clearInterval(timerRef.current);
     setIsActive(false);
+    setLocalSeconds(0);
+    await resetSession();
   };
+
+  if (loading) {
+    return (
+      <div className="w-full min-h-screen flex items-center justify-center">
+        <Loader2 className="w-12 h-12 animate-spin text-white/50" />
+      </div>
+    );
+  }
 
   return (
     <div className="w-full min-h-screen flex flex-col items-center justify-center p-8 space-y-12">
@@ -102,7 +140,7 @@ export function HabitLab() {
               </div>
               
               <div className="text-7xl font-black text-white tabular-nums tracking-tighter">
-                {formatTimeDisplay(seconds)}
+                {formatTimeDisplay(localSeconds)}
               </div>
 
               <div className="flex gap-4">
@@ -132,11 +170,11 @@ export function HabitLab() {
                 <h3 className="text-3xl font-black text-white uppercase">Victory!</h3>
                 <p className="text-white/60 font-bold">You showed up for yourself today.</p>
                 <p className="text-sm font-black text-white/40 uppercase tracking-widest pt-4">
-                  Total Time: {Math.floor(seconds / 60)}m {seconds % 60}s
+                  Total Time: {Math.floor(localSeconds / 60)}m {localSeconds % 60}s
                 </p>
               </div>
               <Button 
-                onClick={resetLab}
+                onClick={handleReset}
                 variant="ghost"
                 className="w-full h-12 text-white/40 hover:text-white font-black uppercase tracking-widest text-xs"
               >
