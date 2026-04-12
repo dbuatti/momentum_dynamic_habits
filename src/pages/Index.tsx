@@ -79,14 +79,6 @@ export default function Index() {
   return (
     <div className="min-h-screen bg-background pb-32">
       <div className="container max-w-2xl pt-12 px-8 space-y-10">
-        <header className="flex flex-col items-center text-center space-y-4">
-          <div className="flex items-center gap-2 px-6 py-2 rounded-full bg-white/20 text-white font-black text-[10px] uppercase tracking-[0.2em] border border-white/10">
-            <Zap className="w-3 h-3 fill-current" />
-            Daily Momentum
-          </div>
-          <h1 className="text-5xl font-black tracking-tighter uppercase italic text-white">What's next?</h1>
-        </header>
-
         {!isOverrideMode && (
           <div className="bg-white/10 backdrop-blur-md p-8 rounded-[3rem] border border-white/20 text-center space-y-4 animate-in fade-in slide-in-from-top-4 duration-700 shadow-2xl">
             <div className="flex items-center justify-center gap-2 text-white/90">
