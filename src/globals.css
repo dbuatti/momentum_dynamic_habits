@@ -4,43 +4,45 @@
 
 @layer base {
   :root {
-    /* Soft Orange Background */
-    --background: 30 100% 94%; 
-    --foreground: 25 30% 15%;
+    /* Vibrant Orange Background (formerly the button color) */
+    --background: 25 95% 60%; 
+    --foreground: 0 0% 100%;
 
-    /* Making surfaces blend into the background for the borderless look */
-    --card: 30 100% 94%;
-    --card-foreground: 25 30% 15%;
+    /* Surfaces blend with a slightly lighter shade for depth */
+    --card: 25 95% 60%;
+    --card-foreground: 0 0% 100%;
 
-    --popover: 30 100% 94%;
-    --popover-foreground: 25 30% 15%;
+    --popover: 25 95% 55%;
+    --popover-foreground: 0 0% 100%;
 
-    --primary: 25 95% 60%; /* Vibrant Bubbly Orange */
-    --primary-foreground: 0 0% 100%;
+    /* Primary is now White to stand out against the orange */
+    --primary: 0 0% 100%; 
+    --primary-foreground: 25 95% 60%;
 
-    --secondary: 35 100% 88%; /* Slightly deeper apricot for contrast */
-    --secondary-foreground: 25 40% 20%;
+    --secondary: 25 95% 65%; 
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 30 40% 90%;
-    --muted-foreground: 25 10% 40%;
+    --muted: 25 80% 50%;
+    --muted-foreground: 0 0% 90%;
 
-    --accent: 45 100% 85%; 
-    --accent-foreground: 25 40% 20%;
+    --accent: 0 0% 100%; 
+    --accent-foreground: 25 95% 60%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 100% 30%;
+    --destructive-foreground: 0 0% 100%;
 
     --success: 142 70% 45%; 
     --success-foreground: 0 0% 100%;
 
-    --border: 30 50% 88%;
-    --input: 30 50% 88%;
-    --ring: 25 95% 60%;
+    --border: 25 95% 50%;
+    --input: 25 95% 50%;
+    --ring: 0 0% 100%;
 
     --radius: 2rem; 
   }
 
   .dark {
+    /* Keep dark mode consistent but with the orange accent */
     --background: 25 40% 8%;
     --foreground: 30 100% 97%;
 
