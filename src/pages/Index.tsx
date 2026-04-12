@@ -24,7 +24,6 @@ export default function Index() {
 
   const shuffleTask = () => {
     if (tasks.length > 0) {
-      // If we have multiple tasks, try to pick a different one than the current one
       if (tasks.length > 1 && randomTask) {
         const otherTasks = tasks.filter(t => t.id !== randomTask.id);
         const randomIndex = Math.floor(Math.random() * otherTasks.length);
@@ -39,11 +38,10 @@ export default function Index() {
   const handleComplete = async (taskId: string) => {
     const result = await completeTask(taskId);
     
-    // If in random mode, queue up the next task after a short delay
     if (result && !isOverrideMode) {
       setTimeout(() => {
         shuffleTask();
-      }, 2000); // 2 second delay so the user can see the success state
+      }, 2000);
     }
     
     return result;
@@ -77,8 +75,8 @@ export default function Index() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-32">
-      <div className="container max-w-2xl pt-12 px-8 space-y-10">
+    <div className="min-h-screen bg-background pb-48"> {/* Increased bottom padding for floating bar */}
+      <div className="container max-w-2xl pt-20 px-8 space-y-10"> {/* Increased top padding for Dynamic Island */}
         {!isOverrideMode && (
           <div className="bg-white/10 backdrop-blur-md p-8 rounded-[3rem] border border-white/20 text-center space-y-4 animate-in fade-in slide-in-from-top-4 duration-700 shadow-2xl">
             <div className="flex items-center justify-center gap-2 text-white/90">
@@ -126,7 +124,7 @@ export default function Index() {
         </div>
 
         {/* Bottom Control Bar - Floating Glass */}
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 w-[calc(100%-4rem)] max-w-md z-50">
+        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 w-[calc(100%-4rem)] max-w-md z-50">
           <div className="bg-white/20 backdrop-blur-3xl p-5 rounded-[2.5rem] flex items-center justify-between shadow-2xl border border-white/20">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-2xl bg-white/20">

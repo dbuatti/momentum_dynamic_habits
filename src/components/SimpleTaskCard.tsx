@@ -92,11 +92,10 @@ export function SimpleTaskCard({ task, onComplete, onShuffle, showShuffle }: Sim
   const progressPercent = (task.current_progress / STABILITY_THRESHOLD) * 100;
 
   return (
-    <div className="w-full max-w-md mx-auto flex flex-col items-center space-y-8 py-4">
+    <div className="w-full max-w-md mx-auto flex flex-col items-center space-y-6 py-4">
       <div className="text-center space-y-4 w-full">
         <h2 className="text-6xl font-black tracking-tighter text-white uppercase italic">{task.name}</h2>
         
-        {/* Subtle Progress Bar */}
         <div className="max-w-[180px] mx-auto space-y-2">
           <div className="flex justify-between text-[9px] font-black uppercase tracking-[0.2em] text-white/50">
             <span>Stability</span>
@@ -110,7 +109,7 @@ export function SimpleTaskCard({ task, onComplete, onShuffle, showShuffle }: Sim
         </p>
       </div>
       
-      <div className="flex flex-col items-center justify-center w-full py-4">
+      <div className="flex flex-col items-center justify-center w-full py-2">
         <button 
           onClick={toggleTimer}
           disabled={!isTimeTask || isTimerFinished}
@@ -125,46 +124,46 @@ export function SimpleTaskCard({ task, onComplete, onShuffle, showShuffle }: Sim
           )} />
           <div className="relative flex items-baseline justify-center">
             <span className={cn(
-              "text-[12rem] font-black text-white tabular-nums transition-all leading-none tracking-tighter",
+              "text-[10rem] sm:text-[12rem] font-black text-white tabular-nums transition-all leading-none tracking-tighter",
               !isActive && "text-white/90"
             )}>
               {isTimeTask ? timeLeft : task.current_value}
             </span>
-            <span className="text-4xl ml-4 font-black text-white uppercase tracking-tighter opacity-80">
+            <span className="text-3xl sm:text-4xl ml-4 font-black text-white uppercase tracking-tighter opacity-80">
               {isTimeTask ? 'sec' : 'reps'}
             </span>
           </div>
         </button>
 
         {isTimeTask && hasStarted && !isTimerFinished && (
-          <div className="flex gap-8 mt-12 animate-in fade-in slide-in-from-top-4">
+          <div className="flex gap-8 mt-8 animate-in fade-in slide-in-from-top-4">
             <Button 
               variant="secondary" 
               size="icon" 
-              className="w-20 h-20 rounded-full shadow-2xl bg-white/20 hover:bg-white/30 text-white border-none backdrop-blur-md"
+              className="w-16 h-16 rounded-full shadow-2xl bg-white/20 hover:bg-white/30 text-white border-none backdrop-blur-md"
               onClick={toggleTimer}
             >
-              {isActive ? <Pause className="w-10 h-10" /> : <Play className="w-10 h-10 ml-1" />}
+              {isActive ? <Pause className="w-8 h-8" /> : <Play className="w-8 h-8 ml-1" />}
             </Button>
             <Button 
               variant="outline" 
               size="icon" 
-              className="w-20 h-20 rounded-full border-4 border-white/20 bg-transparent hover:bg-white/10 text-white backdrop-blur-md"
+              className="w-16 h-16 rounded-full border-4 border-white/20 bg-transparent hover:bg-white/10 text-white backdrop-blur-md"
               onClick={resetTimer}
             >
-              <RotateCcw className="w-10 h-10" />
+              <RotateCcw className="w-8 h-8" />
             </Button>
           </div>
         )}
       </div>
 
-      <div className="flex flex-col gap-6 w-full pt-8">
+      <div className="flex flex-col gap-4 w-full pt-4">
         {isTimeTask && !hasStarted ? (
           <Button 
             onClick={startTimer}
-            className="w-full h-28 text-4xl font-black rounded-[3rem] gap-4 bg-white text-orange-500 shadow-[0_20px_50px_rgba(0,0,0,0.2)] hover:scale-105 active:scale-95 transition-all"
+            className="w-full h-24 text-3xl font-black rounded-[3rem] gap-4 bg-white text-orange-500 shadow-[0_20px_50px_rgba(0,0,0,0.2)] hover:scale-105 active:scale-95 transition-all"
           >
-            <Timer className="w-12 h-12" />
+            <Timer className="w-10 h-10" />
             START!
           </Button>
         ) : (
@@ -172,11 +171,11 @@ export function SimpleTaskCard({ task, onComplete, onShuffle, showShuffle }: Sim
             onClick={handleComplete} 
             disabled={completing || !canComplete}
             className={cn(
-              "w-full h-28 text-4xl font-black rounded-[3rem] gap-4 bg-white text-orange-500 shadow-[0_20px_50px_rgba(0,0,0,0.2)] hover:scale-105 active:scale-95 transition-all",
+              "w-full h-24 text-3xl font-black rounded-[3rem] gap-4 bg-white text-orange-500 shadow-[0_20px_50px_rgba(0,0,0,0.2)] hover:scale-105 active:scale-95 transition-all",
               !canComplete && "opacity-30 cursor-not-allowed grayscale"
             )}
           >
-            <Check className="w-12 h-12 stroke-[5]" />
+            <Check className="w-10 h-10 stroke-[5]" />
             DONE!
           </Button>
         )}
@@ -185,9 +184,9 @@ export function SimpleTaskCard({ task, onComplete, onShuffle, showShuffle }: Sim
           <Button 
             variant="ghost" 
             onClick={onShuffle}
-            className="w-full h-16 gap-3 font-black text-white/40 hover:text-white hover:bg-white/10 rounded-[2rem] uppercase tracking-widest text-xs transition-colors"
+            className="w-full h-12 gap-3 font-black text-white/40 hover:text-white hover:bg-white/10 rounded-[2rem] uppercase tracking-widest text-[10px] transition-colors"
           >
-            <Shuffle className="w-5 h-5" />
+            <Shuffle className="w-4 h-4" />
             Try something else?
           </Button>
         )}
