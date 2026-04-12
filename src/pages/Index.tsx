@@ -3,9 +3,10 @@ import { useSimpleTasks, SimpleTask } from '@/hooks/useSimpleTasks';
 import { TemplateOnboarding } from '@/components/TemplateOnboarding';
 import { SimpleTaskCard } from '@/components/SimpleTaskCard';
 import { DayReminder } from '@/components/DayReminder';
+import { HabitLab } from '@/components/HabitLab';
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Loader2, LayoutGrid, Zap, RefreshCw, ChevronRight } from "lucide-react";
+import { Loader2, LayoutGrid, Zap, RefreshCw, ChevronRight, ChevronLeft } from "lucide-react";
 import { useSession } from '@/contexts/SessionContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -16,7 +17,7 @@ export default function Index() {
   const { tasks, loading: tasksLoading, createTemplates, completeTask } = useSimpleTasks();
   const [isOverrideMode, setIsOverrideMode] = useState(false);
   const [randomTask, setRandomTask] = useState<SimpleTask | null>(null);
-  const [view, setView] = useState<'task' | 'day'>('task');
+  const [view, setView] = useState<'lab' | 'task' | 'day'>('task');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -77,20 +78,39 @@ export default function Index() {
     );
   }
 
+  // Calculate x offset based on view
+  const getXOffset = () => {
+    if (view === 'lab') return '0%';
+    if (view === 'task') return '-33.33%';
+    if (view === 'day') return '-66.66%';
+    return '-33.33%';
+  };
+
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
       <motion.div 
-        className="flex w-[200%]"
-        animate={{ x: view === 'task' ? '0%' : '-50%' }}
+        className="flex w-[300%]"
+        animate={{ x: getXOffset() }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
         drag="x"
-        dragConstraints={{ left: -window.innerWidth, right: 0 }}
+        dragConstraints={{ left: -window.innerWidth * 2, right: 0 }}
         onDragEnd={(_, info) => {
-          if (info.offset.x < -50 && view === 'task') setView('day');
-          if (info.offset.x > 50 && view === 'day') setView('task');
+          const threshold = 50;
+          if (info.offset.x < -threshold) {
+            if (view === 'lab') setView('task');
+            else if (view === 'task') setView('day');
+          } else if (info.offset.x > threshold) {
+            if (view === 'day') setView('task');
+            else if (view === 'task') setView('lab');
+          }
         }}
       >
-        {/* Task View */}
+        {/* Lab View (Left) */}
+        <div className="w-screen min-h-screen">
+          <HabitLab />
+        </div>
+
+        {/* Task View (Center) */}
         <div className="w-screen min-h-screen pb-48">
           <div className="container max-w-2xl pt-20 px-8 space-y-10">
             {!isOverrideMode && tasks.length > 1 && (
@@ -132,17 +152,21 @@ export default function Index() {
               )}
             </div>
 
-            {/* Swipe Indicator */}
-            <div className="flex flex-col items-center gap-2 pt-8 opacity-40">
+            {/* Swipe Indicators */}
+            <div className="flex justify-between items-center px-4 pt-8 opacity-40">
               <div className="flex items-center gap-1">
-                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white">Swipe for Day</span>
+                <ChevronLeft className="w-3 h-3 text-white animate-bounce-x-reverse" />
+                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white">Lab</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white">Day</span>
                 <ChevronRight className="w-3 h-3 text-white animate-bounce-x" />
               </div>
             </div>
           </div>
         </div>
 
-        {/* Day Reminder View */}
+        {/* Day Reminder View (Right) */}
         <div className="w-screen h-screen">
           <DayReminder />
         </div>
