@@ -14,18 +14,32 @@ export function useLabSession() {
   const fetchSession = async () => {
     if (!session?.user?.id) return;
 
-    const { data, error } = await supabase
-      .from('lab_sessions')
-      .select('*')
-      .eq('user_id', session.user.id)
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('lab_sessions')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .single();
 
-    if (data) {
-      setStage(data.stage as LabStage);
-      setLabType(data.lab_type);
-      setSeconds(data.seconds_elapsed);
+      if (error) {
+        // If table doesn't exist (404) or no record found, just stop loading
+        if (error.code === 'PGRST116' || error.message?.includes('not found')) {
+          setLoading(false);
+          return;
+        }
+        throw error;
+      }
+
+      if (data) {
+        setStage(data.stage as LabStage);
+        setLabType(data.lab_type);
+        setSeconds(data.seconds_elapsed);
+      }
+    } catch (err) {
+      console.warn('[LabSession] Table might not be ready yet:', err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -39,15 +53,19 @@ export function useLabSession() {
     setLabType(newLabType);
     setSeconds(newSeconds);
 
-    await supabase
-      .from('lab_sessions')
-      .upsert({
-        user_id: session.user.id,
-        lab_type: newLabType,
-        stage: newStage,
-        seconds_elapsed: newSeconds,
-        last_updated_at: new Date().toISOString()
-      });
+    try {
+      await supabase
+        .from('lab_sessions')
+        .upsert({
+          user_id: session.user.id,
+          lab_type: newLabType,
+          stage: newStage,
+          seconds_elapsed: newSeconds,
+          last_updated_at: new Date().toISOString()
+        });
+    } catch (err) {
+      console.error('[LabSession] Failed to save session:', err);
+    }
   };
 
   const resetSession = async () => {
@@ -57,10 +75,14 @@ export function useLabSession() {
     setLabType(null);
     setSeconds(0);
 
-    await supabase
-      .from('lab_sessions')
-      .delete()
-      .eq('user_id', session.user.id);
+    try {
+      await supabase
+        .from('lab_sessions')
+        .delete()
+        .eq('user_id', session.user.id);
+    } catch (err) {
+      console.error('[LabSession] Failed to reset session:', err);
+    }
   };
 
   return { stage, labType, seconds, loading, updateSession, resetSession };
