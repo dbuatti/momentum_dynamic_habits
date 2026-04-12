@@ -143,19 +143,18 @@ export default function Index() {
 
     if (Math.abs(offset.x) > Math.abs(offset.y)) {
       if (offset.x < -swipeThreshold || velocity.x < -velocityThreshold) {
+        // Swiping Left (Next View)
         if (view === 'lab') setView('task');
         else if (view === 'task') setView('day');
-        else controls.start({ x: getXOffset() });
       } else if (offset.x > swipeThreshold || velocity.x > velocityThreshold) {
+        // Swiping Right (Previous View)
         if (view === 'day') setView('task');
         else if (view === 'task') setView('lab');
-        else controls.start({ x: getXOffset() });
-      } else {
-        controls.start({ x: getXOffset() });
       }
-    } else {
-      controls.start({ x: getXOffset() });
     }
+    
+    // Always snap to the correct position for the current view
+    controls.start({ x: getXOffset() });
   };
 
   return (
@@ -191,8 +190,7 @@ export default function Index() {
         transition={{ type: "spring", stiffness: 300, damping: 35 }}
         drag="x"
         dragDirectionLock
-        dragConstraints={{ left: 0, right: 0 }}
-        dragElastic={0.05}
+        dragElastic={0.1}
         onDragEnd={handleDragEnd}
         dragMomentum={false}
       >
