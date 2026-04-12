@@ -33,7 +33,6 @@ export function HabitLab() {
   const [localSeconds, setLocalSeconds] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Filter tasks that have lab implementations
   const labTasks = tasks.filter(t => ['Walking', 'Duolingo', 'Reading'].includes(t.name));
   const currentTask = tasks.find(t => t.name === labType);
   
@@ -46,7 +45,6 @@ export function HabitLab() {
     }
   }, [sessionLoading, seconds]);
 
-  // Randomly pick a lab if none is active
   useEffect(() => {
     if (!sessionLoading && !tasksLoading && !labType && labTasks.length > 0) {
       const randomTask = labTasks[Math.floor(Math.random() * labTasks.length)];
@@ -113,7 +111,6 @@ export function HabitLab() {
     );
   }
 
-  // If no lab tasks exist, show a helpful state instead of a loader
   if (labTasks.length === 0) {
     return (
       <div className="w-full min-h-screen flex flex-col items-center justify-center p-8 text-center space-y-6">
@@ -132,7 +129,6 @@ export function HabitLab() {
     );
   }
 
-  // If we have tasks but labType isn't set yet (initialization phase)
   if (!labType) {
     return (
       <div className="w-full min-h-screen flex items-center justify-center">
