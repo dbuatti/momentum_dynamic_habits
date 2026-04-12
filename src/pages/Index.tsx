@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { useSimpleTasks, SimpleTask } from '@/hooks/useSimpleTasks';
 import { TemplateOnboarding } from '@/components/TemplateOnboarding';
 import { SimpleTaskCard } from '@/components/SimpleTaskCard';
+import { SimpleTaskRow } from '@/components/SimpleTaskRow';
 import { DayReminder } from '@/components/DayReminder';
 import { HabitLab } from '@/components/HabitLab';
 import { ScreenBreakTimer } from '@/components/ScreenBreakTimer';
@@ -211,57 +212,77 @@ export default function Index() {
           <div className="h-full overflow-y-auto pb-48">
             <div className={cn(
               "container max-w-2xl pt-20 px-8 space-y-10 transition-all duration-1000",
-              isAllDone ? "opacity-10 scale-95 grayscale" : isCentralDone ? "opacity-30 scale-98" : "opacity-100"
+              isAllDone ? "opacity-10 scale-95 grayscale" : isCentralDone ? "opacity-100 scale-100" : "opacity-100"
             )}>
               
               {isCentralDone && (
-                <div className="text-center space-y-2 animate-in fade-in zoom-in duration-1000">
-                  <div className="mx-auto w-16 h-16 rounded-full bg-white/10 flex items-center justify-center mb-4">
-                    <Moon className="w-8 h-8 text-white/40" />
+                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+                  <div className="text-center space-y-2">
+                    <div className="mx-auto w-16 h-16 rounded-full bg-white/10 flex items-center justify-center mb-4">
+                      {isAllDone ? <Sparkles className="w-8 h-8 text-white/60" /> : <Moon className="w-8 h-8 text-white/40" />}
+                    </div>
+                    <h3 className="text-3xl font-black text-white/40 uppercase italic tracking-tighter">
+                      {isAllDone ? "Journey Harmonized" : "Central Tasks Done"}
+                    </h3>
+                    <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.4em]">
+                      {isAllDone ? "Everything complete" : "Quick log remaining tasks"}
+                    </p>
                   </div>
-                  <h3 className="text-2xl font-black text-white/40 uppercase italic tracking-tighter">Done for now</h3>
-                  <p className="text-xs font-bold text-white/20 uppercase tracking-[0.3em]">Central tasks complete</p>
-                </div>
-              )}
-
-              {!isOverrideMode && eligibleTasks.length > 1 && !isCentralDone && (
-                <div className="flex justify-center animate-in fade-in slide-in-from-top-4 duration-700">
-                  <Button 
-                    onClick={shuffleTask} 
-                    variant="ghost" 
-                    size="icon"
-                    className="w-10 h-10 rounded-full text-white/20 hover:text-white hover:bg-white/10 transition-all active:rotate-180 duration-500"
-                    title="Shuffle Task"
-                  >
-                    <RefreshCw className="w-5 h-5" />
-                  </Button>
-                </div>
-              )}
-
-              <div className="space-y-12">
-                {isOverrideMode ? (
-                  <div className="grid gap-16 animate-in fade-in slide-in-from-bottom-8 duration-700">
-                    {eligibleTasks.map(task => (
-                      <SimpleTaskCard 
+                  
+                  <div className="grid gap-3 max-w-md mx-auto">
+                    {[...eligibleTasks, ...labTasks].map(task => (
+                      <SimpleTaskRow 
                         key={task.id} 
                         task={task} 
                         onComplete={handleComplete} 
                       />
                     ))}
                   </div>
-                ) : (
-                  randomTask && (
-                    <div className="animate-in zoom-in-95 duration-500">
-                      <SimpleTaskCard 
-                        task={randomTask} 
-                        onComplete={handleComplete} 
-                        onShuffle={() => handleSkip(randomTask.id)}
-                        showShuffle={true}
-                      />
+                </div>
+              )}
+
+              {!isCentralDone && (
+                <>
+                  {!isOverrideMode && eligibleTasks.length > 1 && (
+                    <div className="flex justify-center animate-in fade-in slide-in-from-top-4 duration-700">
+                      <Button 
+                        onClick={shuffleTask} 
+                        variant="ghost" 
+                        size="icon"
+                        className="w-10 h-10 rounded-full text-white/20 hover:text-white hover:bg-white/10 transition-all active:rotate-180 duration-500"
+                        title="Shuffle Task"
+                      >
+                        <RefreshCw className="w-5 h-5" />
+                      </Button>
                     </div>
-                  )
-                )}
-              </div>
+                  )}
+
+                  <div className="space-y-12">
+                    {isOverrideMode ? (
+                      <div className="grid gap-16 animate-in fade-in slide-in-from-bottom-8 duration-700">
+                        {eligibleTasks.map(task => (
+                          <SimpleTaskCard 
+                            key={task.id} 
+                            task={task} 
+                            onComplete={handleComplete} 
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      randomTask && (
+                        <div className="animate-in zoom-in-95 duration-500">
+                          <SimpleTaskCard 
+                            task={randomTask} 
+                            onComplete={handleComplete} 
+                            onShuffle={() => handleSkip(randomTask.id)}
+                            showShuffle={true}
+                          />
+                        </div>
+                      )
+                    )}
+                  </div>
+                </>
+              )}
 
               <div className="flex justify-between items-center px-4 pt-8 opacity-20">
                 <div className="flex items-center gap-1">
