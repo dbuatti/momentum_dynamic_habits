@@ -12,7 +12,8 @@ import {
   Zap,
   Target,
   Languages,
-  BookOpen
+  BookOpen,
+  Plus
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatTimeDisplay } from "@/utils/time-utils";
@@ -51,7 +52,7 @@ export function HabitLab() {
       const randomTask = labTasks[Math.floor(Math.random() * labTasks.length)];
       updateSession(randomTask.name, 'start', 0);
     }
-  }, [sessionLoading, tasksLoading, labType, labTasks]);
+  }, [sessionLoading, tasksLoading, labType, labTasks, updateSession]);
 
   const handleStartAction = async () => {
     audioManager.playSuccess();
@@ -61,6 +62,8 @@ export function HabitLab() {
 
   const toggleTimer = () => {
     if (!isActive) {
+      audioManager.prime();
+      setIsActive(true);
       audioManager.playStart();
       timerRef.current = setInterval(() => {
         setLocalSeconds(prev => prev + 1);
@@ -68,8 +71,8 @@ export function HabitLab() {
     } else {
       if (timerRef.current) clearInterval(timerRef.current);
       updateSession(labType!, 'active', localSeconds);
+      setIsActive(false);
     }
-    setIsActive(!isActive);
   };
 
   const handleFinish = async () => {
@@ -102,7 +105,35 @@ export function HabitLab() {
     await resetSession();
   };
 
-  if (sessionLoading || tasksLoading || !labType) {
+  if (sessionLoading || tasksLoading) {
+    return (
+      <div className="w-full min-h-screen flex items-center justify-center">
+        <Loader2 className="w-12 h-12 animate-spin text-white/50" />
+      </div>
+    );
+  }
+
+  // If no lab tasks exist, show a helpful state instead of a loader
+  if (labTasks.length === 0) {
+    return (
+      <div className="w-full min-h-screen flex flex-col items-center justify-center p-8 text-center space-y-6">
+        <div className="w-20 h-20 rounded-[2rem] bg-white/20 flex items-center justify-center mb-4">
+          <Compass className="w-10 h-10 text-white" />
+        </div>
+        <h2 className="text-3xl font-black text-white uppercase italic">Lab is Empty</h2>
+        <p className="text-white/60 font-bold max-w-xs">
+          The Practice Lab works with specific habits like Walking, Reading, or Duolingo. 
+          Accept the templates on the main screen to unlock it!
+        </p>
+        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40">
+          Swipe left to return
+        </p>
+      </div>
+    );
+  }
+
+  // If we have tasks but labType isn't set yet (initialization phase)
+  if (!labType) {
     return (
       <div className="w-full min-h-screen flex items-center justify-center">
         <Loader2 className="w-12 h-12 animate-spin text-white/50" />
