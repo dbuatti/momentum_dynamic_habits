@@ -75,25 +75,18 @@ export default function Index() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-48"> {/* Increased bottom padding for floating bar */}
-      <div className="container max-w-2xl pt-20 px-8 space-y-10"> {/* Increased top padding for Dynamic Island */}
-        {!isOverrideMode && (
-          <div className="bg-white/10 backdrop-blur-md p-8 rounded-[3rem] border border-white/20 text-center space-y-4 animate-in fade-in slide-in-from-top-4 duration-700 shadow-2xl">
-            <div className="flex items-center justify-center gap-2 text-white/90">
-              <Zap className="w-4 h-4 fill-current" />
-              <span className="text-[10px] font-black uppercase tracking-[0.2em]">Momentum Shift</span>
-            </div>
-            <p className="text-base font-bold text-white/80 leading-tight">
-              Stuck in a loop? Break the cycle with a quick win.
-            </p>
+    <div className="min-h-screen bg-background pb-48">
+      <div className="container max-w-2xl pt-20 px-8 space-y-10">
+        {!isOverrideMode && tasks.length > 1 && (
+          <div className="flex justify-center animate-in fade-in slide-in-from-top-4 duration-700">
             <Button 
               onClick={shuffleTask} 
-              variant="secondary" 
-              size="sm"
-              className="rounded-full h-12 px-8 font-black uppercase tracking-widest text-[10px] bg-white text-orange-500 hover:bg-white/90 shadow-xl transition-all active:scale-95"
+              variant="ghost" 
+              size="icon"
+              className="w-12 h-12 rounded-full text-white/40 hover:text-white hover:bg-white/10 transition-all active:rotate-180 duration-500"
+              title="Shuffle Task"
             >
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Shift Gears
+              <RefreshCw className="w-6 h-6" />
             </Button>
           </div>
         )}
@@ -116,7 +109,7 @@ export default function Index() {
                   task={randomTask} 
                   onComplete={handleComplete} 
                   onShuffle={shuffleTask}
-                  showShuffle={tasks.length > 1}
+                  showShuffle={false} // Hidden here as we have the top icon now
                 />
               </div>
             )
