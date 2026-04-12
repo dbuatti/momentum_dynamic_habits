@@ -22,8 +22,8 @@ export function useLabSession() {
         .single();
 
       if (error) {
-        // If table doesn't exist (404) or no record found, just stop loading
-        if (error.code === 'PGRST116' || error.message?.includes('not found')) {
+        // Handle missing table (404/42P01) or no record found (PGRST116)
+        if (error.code === 'PGRST116' || error.code === '42P01' || error.message?.includes('not found')) {
           setLoading(false);
           return;
         }
@@ -36,7 +36,7 @@ export function useLabSession() {
         setSeconds(data.seconds_elapsed);
       }
     } catch (err) {
-      console.warn('[LabSession] Table might not be ready yet:', err);
+      console.warn('[LabSession] Error fetching session:', err);
     } finally {
       setLoading(false);
     }
