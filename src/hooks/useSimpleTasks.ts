@@ -10,6 +10,8 @@ export interface SimpleTask {
   is_active: boolean;
 }
 
+const STABILITY_THRESHOLD = 3; // ADHD-friendly: Prove it 3 times before growing
+
 export function useSimpleTasks() {
   const [tasks, setTasks] = useState<SimpleTask[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,11 +62,23 @@ export function useSimpleTasks() {
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
 
-    // Intelligent increase: 50% chance
-    const shouldIncrease = Math.random() > 0.5;
+    // 1. Check how many times this task has been completed at the CURRENT value
+    const { count, error: countError } = await supabase
+      .from('simple_task_logs')
+      .select('*', { count: 'exact', head: true })
+      .eq('task_id', taskId)
+      .eq('value_at_completion', task.current_value);
+
+    if (countError) {
+      console.error('Error checking stability:', countError);
+      return;
+    }
+
+    const currentCompletions = count || 0;
+    const shouldIncrease = currentCompletions + 1 >= STABILITY_THRESHOLD;
     const newValue = shouldIncrease ? task.current_value + task.increment_value : task.current_value;
 
-    // Log completion
+    // 2. Log completion
     const { error: logError } = await supabase.from('simple_task_logs').insert({
       task_id: taskId,
       user_id: user.id,
@@ -77,7 +91,7 @@ export function useSimpleTasks() {
       return;
     }
 
-    // Update task value if increased
+    // 3. Update task value if threshold reached
     if (shouldIncrease) {
       const { error: updateError } = await supabase
         .from('simple_tasks')
@@ -91,7 +105,12 @@ export function useSimpleTasks() {
       }
     }
 
-    return { increased: shouldIncrease, newValue };
+    return { 
+      increased: shouldIncrease, 
+      newValue, 
+      progress: shouldIncrease ? 0 : currentCompletions + 1,
+      threshold: STABILITY_THRESHOLD 
+    };
   };
 
   return { tasks, loading, createTemplates, completeTask, refresh: fetchTasks };

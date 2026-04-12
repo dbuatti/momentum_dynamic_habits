@@ -1,14 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { SimpleTask } from "@/hooks/useSimpleTasks";
-import { Check, Shuffle, Sparkles, Play, Pause, RotateCcw, Timer } from "lucide-react";
+import { Check, Shuffle, Sparkles, Play, Pause, RotateCcw, Timer, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { audioManager } from "@/utils/audio";
 
 interface SimpleTaskCardProps {
   task: SimpleTask;
-  onComplete: (taskId: string) => Promise<{ increased: boolean; newValue: number } | undefined>;
+  onComplete: (taskId: string) => Promise<{ increased: boolean; newValue: number; progress: number; threshold: number } | undefined>;
   onShuffle?: () => void;
   showShuffle?: boolean;
 }
@@ -75,11 +75,11 @@ export function SimpleTaskCard({ task, onComplete, onShuffle, showShuffle }: Sim
     if (result) {
       audioManager.playSuccess();
       if (result.increased) {
-        toast.success(`Yay! Level up! Now ${result.newValue} ${task.task_type === 'time' ? 'seconds' : 'reps'}!`, {
+        toast.success(`Level Up! 🚀 Now ${result.newValue} ${task.task_type === 'time' ? 'seconds' : 'reps'}!`, {
           icon: <Sparkles className="text-orange-500" />,
         });
       } else {
-        toast.success("Task done! You're amazing! ✨");
+        toast.success(`Great job! ${result.progress}/${result.threshold} steps to level up! ✨`);
       }
     }
   };
