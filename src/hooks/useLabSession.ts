@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 
@@ -6,94 +6,73 @@ export type LabStage = 'start' | 'active' | 'complete';
 
 export function useLabSession() {
   const { session } = useSession();
-  const [stage, setStage] = useState<LabStage>('start');
-  const [labType, setLabType] = useState<string | null>(null);
-  const [seconds, setSeconds] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const userId = session?.user?.id;
 
-  const fetchSession = async () => {
-    if (!session?.user?.id) return;
+  const { data: sessionData, isLoading: loading } = useQuery({
+    queryKey: ['labSession', userId],
+    queryFn: async () => {
+      if (!userId) return null;
 
-    try {
       const { data, error } = await supabase
         .from('lab_sessions')
         .select('*')
-        .eq('user_id', session.user.id)
+        .eq('user_id', userId)
         .single();
 
       if (error) {
-        // Handle missing table (404/42P01/PGRST205) or no record found (PGRST116)
-        if (
-          error.code === 'PGRST116' || 
-          error.code === '42P01' || 
-          error.code === 'PGRST205' ||
-          error.message?.includes('not found')
-        ) {
-          setLoading(false);
-          return;
-        }
+        if (error.code === 'PGRST116' || error.code === '42P01') return null;
         throw error;
       }
 
-      if (data) {
-        setStage(data.stage as LabStage);
-        setLabType(data.lab_type);
-        setSeconds(data.seconds_elapsed);
-      }
-    } catch (err) {
-      // Silently fail for schema issues to prevent app crashes
-      console.debug('[LabSession] Session persistence unavailable:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+      return data;
+    },
+    enabled: !!userId,
+  });
 
-  useEffect(() => {
-    fetchSession();
-  }, [session]);
+  const updateSessionMutation = useMutation({
+    mutationFn: async ({ labType, stage, seconds }: { labType: string; stage: LabStage; seconds: number }) => {
+      if (!userId) return;
 
-  const updateSession = async (newLabType: string, newStage: LabStage, newSeconds: number) => {
-    if (!session?.user?.id) return;
-
-    setStage(newStage);
-    setLabType(newLabType);
-    setSeconds(newSeconds);
-
-    try {
       const { error } = await supabase
         .from('lab_sessions')
         .upsert({
-          user_id: session.user.id,
-          lab_type: newLabType,
-          stage: newStage,
-          seconds_elapsed: newSeconds,
+          user_id: userId,
+          lab_type: labType,
+          stage: stage,
+          seconds_elapsed: seconds,
           last_updated_at: new Date().toISOString()
         });
-        
-      if (error && (error.code === '42P01' || error.code === 'PGRST205')) {
-        console.debug('[LabSession] Table missing, progress not saved to cloud.');
-      }
-    } catch (err) {
-      console.warn('[LabSession] Failed to save session:', err);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['labSession', userId] });
     }
-  };
+  });
 
-  const resetSession = async () => {
-    if (!session?.user?.id) return;
+  const resetSessionMutation = useMutation({
+    mutationFn: async () => {
+      if (!userId) return;
 
-    setStage('start');
-    setLabType(null);
-    setSeconds(0);
-
-    try {
-      await supabase
+      const { error } = await supabase
         .from('lab_sessions')
         .delete()
-        .eq('user_id', session.user.id);
-    } catch (err) {
-      console.error('[LabSession] Failed to reset session:', err);
-    }
-  };
+        .eq('user_id', userId);
 
-  return { stage, labType, seconds, loading, updateSession, resetSession };
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['labSession', userId] });
+    }
+  });
+
+  return { 
+    stage: (sessionData?.stage as LabStage) || 'start', 
+    labType: sessionData?.lab_type || null, 
+    seconds: sessionData?.seconds_elapsed || 0, 
+    loading, 
+    updateSession: (labType: string, stage: LabStage, seconds: number) => updateSessionMutation.mutateAsync({ labType, stage, seconds }), 
+    resetSession: resetSessionMutation.mutateAsync 
+  };
 }
