@@ -7,7 +7,7 @@ import { HabitLab } from '@/components/HabitLab';
 import { ScreenBreakTimer } from '@/components/ScreenBreakTimer';
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Loader2, LayoutGrid, RefreshCw, ChevronRight, ChevronLeft, Zap } from "lucide-react";
+import { Loader2, LayoutGrid, RefreshCw, ChevronRight, ChevronLeft } from "lucide-react";
 import { useSession } from '@/contexts/SessionContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -111,8 +111,8 @@ export default function Index() {
   }
 
   const handleDragEnd = (event: any, info: PanInfo) => {
-    const swipeThreshold = 30; // Lower threshold for better sensitivity
-    const velocityThreshold = 200; // Lower velocity threshold
+    const swipeThreshold = 30;
+    const velocityThreshold = 200;
     const { offset, velocity } = info;
 
     if (offset.x < -swipeThreshold || velocity.x < -velocityThreshold) {
@@ -154,14 +154,7 @@ export default function Index() {
             <ScreenBreakTimer />
           </div>
 
-          <div className="container max-w-2xl pt-12 px-8 space-y-10">
-            <div className="text-center space-y-2">
-              <div className="mx-auto w-20 h-20 rounded-[2rem] bg-white/20 flex items-center justify-center mb-4">
-                <Zap className="w-10 h-10 text-white" />
-              </div>
-              <h2 className="text-5xl font-black tracking-tighter text-white uppercase italic">Momentum</h2>
-            </div>
-
+          <div className="container max-w-2xl pt-32 px-8 space-y-10">
             {!isOverrideMode && eligibleTasks.length > 1 && (
               <div className="flex justify-center animate-in fade-in slide-in-from-top-4 duration-700">
                 <Button 
