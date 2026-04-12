@@ -23,6 +23,7 @@ export function SimpleTaskCard({ task, onComplete, onShuffle, showShuffle }: Sim
 
   const STABILITY_THRESHOLD = 3;
 
+  // Reset local state when the task changes or levels up
   useEffect(() => {
     setTimeLeft(task.current_value);
     setIsActive(false);
@@ -73,8 +74,7 @@ export function SimpleTaskCard({ task, onComplete, onShuffle, showShuffle }: Sim
   const handleComplete = async () => {
     setCompleting(true);
     const result = await onComplete(task.id);
-    setCompleting(false);
-
+    
     if (result) {
       audioManager.playSuccess();
       if (result.increased) {
@@ -82,7 +82,14 @@ export function SimpleTaskCard({ task, onComplete, onShuffle, showShuffle }: Sim
       } else {
         toast.success(`Great job! ${result.progress}/${result.threshold} steps to level up!`);
       }
+      
+      // Reset local state immediately so the UI reflects the new progress/value
+      setIsActive(false);
+      setHasStarted(false);
+      setTimeLeft(result.newValue);
     }
+    
+    setCompleting(false);
   };
 
   const isTimeTask = task.task_type === 'time';
@@ -105,7 +112,11 @@ export function SimpleTaskCard({ task, onComplete, onShuffle, showShuffle }: Sim
         </div>
 
         <p className="text-lg font-bold text-white/60 uppercase tracking-widest">
-          {isTimeTask ? (hasStarted ? (isActive ? 'Focusing...' : 'Paused') : 'Ready when you are!') : `Let's get moving!`}
+          {isTimeTask 
+            ? (hasStarted 
+                ? (isActive ? 'Focusing...' : (timeLeft === 0 ? 'Session Complete!' : 'Paused')) 
+                : 'Ready when you are!') 
+            : `Let's get moving!`}
         </p>
       </div>
       
