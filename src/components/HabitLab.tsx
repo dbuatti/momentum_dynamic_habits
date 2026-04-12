@@ -10,9 +10,11 @@ import {
   RotateCcw,
   Compass,
   Loader2,
-  TrendingUp,
   Zap,
-  Target
+  Target,
+  Languages,
+  BookOpen,
+  Smartphone
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatTimeDisplay } from "@/utils/time-utils";
@@ -26,32 +28,37 @@ import { Progress } from "@/components/ui/progress";
 
 export function HabitLab() {
   const { session } = useSession();
-  const { stage, seconds, loading: sessionLoading, updateSession, resetSession } = useLabSession();
+  const { stage, labType, seconds, loading: sessionLoading, updateSession, resetSession } = useLabSession();
   const { tasks, completeTask, loading: tasksLoading } = useSimpleTasks();
   const [isActive, setIsActive] = useState(false);
   const [localSeconds, setLocalSeconds] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Find the Walking task to get the current goal
-  const walkingTask = tasks.find(t => t.name === 'Walking');
-  const currentGoalSeconds = walkingTask?.current_value || 600; // Default 10 mins
-  const stabilityProgress = walkingTask?.current_progress || 0;
+  // Filter tasks that have lab implementations
+  const labTasks = tasks.filter(t => ['Walking', 'Duolingo', 'Reading'].includes(t.name));
+  const currentTask = tasks.find(t => t.name === labType);
+  
+  const currentGoalSeconds = currentTask?.current_value || 600;
+  const stabilityProgress = currentTask?.current_progress || 0;
 
-  // Sync local timer with DB state on load
   useEffect(() => {
     if (!sessionLoading) {
       setLocalSeconds(seconds);
     }
   }, [sessionLoading, seconds]);
 
-  const handleStepOutside = async () => {
+  // Randomly pick a lab if none is active
+  useEffect(() => {
+    if (!sessionLoading && !tasksLoading && !labType && labTasks.length > 0) {
+      const randomTask = labTasks[Math.floor(Math.random() * labTasks.length)];
+      updateSession(randomTask.name, 'start', 0);
+    }
+  }, [sessionLoading, tasksLoading, labType, labTasks]);
+
+  const handleStartAction = async () => {
     audioManager.playSuccess();
-    confetti({
-      particleCount: 100,
-      spread: 70,
-      origin: { y: 0.6 }
-    });
-    await updateSession('walking', 0);
+    confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+    await updateSession(labType!, 'active', 0);
   };
 
   const toggleTimer = () => {
@@ -62,7 +69,7 @@ export function HabitLab() {
       }, 1000);
     } else {
       if (timerRef.current) clearInterval(timerRef.current);
-      updateSession('walking', localSeconds);
+      updateSession(labType!, 'active', localSeconds);
     }
     setIsActive(!isActive);
   };
@@ -71,28 +78,23 @@ export function HabitLab() {
     if (timerRef.current) clearInterval(timerRef.current);
     setIsActive(false);
     
-    if (walkingTask) {
-      const result = await completeTask(walkingTask.id);
-      
+    if (currentTask) {
+      const result = await completeTask(currentTask.id);
       audioManager.playSuccess();
-      confetti({
-        particleCount: 150,
-        spread: 100,
-        origin: { y: 0.6 }
-      });
+      confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 } });
 
       if (result?.increased) {
         toast.success("Level Up!", {
-          description: `Your walking goal increased to ${Math.floor(result.newValue / 60)} minutes!`,
+          description: `Your ${labType} goal increased!`,
         });
       } else {
-        toast.success("Walk Logged!", {
+        toast.success(`${labType} Logged!`, {
           description: `${result?.progress}/3 steps to your next goal increase.`,
         });
       }
     }
 
-    await updateSession('complete', localSeconds);
+    await updateSession(labType!, 'complete', localSeconds);
   };
 
   const handleReset = async () => {
@@ -102,7 +104,7 @@ export function HabitLab() {
     await resetSession();
   };
 
-  if (sessionLoading || tasksLoading) {
+  if (sessionLoading || tasksLoading || !labType) {
     return (
       <div className="w-full min-h-screen flex items-center justify-center">
         <Loader2 className="w-12 h-12 animate-spin text-white/50" />
@@ -112,6 +114,36 @@ export function HabitLab() {
 
   const progressToGoal = Math.min(100, (localSeconds / currentGoalSeconds) * 100);
   const isGoalMet = localSeconds >= currentGoalSeconds;
+
+  const labConfigs: Record<string, any> = {
+    'Walking': {
+      icon: CloudSun,
+      step1Title: "Step 1: Get Out",
+      step1Desc: "The hardest part is just crossing the threshold.",
+      step1Button: "I'M OUTSIDE!",
+      step2Title: "Step 2: Move",
+      color: "text-orange-500"
+    },
+    'Duolingo': {
+      icon: Languages,
+      step1Title: "Step 1: Open App",
+      step1Desc: "Just tap the owl. Don't think about the lesson yet.",
+      step1Button: "APP IS OPEN!",
+      step2Title: "Step 2: Practice",
+      color: "text-green-500"
+    },
+    'Reading': {
+      icon: BookOpen,
+      step1Title: "Step 1: Grab Book",
+      step1Desc: "Pick up your Kobo or book. Just hold it.",
+      step1Button: "I HAVE IT!",
+      step2Title: "Step 2: Read",
+      color: "text-blue-500"
+    }
+  };
+
+  const config = labConfigs[labType] || labConfigs['Walking'];
+  const Icon = config.icon;
 
   return (
     <div className="w-full min-h-screen flex flex-col items-center justify-center p-8 space-y-12">
@@ -123,7 +155,7 @@ export function HabitLab() {
         
         <div className="max-w-[200px] mx-auto space-y-2">
           <div className="flex justify-between text-[9px] font-black uppercase tracking-[0.2em] text-white/50">
-            <span>Stability</span>
+            <span>{labType} Stability</span>
             <span>{stabilityProgress}/3</span>
           </div>
           <Progress value={(stabilityProgress / 3) * 100} className="h-1.5 bg-white/10 [&>div]:bg-white shadow-sm" />
@@ -132,28 +164,28 @@ export function HabitLab() {
 
       <Card className="w-full max-w-md bg-white/10 border-white/20 rounded-[3rem] overflow-hidden shadow-2xl">
         <CardContent className="p-10 space-y-8">
-          {stage === 'outside' && (
+          {stage === 'start' && (
             <div className="space-y-8 text-center animate-in fade-in zoom-in-95 duration-500">
               <div className="space-y-2">
-                <h3 className="text-3xl font-black text-white uppercase">Step 1: Get Out</h3>
-                <p className="text-white/60 font-bold">The hardest part is just crossing the threshold.</p>
+                <h3 className="text-3xl font-black text-white uppercase">{config.step1Title}</h3>
+                <p className="text-white/60 font-bold">{config.step1Desc}</p>
               </div>
               <div className="w-32 h-32 mx-auto bg-white rounded-[2.5rem] flex items-center justify-center shadow-xl">
-                <CloudSun className="w-16 h-16 text-orange-500" />
+                <Icon className={cn("w-16 h-16", config.color)} />
               </div>
               <Button 
-                onClick={handleStepOutside}
-                className="w-full h-24 text-2xl font-black rounded-[2.5rem] bg-white text-orange-500 hover:scale-105 transition-all"
+                onClick={handleStartAction}
+                className={cn("w-full h-24 text-2xl font-black rounded-[2.5rem] bg-white hover:scale-105 transition-all", config.color)}
               >
-                I'M OUTSIDE!
+                {config.step1Button}
               </Button>
             </div>
           )}
 
-          {stage === 'walking' && (
+          {stage === 'active' && (
             <div className="space-y-8 text-center animate-in slide-in-from-right-8 duration-500">
               <div className="space-y-2">
-                <h3 className="text-3xl font-black text-white uppercase">Step 2: Move</h3>
+                <h3 className="text-3xl font-black text-white uppercase">{config.step2Title}</h3>
                 <div className="flex items-center justify-center gap-2 text-white/60 font-bold uppercase text-xs tracking-widest">
                   <Target className="w-4 h-4" />
                   Goal: {Math.floor(currentGoalSeconds / 60)}m
@@ -184,19 +216,14 @@ export function HabitLab() {
                   onClick={handleFinish}
                   disabled={!isGoalMet}
                   className={cn(
-                    "flex-[2] h-20 text-xl font-black rounded-[2rem] bg-white text-orange-500 transition-all",
+                    "flex-[2] h-20 text-xl font-black rounded-[2rem] bg-white transition-all",
+                    config.color,
                     !isGoalMet && "opacity-50 grayscale cursor-not-allowed"
                   )}
                 >
-                  {isGoalMet ? "FINISH WALK" : "KEEP GOING!"}
+                  {isGoalMet ? "FINISH" : "KEEP GOING!"}
                 </Button>
               </div>
-              
-              {!isGoalMet && (
-                <p className="text-[10px] font-black uppercase tracking-widest text-white/40">
-                  {Math.ceil((currentGoalSeconds - localSeconds) / 60)} mins remaining to hit goal
-                </p>
-              )}
             </div>
           )}
 
@@ -222,7 +249,7 @@ export function HabitLab() {
                 variant="ghost"
                 className="w-full h-12 text-white/40 hover:text-white font-black uppercase tracking-widest text-xs"
               >
-                <RotateCcw className="w-4 h-4 mr-2" /> Start New Session
+                <RotateCcw className="w-4 h-4 mr-2" /> Try Another Lab
               </Button>
             </div>
           )}

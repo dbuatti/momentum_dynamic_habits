@@ -8,7 +8,7 @@ export interface SimpleTask {
   current_value: number;
   increment_value: number;
   is_active: boolean;
-  current_progress: number; // Added to track progress toward threshold
+  current_progress: number; 
 }
 
 const STABILITY_THRESHOLD = 3; 
@@ -21,7 +21,6 @@ export function useSimpleTasks() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    // Fetch tasks
     const { data: tasksData, error: tasksError } = await supabase
       .from('simple_tasks')
       .select('*')
@@ -34,7 +33,6 @@ export function useSimpleTasks() {
       return;
     }
 
-    // Fetch completion counts for each task at its current value
     const tasksWithProgress = await Promise.all((tasksData || []).map(async (task) => {
       const { count } = await supabase
         .from('simple_task_logs')
@@ -63,7 +61,9 @@ export function useSimpleTasks() {
     const templates = [
       { user_id: user.id, name: 'Pushups', task_type: 'count', current_value: 1, increment_value: 1 },
       { user_id: user.id, name: 'Be Still', task_type: 'time', current_value: 300, increment_value: 60 },
-      { user_id: user.id, name: 'Walking', task_type: 'time', current_value: 600, increment_value: 300 }
+      { user_id: user.id, name: 'Walking', task_type: 'time', current_value: 600, increment_value: 300 },
+      { user_id: user.id, name: 'Duolingo', task_type: 'time', current_value: 180, increment_value: 60 },
+      { user_id: user.id, name: 'Reading', task_type: 'time', current_value: 300, increment_value: 300 }
     ];
 
     const { error } = await supabase.from('simple_tasks').insert(templates);
@@ -104,7 +104,6 @@ export function useSimpleTasks() {
         .eq('id', taskId);
     }
 
-    // Refresh to get updated counts
     await fetchTasks();
 
     return { 
