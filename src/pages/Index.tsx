@@ -6,11 +6,11 @@ import { DayReminder } from '@/components/DayReminder';
 import { HabitLab } from '@/components/HabitLab';
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Loader2, LayoutGrid, Zap, RefreshCw, ChevronRight, ChevronLeft } from "lucide-react";
+import { Loader2, LayoutGrid, RefreshCw, ChevronRight, ChevronLeft } from "lucide-react";
 import { useSession } from '@/contexts/SessionContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { motion } from 'framer-motion';
+import { motion, useAnimation } from 'framer-motion';
 
 export default function Index() {
   const { session, loading: sessionLoading } = useSession();
@@ -19,6 +19,7 @@ export default function Index() {
   const [randomTask, setRandomTask] = useState<SimpleTask | null>(null);
   const [view, setView] = useState<'lab' | 'task' | 'day'>('task');
   const navigate = useNavigate();
+  const controls = useAnimation();
 
   useEffect(() => {
     if (!sessionLoading && !session) {
@@ -57,6 +58,19 @@ export default function Index() {
     }
   }, [tasks]);
 
+  // Calculate x offset based on view
+  const getXOffset = () => {
+    if (view === 'lab') return '0%';
+    if (view === 'task') return '-33.33%';
+    if (view === 'day') return '-66.66%';
+    return '-33.33%';
+  };
+
+  // Update animation when view changes
+  useEffect(() => {
+    controls.start({ x: getXOffset() });
+  }, [view, controls]);
+
   if (sessionLoading || tasksLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
@@ -78,40 +92,46 @@ export default function Index() {
     );
   }
 
-  // Calculate x offset based on view
-  const getXOffset = () => {
-    if (view === 'lab') return '0%';
-    if (view === 'task') return '-33.33%';
-    if (view === 'day') return '-66.66%';
-    return '-33.33%';
+  const handleDragEnd = (event: any, info: any) => {
+    const swipeThreshold = 50;
+    const velocityThreshold = 500;
+    const { offset, velocity } = info;
+
+    if (offset.x < -swipeThreshold || velocity.x < -velocityThreshold) {
+      // Swiping Left (Going to next screen)
+      if (view === 'lab') setView('task');
+      else if (view === 'task') setView('day');
+      else controls.start({ x: getXOffset() }); // Snap back if at end
+    } else if (offset.x > swipeThreshold || velocity.x > velocityThreshold) {
+      // Swiping Right (Going to previous screen)
+      if (view === 'day') setView('task');
+      else if (view === 'task') setView('lab');
+      else controls.start({ x: getXOffset() }); // Snap back if at start
+    } else {
+      // Not enough movement, snap back to current view
+      controls.start({ x: getXOffset() });
+    }
   };
 
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
+    <div className="min-h-screen bg-background overflow-hidden touch-none">
       <motion.div 
-        className="flex w-[300%]"
-        animate={{ x: getXOffset() }}
-        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        className="flex w-[300%] h-full"
+        animate={controls}
+        initial={{ x: getXOffset() }}
+        transition={{ type: "spring", stiffness: 300, damping: 35 }}
         drag="x"
-        dragConstraints={{ left: -window.innerWidth * 2, right: 0 }}
-        onDragEnd={(_, info) => {
-          const threshold = 50;
-          if (info.offset.x < -threshold) {
-            if (view === 'lab') setView('task');
-            else if (view === 'task') setView('day');
-          } else if (info.offset.x > threshold) {
-            if (view === 'day') setView('task');
-            else if (view === 'task') setView('lab');
-          }
-        }}
+        dragConstraints={{ left: 0, right: 0 }} // We handle the movement via state
+        dragElastic={0.2}
+        onDragEnd={handleDragEnd}
       >
         {/* Lab View (Left) */}
-        <div className="w-screen min-h-screen">
+        <div className="w-screen min-h-screen overflow-y-auto">
           <HabitLab />
         </div>
 
         {/* Task View (Center) */}
-        <div className="w-screen min-h-screen pb-48">
+        <div className="w-screen min-h-screen pb-48 overflow-y-auto">
           <div className="container max-w-2xl pt-20 px-8 space-y-10">
             {!isOverrideMode && tasks.length > 1 && (
               <div className="flex justify-center animate-in fade-in slide-in-from-top-4 duration-700">
@@ -155,19 +175,19 @@ export default function Index() {
             {/* Swipe Indicators */}
             <div className="flex justify-between items-center px-4 pt-8 opacity-40">
               <div className="flex items-center gap-1">
-                <ChevronLeft className="w-3 h-3 text-white animate-bounce-x-reverse" />
+                <ChevronLeft className="w-3 h-3 text-white" />
                 <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white">Lab</span>
               </div>
               <div className="flex items-center gap-1">
                 <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white">Day</span>
-                <ChevronRight className="w-3 h-3 text-white animate-bounce-x" />
+                <ChevronRight className="w-3 h-3 text-white" />
               </div>
             </div>
           </div>
         </div>
 
         {/* Day Reminder View (Right) */}
-        <div className="w-screen h-screen">
+        <div className="w-screen h-screen overflow-hidden">
           <DayReminder />
         </div>
       </motion.div>
