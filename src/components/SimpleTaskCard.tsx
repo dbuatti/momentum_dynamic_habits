@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { SimpleTask } from "@/hooks/useSimpleTasks";
-import { Check, Shuffle, Sparkles, Play, Pause, RotateCcw, Timer, TrendingUp } from "lucide-react";
+import { Check, Shuffle, Play, Pause, RotateCcw, Timer } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { audioManager } from "@/utils/audio";
+import { Progress } from "@/components/ui/progress";
 
 interface SimpleTaskCardProps {
   task: SimpleTask;
@@ -19,6 +20,8 @@ export function SimpleTaskCard({ task, onComplete, onShuffle, showShuffle }: Sim
   const [isActive, setIsActive] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const STABILITY_THRESHOLD = 3;
 
   useEffect(() => {
     setTimeLeft(task.current_value);
@@ -75,11 +78,9 @@ export function SimpleTaskCard({ task, onComplete, onShuffle, showShuffle }: Sim
     if (result) {
       audioManager.playSuccess();
       if (result.increased) {
-        toast.success(`Level Up! 🚀 Now ${result.newValue} ${task.task_type === 'time' ? 'seconds' : 'reps'}!`, {
-          icon: <Sparkles className="text-orange-500" />,
-        });
+        toast.success(`Level Up! 🚀 Now ${result.newValue} ${task.task_type === 'time' ? 'seconds' : 'reps'}!`);
       } else {
-        toast.success(`Great job! ${result.progress}/${result.threshold} steps to level up! ✨`);
+        toast.success(`Great job! ${result.progress}/${result.threshold} steps to level up!`);
       }
     }
   };
@@ -88,14 +89,23 @@ export function SimpleTaskCard({ task, onComplete, onShuffle, showShuffle }: Sim
   const isTimerFinished = isTimeTask && timeLeft === 0;
   const canComplete = !isTimeTask || isTimerFinished;
 
+  const progressPercent = (task.current_progress / STABILITY_THRESHOLD) * 100;
+
   return (
     <div className="w-full max-w-md mx-auto flex flex-col items-center space-y-8 py-4">
-      <div className="text-center space-y-4">
-        <div className="inline-flex items-center justify-center w-24 h-24 rounded-[2.5rem] bg-white/40 mb-2">
-          <Sparkles className="w-12 h-12 text-primary" />
+      <div className="text-center space-y-4 w-full">
+        <h2 className="text-5xl font-black tracking-tighter text-white uppercase italic">{task.name}</h2>
+        
+        {/* Subtle Progress Bar */}
+        <div className="max-w-[200px] mx-auto space-y-1.5">
+          <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-white/60">
+            <span>Stability</span>
+            <span>{task.current_progress}/{STABILITY_THRESHOLD}</span>
+          </div>
+          <Progress value={progressPercent} className="h-1 bg-white/20 [&>div]:bg-white" />
         </div>
-        <h2 className="text-5xl font-black tracking-tighter text-primary uppercase italic">{task.name}</h2>
-        <p className="text-xl font-bold text-muted-foreground/60">
+
+        <p className="text-xl font-bold text-white/60">
           {isTimeTask ? (hasStarted ? (isActive ? 'Focusing...' : 'Paused') : 'Ready when you are!') : `Let's get moving!`}
         </p>
       </div>
@@ -110,17 +120,17 @@ export function SimpleTaskCard({ task, onComplete, onShuffle, showShuffle }: Sim
           )}
         >
           <div className={cn(
-            "absolute -inset-16 bg-primary/20 rounded-full blur-3xl transition-opacity",
+            "absolute -inset-16 bg-white/10 rounded-full blur-3xl transition-opacity",
             isActive ? "opacity-100 animate-pulse" : "opacity-0"
           )} />
           <div className="relative flex items-baseline justify-center">
             <span className={cn(
-              "text-[10rem] font-black text-foreground tabular-nums transition-colors leading-none",
-              isActive && "text-primary"
+              "text-[10rem] font-black text-white tabular-nums transition-colors leading-none",
+              !isActive && "text-white/90"
             )}>
               {isTimeTask ? timeLeft : task.current_value}
             </span>
-            <span className="text-4xl ml-4 font-black text-primary uppercase tracking-tighter">
+            <span className="text-4xl ml-4 font-black text-white uppercase tracking-tighter">
               {isTimeTask ? 'sec' : 'reps'}
             </span>
           </div>
@@ -131,7 +141,7 @@ export function SimpleTaskCard({ task, onComplete, onShuffle, showShuffle }: Sim
             <Button 
               variant="secondary" 
               size="icon" 
-              className="w-20 h-20 rounded-full shadow-xl bg-white/50 hover:bg-white/80"
+              className="w-20 h-20 rounded-full shadow-xl bg-white/20 hover:bg-white/30 text-white border-none"
               onClick={toggleTimer}
             >
               {isActive ? <Pause className="w-10 h-10" /> : <Play className="w-10 h-10 ml-1" />}
@@ -139,7 +149,7 @@ export function SimpleTaskCard({ task, onComplete, onShuffle, showShuffle }: Sim
             <Button 
               variant="outline" 
               size="icon" 
-              className="w-20 h-20 rounded-full border-4 border-white/50 bg-transparent hover:bg-white/20"
+              className="w-20 h-20 rounded-full border-4 border-white/30 bg-transparent hover:bg-white/10 text-white"
               onClick={resetTimer}
             >
               <RotateCcw className="w-10 h-10" />
@@ -152,7 +162,7 @@ export function SimpleTaskCard({ task, onComplete, onShuffle, showShuffle }: Sim
         {isTimeTask && !hasStarted ? (
           <Button 
             onClick={startTimer}
-            className="w-full h-28 text-4xl font-black rounded-[3rem] gap-4 bg-primary text-white shadow-2xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
+            className="w-full h-28 text-4xl font-black rounded-[3rem] gap-4 bg-white text-orange-500 shadow-2xl hover:scale-105 active:scale-95 transition-all"
           >
             <Timer className="w-12 h-12" />
             START!
@@ -162,7 +172,7 @@ export function SimpleTaskCard({ task, onComplete, onShuffle, showShuffle }: Sim
             onClick={handleComplete} 
             disabled={completing || !canComplete}
             className={cn(
-              "w-full h-28 text-4xl font-black rounded-[3rem] gap-4 bg-primary text-white shadow-2xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all",
+              "w-full h-28 text-4xl font-black rounded-[3rem] gap-4 bg-white text-orange-500 shadow-2xl hover:scale-105 active:scale-95 transition-all",
               !canComplete && "opacity-30 cursor-not-allowed grayscale"
             )}
           >
@@ -175,7 +185,7 @@ export function SimpleTaskCard({ task, onComplete, onShuffle, showShuffle }: Sim
           <Button 
             variant="ghost" 
             onClick={onShuffle}
-            className="w-full h-16 gap-3 font-black text-muted-foreground/50 hover:text-primary hover:bg-white/20 rounded-[2rem] uppercase tracking-widest text-sm"
+            className="w-full h-16 gap-3 font-black text-white/40 hover:text-white hover:bg-white/10 rounded-[2rem] uppercase tracking-widest text-sm"
           >
             <Shuffle className="w-6 h-6" />
             Try something else?

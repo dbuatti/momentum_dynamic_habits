@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useSession } from '@/contexts/SessionContext';
 import { useEffect } from 'react';
-import { Loader2, Sparkles } from 'lucide-react';
+import { Loader2, Zap } from 'lucide-react';
 import { useOnboardingCheck } from '@/hooks/useOnboardingCheck';
 
 const Login = () => {
@@ -27,7 +27,7 @@ const Login = () => {
   if (isSessionLoading || isOnboardingCheckLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-16 w-16 animate-spin text-primary" />
+        <Loader2 className="h-16 w-16 animate-spin text-white" />
       </div>
     );
   }
@@ -36,14 +36,14 @@ const Login = () => {
     <div className="bg-background min-h-screen flex items-center justify-center p-8">
       <div className="max-w-md w-full space-y-12">
         <div className="text-center space-y-6">
-          <div className="mx-auto w-24 h-24 rounded-[2.5rem] bg-white/40 flex items-center justify-center animate-pulse">
-            <Sparkles className="w-12 h-12 text-primary" />
+          <div className="mx-auto w-24 h-24 rounded-[2.5rem] bg-white/20 flex items-center justify-center">
+            <Zap className="w-12 h-12 text-white" />
           </div>
           <div className="space-y-2">
-            <h2 className="text-6xl font-black tracking-tighter text-primary uppercase italic">
+            <h2 className="text-6xl font-black tracking-tighter text-white uppercase italic">
               Momentum
             </h2>
-            <p className="text-xl font-bold text-muted-foreground/60">
+            <p className="text-xl font-bold text-white/60">
               Your bubbly growth coach
             </p>
           </div>
@@ -63,21 +63,23 @@ const Login = () => {
                   letterSpacing: '0.1em',
                   fontSize: '1rem',
                   border: 'none',
-                  boxShadow: '0 10px 20px -5px rgba(255, 120, 0, 0.2)',
+                  backgroundColor: 'white',
+                  color: '#f97316',
                 },
                 input: {
                   borderRadius: '1.5rem',
                   padding: '1rem 1.25rem',
                   border: 'none',
-                  backgroundColor: 'rgba(255,255,255,0.4)',
+                  backgroundColor: 'rgba(255,255,255,0.2)',
                   fontSize: '1rem',
+                  color: 'white',
                 },
                 label: {
                   fontWeight: '800',
                   textTransform: 'uppercase',
                   fontSize: '0.75rem',
                   letterSpacing: '0.05em',
-                  color: 'rgba(0,0,0,0.4)',
+                  color: 'rgba(255,255,255,0.6)',
                   marginBottom: '0.5rem',
                 }
               }
@@ -87,7 +89,7 @@ const Login = () => {
           />
         </div>
 
-        <p className="text-center text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/40">
+        <p className="text-center text-[10px] font-black uppercase tracking-[0.3em] text-white/40">
           Small steps lead to big changes
         </p>
       </div>

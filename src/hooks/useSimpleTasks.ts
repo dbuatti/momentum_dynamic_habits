@@ -8,9 +8,10 @@ export interface SimpleTask {
   current_value: number;
   increment_value: number;
   is_active: boolean;
+  current_progress: number; // Added to track progress toward threshold
 }
 
-const STABILITY_THRESHOLD = 3; // ADHD-friendly: Prove it 3 times before growing
+const STABILITY_THRESHOLD = 3; 
 
 export function useSimpleTasks() {
   const [tasks, setTasks] = useState<SimpleTask[]>([]);
@@ -20,17 +21,34 @@ export function useSimpleTasks() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { data, error } = await supabase
+    // Fetch tasks
+    const { data: tasksData, error: tasksError } = await supabase
       .from('simple_tasks')
       .select('*')
       .eq('user_id', user.id)
       .eq('is_active', true);
 
-    if (error) {
-      console.error('Error fetching tasks:', error);
-    } else {
-      setTasks(data || []);
+    if (tasksError) {
+      console.error('Error fetching tasks:', tasksError);
+      setLoading(false);
+      return;
     }
+
+    // Fetch completion counts for each task at its current value
+    const tasksWithProgress = await Promise.all((tasksData || []).map(async (task) => {
+      const { count } = await supabase
+        .from('simple_task_logs')
+        .select('*', { count: 'exact', head: true })
+        .eq('task_id', task.id)
+        .eq('value_at_completion', task.current_value);
+      
+      return {
+        ...task,
+        current_progress: count || 0
+      };
+    }));
+
+    setTasks(tasksWithProgress);
     setLoading(false);
   };
 
@@ -62,23 +80,10 @@ export function useSimpleTasks() {
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
 
-    // 1. Check how many times this task has been completed at the CURRENT value
-    const { count, error: countError } = await supabase
-      .from('simple_task_logs')
-      .select('*', { count: 'exact', head: true })
-      .eq('task_id', taskId)
-      .eq('value_at_completion', task.current_value);
-
-    if (countError) {
-      console.error('Error checking stability:', countError);
-      return;
-    }
-
-    const currentCompletions = count || 0;
+    const currentCompletions = task.current_progress;
     const shouldIncrease = currentCompletions + 1 >= STABILITY_THRESHOLD;
     const newValue = shouldIncrease ? task.current_value + task.increment_value : task.current_value;
 
-    // 2. Log completion
     const { error: logError } = await supabase.from('simple_task_logs').insert({
       task_id: taskId,
       user_id: user.id,
@@ -91,19 +96,15 @@ export function useSimpleTasks() {
       return;
     }
 
-    // 3. Update task value if threshold reached
     if (shouldIncrease) {
-      const { error: updateError } = await supabase
+      await supabase
         .from('simple_tasks')
         .update({ current_value: newValue, updated_at: new Date().toISOString() })
         .eq('id', taskId);
-
-      if (updateError) {
-        console.error('Error updating task:', updateError);
-      } else {
-        setTasks(prev => prev.map(t => t.id === taskId ? { ...t, current_value: newValue } : t));
-      }
     }
+
+    // Refresh to get updated counts
+    await fetchTasks();
 
     return { 
       increased: shouldIncrease, 
