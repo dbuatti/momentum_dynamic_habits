@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSimpleTasks, SimpleTask } from '@/hooks/useSimpleTasks';
 import { TemplateOnboarding } from '@/components/TemplateOnboarding';
 import { SimpleTaskCard } from '@/components/SimpleTaskCard';
@@ -27,15 +27,29 @@ export default function Index() {
     }
   }, [session, sessionLoading, navigate]);
 
+  // Filter tasks based on time of day for specific habits
+  const eligibleTasks = useMemo(() => {
+    const currentHour = new Date().getHours();
+    return tasks.filter(task => {
+      if (task.name === 'Brush Teeth (Morning)') {
+        return currentHour >= 0 && currentHour < 12;
+      }
+      if (task.name === 'Brush Teeth (Evening)') {
+        return currentHour >= 18 && currentHour <= 23;
+      }
+      return true;
+    });
+  }, [tasks]);
+
   const shuffleTask = () => {
-    if (tasks.length > 0) {
-      if (tasks.length > 1 && randomTask) {
-        const otherTasks = tasks.filter(t => t.id !== randomTask.id);
+    if (eligibleTasks.length > 0) {
+      if (eligibleTasks.length > 1 && randomTask) {
+        const otherTasks = eligibleTasks.filter(t => t.id !== randomTask.id);
         const randomIndex = Math.floor(Math.random() * otherTasks.length);
         setRandomTask(otherTasks[randomIndex]);
       } else {
-        const randomIndex = Math.floor(Math.random() * tasks.length);
-        setRandomTask(tasks[randomIndex]);
+        const randomIndex = Math.floor(Math.random() * eligibleTasks.length);
+        setRandomTask(eligibleTasks[randomIndex]);
       }
     }
   };
@@ -53,10 +67,10 @@ export default function Index() {
   };
 
   useEffect(() => {
-    if (tasks.length > 0 && !randomTask) {
+    if (eligibleTasks.length > 0 && !randomTask) {
       shuffleTask();
     }
-  }, [tasks]);
+  }, [eligibleTasks]);
 
   // Calculate x offset based on view
   const getXOffset = () => {
@@ -133,7 +147,7 @@ export default function Index() {
         {/* Task View (Center) */}
         <div className="w-screen min-h-screen pb-48 overflow-y-auto">
           <div className="container max-w-2xl pt-20 px-8 space-y-10">
-            {!isOverrideMode && tasks.length > 1 && (
+            {!isOverrideMode && eligibleTasks.length > 1 && (
               <div className="flex justify-center animate-in fade-in slide-in-from-top-4 duration-700">
                 <Button 
                   onClick={shuffleTask} 
@@ -150,7 +164,7 @@ export default function Index() {
             <div className="space-y-12">
               {isOverrideMode ? (
                 <div className="grid gap-16 animate-in fade-in slide-in-from-bottom-8 duration-700">
-                  {tasks.map(task => (
+                  {eligibleTasks.map(task => (
                     <SimpleTaskCard 
                       key={task.id} 
                       task={task} 
@@ -165,7 +179,7 @@ export default function Index() {
                       task={randomTask} 
                       onComplete={handleComplete} 
                       onShuffle={shuffleTask}
-                      showShuffle={false}
+                      showShuffle={true}
                     />
                   </div>
                 )

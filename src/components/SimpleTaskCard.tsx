@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { SimpleTask } from "@/hooks/useSimpleTasks";
-import { Check, Shuffle, Play, Pause, RotateCcw, Timer } from "lucide-react";
+import { Check, Shuffle, Play, Pause, RotateCcw, Timer, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { audioManager } from "@/utils/audio";
@@ -103,13 +103,15 @@ export function SimpleTaskCard({ task, onComplete, onShuffle, showShuffle }: Sim
       <div className="text-center space-y-4 w-full">
         <h2 className="text-6xl font-black tracking-tighter text-white uppercase italic">{task.name}</h2>
         
-        <div className="max-w-[180px] mx-auto space-y-2">
-          <div className="flex justify-between text-[9px] font-black uppercase tracking-[0.2em] text-white/50">
-            <span>Stability</span>
-            <span>{task.current_progress}/{STABILITY_THRESHOLD}</span>
+        {task.increment_value > 0 && (
+          <div className="max-w-[180px] mx-auto space-y-2">
+            <div className="flex justify-between text-[9px] font-black uppercase tracking-[0.2em] text-white/50">
+              <span>Stability</span>
+              <span>{task.current_progress}/{STABILITY_THRESHOLD}</span>
+            </div>
+            <Progress value={progressPercent} className="h-1.5 bg-white/10 [&>div]:bg-white shadow-sm" />
           </div>
-          <Progress value={progressPercent} className="h-1.5 bg-white/10 [&>div]:bg-white shadow-sm" />
-        </div>
+        )}
 
         <p className="text-lg font-bold text-white/60 uppercase tracking-widest">
           {isTimeTask 
@@ -197,8 +199,8 @@ export function SimpleTaskCard({ task, onComplete, onShuffle, showShuffle }: Sim
             onClick={onShuffle}
             className="w-full h-12 gap-3 font-black text-white/40 hover:text-white hover:bg-white/10 rounded-[2rem] uppercase tracking-widest text-[10px] transition-colors"
           >
-            <Shuffle className="w-4 h-4" />
-            Try something else?
+            <X className="w-4 h-4" />
+            Skip for now
           </Button>
         )}
       </div>
