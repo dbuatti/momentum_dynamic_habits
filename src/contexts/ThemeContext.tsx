@@ -10,7 +10,8 @@ type ThemeContextType = {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>("system");
+  // Default to light to keep the vibrant orange theme
+  const [theme, setTheme] = useState<Theme>("light");
 
   useEffect(() => {
     const root = window.document.documentElement;

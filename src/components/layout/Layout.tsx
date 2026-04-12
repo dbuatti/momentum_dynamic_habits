@@ -1,7 +1,6 @@
 "use client";
 
 import React from 'react';
-import { NavigationProgressToast } from './NavigationProgressToast';
 import { useTabProgress } from '@/hooks/useTabProgress';
 import { FloatingTimer } from './FloatingTimer';
 
@@ -19,7 +18,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       <main className="flex flex-1 flex-col overflow-hidden">
         {children}
       </main>
-      <NavigationProgressToast />
       <FloatingTimer />
     </div>
   );

@@ -40,18 +40,6 @@
 
     --radius: 2.5rem; 
   }
-
-  .dark {
-    --background: 25 40% 8%;
-    --foreground: 30 100% 97%;
-    --card: 25 40% 10%;
-    --card-foreground: 30 100% 97%;
-    --primary: 25 95% 60%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 25 30% 15%;
-    --secondary-foreground: 30 100% 97%;
-    --border: 25 30% 18%;
-  }
 }
 
 @layer base {

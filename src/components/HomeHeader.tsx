@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { Clock, User, Trophy, Zap, Settings, Star, CheckCircle2 } from 'lucide-react';
+import { Clock, User, Trophy, Zap, Settings, Star } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 import { getXpForNextLevel, getXpForCurrentLevelStart } from '@/utils/leveling';
-import { formatTimeDisplay } from '@/utils/time-utils'; // Import from new utility
 
 interface HomeHeaderProps {
   dayCounter: number;
@@ -17,8 +15,8 @@ interface HomeHeaderProps {
   lastName: string | null;
   xp: number;
   level: number;
-  tasksCompletedToday?: number; // Now represents completed parts
-  dailyChallengeTarget?: number; // Now represents total eligible parts
+  tasksCompletedToday?: number;
+  dailyChallengeTarget?: number;
 }
 
 const getGreeting = (firstName: string | null, lastName: string | null) => {
@@ -33,14 +31,11 @@ const getGreeting = (firstName: string | null, lastName: string | null) => {
 };
 
 const HomeHeader: React.FC<HomeHeaderProps> = ({ 
-  dayCounter, 
   lastActiveText, 
   firstName, 
   lastName, 
   xp, 
-  level,
-  tasksCompletedToday = 0,
-  dailyChallengeTarget = 0 // Default to 0 if no eligible tasks
+  level
 }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
   
@@ -51,16 +46,11 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
     return () => clearInterval(timer);
   }, []);
 
-  const formattedTime = format(currentTime, 'HH:mm');
-  
   const xpForCurrentLevelStart = getXpForCurrentLevelStart(level);
   const xpForNextLevel = getXpForNextLevel(level);
   const xpProgressInCurrentLevel = Math.max(0, xp - xpForCurrentLevelStart);
   const xpNeededForNextLevel = xpForNextLevel - xpForCurrentLevelStart;
   const levelProgress = xpNeededForNextLevel > 0 ? (xpProgressInCurrentLevel / xpNeededForNextLevel) * 100 : 0;
-
-  const challengeProgress = dailyChallengeTarget > 0 ? Math.min(100, (tasksCompletedToday / dailyChallengeTarget) * 100) : 0;
-  const isChallengeComplete = dailyChallengeTarget > 0 && tasksCompletedToday >= dailyChallengeTarget;
 
   return (
     <Card className="w-full mb-6 border-0 shadow-sm rounded-2xl overflow-hidden">
@@ -115,19 +105,6 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
                <span>{Math.round(xpProgressInCurrentLevel)} / {xpNeededForNextLevel} XP</span>
             </div>
             <Progress value={levelProgress} className="h-1.5 [&>div]:bg-warning" />
-          </div>
-
-          <div className="space-y-1.5">
-            <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-               <div className="flex items-center gap-1">
-                 <CheckCircle2 className={cn("w-3 h-3", isChallengeComplete ? "text-success" : "text-primary")} />
-                 <span>Daily Momentum</span>
-               </div>
-               <span className={cn(isChallengeComplete && "text-success")}>
-                 {tasksCompletedToday} / {dailyChallengeTarget} Parts
-               </span>
-            </div>
-            <Progress value={challengeProgress} className={cn("h-1.5", isChallengeComplete ? "[&>div]:bg-success" : "[&>div]:bg-primary")} />
           </div>
         </div>
       </CardContent>
