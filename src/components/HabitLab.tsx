@@ -13,7 +13,8 @@ import {
   Target,
   Languages,
   BookOpen,
-  Plus
+  Plus,
+  RefreshCw
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatTimeDisplay } from "@/utils/time-utils";
@@ -33,7 +34,8 @@ export function HabitLab() {
   const [localSeconds, setLocalSeconds] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const labTasks = tasks.filter(t => ['Walking', 'Duolingo', 'Reading'].includes(t.name));
+  const labTaskNames = ['Walking', 'Duolingo', 'Reading'];
+  const labTasks = tasks.filter(t => labTaskNames.includes(t.name));
   const currentTask = tasks.find(t => t.name === labType);
   
   const currentGoalSeconds = currentTask?.current_value || 600;
@@ -51,6 +53,15 @@ export function HabitLab() {
       updateSession(randomTask.name, 'start', 0);
     }
   }, [sessionLoading, tasksLoading, labType, labTasks, updateSession]);
+
+  const handleSwitchTask = async () => {
+    if (labTasks.length <= 1) return;
+    const currentIndex = labTaskNames.indexOf(labType || '');
+    const nextIndex = (currentIndex + 1) % labTaskNames.length;
+    const nextTaskName = labTaskNames[nextIndex];
+    await updateSession(nextTaskName, 'start', 0);
+    setLocalSeconds(0);
+  };
 
   const handleStartAction = async () => {
     audioManager.playSuccess();
@@ -122,9 +133,6 @@ export function HabitLab() {
           The Practice Lab works with specific habits like Walking, Reading, or Duolingo. 
           Accept the templates on the main screen to unlock it!
         </p>
-        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40">
-          Swipe left to return
-        </p>
       </div>
     );
   }
@@ -195,15 +203,33 @@ export function HabitLab() {
                 <h3 className="text-3xl font-black text-white uppercase">{config.step1Title}</h3>
                 <p className="text-white/60 font-bold">{config.step1Desc}</p>
               </div>
-              <div className="w-32 h-32 mx-auto bg-white rounded-[2.5rem] flex items-center justify-center shadow-xl">
+              <div className="w-32 h-32 mx-auto bg-white rounded-[2.5rem] flex items-center justify-center shadow-xl relative group">
                 <Icon className={cn("w-16 h-16", config.color)} />
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={handleSwitchTask}
+                  className="absolute -top-2 -right-2 bg-white shadow-lg rounded-full h-10 w-10 text-orange-500 hover:bg-orange-50"
+                  title="Switch Practice"
+                >
+                  <RefreshCw className="w-5 h-5" />
+                </Button>
               </div>
-              <Button 
-                onClick={handleStartAction}
-                className={cn("w-full h-24 text-2xl font-black rounded-[2.5rem] bg-white hover:scale-105 transition-all", config.color)}
-              >
-                {config.step1Button}
-              </Button>
+              <div className="space-y-4">
+                <Button 
+                  onClick={handleStartAction}
+                  className={cn("w-full h-24 text-2xl font-black rounded-[2.5rem] bg-white hover:scale-105 transition-all", config.color)}
+                >
+                  {config.step1Button}
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  onClick={handleSwitchTask}
+                  className="text-white/40 hover:text-white font-black uppercase tracking-widest text-[10px]"
+                >
+                  <RefreshCw className="w-3 h-3 mr-2" /> Switch to {labTaskNames[(labTaskNames.indexOf(labType) + 1) % labTaskNames.length]}
+                </Button>
+              </div>
             </div>
           )}
 
@@ -239,14 +265,12 @@ export function HabitLab() {
                 </Button>
                 <Button 
                   onClick={handleFinish}
-                  disabled={!isGoalMet}
                   className={cn(
                     "flex-[2] h-20 text-xl font-black rounded-[2rem] bg-white transition-all",
-                    config.color,
-                    !isGoalMet && "opacity-50 grayscale cursor-not-allowed"
+                    config.color
                   )}
                 >
-                  {isGoalMet ? "FINISH" : "KEEP GOING!"}
+                  {isGoalMet ? "FINISH" : "FINISH EARLY"}
                 </Button>
               </div>
             </div>
@@ -282,7 +306,7 @@ export function HabitLab() {
       </Card>
 
       <div className="flex flex-col items-center gap-2 opacity-40">
-        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white">
+        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white animate-pulse">
           Swipe left to return
         </p>
       </div>
