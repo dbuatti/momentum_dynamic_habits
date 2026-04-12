@@ -28,9 +28,17 @@ export default function Index() {
   }, [session, sessionLoading, navigate]);
 
   // Filter tasks based on time of day for specific habits
+  // Also exclude lab-specific tasks from the central view
   const eligibleTasks = useMemo(() => {
     const currentHour = new Date().getHours();
+    const labTaskNames = ['Walking', 'Duolingo', 'Reading'];
+
     return tasks.filter(task => {
+      // Exclude lab tasks from central view
+      if (labTaskNames.includes(task.name)) {
+        return false;
+      }
+
       if (task.name === 'Brush Teeth (Morning)') {
         return currentHour >= 0 && currentHour < 12;
       }
