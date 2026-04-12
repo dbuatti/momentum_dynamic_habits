@@ -110,8 +110,6 @@ export function useSimpleTasks() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['simpleTasks', userId] });
-      // Also invalidate dashboard data if it exists
-      queryClient.invalidateQueries({ queryKey: ['dashboardData', userId] });
     }
   });
 
