@@ -1,21 +1,20 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useSimpleTasks, SimpleTask } from '@/hooks/useSimpleTasks';
-import { TemplateOnboarding } from '@/components/TemplateOnboarding';
 import { SimpleTaskCard } from '@/components/SimpleTaskCard';
 import { SimpleTaskRow } from '@/components/SimpleTaskRow';
 import { DayReminder } from '@/components/DayReminder';
 import { HabitLab } from '@/components/HabitLab';
 import { ScreenBreakTimer } from '@/components/ScreenBreakTimer';
-import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Loader2, LayoutGrid, RefreshCw, ChevronRight, ChevronLeft, Moon, Sparkles } from "lucide-react";
 import { useSession } from '@/contexts/SessionContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { motion, useAnimation, PanInfo, AnimatePresence } from 'framer-motion';
-import { getTodayDateString } from '@/utils/time-utils';
 import { cn } from '@/lib/utils';
 import { isSameDay } from 'date-fns';
+import { getTodayDateString } from '@/utils/time-utils';
 
 export default function Index() {
   const { session, loading: sessionLoading } = useSession();
@@ -25,15 +24,16 @@ export default function Index() {
   const [view, setView] = useState<'lab' | 'task' | 'day'>('task');
   const navigate = useNavigate();
   const controls = useAnimation();
-  const containerRef = useRef<HTMLDivElement>(null);
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 390);
 
+  // Update window width on resize for accurate snapping
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Redirect to login if no session
   useEffect(() => {
     if (!sessionLoading && !session) {
       navigate('/login');
@@ -118,6 +118,7 @@ export default function Index() {
     }
   }, [eligibleTasks]);
 
+  // Calculate the X offset based on the current view
   const getXOffset = () => {
     if (view === 'lab') return 0;
     if (view === 'task') return -windowWidth;
@@ -125,9 +126,29 @@ export default function Index() {
     return -windowWidth;
   };
 
+  // Animate to the correct position whenever the view or window width changes
   useEffect(() => {
     controls.start({ x: getXOffset() });
-  }, [view, controls, windowWidth]);
+  }, [view, windowWidth, controls]);
+
+  const handleDragEnd = (event: any, info: PanInfo) => {
+    const threshold = windowWidth * 0.2; // 20% of screen width to trigger swipe
+    const velocityThreshold = 500;
+    const { offset, velocity } = info;
+
+    if (offset.x < -threshold || velocity.x < -velocityThreshold) {
+      // Swiping Left (Next View)
+      if (view === 'lab') setView('task');
+      else if (view === 'task') setView('day');
+    } else if (offset.x > threshold || velocity.x > velocityThreshold) {
+      // Swiping Right (Previous View)
+      if (view === 'day') setView('task');
+      else if (view === 'task') setView('lab');
+    }
+    
+    // Always snap back to the current view's position if no transition occurred
+    controls.start({ x: getXOffset() });
+  };
 
   if (sessionLoading || tasksLoading) {
     return (
@@ -142,30 +163,9 @@ export default function Index() {
 
   if (!session) return null;
 
-  const handleDragEnd = (event: any, info: PanInfo) => {
-    const swipeThreshold = 50;
-    const velocityThreshold = 500;
-    const { offset, velocity } = info;
-
-    // Horizontal swipe detection
-    if (Math.abs(offset.x) > 20) {
-      if (offset.x < -swipeThreshold || velocity.x < -velocityThreshold) {
-        // Swiping Left (Next View)
-        if (view === 'lab') setView('task');
-        else if (view === 'task') setView('day');
-      } else if (offset.x > swipeThreshold || velocity.x > velocityThreshold) {
-        // Swiping Right (Previous View)
-        if (view === 'day') setView('task');
-        else if (view === 'task') setView('lab');
-      }
-    }
-    
-    controls.start({ x: getXOffset() });
-  };
-
   return (
     <div className={cn(
-      "h-screen transition-colors duration-1000 overflow-hidden touch-pan-y select-none",
+      "h-screen transition-colors duration-1000 overflow-hidden touch-none select-none",
       isAllDone ? "bg-black" : isCentralDone ? "bg-[#1a0d00]" : "bg-background"
     )}>
       <AnimatePresence>
@@ -188,17 +188,17 @@ export default function Index() {
       </AnimatePresence>
 
       <motion.div 
-        ref={containerRef}
         className="flex w-[300%] h-full relative z-10"
         animate={controls}
         initial={{ x: getXOffset() }}
         transition={{ type: "spring", stiffness: 300, damping: 35 }}
         drag="x"
         dragConstraints={{ left: -windowWidth * 2, right: 0 }}
-        dragElastic={0.2}
+        dragElastic={0.1}
         onDragEnd={handleDragEnd}
         dragMomentum={false}
       >
+        {/* View 1: Habit Lab */}
         <div className={cn(
           "w-screen h-full overflow-y-auto transition-opacity duration-700",
           isAllDone ? "opacity-20" : "opacity-100"
@@ -206,6 +206,7 @@ export default function Index() {
           <HabitLab />
         </div>
 
+        {/* View 2: Main Task View */}
         <div className="w-screen h-full relative overflow-hidden">
           <div className="absolute top-10 right-10 z-[100]">
             <ScreenBreakTimer />
@@ -286,6 +287,7 @@ export default function Index() {
                 </>
               )}
 
+              {/* Navigation Hints */}
               <div className="flex justify-between items-center px-4 pt-8 opacity-20">
                 <div className="flex items-center gap-1">
                   <ChevronLeft className="w-3 h-3 text-white" />
@@ -300,6 +302,7 @@ export default function Index() {
           </div>
         </div>
 
+        {/* View 3: Day Reminder */}
         <div className={cn(
           "w-screen h-full overflow-hidden transition-opacity duration-700",
           isAllDone ? "opacity-10" : "opacity-100"
@@ -308,6 +311,7 @@ export default function Index() {
         </div>
       </motion.div>
 
+      {/* Bottom Control Bar */}
       <div className={cn(
         "fixed bottom-10 left-1/2 -translate-x-1/2 w-[calc(100%-4rem)] max-w-md z-50 transition-all duration-1000",
         isAllDone ? "opacity-20 translate-y-4 grayscale" : "opacity-100"
