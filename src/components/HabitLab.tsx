@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { 
@@ -13,8 +13,11 @@ import {
   Target,
   Languages,
   BookOpen,
-  Plus,
-  RefreshCw
+  RefreshCw,
+  ChevronRight,
+  Brain,
+  Sparkles,
+  Heart
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatTimeDisplay } from "@/utils/time-utils";
@@ -25,10 +28,11 @@ import { useSession } from "@/contexts/SessionContext";
 import confetti from 'canvas-confetti';
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
+import { motion, AnimatePresence } from 'framer-motion';
 
 export function HabitLab() {
   const { session } = useSession();
-  const { stage, labType, seconds, loading: sessionLoading, updateSession, resetSession } = useLabSession();
+  const { stage, labType, seconds, metadata, loading: sessionLoading, updateSession, resetSession } = useLabSession();
   const { tasks, completeTask, loading: tasksLoading } = useSimpleTasks();
   const [isActive, setIsActive] = useState(false);
   const [localSeconds, setLocalSeconds] = useState(0);
@@ -41,6 +45,47 @@ export function HabitLab() {
   const currentGoalSeconds = currentTask?.current_value || 600;
   const stabilityProgress = currentTask?.current_progress || 0;
 
+  const labConfigs: Record<string, any> = {
+    'Walking': {
+      icon: CloudSun,
+      color: "text-orange-500",
+      bgColor: "bg-orange-500/10",
+      borderColor: "border-orange-500/20",
+      adhdTip: "The transition is the hardest part. Don't think about the walk, just think about the shoes.",
+      microSteps: [
+        { id: 'shoes', label: "Shoes on", icon: "👟" },
+        { id: 'door', label: "Door open", icon: "🚪" },
+        { id: 'outside', label: "Step outside", icon: "🌳" }
+      ]
+    },
+    'Duolingo': {
+      icon: Languages,
+      color: "text-green-500",
+      bgColor: "bg-green-500/10",
+      borderColor: "border-green-500/20",
+      adhdTip: "Forget the streak. Forget the leaderboard. Just focus on one single sound today.",
+      microSteps: [
+        { id: 'phone', label: "Phone in hand", icon: "📱" },
+        { id: 'open', label: "App open", icon: "🦉" },
+        { id: 'start', label: "Start 1 lesson", icon: "✨" }
+      ]
+    },
+    'Reading': {
+      icon: BookOpen,
+      color: "text-blue-500",
+      bgColor: "bg-blue-500/10",
+      borderColor: "border-blue-500/20",
+      adhdTip: "If your mind wanders, that's okay. It's just your brain exploring. Gently come back to the next word.",
+      microSteps: [
+        { id: 'grab', label: "Grab book", icon: "📖" },
+        { id: 'open', label: "Open to page", icon: "🔖" },
+        { id: 'sentence', label: "Read 1 sentence", icon: "✍️" }
+      ]
+    }
+  };
+
+  const config = useMemo(() => labConfigs[labType || 'Walking'] || labConfigs['Walking'], [labType]);
+
   useEffect(() => {
     if (!sessionLoading) {
       setLocalSeconds(seconds);
@@ -49,24 +94,46 @@ export function HabitLab() {
 
   useEffect(() => {
     if (!sessionLoading && !tasksLoading && !labType && labTasks.length > 0) {
-      const randomTask = labTasks[Math.floor(Math.random() * labTasks.length)];
-      updateSession(randomTask.name, 'start', 0);
+      updateSession(labTasks[0].name, 'start', 0, { completedMicroSteps: [] });
     }
   }, [sessionLoading, tasksLoading, labType, labTasks, updateSession]);
 
   const handleSwitchTask = async () => {
-    if (labTasks.length <= 1) return;
     const currentIndex = labTaskNames.indexOf(labType || '');
     const nextIndex = (currentIndex + 1) % labTaskNames.length;
     const nextTaskName = labTaskNames[nextIndex];
-    await updateSession(nextTaskName, 'start', 0);
+    setIsActive(false);
+    if (timerRef.current) clearInterval(timerRef.current);
     setLocalSeconds(0);
+    await updateSession(nextTaskName, 'start', 0, { completedMicroSteps: [] });
+  };
+
+  const toggleMicroStep = async (stepId: string) => {
+    const currentSteps = metadata?.completedMicroSteps || [];
+    const isAlreadyDone = currentSteps.includes(stepId);
+    
+    let nextSteps;
+    if (isAlreadyDone) {
+      nextSteps = currentSteps.filter((id: string) => id !== stepId);
+    } else {
+      nextSteps = [...currentSteps, stepId];
+      audioManager.playStart();
+    }
+
+    await updateSession(labType!, stage, localSeconds, { ...metadata, completedMicroSteps: nextSteps });
+
+    // If all micro-steps are done, auto-advance to active stage
+    if (!isAlreadyDone && nextSteps.length === config.microSteps.length && stage === 'start') {
+      setTimeout(() => {
+        handleStartAction();
+      }, 6000);
+    }
   };
 
   const handleStartAction = async () => {
     audioManager.playSuccess();
     confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-    await updateSession(labType!, 'active', 0);
+    await updateSession(labType!, 'active', 0, metadata);
   };
 
   const toggleTimer = () => {
@@ -79,7 +146,7 @@ export function HabitLab() {
       }, 1000);
     } else {
       if (timerRef.current) clearInterval(timerRef.current);
-      updateSession(labType!, 'active', localSeconds);
+      updateSession(labType!, 'active', localSeconds, metadata);
       setIsActive(false);
     }
   };
@@ -94,17 +161,13 @@ export function HabitLab() {
       confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 } });
 
       if (result?.increased) {
-        toast.success("Level Up!", {
-          description: `Your ${labType} goal increased!`,
-        });
+        toast.success("Level Up!", { description: `Your ${labType} goal increased!` });
       } else {
-        toast.success(`${labType} Logged!`, {
-          description: `${result?.progress}/3 steps to your next goal increase.`,
-        });
+        toast.success(`${labType} Logged!`, { description: `${result?.progress}/3 steps to your next goal increase.` });
       }
     }
 
-    await updateSession(labType!, 'complete', localSeconds);
+    await updateSession(labType!, 'complete', localSeconds, metadata);
   };
 
   const handleReset = async () => {
@@ -137,175 +200,195 @@ export function HabitLab() {
     );
   }
 
-  if (!labType) {
-    return (
-      <div className="w-full min-h-screen flex items-center justify-center">
-        <Loader2 className="w-12 h-12 animate-spin text-white/50" />
-      </div>
-    );
-  }
-
   const progressToGoal = Math.min(100, (localSeconds / currentGoalSeconds) * 100);
   const isGoalMet = localSeconds >= currentGoalSeconds;
-
-  const labConfigs: Record<string, any> = {
-    'Walking': {
-      icon: CloudSun,
-      step1Title: "Step 1: Get Out",
-      step1Desc: "The hardest part is just crossing the threshold.",
-      step1Button: "I'M OUTSIDE!",
-      step2Title: "Step 2: Move",
-      color: "text-orange-500"
-    },
-    'Duolingo': {
-      icon: Languages,
-      step1Title: "Step 1: Open App",
-      step1Desc: "Just tap the owl. Don't think about the lesson yet.",
-      step1Button: "APP IS OPEN!",
-      step2Title: "Step 2: Practice",
-      color: "text-green-500"
-    },
-    'Reading': {
-      icon: BookOpen,
-      step1Title: "Step 1: Grab Book",
-      step1Desc: "Pick up your Kobo or book. Just hold it.",
-      step1Button: "I HAVE IT!",
-      step2Title: "Step 2: Read",
-      color: "text-blue-500"
-    }
-  };
-
-  const config = labConfigs[labType] || labConfigs['Walking'];
-  const Icon = config.icon;
+  const completedMicroSteps = metadata?.completedMicroSteps || [];
 
   return (
-    <div className="w-full min-h-screen flex flex-col items-center pt-20 p-8 space-y-12 relative">
-      <div className="text-center space-y-4">
-        <div className="mx-auto w-20 h-20 rounded-[2rem] bg-white/20 flex items-center justify-center mb-6">
-          <Compass className="w-10 h-10 text-white" />
+    <div className="w-full min-h-screen flex flex-col items-center pt-16 p-6 space-y-8 relative">
+      {/* Header Section */}
+      <div className="text-center space-y-4 w-full max-w-md">
+        <div className="flex items-center justify-between mb-2">
+          <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
+            <Compass className="w-6 h-6 text-white" />
+          </div>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleSwitchTask}
+            className="rounded-full bg-white/10 text-white hover:bg-white/20 font-black uppercase text-[10px] tracking-widest h-8 px-4"
+          >
+            <RefreshCw className="w-3 h-3 mr-2" /> Cycle Lab
+          </Button>
         </div>
-        <h2 className="text-5xl font-black tracking-tighter text-white uppercase italic">Practice Lab</h2>
         
-        <div className="max-w-[200px] mx-auto space-y-2">
+        <h2 className="text-5xl font-black tracking-tighter text-white uppercase italic text-left">{labType}</h2>
+        
+        <div className="space-y-2">
           <div className="flex justify-between text-[9px] font-black uppercase tracking-[0.2em] text-white/50">
-            <span>{labType} Stability</span>
+            <span>Stability Progress</span>
             <span>{stabilityProgress}/3</span>
           </div>
           <Progress value={(stabilityProgress / 3) * 100} className="h-1.5 bg-white/10 [&>div]:bg-white shadow-sm" />
         </div>
       </div>
 
-      <Card className="w-full max-w-md bg-white/10 border-white/20 rounded-[3rem] overflow-hidden shadow-2xl">
-        <CardContent className="p-10 space-y-8">
-          {stage === 'start' && (
-            <div className="space-y-8 text-center animate-in fade-in zoom-in-95 duration-500">
-              <div className="space-y-2">
-                <h3 className="text-3xl font-black text-white uppercase">{config.step1Title}</h3>
-                <p className="text-white/60 font-bold">{config.step1Desc}</p>
-              </div>
-              <div className="w-32 h-32 mx-auto bg-white rounded-[2.5rem] flex items-center justify-center shadow-xl relative group">
-                <Icon className={cn("w-16 h-16", config.color)} />
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={handleSwitchTask}
-                  className="absolute -top-2 -right-2 bg-white shadow-lg rounded-full h-10 w-10 text-orange-500 hover:bg-orange-50"
-                  title="Switch Practice"
-                >
-                  <RefreshCw className="w-5 h-5" />
-                </Button>
-              </div>
-              <div className="space-y-4">
-                <Button 
-                  onClick={handleStartAction}
-                  className={cn("w-full h-24 text-2xl font-black rounded-[2.5rem] bg-white hover:scale-105 transition-all", config.color)}
-                >
-                  {config.step1Button}
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  onClick={handleSwitchTask}
-                  className="text-white/40 hover:text-white font-black uppercase tracking-widest text-[10px]"
-                >
-                  <RefreshCw className="w-3 h-3 mr-2" /> Switch to {labTaskNames[(labTaskNames.indexOf(labType) + 1) % labTaskNames.length]}
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {stage === 'active' && (
-            <div className="space-y-8 text-center animate-in slide-in-from-right-8 duration-500">
-              <div className="space-y-2">
-                <h3 className="text-3xl font-black text-white uppercase">{config.step2Title}</h3>
-                <div className="flex items-center justify-center gap-2 text-white/60 font-bold uppercase text-xs tracking-widest">
-                  <Target className="w-4 h-4" />
-                  Goal: {Math.floor(currentGoalSeconds / 60)}m
-                </div>
-              </div>
-              
-              <div className="relative py-4">
-                <div className={cn(
-                  "text-7xl font-black tabular-nums tracking-tighter transition-colors duration-500",
-                  isGoalMet ? "text-white" : "text-white/90"
-                )}>
-                  {formatTimeDisplay(localSeconds)}
-                </div>
-                <div className="mt-4 px-4">
-                  <Progress value={progressToGoal} className="h-2 bg-white/10 [&>div]:bg-white" />
-                </div>
-              </div>
-
-              <div className="flex gap-4">
-                <Button 
-                  onClick={toggleTimer}
-                  variant="secondary"
-                  className="flex-1 h-20 rounded-[2rem] bg-white/20 text-white border-none hover:bg-white/30"
-                >
-                  {isActive ? <Pause className="w-8 h-8" /> : <Play className="w-8 h-8 ml-1" />}
-                </Button>
-                <Button 
-                  onClick={handleFinish}
-                  className={cn(
-                    "flex-[2] h-20 text-xl font-black rounded-[2rem] bg-white transition-all",
-                    config.color
-                  )}
-                >
-                  {isGoalMet ? "FINISH" : "FINISH EARLY"}
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {stage === 'complete' && (
-            <div className="space-y-8 text-center animate-in zoom-in-95 duration-500">
-              <div className="w-24 h-24 mx-auto bg-green-500 rounded-[2rem] flex items-center justify-center shadow-xl">
-                <Check className="w-12 h-12 text-white stroke-[4]" />
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-3xl font-black text-white uppercase">Victory!</h3>
-                <p className="text-white/60 font-bold">You showed up for yourself today.</p>
-                <div className="flex flex-col items-center gap-2 pt-4">
-                  <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/10">
-                    <Zap className="w-4 h-4 text-yellow-400" />
-                    <span className="text-xs font-black text-white uppercase tracking-widest">
-                      {Math.floor(localSeconds / 60)}m {localSeconds % 60}s Logged
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <Button 
-                onClick={handleReset}
-                variant="ghost"
-                className="w-full h-12 text-white/40 hover:text-white font-black uppercase tracking-widest text-xs"
-              >
-                <RotateCcw className="w-4 h-4 mr-2" /> Try Another Lab
-              </Button>
-            </div>
-          )}
+      {/* ADHD Coaching Card */}
+      <Card className="w-full max-w-md bg-white/5 border-white/10 rounded-3xl overflow-hidden">
+        <CardContent className="p-4 flex items-start gap-4">
+          <div className="bg-white/10 p-2 rounded-xl shrink-0">
+            <Brain className="w-5 h-5 text-white/80" />
+          </div>
+          <div className="space-y-1">
+            <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Coach's Insight</p>
+            <p className="text-xs font-bold text-white/80 leading-relaxed italic">"{config.adhdTip}"</p>
+          </div>
         </CardContent>
       </Card>
 
-      <div className="flex flex-col items-center gap-2 opacity-40">
+      {/* Main Lab Interface */}
+      <Card className="w-full max-w-md bg-white/10 border-white/20 rounded-[3rem] overflow-hidden shadow-2xl">
+        <CardContent className="p-8 space-y-8">
+          <AnimatePresence mode="wait">
+            {stage === 'start' && (
+              <motion.div 
+                key="start"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="space-y-8"
+              >
+                <div className="text-center space-y-2">
+                  <h3 className="text-2xl font-black text-white uppercase">Initiation Phase</h3>
+                  <p className="text-white/60 text-sm font-bold">Check off these micro-wins to build momentum.</p>
+                </div>
+
+                <div className="grid gap-3">
+                  {config.microSteps.map((step: any) => {
+                    const isDone = completedMicroSteps.includes(step.id);
+                    return (
+                      <button
+                        key={step.id}
+                        onClick={() => toggleMicroStep(step.id)}
+                        className={cn(
+                          "flex items-center justify-between p-4 rounded-2xl border-2 transition-all duration-300",
+                          isDone 
+                            ? "bg-white text-orange-500 border-white scale-[0.98]" 
+                            : "bg-white/5 border-white/10 text-white hover:bg-white/10"
+                        )}
+                      >
+                        <div className="flex items-center gap-4">
+                          <span className="text-xl">{step.icon}</span>
+                          <span className="font-black uppercase text-sm tracking-tight">{step.label}</span>
+                        </div>
+                        {isDone && <Check className="w-5 h-5 stroke-[4]" />}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <Button 
+                  onClick={handleStartAction}
+                  disabled={completedMicroSteps.length === 0}
+                  className={cn(
+                    "w-full h-20 text-xl font-black rounded-[2.5rem] bg-white transition-all shadow-xl",
+                    config.color,
+                    completedMicroSteps.length === 0 && "opacity-50 grayscale"
+                  )}
+                >
+                  {completedMicroSteps.length === config.microSteps.length ? "LET'S GO!" : "START ANYWAY"}
+                </Button>
+              </motion.div>
+            )}
+
+            {stage === 'active' && (
+              <motion.div 
+                key="active"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="space-y-8 text-center"
+              >
+                <div className="space-y-2">
+                  <div className="flex items-center justify-center gap-2 text-white/60 font-black uppercase text-[10px] tracking-[0.3em]">
+                    <Target className="w-3 h-3" />
+                    Goal: {Math.floor(currentGoalSeconds / 60)}m
+                  </div>
+                  <h3 className="text-3xl font-black text-white uppercase italic">In Progress</h3>
+                </div>
+                
+                <div className="relative py-4">
+                  <div className={cn(
+                    "text-8xl font-black tabular-nums tracking-tighter transition-colors duration-500",
+                    isGoalMet ? "text-white" : "text-white/90"
+                  )}>
+                    {formatTimeDisplay(localSeconds)}
+                  </div>
+                  <div className="mt-6 px-4">
+                    <Progress value={progressToGoal} className="h-2 bg-white/10 [&>div]:bg-white" />
+                  </div>
+                </div>
+
+                <div className="flex gap-4">
+                  <Button 
+                    onClick={toggleTimer}
+                    variant="secondary"
+                    className="flex-1 h-20 rounded-[2rem] bg-white/20 text-white border-none hover:bg-white/30"
+                  >
+                    {isActive ? <Pause className="w-10 h-10" /> : <Play className="w-10 h-10 ml-1" />}
+                  </Button>
+                  <Button 
+                    onClick={handleFinish}
+                    className={cn(
+                      "flex-[2] h-20 text-2xl font-black rounded-[2rem] bg-white transition-all shadow-2xl",
+                      config.color
+                    )}
+                  >
+                    {isGoalMet ? "FINISH" : "DONE FOR NOW"}
+                  </Button>
+                </div>
+              </motion.div>
+            )}
+
+            {stage === 'complete' && (
+              <motion.div 
+                key="complete"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="space-y-8 text-center"
+              >
+                <div className="w-24 h-24 mx-auto bg-green-500 rounded-[2.5rem] flex items-center justify-center shadow-2xl border-4 border-white/20">
+                  <Check className="w-12 h-12 text-white stroke-[4]" />
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-4xl font-black text-white uppercase italic">Victory!</h3>
+                  <p className="text-white/60 font-bold">You bypassed the resistance.</p>
+                  <div className="flex flex-col items-center gap-2 pt-6">
+                    <div className="flex items-center gap-3 px-6 py-3 rounded-full bg-white/10 border border-white/10 shadow-inner">
+                      <Zap className="w-5 h-5 text-yellow-400 fill-yellow-400" />
+                      <span className="text-sm font-black text-white uppercase tracking-widest">
+                        {Math.floor(localSeconds / 60)}m {localSeconds % 60}s Logged
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className="pt-4">
+                  <Button 
+                    onClick={handleReset}
+                    variant="ghost"
+                    className="w-full h-14 text-white/40 hover:text-white font-black uppercase tracking-widest text-xs rounded-2xl hover:bg-white/5"
+                  >
+                    <RotateCcw className="w-4 h-4 mr-2" /> Try Another Lab
+                  </Button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </CardContent>
+      </Card>
+
+      {/* Navigation Hint */}
+      <div className="flex flex-col items-center gap-2 opacity-20">
         <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white animate-pulse">
           Swipe left to return
         </p>

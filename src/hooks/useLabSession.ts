@@ -18,10 +18,9 @@ export function useLabSession() {
         .from('lab_sessions')
         .select('*')
         .eq('user_id', userId)
-        .maybeSingle(); // Use maybeSingle to avoid errors when no row exists
+        .maybeSingle();
 
       if (error) {
-        // Handle common Supabase errors gracefully
         if (error.code === 'PGRST116' || error.code === '42P01') return null;
         throw error;
       }
@@ -29,11 +28,21 @@ export function useLabSession() {
       return data;
     },
     enabled: !!userId,
-    retry: false, // Don't retry on 406 errors to avoid spamming
+    retry: false,
   });
 
   const updateSessionMutation = useMutation({
-    mutationFn: async ({ labType, stage, seconds }: { labType: string; stage: LabStage; seconds: number }) => {
+    mutationFn: async ({ 
+      labType, 
+      stage, 
+      seconds, 
+      metadata = {} 
+    }: { 
+      labType: string; 
+      stage: LabStage; 
+      seconds: number;
+      metadata?: any;
+    }) => {
       if (!userId) return;
 
       const { error } = await supabase
@@ -43,6 +52,7 @@ export function useLabSession() {
           lab_type: labType,
           stage: stage,
           seconds_elapsed: seconds,
+          metadata: metadata,
           last_updated_at: new Date().toISOString()
         }, { onConflict: 'user_id' });
 
@@ -73,9 +83,11 @@ export function useLabSession() {
     stage: (sessionData?.stage as LabStage) || 'start', 
     labType: sessionData?.lab_type || null, 
     seconds: sessionData?.seconds_elapsed || 0, 
+    metadata: sessionData?.metadata || {},
     loading, 
     error: queryError,
-    updateSession: (labType: string, stage: LabStage, seconds: number) => updateSessionMutation.mutateAsync({ labType, stage, seconds }), 
+    updateSession: (labType: string, stage: LabStage, seconds: number, metadata?: any) => 
+      updateSessionMutation.mutateAsync({ labType, stage, seconds, metadata }), 
     resetSession: resetSessionMutation.mutateAsync 
   };
 }
