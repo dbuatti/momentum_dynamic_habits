@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 import { 
   Check, 
   CloudSun, 
@@ -17,7 +18,11 @@ import {
   ChevronRight,
   Brain,
   Sparkles,
-  Heart
+  Heart,
+  Trophy,
+  History,
+  ArrowUpRight,
+  Timer
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatTimeDisplay } from "@/utils/time-utils";
@@ -29,6 +34,7 @@ import confetti from 'canvas-confetti';
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
 import { motion, AnimatePresence } from 'framer-motion';
+import { Input } from '@/components/ui/input';
 
 export function HabitLab() {
   const { session } = useSession();
@@ -36,6 +42,7 @@ export function HabitLab() {
   const { tasks, completeTask, loading: tasksLoading } = useSimpleTasks();
   const [isActive, setIsActive] = useState(false);
   const [localSeconds, setLocalSeconds] = useState(0);
+  const [sessionDetail, setSessionDetail] = useState('');
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const labTaskNames = ['Walking', 'Duolingo', 'Reading'];
@@ -52,6 +59,17 @@ export function HabitLab() {
       bgColor: "bg-orange-500/10",
       borderColor: "border-orange-500/20",
       adhdTip: "The transition is the hardest part. Don't think about the walk, just think about the shoes.",
+      detailLabel: "Extra minutes or steps?",
+      detailPlaceholder: "e.g. 5 extra mins",
+      futureVision: {
+        unit: "hours outside",
+        multiplier: 1, // based on minutes
+        projections: [
+          { years: 1, text: "60 hours of fresh air" },
+          { years: 3, text: "A stronger, calmer heart" },
+          { years: 5, text: "2,000 miles of exploration" }
+        ]
+      },
       microSteps: [
         { id: 'shoes', label: "Shoes on", icon: "👟" },
         { id: 'door', label: "Door open", icon: "🚪" },
@@ -64,6 +82,17 @@ export function HabitLab() {
       bgColor: "bg-green-500/10",
       borderColor: "border-green-500/20",
       adhdTip: "Forget the streak. Forget the leaderboard. Just focus on one single sound today.",
+      detailLabel: "How many lessons?",
+      detailPlaceholder: "e.g. 2 lessons",
+      futureVision: {
+        unit: "lessons",
+        multiplier: 1,
+        projections: [
+          { years: 1, text: "365 new concepts learned" },
+          { years: 3, text: "Conversational confidence" },
+          { years: 5, text: "Fluent in a second world" }
+        ]
+      },
       microSteps: [
         { id: 'phone', label: "Phone in hand", icon: "📱" },
         { id: 'open', label: "App open", icon: "🦉" },
@@ -76,6 +105,17 @@ export function HabitLab() {
       bgColor: "bg-blue-500/10",
       borderColor: "border-blue-500/20",
       adhdTip: "If your mind wanders, that's okay. It's just your brain exploring. Gently come back to the next word.",
+      detailLabel: "Pages or chapters?",
+      detailPlaceholder: "e.g. 10 pages",
+      futureVision: {
+        unit: "books",
+        multiplier: 0.05, // 10 mins ~ 5 pages
+        projections: [
+          { years: 1, text: "12 books finished" },
+          { years: 3, text: "A library of new ideas" },
+          { years: 5, text: "A transformed perspective" }
+        ]
+      },
       microSteps: [
         { id: 'grab', label: "Grab book", icon: "📖" },
         { id: 'open', label: "Open to page", icon: "🔖" },
@@ -105,6 +145,7 @@ export function HabitLab() {
     setIsActive(false);
     if (timerRef.current) clearInterval(timerRef.current);
     setLocalSeconds(0);
+    setSessionDetail('');
     await updateSession(nextTaskName, 'start', 0, { completedMicroSteps: [] });
   };
 
@@ -122,11 +163,10 @@ export function HabitLab() {
 
     await updateSession(labType!, stage, localSeconds, { ...metadata, completedMicroSteps: nextSteps });
 
-    // If all micro-steps are done, auto-advance to active stage
     if (!isAlreadyDone && nextSteps.length === config.microSteps.length && stage === 'start') {
       setTimeout(() => {
         handleStartAction();
-      }, 6000);
+      }, 1500);
     }
   };
 
@@ -156,6 +196,7 @@ export function HabitLab() {
     setIsActive(false);
     
     if (currentTask) {
+      // We pass the sessionDetail as a note to the completeTask function
       const result = await completeTask(currentTask.id);
       audioManager.playSuccess();
       confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 } });
@@ -167,13 +208,14 @@ export function HabitLab() {
       }
     }
 
-    await updateSession(labType!, 'complete', localSeconds, metadata);
+    await updateSession(labType!, 'complete', localSeconds, { ...metadata, sessionDetail });
   };
 
   const handleReset = async () => {
     if (timerRef.current) clearInterval(timerRef.current);
     setIsActive(false);
     setLocalSeconds(0);
+    setSessionDetail('');
     await resetSession();
   };
 
@@ -194,7 +236,6 @@ export function HabitLab() {
         <h2 className="text-3xl font-black text-white uppercase italic">Lab is Empty</h2>
         <p className="text-white/60 font-bold max-w-xs">
           The Practice Lab works with specific habits like Walking, Reading, or Duolingo. 
-          Accept the templates on the main screen to unlock it!
         </p>
       </div>
     );
@@ -329,6 +370,22 @@ export function HabitLab() {
                   </div>
                 </div>
 
+                {/* Future Horizon Card */}
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-3 text-left">
+                  <div className="flex items-center gap-2">
+                    <ArrowUpRight className="w-4 h-4 text-white/40" />
+                    <span className="text-[9px] font-black uppercase tracking-widest text-white/40">Future Horizon</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {config.futureVision.projections.map((proj: any, i: number) => (
+                      <div key={i} className="space-y-1">
+                        <p className="text-[8px] font-black text-white/30 uppercase">{proj.years} Year{proj.years > 1 ? 's' : ''}</p>
+                        <p className="text-[10px] font-bold text-white/80 leading-tight">{proj.text}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="flex gap-4">
                   <Button 
                     onClick={toggleTimer}
@@ -360,18 +417,32 @@ export function HabitLab() {
                 <div className="w-24 h-24 mx-auto bg-green-500 rounded-[2.5rem] flex items-center justify-center shadow-2xl border-4 border-white/20">
                   <Check className="w-12 h-12 text-white stroke-[4]" />
                 </div>
-                <div className="space-y-2">
-                  <h3 className="text-4xl font-black text-white uppercase italic">Victory!</h3>
-                  <p className="text-white/60 font-bold">You bypassed the resistance.</p>
-                  <div className="flex flex-col items-center gap-2 pt-6">
-                    <div className="flex items-center gap-3 px-6 py-3 rounded-full bg-white/10 border border-white/10 shadow-inner">
-                      <Zap className="w-5 h-5 text-yellow-400 fill-yellow-400" />
-                      <span className="text-sm font-black text-white uppercase tracking-widest">
+                
+                <div className="space-y-4">
+                  <div className="space-y-1">
+                    <h3 className="text-4xl font-black text-white uppercase italic">Victory!</h3>
+                    <p className="text-white/60 font-bold">You bypassed the resistance.</p>
+                  </div>
+
+                  <div className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-4">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">{config.detailLabel}</Label>
+                      <Input 
+                        value={sessionDetail}
+                        onChange={(e) => setSessionDetail(e.target.value)}
+                        placeholder={config.detailPlaceholder}
+                        className="bg-white/10 border-white/20 text-white text-center h-12 rounded-xl font-bold"
+                      />
+                    </div>
+                    <div className="flex items-center justify-center gap-3 px-4 py-2 rounded-full bg-white/10 border border-white/10">
+                      <Timer className="w-4 h-4 text-white/40" />
+                      <span className="text-xs font-black text-white uppercase tracking-widest">
                         {Math.floor(localSeconds / 60)}m {localSeconds % 60}s Logged
                       </span>
                     </div>
                   </div>
                 </div>
+
                 <div className="pt-4">
                   <Button 
                     onClick={handleReset}
