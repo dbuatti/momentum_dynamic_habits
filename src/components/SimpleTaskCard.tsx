@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { SimpleTask } from "@/hooks/useSimpleTasks";
-import { Check, Shuffle, Play, Pause, RotateCcw, Timer, X, Star } from "lucide-react";
+import { Check, Shuffle, Play, Pause, RotateCcw, Timer, X, Star, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { audioManager } from "@/utils/audio";
 import { Progress } from "@/components/ui/progress";
-import { getLevelXpStats } from "@/utils/habit-leveling";
+import { getLevelXpStats, getXpGainForTask } from "@/utils/habit-leveling";
 
 interface SimpleTaskCardProps {
   task: SimpleTask;
@@ -99,6 +99,7 @@ export function SimpleTaskCard({ task, onComplete, onShuffle, showShuffle }: Sim
   // Calculate XP stats for the mastery bar
   const stats = getLevelXpStats(task.habit_xp || 0);
   const progressPercent = (stats.xpInLevel / stats.xpNeededForNext) * 100;
+  const xpGain = getXpGainForTask(task.task_type, task.current_value);
 
   return (
     <div className="w-full max-w-md mx-auto flex flex-col items-center space-y-6 py-4">
@@ -117,6 +118,10 @@ export function SimpleTaskCard({ task, onComplete, onShuffle, showShuffle }: Sim
             <span>{Math.round(stats.xpInLevel)}/{stats.xpNeededForNext}</span>
           </div>
           <Progress value={progressPercent} className="h-1.5 bg-white/10 [&>div]:bg-white shadow-sm" />
+          <div className="flex items-center justify-center gap-1 text-[8px] font-black uppercase tracking-widest text-white/40">
+            <Zap className="w-2 h-2" />
+            Earn +{xpGain} XP per session
+          </div>
         </div>
 
         <p className="text-lg font-bold text-white/60 uppercase tracking-widest">

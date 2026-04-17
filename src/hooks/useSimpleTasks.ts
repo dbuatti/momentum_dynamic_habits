@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { getTodayDateString } from '@/utils/time-utils';
 import { isSameDay, differenceInDays, parseISO } from 'date-fns';
-import { calculateHabitLevel } from '@/utils/habit-leveling';
+import { calculateHabitLevel, getXpGainForTask } from '@/utils/habit-leveling';
 
 export interface SimpleTask {
   id: string;
@@ -102,20 +102,15 @@ export function useSimpleTasks() {
           }
         }
 
-        // Stability progress (logs for current value) - kept for internal tracking but not used for increase
-        const { count: stabilityCount } = await supabase
-          .from('simple_task_logs')
-          .select('*', { count: 'exact', head: true })
-          .eq('task_id', task.id)
-          .eq('value_at_completion', task.current_value);
-        
-        // Total XP (Sum of values in logs)
+        // Total XP (Sum of scaled values in logs)
         const { data: logsForXp } = await supabase
           .from('simple_task_logs')
           .select('value_at_completion')
           .eq('task_id', task.id);
 
-        const habit_xp = (logsForXp || []).reduce((sum, log) => sum + (log.value_at_completion || 0), 0);
+        const habit_xp = (logsForXp || []).reduce((sum, log) => 
+          sum + getXpGainForTask(task.task_type, log.value_at_completion || 0), 0
+        );
         const habit_level = calculateHabitLevel(habit_xp);
 
         // Daily completion check
@@ -128,7 +123,7 @@ export function useSimpleTasks() {
 
         return {
           ...task,
-          current_progress: stabilityCount || 0,
+          current_progress: 0, // Deprecated stability field
           completed_today: (dailyCount || 0) > 0,
           habit_xp,
           habit_level
@@ -161,7 +156,7 @@ export function useSimpleTasks() {
       const task = tasks.find(t => t.id === taskId);
       if (!task) return;
 
-      // 1. Calculate current level
+      // 1. Calculate current level before logging
       const currentLevel = task.habit_level;
 
       // 2. Log the completion
@@ -169,7 +164,7 @@ export function useSimpleTasks() {
         task_id: taskId,
         user_id: userId,
         value_at_completion: task.current_value,
-        increased: false // We'll update this if needed
+        increased: false 
       });
 
       if (logError) throw logError;
@@ -180,7 +175,9 @@ export function useSimpleTasks() {
         .select('value_at_completion')
         .eq('task_id', taskId);
       
-      const newXp = (logsAfter || []).reduce((sum, log) => sum + (log.value_at_completion || 0), 0);
+      const newXp = (logsAfter || []).reduce((sum, log) => 
+        sum + getXpGainForTask(task.task_type, log.value_at_completion || 0), 0
+      );
       const newLevel = calculateHabitLevel(newXp);
       
       const leveledUp = newLevel > currentLevel;

@@ -2,15 +2,12 @@ import { UserHabitRecord } from "@/types/habit";
 
 /**
  * Calculates the XP required to reach the NEXT level from the current level.
- * Uses a gentler exponential curve suitable for effort-based points (minutes/reps).
  * Level 1 -> 2: 50 XP
  * Level 2 -> 3: 75 XP
  * Level 3 -> 4: 112 XP
  */
 export const getXpForNextHabitLevel = (level: number): number => {
   if (level <= 0) return 50;
-  
-  // Base 50 XP, growing by 50% each level
   return Math.round(50 * Math.pow(1.5, level - 1));
 };
 
@@ -36,13 +33,24 @@ export const calculateHabitLevel = (xp: number): number => {
 
 /**
  * Calculates how much XP is earned for a single completion.
- * Now scales directly with the value (minutes or reps).
+ * Balanced for Simple Tasks:
+ * - 1 Rep = 5 XP (since it takes ~3-5 seconds)
+ * - 1 Second = 1 XP
+ */
+export const getXpGainForTask = (type: 'count' | 'time', value: number): number => {
+  const multiplier = type === 'count' ? 5 : 1;
+  return value * multiplier;
+};
+
+/**
+ * Calculates how much XP is earned for a habit completion.
+ * Scales with the value (minutes or reps).
  */
 export const getXpGainPerCompletion = (value: number, isBonus: boolean = false): number => {
-  // Every unit (1 min or 1 rep) grants 1 Mastery XP.
-  // Bonus sessions grant 50% XP to encourage consistency over over-exertion.
-  if (isBonus) return value * 0.5;
-  return value;
+  // For habits, 1 unit (min/rep) = 1 XP. 
+  // Bonus sessions (already completed today) give 50% XP.
+  const multiplier = isBonus ? 0.5 : 1;
+  return value * multiplier;
 };
 
 /**
