@@ -10,6 +10,7 @@ import { showError, showSuccess } from '@/utils/toast';
 import { Progress } from '@/components/ui/progress';
 import { MacroGoalProgress } from '@/components/dashboard/MacroGoalProgress';
 import { TrialGuidance } from '@/components/dashboard/TrialGuidance';
+import { getLevelXpStats } from '@/utils/habit-leveling';
 import { AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { habitIconMap, habitColorMap } from '@/lib/habit-utils';
 import { HabitCapsule } from './HabitCapsule';
@@ -132,6 +133,9 @@ export const HabitAccordionItem: React.FC<HabitAccordionItemProps> = ({
             <div className="flex items-center justify-between gap-2">
               <h3 className="font-black text-lg flex items-center gap-2 leading-tight truncate">
                 {habit.name}
+                <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-primary/10 text-primary text-[10px] font-black border border-primary/20">
+                  Lvl {habit.habit_level || 1}
+                </span>
                 {habit.allCompleted && <CheckCircle2 className="w-5 h-5 text-success inline-block ml-2" />}
               </h3>
             </div>
@@ -183,17 +187,16 @@ export const HabitAccordionItem: React.FC<HabitAccordionItemProps> = ({
         )}
       </AccordionTrigger>
       <AccordionContent className="px-6 pb-6 pt-2 space-y-6">
-        {(habit.is_trial_mode || habit.anchor_practice) && !habit.allCompleted && (
+        {!habit.allCompleted && (
           <TrialGuidance
             habitKey={habit.key}
             habitName={habit.name}
-            isTrial={habit.is_trial_mode}
-            isAnchor={habit.anchor_practice}
-            completionsInPlateau={habit.completions_in_plateau}
-            plateauDaysRequired={habit.plateau_days_required}
+            habitXp={habit.habit_xp}
+            habitLevel={habit.habit_level}
             dailyGoal={habit.dailyGoal}
             unit={habit.unit}
             frequency={habit.frequency_per_week}
+            isTrial={habit.is_trial_mode}
           />
         )}
 
@@ -216,12 +219,34 @@ export const HabitAccordionItem: React.FC<HabitAccordionItemProps> = ({
         </div>
         
         <div className="w-full">
-          <MacroGoalProgress current={habit.weekly_completions} total={habit.frequency_per_week} label={isTrial ? "Weekly Session Log" : "Weekly Consistency"} />
+          <MacroGoalProgress current={habit.weekly_completions} total={habit.frequency_per_week} label="Weekly Consistency" />
         </div>
         
         <div className="w-full mt-4 mb-6">
-          <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">Daily Progress</p>
+          <div className="flex justify-between items-center mb-1">
+            <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Daily Progress</p>
+            <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">
+              {Math.round(habit.displayProgress)} / {Math.round(habit.adjustedDailyGoal)} {habit.unit}
+            </p>
+          </div>
           <Progress value={Math.min(100, (habit.displayProgress / habit.adjustedDailyGoal) * 100)} className="h-1.5 [&>div]:bg-primary" />
+        </div>
+
+        <div className="w-full mt-4 mb-6">
+          {(() => {
+            const { xpInLevel, xpNeededForNext } = getLevelXpStats(habit.habit_xp || 0);
+            return (
+              <>
+                <div className="flex justify-between items-center mb-1">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-primary">Mastery XP (Lvl {habit.habit_level || 1})</p>
+                  <p className="text-[9px] font-black uppercase tracking-widest text-primary">
+                    {Math.round(xpInLevel * 10) / 10} / {xpNeededForNext} XP
+                  </p>
+                </div>
+                <Progress value={Math.min(100, (xpInLevel / xpNeededForNext) * 100)} className="h-1.5 [&>div]:bg-primary/40 [&>div]:bg-primary" />
+              </>
+            );
+          })()}
         </div>
         
         {canQuickFinish && (

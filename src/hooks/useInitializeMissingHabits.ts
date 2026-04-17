@@ -146,6 +146,8 @@ const initializeSelectedHabits = async (userId: string, params: OnboardingHabitP
       carryover_value: 0,
       growth_type: growthType,
       growth_value: growthValue,
+      habit_xp: 0,
+      habit_level: 1,
     };
   });
 
@@ -187,6 +189,8 @@ const initializeSelectedHabits = async (userId: string, params: OnboardingHabitP
     carryover_value: 0,
     growth_type: 'fixed' as GrowthType,
     growth_value: 0,
+    habit_xp: 0,
+    habit_level: 1,
   }));
 
   const finalHabitsToUpsert = [...habitsToUpsert, ...fixedHabitsToAdd];

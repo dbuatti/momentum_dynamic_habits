@@ -72,6 +72,8 @@ export interface UserHabitRecord {
   // NEW: Behavior settings
   complete_on_finish: boolean;
   is_weekly_goal: boolean;
+  habit_xp: number;
+  habit_level: number;
 }
 
 export interface ProcessedUserHabit extends UserHabitRecord {

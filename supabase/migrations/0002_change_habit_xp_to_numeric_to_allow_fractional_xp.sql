@@ -1,0 +1,1 @@
+ALTER TABLE user_habits ALTER COLUMN habit_xp TYPE NUMERIC;

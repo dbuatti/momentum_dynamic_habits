@@ -1,0 +1,1 @@
+ALTER TABLE completedtasks ADD COLUMN habit_xp_earned NUMERIC DEFAULT 0;

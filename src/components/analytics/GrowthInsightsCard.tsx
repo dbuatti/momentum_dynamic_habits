@@ -2,9 +2,10 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, Info, CheckCircle2 } from 'lucide-react';
+import { TrendingUp, Info, CheckCircle2, Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UserHabitRecord } from '@/types/habit';
+import { getLevelXpStats } from '@/utils/habit-leveling';
 
 interface HabitAnalyticsSummary {
   habit: UserHabitRecord;
@@ -44,32 +45,29 @@ export const GrowthInsightsCard: React.FC<GrowthInsightsCardProps> = ({ habits }
           growthOrTrialHabits.map(summary => {
             const habit = summary.habit;
             const isTrial = habit.is_trial_mode;
-            const isReadyForGrowth = isTrial && habit.completions_in_plateau >= habit.plateau_days_required;
-            const daysRemaining = Math.max(0, habit.plateau_days_required - habit.completions_in_plateau);
+            const { xpInLevel, xpNeededForNext } = getLevelXpStats(habit.habit_xp || 0);
+            const xpRemaining = Math.max(0, xpNeededForNext - xpInLevel);
+            const isCloseToLevelUp = xpRemaining <= 1;
 
             return (
               <div key={habit.id} className={cn(
                 "p-4 rounded-xl border",
-                isReadyForGrowth ? "bg-success-background/50 border-success-border" : "bg-info-background/50 border-info-border"
+                isCloseToLevelUp ? "bg-success-background/50 border-success-border" : "bg-info-background/50 border-info-border"
               )}>
                 <div className="flex items-center space-x-3">
                   <div className={cn(
                     "w-8 h-8 rounded-full flex items-center justify-center",
-                    isReadyForGrowth ? "bg-success text-success-foreground" : "bg-info text-info-foreground"
+                    isCloseToLevelUp ? "bg-success text-success-foreground" : "bg-info text-info-foreground"
                   )}>
-                    {isReadyForGrowth ? <CheckCircle2 className="w-4 h-4" /> : <Info className="w-4 h-4" />}
+                    {isCloseToLevelUp ? <Trophy className="w-4 h-4" /> : <Info className="w-4 h-4" />}
                   </div>
                   <div>
-                    <p className="font-semibold">{habit.name}</p>
-                    {isReadyForGrowth ? (
-                      <p className="text-sm text-success-foreground">Ready for Adaptive Growth!</p>
-                    ) : isTrial ? (
-                      <p className="text-sm text-info-foreground">
-                        {daysRemaining} more days of consistency to transition from Trial Mode.
-                      </p>
+                    <p className="font-semibold">{habit.name} (Lvl {habit.habit_level || 1})</p>
+                    {isCloseToLevelUp ? (
+                      <p className="text-sm text-success-foreground">Almost Level { (habit.habit_level || 1) + 1 }! Just {Math.round(xpRemaining * 10) / 10} XP to go.</p>
                     ) : (
-                      <p className="text-sm text-habit-purple-foreground">
-                        Adaptive Growth: {daysRemaining} consistent days until next goal increase.
+                      <p className="text-sm text-info-foreground">
+                        {Math.round(xpRemaining * 10) / 10} XP until next level up.
                       </p>
                     )}
                   </div>

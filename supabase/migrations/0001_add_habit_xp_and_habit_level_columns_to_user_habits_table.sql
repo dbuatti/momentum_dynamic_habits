@@ -1,0 +1,2 @@
+ALTER TABLE user_habits ADD COLUMN habit_xp INTEGER DEFAULT 0;
+ALTER TABLE user_habits ADD COLUMN habit_level INTEGER DEFAULT 1;

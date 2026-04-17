@@ -1,27 +1,27 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { 
-  Anchor, Sparkles, Calendar, Info, 
-  CheckCircle2, ChevronUp, ChevronDown, 
-  Lightbulb, Heart 
+  Sparkles, ChevronUp, ChevronDown, 
+  Heart, Trophy, Zap
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getLevelXpStats } from '@/utils/habit-leveling';
+import { Link } from 'react-router-dom';
 
-interface TrialGuidanceProps {
+interface HabitMasteryGuidanceProps {
   habitKey: string;
   habitName: string;
-  isTrial: boolean;
-  isAnchor: boolean;
-  completionsInPlateau: number;
-  plateauDaysRequired: number;
+  habitXp: number;
+  habitLevel: number;
   dailyGoal: number;
   unit: string;
   frequency: number;
+  isTrial: boolean;
 }
 
 const guidancePrompts = [
@@ -32,19 +32,18 @@ const guidancePrompts = [
   "Small, sustainable actions beat occasional heroics every time.",
 ];
 
-export const TrialGuidance: React.FC<TrialGuidanceProps> = ({
+export const TrialGuidance: React.FC<HabitMasteryGuidanceProps> = ({
   habitKey,
   habitName,
-  isTrial,
-  isAnchor,
-  completionsInPlateau,
-  plateauDaysRequired,
+  habitXp,
+  habitLevel,
   dailyGoal,
   unit,
-  frequency
+  frequency,
+  isTrial
 }) => {
   const today = new Date().toISOString().split('T')[0];
-  const storageKey = `trialGuidanceCollapsed:${habitKey}:${today}`;
+  const storageKey = `habitMasteryCollapsed:${habitKey}:${today}`;
   
   const [isCollapsed, setIsCollapsed] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -61,8 +60,8 @@ export const TrialGuidance: React.FC<TrialGuidanceProps> = ({
     localStorage.setItem(storageKey, String(newState));
   };
 
-  const progress = Math.min(100, (completionsInPlateau / plateauDaysRequired) * 100);
-  const isComplete = completionsInPlateau >= plateauDaysRequired;
+  const { xpInLevel, xpNeededForNext } = getLevelXpStats(habitXp);
+  const progress = Math.min(100, (xpInLevel / xpNeededForNext) * 100);
 
   return (
     <Card className={cn(
@@ -78,14 +77,14 @@ export const TrialGuidance: React.FC<TrialGuidanceProps> = ({
             "w-8 h-8 rounded-xl flex items-center justify-center",
             isTrial ? "bg-info text-info-foreground" : "bg-primary text-primary-foreground"
           )}>
-            {isTrial ? <Sparkles className="w-4 h-4" /> : <Anchor className="w-4 h-4" />}
+            {isTrial ? <Sparkles className="w-4 h-4" /> : <Trophy className="w-4 h-4" />}
           </div>
           <div>
             <h4 className="text-[10px] font-black uppercase tracking-widest opacity-60">
-              {isTrial ? "Trial Mode Guidance" : "Anchor Practice Support"}
+              {isTrial ? "Trial Mode Guidance" : "Habit Mastery"}
             </h4>
             <p className="text-xs font-bold">
-              {isTrial ? `Anchoring: ${completionsInPlateau}/${plateauDaysRequired} days` : "Keeping you grounded"}
+              Level {habitLevel} • {Math.round(xpInLevel * 10) / 10}/{xpNeededForNext} XP to Level {habitLevel + 1}
             </p>
           </div>
         </div>
@@ -105,7 +104,7 @@ export const TrialGuidance: React.FC<TrialGuidanceProps> = ({
             <CardContent className="p-5 pt-0 space-y-5">
               <div className="bg-card/50 rounded-2xl p-4 border border-border/50 space-y-4 shadow-inner">
                 <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                  <span>Minimum Target</span>
+                  <span>Current Target</span>
                   <span>Commitment</span>
                 </div>
                 <div className="flex justify-between items-end">
@@ -113,20 +112,18 @@ export const TrialGuidance: React.FC<TrialGuidanceProps> = ({
                   <p className="text-xs font-bold text-muted-foreground">{frequency} sessions / week</p>
                 </div>
                 
-                {isTrial && (
-                  <div className="space-y-2 pt-2 border-t border-border/40">
-                    <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
-                      <span className="text-info-foreground">Trial Progress</span>
-                      <span>{completionsInPlateau} / {plateauDaysRequired} days</span>
-                    </div>
-                    <Progress value={progress} className="h-1.5 [&>div]:bg-info" />
-                    <p className="text-[9px] font-bold text-muted-foreground leading-tight italic">
-                      {isComplete 
-                        ? "Trial complete! You're ready to transition to Adaptive Growth." 
-                        : `${plateauDaysRequired - completionsInPlateau} more days of consistency until we suggest growth.`}
-                    </p>
+                <div className="space-y-2 pt-2 border-t border-border/40">
+                  <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
+                    <span className="text-primary">Mastery Progress</span>
+                    <span>{Math.round(xpInLevel * 10) / 10} / {xpNeededForNext} XP</span>
                   </div>
-                )}
+                  <Progress value={progress} className="h-1.5 [&>div]:bg-primary" />
+                  <p className="text-[9px] font-bold text-muted-foreground leading-tight italic">
+                    {isTrial 
+                      ? "You're in Trial Mode. Focus on consistency to earn XP and unlock Adaptive Growth." 
+                      : `Earn ${Math.round((xpNeededForNext - xpInLevel) * 10) / 10} more XP to level up and increase your challenge.`}
+                  </p>
+                </div>
               </div>
 
               <div className="flex items-start gap-3 px-1">
@@ -158,6 +155,3 @@ export const TrialGuidance: React.FC<TrialGuidanceProps> = ({
     </Card>
   );
 };
-
-// Internal link helper for the button
-import { Link } from 'react-router-dom';
