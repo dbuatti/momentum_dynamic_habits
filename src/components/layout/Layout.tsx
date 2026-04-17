@@ -13,9 +13,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   useTabProgress();
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Main content area - No Sidebar */}
-      <main className="flex flex-1 flex-col overflow-hidden">
+    <div className="h-screen flex flex-col bg-background overflow-hidden">
+      {/* Main content area - Enabled vertical scrolling for standard pages */}
+      <main className="flex-1 overflow-y-auto">
         {children}
       </main>
       <FloatingTimer />
