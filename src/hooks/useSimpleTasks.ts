@@ -20,8 +20,6 @@ export interface SimpleTask {
   habit_level: number;
 }
 
-const STABILITY_THRESHOLD = 3; 
-
 export function useSimpleTasks() {
   const { session } = useSession();
   const queryClient = useQueryClient();
@@ -104,7 +102,7 @@ export function useSimpleTasks() {
           }
         }
 
-        // Stability progress (logs for current value)
+        // Stability progress (logs for current value) - kept for internal tracking but not used for increase
         const { count: stabilityCount } = await supabase
           .from('simple_task_logs')
           .select('*', { count: 'exact', head: true })
@@ -163,25 +161,50 @@ export function useSimpleTasks() {
       const task = tasks.find(t => t.id === taskId);
       if (!task) return;
 
-      const currentCompletions = task.current_progress;
-      const shouldIncrease = task.increment_value > 0 && currentCompletions + 1 >= STABILITY_THRESHOLD;
-      const newValue = shouldIncrease ? task.current_value + task.increment_value : task.current_value;
+      // 1. Calculate current level
+      const currentLevel = task.habit_level;
 
+      // 2. Log the completion
       const { error: logError } = await supabase.from('simple_task_logs').insert({
         task_id: taskId,
         user_id: userId,
         value_at_completion: task.current_value,
-        increased: shouldIncrease
+        increased: false // We'll update this if needed
       });
 
       if (logError) throw logError;
 
+      // 3. Calculate new level after log
+      const { data: logsAfter } = await supabase
+        .from('simple_task_logs')
+        .select('value_at_completion')
+        .eq('task_id', taskId);
+      
+      const newXp = (logsAfter || []).reduce((sum, log) => sum + (log.value_at_completion || 0), 0);
+      const newLevel = calculateHabitLevel(newXp);
+      
+      const leveledUp = newLevel > currentLevel;
+      const shouldIncrease = leveledUp && task.increment_value > 0;
+      const newValue = shouldIncrease ? task.current_value + task.increment_value : task.current_value;
+
+      // 4. Update task if leveled up
       if (shouldIncrease) {
         const { error: updateError } = await supabase
           .from('simple_tasks')
-          .update({ current_value: newValue, updated_at: new Date().toISOString() })
+          .update({ 
+            current_value: newValue, 
+            updated_at: new Date().toISOString() 
+          })
           .eq('id', taskId);
         if (updateError) throw updateError;
+        
+        // Mark the log as the one that triggered the increase
+        await supabase
+          .from('simple_task_logs')
+          .update({ increased: true })
+          .eq('task_id', taskId)
+          .order('completed_at', { ascending: false })
+          .limit(1);
       } else {
         await supabase
           .from('simple_tasks')
@@ -192,8 +215,8 @@ export function useSimpleTasks() {
       return { 
         increased: shouldIncrease, 
         newValue, 
-        progress: shouldIncrease ? 0 : currentCompletions + 1,
-        threshold: STABILITY_THRESHOLD 
+        newLevel,
+        totalXp: newXp
       };
     },
     onSuccess: () => {

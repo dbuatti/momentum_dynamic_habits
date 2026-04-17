@@ -10,7 +10,7 @@ import { getLevelXpStats } from "@/utils/habit-leveling";
 
 interface SimpleTaskCardProps {
   task: SimpleTask;
-  onComplete: (taskId: string) => Promise<{ increased: boolean; newValue: number; progress: number; threshold: number } | undefined>;
+  onComplete: (taskId: string) => Promise<{ increased: boolean; newValue: number; newLevel: number; totalXp: number } | undefined>;
   onShuffle?: () => void;
   showShuffle?: boolean;
 }

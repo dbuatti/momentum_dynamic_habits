@@ -22,7 +22,8 @@ import {
   Trophy,
   History,
   ArrowUpRight,
-  Timer
+  Timer,
+  Star
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatTimeDisplay } from "@/utils/time-utils";
@@ -35,6 +36,7 @@ import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
 import { motion, AnimatePresence } from 'framer-motion';
 import { Input } from '@/components/ui/input';
+import { getLevelXpStats } from '@/utils/habit-leveling';
 
 export function HabitLab() {
   const { session } = useSession();
@@ -50,7 +52,8 @@ export function HabitLab() {
   const currentTask = tasks.find(t => t.name === labType);
   
   const currentGoalSeconds = currentTask?.current_value || 600;
-  const stabilityProgress = currentTask?.current_progress || 0;
+  const habitXp = currentTask?.habit_xp || 0;
+  const habitLevel = currentTask?.habit_level || 1;
 
   const labConfigs: Record<string, any> = {
     'Walking': {
@@ -196,7 +199,6 @@ export function HabitLab() {
     setIsActive(false);
     
     if (currentTask) {
-      // We pass the sessionDetail as a note to the completeTask function
       const result = await completeTask(currentTask.id);
       audioManager.playSuccess();
       confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 } });
@@ -204,7 +206,7 @@ export function HabitLab() {
       if (result?.increased) {
         toast.success("Level Up!", { description: `Your ${labType} goal increased!` });
       } else {
-        toast.success(`${labType} Logged!`, { description: `${result?.progress}/3 steps to your next goal increase.` });
+        toast.success(`${labType} Logged!`, { description: `Mastery increased! Keep going to reach Level ${(result?.newLevel || 0) + 1}.` });
       }
     }
 
@@ -245,6 +247,10 @@ export function HabitLab() {
   const isGoalMet = localSeconds >= currentGoalSeconds;
   const completedMicroSteps = metadata?.completedMicroSteps || [];
 
+  // Mastery stats for the bar
+  const stats = getLevelXpStats(habitXp);
+  const masteryProgress = (stats.xpInLevel / stats.xpNeededForNext) * 100;
+
   return (
     <div className="w-full min-h-screen flex flex-col items-center pt-16 p-6 space-y-8 relative">
       {/* Header Section */}
@@ -263,14 +269,20 @@ export function HabitLab() {
           </Button>
         </div>
         
-        <h2 className="text-5xl font-black tracking-tighter text-white uppercase italic text-left">{labType}</h2>
+        <div className="flex flex-col items-start">
+          <h2 className="text-5xl font-black tracking-tighter text-white uppercase italic text-left">{labType}</h2>
+          <div className="flex items-center gap-1 text-white/80 mt-1">
+            <Star className="w-3 h-3 fill-current" />
+            <span className="text-[10px] font-black uppercase tracking-widest">Level {habitLevel}</span>
+          </div>
+        </div>
         
         <div className="space-y-2">
           <div className="flex justify-between text-[9px] font-black uppercase tracking-[0.2em] text-white/50">
-            <span>Stability Progress</span>
-            <span>{stabilityProgress}/3</span>
+            <span>Mastery XP</span>
+            <span>{Math.round(stats.xpInLevel)}/{stats.xpNeededForNext}</span>
           </div>
-          <Progress value={(stabilityProgress / 3) * 100} className="h-1.5 bg-white/10 [&>div]:bg-white shadow-sm" />
+          <Progress value={masteryProgress} className="h-1.5 bg-white/10 [&>div]:bg-white shadow-sm" />
         </div>
       </div>
 
