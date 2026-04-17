@@ -9,7 +9,7 @@ import { UserHabitRecord } from "@/types/habit";
 
 /**
  * Calculates the XP required to reach the NEXT level from the current level.
- * Level 1 -> 2: 1000 XP
+ * Level 1 -> 2: 1000 XP (The 'Trial' phase)
  * Level 2 -> 3: 1500 XP
  * Level 3 -> 4: 2250 XP
  */

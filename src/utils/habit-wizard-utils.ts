@@ -1,7 +1,7 @@
 import { WizardHabitData } from '@/hooks/useUserHabitWizardTemp';
 import { CreateHabitParams } from '@/pages/HabitWizard';
 import { HabitCategory, MeasurementType, GrowthType, ChunkingMode } from '@/types/habit';
-import { timeOptions as allTimeOptions } from '@/utils/time-utils'; // Import allTimeOptions
+import { timeOptions as allTimeOptions } from '@/utils/time-utils';
 
 export const timeOfDayOptions = [
   { id: 'morning', label: 'Morning', icon: 'Sunrise', start: '06:00', end: '10:00' },
@@ -42,6 +42,7 @@ export const calculateHabitParams = (data: Partial<WizardHabitData>, neurodiverg
     else if (energyPerSession === 'moderate') dailyGoal = 20;
     else if (energyPerSession === 'plenty') dailyGoal = 30;
     
+    // Reps should always use fixed growth to avoid rounding issues
     growthType = 'fixed';
     growthValue = neurodivergentMode ? 1 : 2;
   } else if (unit === 'dose') {

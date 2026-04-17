@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { startOfWeek, format, startOfDay, eachDayOfInterval, isSameDay, subWeeks } from 'date-fns';
-import { calculateHabitLevel } from '@/utils/habit-leveling';
+import { calculateHabitLevel, getXpGainForTask } from '@/utils/habit-leveling';
 
 interface SimpleTask {
   id: string;
@@ -70,8 +70,10 @@ const fetchAnalyticsData = async ({ userId, timeframe }: { userId: string; timef
   const processedTasks: TaskAnalyticsSummary[] = tasks.map(t => {
     const taskLogs = logs.filter(l => l.task_id === t.id);
     
-    // Calculate XP: Sum of values at completion
-    const xp = taskLogs.reduce((sum, log) => sum + (log.value_at_completion || 0), 0);
+    // Calculate XP using the standardized scaling utility
+    const xp = taskLogs.reduce((sum, log) => 
+      sum + getXpGainForTask(t.task_type, log.value_at_completion || 0), 0
+    );
     const level = calculateHabitLevel(xp);
     const unit = t.task_type === 'time' ? 'sec' : 'reps';
 
@@ -103,12 +105,14 @@ const fetchAnalyticsData = async ({ userId, timeframe }: { userId: string; timef
     };
   });
 
-  // Weekly XP (Sum of values in logs)
+  // Weekly XP (Sum of scaled values in logs)
   const weeklyXpMap = new Map<string, number>();
   logs.forEach(log => {
     const weekStart = format(startOfWeek(new Date(log.completed_at), { weekStartsOn: 0 }), 'yyyy-MM-dd');
     const currentXp = weeklyXpMap.get(weekStart) || 0;
-    weeklyXpMap.set(weekStart, currentXp + (log.value_at_completion || 0));
+    const task = tasks.find(t => t.id === log.task_id);
+    const scaledXp = task ? getXpGainForTask(task.task_type, log.value_at_completion || 0) : 0;
+    weeklyXpMap.set(weekStart, currentXp + scaledXp);
   });
 
   const weeklyXp = Array.from(weeklyXpMap.entries())

@@ -189,27 +189,41 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
     const leveledUp = newHabitLevel > (userHabitData.habit_level || 1);
 
     if (leveledUp) {
-      if (userHabitData.growth_phase === 'frequency' && userHabitData.frequency_per_week < 7) {
-        newFrequency = userHabitData.frequency_per_week + 1;
-        newGrowthPhase = 'duration';
-        showSuccess(`Level Up! ${userHabitData.name} is now Level ${newHabitLevel}. Frequency increased to ${newFrequency}x per week!`);
-      } else {
-        const growthType = userHabitData.growth_type || 'fixed';
-        const growthValue = userHabitData.growth_value || 1;
-        if (growthType === 'percentage') {
-          newDailyGoal = userHabitData.current_daily_goal + (userHabitData.current_daily_goal * (Number(growthValue) / 100));
+      // TRIAL GATE: If we just reached Level 2, exit Trial Mode but don't grow yet.
+      if (newHabitLevel === 2 && userHabitData.is_trial_mode) {
+        newIsTrialMode = false;
+        showSuccess(`Trial Complete! ${userHabitData.name} is now in Adaptive Growth.`);
+      } 
+      // GROWTH LOGIC: Only grow if we are Level 3+ or already out of Trial Mode
+      else if (!newIsTrialMode || newHabitLevel > 2) {
+        if (userHabitData.growth_phase === 'frequency' && userHabitData.frequency_per_week < 7) {
+          newFrequency = userHabitData.frequency_per_week + 1;
+          newGrowthPhase = 'duration';
+          showSuccess(`Level Up! ${userHabitData.name} is now Level ${newHabitLevel}. Frequency increased to ${newFrequency}x per week!`);
         } else {
-          newDailyGoal = userHabitData.current_daily_goal + Number(growthValue);
+          const growthType = userHabitData.growth_type || 'fixed';
+          const growthValue = userHabitData.growth_value || 1;
+          if (growthType === 'percentage') {
+            newDailyGoal = userHabitData.current_daily_goal + (userHabitData.current_daily_goal * (Number(growthValue) / 100));
+          } else {
+            newDailyGoal = userHabitData.current_daily_goal + Number(growthValue);
+          }
+          
+          // Ensure minimum increment of 1 for count-based habits
+          if (userHabitData.unit !== 'min' && newDailyGoal <= userHabitData.current_daily_goal) {
+            newDailyGoal = userHabitData.current_daily_goal + 1;
+          }
+
+          if (userHabitData.max_goal_cap && newDailyGoal > userHabitData.max_goal_cap) {
+            newDailyGoal = userHabitData.max_goal_cap;
+            showSuccess(`Level Up! ${userHabitData.name} is now Level ${newHabitLevel}. Daily goal reached its cap!`);
+          } else {
+            showSuccess(`Level Up! ${userHabitData.name} is now Level ${newHabitLevel}. Daily goal increased to ${Math.round(newDailyGoal)} ${userHabitData.unit}!`);
+          }
+          newGrowthPhase = userHabitData.frequency_per_week < 7 ? 'frequency' : 'duration';
         }
-        if (userHabitData.max_goal_cap && newDailyGoal > userHabitData.max_goal_cap) {
-          newDailyGoal = userHabitData.max_goal_cap;
-          showSuccess(`Level Up! ${userHabitData.name} is now Level ${newHabitLevel}. Daily goal reached its cap!`);
-        } else {
-          showSuccess(`Level Up! ${userHabitData.name} is now Level ${newHabitLevel}. Daily goal increased to ${Math.round(newDailyGoal)} ${userHabitData.unit}!`);
-        }
-        newGrowthPhase = userHabitData.frequency_per_week < 7 ? 'frequency' : 'duration';
+        newIsTrialMode = false;
       }
-      newIsTrialMode = false;
     }
 
     await supabase.from('user_habits').update({
@@ -365,6 +379,6 @@ export const useHabitLog = () => {
     mutate: logMutation.mutateAsync,
     isPending: logMutation.isPending,
     unlog: unlogMutation.mutate,
-    isUnlogging: unlogMutation.isPending,
+    isUnlogging: logMutation.isPending,
   };
 };
