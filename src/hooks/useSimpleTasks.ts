@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { getTodayDateString } from '@/utils/time-utils';
 import { isSameDay, differenceInDays, parseISO } from 'date-fns';
+import { calculateHabitLevel } from '@/utils/habit-leveling';
 
 export interface SimpleTask {
   id: string;
@@ -15,6 +16,8 @@ export interface SimpleTask {
   completed_today: boolean;
   last_skipped_at: string | null;
   updated_at: string;
+  habit_xp: number;
+  habit_level: number;
 }
 
 const STABILITY_THRESHOLD = 3; 
@@ -52,12 +55,10 @@ export function useSimpleTasks() {
 
       const tasksWithProgress = await Promise.all((tasksData || []).map(async (task) => {
         // --- DECAY LOGIC START ---
-        // Only check for decay if the task is incremental and hasn't been updated today
         const lastUpdate = parseISO(task.updated_at);
         const todayStart = parseISO(todayStartTime);
         
         if (task.increment_value > 0 && lastUpdate < todayStart) {
-          // Fetch the latest completion log for this task
           const { data: lastLog } = await supabase
             .from('simple_task_logs')
             .select('completed_at')
@@ -68,8 +69,6 @@ export function useSimpleTasks() {
 
           if (lastLog) {
             const lastCompletionDate = parseISO(lastLog.completed_at);
-            
-            // Get the boundaries for the day of the last completion to find when that "day" ended
             const lastLogDateStr = new Intl.DateTimeFormat('en-CA', {
               timeZone: tz,
               year: 'numeric',
@@ -84,14 +83,11 @@ export function useSimpleTasks() {
 
             if (lastBoundaries && lastBoundaries[0]) {
               const lastDayEndTime = parseISO(lastBoundaries[0].end_time);
-              
-              // Calculate missed days: full 24h periods between the end of the last successful day and the start of today
               const diffMs = todayStart.getTime() - lastDayEndTime.getTime();
               const missedDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
               if (missedDays > 0) {
                 const decayAmount = task.increment_value * missedDays;
-                // Ensure value doesn't drop below the increment value (minimum viable habit)
                 const newValue = Math.max(task.increment_value, task.current_value - decayAmount);
                 
                 if (newValue !== task.current_value) {
@@ -102,8 +98,6 @@ export function useSimpleTasks() {
                       updated_at: new Date().toISOString() 
                     })
                     .eq('id', task.id);
-                  
-                  // Update local object for immediate UI consistency
                   task.current_value = newValue;
                 }
               }
@@ -119,7 +113,13 @@ export function useSimpleTasks() {
           .eq('task_id', task.id)
           .eq('value_at_completion', task.current_value);
         
-        // Daily completion check using timezone-aware boundaries
+        // Total XP (total logs)
+        const { count: totalLogs } = await supabase
+          .from('simple_task_logs')
+          .select('*', { count: 'exact', head: true })
+          .eq('task_id', task.id);
+
+        // Daily completion check
         const { count: dailyCount } = await supabase
           .from('simple_task_logs')
           .select('*', { count: 'exact', head: true })
@@ -127,10 +127,15 @@ export function useSimpleTasks() {
           .gte('completed_at', todayStartTime)
           .lt('completed_at', todayEndTime);
         
+        const habit_xp = totalLogs || 0;
+        const habit_level = calculateHabitLevel(habit_xp);
+
         return {
           ...task,
           current_progress: stabilityCount || 0,
-          completed_today: (dailyCount || 0) > 0
+          completed_today: (dailyCount || 0) > 0,
+          habit_xp,
+          habit_level
         };
       }));
 
@@ -180,7 +185,6 @@ export function useSimpleTasks() {
           .eq('id', taskId);
         if (updateError) throw updateError;
       } else {
-        // Even if not increasing, update updated_at to mark that we've interacted with it today
         await supabase
           .from('simple_tasks')
           .update({ updated_at: new Date().toISOString() })

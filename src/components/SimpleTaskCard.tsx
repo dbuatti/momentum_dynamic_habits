@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { SimpleTask } from "@/hooks/useSimpleTasks";
-import { Check, Shuffle, Play, Pause, RotateCcw, Timer, X } from "lucide-react";
+import { Check, Shuffle, Play, Pause, RotateCcw, Timer, X, Star } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { audioManager } from "@/utils/audio";
 import { Progress } from "@/components/ui/progress";
+import { getLevelXpStats } from "@/utils/habit-leveling";
 
 interface SimpleTaskCardProps {
   task: SimpleTask;
@@ -20,8 +21,6 @@ export function SimpleTaskCard({ task, onComplete, onShuffle, showShuffle }: Sim
   const [isActive, setIsActive] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-
-  const STABILITY_THRESHOLD = 3;
 
   // Reset local state when the task changes or levels up
   useEffect(() => {
@@ -80,7 +79,7 @@ export function SimpleTaskCard({ task, onComplete, onShuffle, showShuffle }: Sim
       if (result.increased) {
         toast.success(`Level Up! Now ${result.newValue} ${task.task_type === 'time' ? 'seconds' : 'reps'}!`);
       } else {
-        toast.success(`Great job! ${result.progress}/${result.threshold} steps to level up!`);
+        toast.success(`Great job! Mastery increased!`);
       }
       
       // Reset local state immediately so the UI reflects the new progress/value
@@ -97,22 +96,28 @@ export function SimpleTaskCard({ task, onComplete, onShuffle, showShuffle }: Sim
   const isNonProgressive = task.increment_value === 0;
   const canComplete = !isTimeTask || isTimerFinished || isNonProgressive;
 
-  const progressPercent = (task.current_progress / STABILITY_THRESHOLD) * 100;
+  // Calculate XP stats for the mastery bar
+  const stats = getLevelXpStats(task.habit_xp || 0);
+  const progressPercent = (stats.xpInLevel / stats.xpNeededForNext) * 100;
 
   return (
     <div className="w-full max-w-md mx-auto flex flex-col items-center space-y-6 py-4">
       <div className="text-center space-y-4 w-full">
-        <h2 className="text-6xl font-black tracking-tighter text-white uppercase italic">{task.name}</h2>
-        
-        {task.increment_value > 0 && (
-          <div className="max-w-[180px] mx-auto space-y-2">
-            <div className="flex justify-between text-[9px] font-black uppercase tracking-[0.2em] text-white/50">
-              <span>Stability</span>
-              <span>{task.current_progress}/{STABILITY_THRESHOLD}</span>
-            </div>
-            <Progress value={progressPercent} className="h-1.5 bg-white/10 [&>div]:bg-white shadow-sm" />
+        <div className="flex flex-col items-center gap-1">
+          <h2 className="text-6xl font-black tracking-tighter text-white uppercase italic">{task.name}</h2>
+          <div className="flex items-center gap-1 text-white/80">
+            <Star className="w-3 h-3 fill-current" />
+            <span className="text-[10px] font-black uppercase tracking-widest">Level {task.habit_level || 1}</span>
           </div>
-        )}
+        </div>
+        
+        <div className="max-w-[220px] mx-auto space-y-2">
+          <div className="flex justify-between text-[9px] font-black uppercase tracking-[0.2em] text-white/50">
+            <span>Mastery XP</span>
+            <span>{Math.round(stats.xpInLevel)}/{stats.xpNeededForNext}</span>
+          </div>
+          <Progress value={progressPercent} className="h-1.5 bg-white/10 [&>div]:bg-white shadow-sm" />
+        </div>
 
         <p className="text-lg font-bold text-white/60 uppercase tracking-widest">
           {isTimeTask 
