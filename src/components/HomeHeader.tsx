@@ -1,20 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { format } from 'date-fns';
-import { Clock, User, Trophy, Zap, Settings, Star } from 'lucide-react';
+import { Clock, User, Settings } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Progress } from '@/components/ui/progress';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { getXpForNextLevel, getXpForCurrentLevelStart } from '@/utils/leveling';
 
 interface HomeHeaderProps {
   dayCounter: number;
   lastActiveText: string;
   firstName: string | null;
   lastName: string | null;
-  xp: number;
-  level: number;
+  xp?: number;
+  level?: number;
   tasksCompletedToday?: number;
   dailyChallengeTarget?: number;
 }
@@ -33,25 +30,8 @@ const getGreeting = (firstName: string | null, lastName: string | null) => {
 const HomeHeader: React.FC<HomeHeaderProps> = ({ 
   lastActiveText, 
   firstName, 
-  lastName, 
-  xp, 
-  level
+  lastName
 }) => {
-  const [currentTime, setCurrentTime] = useState(new Date());
-  
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 60000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const xpForCurrentLevelStart = getXpForCurrentLevelStart(level);
-  const xpForNextLevel = getXpForNextLevel(level);
-  const xpProgressInCurrentLevel = Math.max(0, xp - xpForCurrentLevelStart);
-  const xpNeededForNextLevel = xpForNextLevel - xpForCurrentLevelStart;
-  const levelProgress = xpNeededForNextLevel > 0 ? (xpProgressInCurrentLevel / xpNeededForNextLevel) * 100 : 0;
-
   return (
     <Card className="w-full mb-6 border-0 shadow-sm rounded-2xl overflow-hidden">
       <CardContent className="p-0">
@@ -79,32 +59,6 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
                 </div>
               </div>
             </div>
-            
-            <div className="flex flex-col items-end sm:items-center md:flex-row md:gap-3">
-              <div className="text-right md:text-center">
-                <p className="text-xs font-semibold text-muted-foreground flex items-center justify-end md:justify-center">
-                  <Trophy className="w-3 h-3 mr-1" />
-                  LVL {level}
-                </p>
-                <p className="text-lg font-bold text-foreground">{xp} XP</p>
-              </div>
-              <div className="bg-primary rounded-full w-14 h-14 flex items-center justify-center shadow-md mt-2 md:mt-0">
-                <span className="text-lg font-bold text-primary-foreground">{level}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <div className="px-5 py-4 bg-card/50 border-t space-y-3">
-          <div className="space-y-1.5">
-            <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-               <div className="flex items-center gap-1">
-                 <Star className="w-3 h-3 text-warning fill-warning" />
-                 <span>Growth Level {level}</span>
-               </div>
-               <span>{Math.round(xpProgressInCurrentLevel)} / {xpNeededForNextLevel} XP</span>
-            </div>
-            <Progress value={levelProgress} className="h-1.5 [&>div]:bg-warning" />
           </div>
         </div>
       </CardContent>

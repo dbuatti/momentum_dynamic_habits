@@ -4,9 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { showSuccess, showError } from '@/utils/toast';
-import { calculateLevel } from '@/utils/leveling';
-import { getXpForNextHabitLevel, calculateHabitLevel, getXpGainPerCompletion } from '@/utils/habit-leveling';
-import { isSameDay, subDays, format, startOfDay, endOfDay, parse } from 'date-fns';
+import { calculateHabitLevel } from '@/utils/habit-leveling';
 import { UserHabitRecord } from '@/types/habit';
 import { getTodayDateString } from '@/utils/time-utils';
 
@@ -19,18 +17,16 @@ interface LogHabitParams {
   capsuleIndex?: number;
 }
 
-// Helper function to get day boundaries using RPC
 const getDayBoundaries = async (userId: string, dateString: string) => {
   const { data, error } = await supabase.rpc('get_day_boundaries', {
     p_user_id: userId,
     p_target_date: dateString,
   });
   if (error) throw error;
-  return data[0]; // { start_time: TIMESTAMPTZ, end_time: TIMESTAMPTZ }
+  return data[0];
 };
 
 const checkHabitCompletionOnDay = async (userId: string, habitKey: string, date: Date, userHabitData: UserHabitRecord, timezone: string): Promise<boolean> => {
-  // Get the date string relative to the user's timezone
   const dateString = new Intl.DateTimeFormat('en-CA', {
     timeZone: timezone,
     year: 'numeric',
@@ -38,9 +34,7 @@ const checkHabitCompletionOnDay = async (userId: string, habitKey: string, date:
     day: '2-digit'
   }).format(date);
   
-  // Use the RPC to get the boundaries for the target date, respecting rollover hour and timezone
   const boundaries = await getDayBoundaries(userId, dateString);
-  
   if (!boundaries) return false;
 
   const { data: completedTasksOnDay, error: fetchError } = await supabase
@@ -79,7 +73,6 @@ const checkHabitCompletionOnDay = async (userId: string, habitKey: string, date:
   }
 };
 
-
 const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, note, capsuleIndex }: LogHabitParams & { userId: string }) => {
   const { data: userHabitDataResult, error: userHabitFetchError } = await supabase
     .from('user_habits')
@@ -95,7 +88,7 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
 
   const { data: profileData, error: profileFetchError } = await supabase
     .from('profiles')
-    .select('tasks_completed_today, xp, level, timezone, neurodivergent_mode, day_rollover_hour')
+    .select('tasks_completed_today, timezone, neurodivergent_mode, day_rollover_hour')
     .eq('id', userId)
     .single();
 
@@ -120,12 +113,8 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
   const xpEarned = Math.round(xpBaseValue * xpPerUnit);
   const energyCost = Math.round(xpBaseValue * energyCostPerUnit);
 
-  // Check if goal was already met today BEFORE this log
   const wasCompletedTodayBeforeLog = await checkHabitCompletionOnDay(userId, habitKey, new Date(), userHabitData, timezone);
 
-  // We need to estimate if this log will meet the goal to calculate habit_xp_earned
-  // This is a bit complex because of different measurement types, so we'll do it after insertion and update
-  
   const { data: insertedTask, error: insertError } = await supabase.from('completedtasks').insert({
     user_id: userId,
     original_source: habitKey,
@@ -184,25 +173,18 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
     isGoalMetAfterLog = totalDailyProgressAfterLog >= (userHabitData.current_daily_goal - threshold);
   }
 
-  // Calculate habit XP earned
   let habitXpEarned = 0;
   if (isGoalMetAfterLog) {
     habitXpEarned = wasCompletedTodayBeforeLog ? 0.2 : 1;
-    // Update the task with the habit XP earned
     await supabase.from('completedtasks').update({ habit_xp_earned: habitXpEarned }).eq('id', insertedTask.id);
   }
 
   if (userHabitData.measurement_type !== 'binary' && !userHabitData.is_fixed && !userHabitData.complete_on_finish) {
     const surplus = totalDailyProgressAfterLog - userHabitData.current_daily_goal;
     const newCarryoverValue = Math.max(0, surplus);
-
-    await supabase.from('user_habits').update({
-      carryover_value: newCarryoverValue,
-    }).eq('id', userHabitData.id);
+    await supabase.from('user_habits').update({ carryover_value: newCarryoverValue }).eq('id', userHabitData.id);
   } else if (userHabitData.complete_on_finish) {
-    await supabase.from('user_habits').update({
-      carryover_value: 0,
-    }).eq('id', userHabitData.id);
+    await supabase.from('user_habits').update({ carryover_value: 0 }).eq('id', userHabitData.id);
   }
 
   let newIsTrialMode = userHabitData.is_trial_mode;
@@ -213,9 +195,7 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
   let newHabitLevel = calculateHabitLevel(newHabitXp);
 
   if (isGoalMetAfterLog) {
-    const todayDate = new Date();
     const todayDateString = getTodayDateString(timezone);
-
     const leveledUp = newHabitLevel > (userHabitData.habit_level || 1);
 
     if (leveledUp) {
@@ -226,24 +206,19 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
       } else {
         const growthType = userHabitData.growth_type || 'fixed';
         const growthValue = userHabitData.growth_value || 1;
-
         if (growthType === 'percentage') {
-          const increment = userHabitData.current_daily_goal * (Number(growthValue) / 100);
-          newDailyGoal = userHabitData.current_daily_goal + increment;
+          newDailyGoal = userHabitData.current_daily_goal + (userHabitData.current_daily_goal * (Number(growthValue) / 100));
         } else {
           newDailyGoal = userHabitData.current_daily_goal + Number(growthValue);
         }
-
         if (userHabitData.max_goal_cap && newDailyGoal > userHabitData.max_goal_cap) {
           newDailyGoal = userHabitData.max_goal_cap;
           showSuccess(`Level Up! ${userHabitData.name} is now Level ${newHabitLevel}. Daily goal reached its cap!`);
         } else {
           showSuccess(`Level Up! ${userHabitData.name} is now Level ${newHabitLevel}. Daily goal increased to ${Math.round(newDailyGoal)} ${userHabitData.unit}!`);
         }
-        
         newGrowthPhase = userHabitData.frequency_per_week < 7 ? 'frequency' : 'duration';
       }
-      
       newIsTrialMode = false;
     }
 
@@ -258,12 +233,9 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
     }).eq('id', userHabitData.id);
   }
 
-  const newXp = (profileData.xp || 0) + xpEarned;
   await supabase.from('profiles').update({
     last_active_at: new Date().toISOString(),
     tasks_completed_today: (profileData.tasks_completed_today || 0) + 1,
-    xp: newXp,
-    level: calculateLevel(newXp),
   }).eq('id', userId);
 
   return { success: true, taskName, xpEarned, completedTaskId: insertedTask.id };
@@ -281,7 +253,7 @@ const unlogHabit = async ({ userId, completedTaskId }: { userId: string, complet
 
   const { data: profileData } = await supabase
     .from('profiles')
-    .select('timezone, xp, tasks_completed_today')
+    .select('timezone, tasks_completed_today')
     .eq('id', userId)
     .single();
 
@@ -297,35 +269,21 @@ const unlogHabit = async ({ userId, completedTaskId }: { userId: string, complet
   if (!userHabitDataResult) throw new Error(`Habit data not found for key: ${task.original_source}`);
   const userHabitData: UserHabitRecord = userHabitDataResult;
 
-  // Decrement habit XP and recalculate level
   if (task.habit_xp_earned > 0) {
     const newHabitXp = Math.max(0, (userHabitData.habit_xp || 0) - task.habit_xp_earned);
     const newHabitLevel = calculateHabitLevel(newHabitXp);
-    
-    await supabase.from('user_habits').update({
-      habit_xp: newHabitXp,
-      habit_level: newHabitLevel
-    }).eq('id', userHabitData.id);
+    await supabase.from('user_habits').update({ habit_xp: newHabitXp, habit_level: newHabitLevel }).eq('id', userHabitData.id);
   }
 
   const xpPerUnit = userHabitData.xp_per_unit || (userHabitData.unit === 'min' ? 30 : 1);
-
-  let lifetimeProgressDecrementValue;
-  if (userHabitData.measurement_type === 'timer') {
-    lifetimeProgressDecrementValue = task.duration_used || 0;
-  } else {
-    lifetimeProgressDecrementValue = (task.xp_earned || 0) / xpPerUnit; 
-  }
+  let lifetimeProgressDecrementValue = userHabitData.measurement_type === 'timer' ? (task.duration_used || 0) : ((task.xp_earned || 0) / xpPerUnit);
 
   await supabase.rpc('increment_lifetime_progress', {
     p_user_id: userId, p_habit_key: task.original_source, p_increment_value: -Math.round(lifetimeProgressDecrementValue),
   });
 
   if (profileData) {
-    const newXp = Math.max(0, (profileData.xp || 0) - (task.xp_earned || 0));
     await supabase.from('profiles').update({
-      xp: newXp,
-      level: calculateLevel(newXp),
       tasks_completed_today: Math.max(0, (profileData.tasks_completed_today || 0) - 1)
     }).eq('id', userId);
   }
@@ -333,10 +291,7 @@ const unlogHabit = async ({ userId, completedTaskId }: { userId: string, complet
   await supabase.from('completedtasks').delete().eq('id', completedTaskId);
 
   const isWeeklyAnchor = userHabitData.category === 'anchor' && userHabitData.frequency_per_week === 1;
-  
-  const { data: completedTodayAfterUnlog } = await supabase.rpc('get_completed_tasks_today', { 
-    p_user_id: userId, p_timezone: timezone 
-  });
+  const { data: completedTodayAfterUnlog } = await supabase.rpc('get_completed_tasks_today', { p_user_id: userId, p_timezone: timezone });
   
   let totalDailyProgressAfterUnlog = 0;
   let isGoalMetAfterUnlog = false;
@@ -346,45 +301,28 @@ const unlogHabit = async ({ userId, completedTaskId }: { userId: string, complet
     totalDailyProgressAfterUnlog = isGoalMetAfterUnlog ? userHabitData.current_daily_goal : 0;
   } else if (isWeeklyAnchor && userHabitData.measurement_type === 'timer') {
     const minDuration = userHabitData.weekly_session_min_duration || 10;
-    
     const remainingSessionsToday = (completedTodayAfterUnlog || [])
       .filter((t: any) => t.original_source === task.original_source && t.duration_used && (t.duration_used / 60) >= minDuration);
-      
     isGoalMetAfterUnlog = remainingSessionsToday.length > 0;
     totalDailyProgressAfterUnlog = remainingSessionsToday.length > 0 ? remainingSessionsToday[0].duration_used / 60 : 0; 
   } else {
     let totalDailySeconds = 0;
     let totalDailyUnits = 0;
-
     (completedTodayAfterUnlog || []).filter((t: any) => t.original_source === task.original_source).forEach((t: any) => {
-      if (userHabitData.measurement_type === 'timer') {
-        totalDailySeconds += (t.duration_used || 0);
-      } else if (userHabitData.measurement_type === 'unit' || userHabitData.measurement_type === 'binary') {
-        totalDailyUnits += (task.xp_earned || 0) / xpPerUnit;
-      } else {
-        totalDailyUnits += 1;
-      }
+      if (userHabitData.measurement_type === 'timer') totalDailySeconds += (t.duration_used || 0);
+      else if (userHabitData.measurement_type === 'unit' || userHabitData.measurement_type === 'binary') totalDailyUnits += (task.xp_earned || 0) / xpPerUnit;
+      else totalDailyUnits += 1;
     });
-
-    totalDailyProgressAfterUnlog = userHabitData.measurement_type === 'timer' 
-      ? totalDailySeconds / 60 
-      : totalDailyUnits;
-
+    totalDailyProgressAfterUnlog = userHabitData.measurement_type === 'timer' ? totalDailySeconds / 60 : totalDailyUnits;
     const threshold = userHabitData.measurement_type === 'timer' ? 0.1 : 0.01;
     isGoalMetAfterUnlog = totalDailyProgressAfterUnlog >= (userHabitData.current_daily_goal - threshold);
   }
 
   if (userHabitData.measurement_type !== 'binary' && !userHabitData.is_fixed && !userHabitData.complete_on_finish) {
     const surplusAfterUnlog = totalDailyProgressAfterUnlog - userHabitData.current_daily_goal;
-    const newCarryoverValueAfterUnlog = Math.max(0, surplusAfterUnlog);
-    
-    await supabase.from('user_habits').update({
-      carryover_value: newCarryoverValueAfterUnlog,
-    }).eq('id', userHabitData.id);
+    await supabase.from('user_habits').update({ carryover_value: Math.max(0, surplusAfterUnlog) }).eq('id', userHabitData.id);
   } else if (userHabitData.complete_on_finish) {
-    await supabase.from('user_habits').update({
-      carryover_value: 0,
-    }).eq('id', userHabitData.id);
+    await supabase.from('user_habits').update({ carryover_value: 0 }).eq('id', userHabitData.id);
   }
 
   return { success: true };
@@ -400,7 +338,7 @@ export const useHabitLog = () => {
       return logHabit({ ...params, userId: session.user.id });
     },
     onSuccess: async (data) => {
-      showSuccess(`${data.taskName} completed! +${data.xpEarned} XP`);
+      showSuccess(`${data.taskName} completed!`);
       await queryClient.refetchQueries({ queryKey: ['dashboardData', session?.user?.id] });
       queryClient.invalidateQueries({ queryKey: ['journeyData', session?.user?.id] });
       queryClient.invalidateQueries({ queryKey: ['dailyHabitCompletion', session?.user?.id] });

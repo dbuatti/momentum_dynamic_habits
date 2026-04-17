@@ -17,18 +17,10 @@ import { SettingsSkeleton } from '@/components/dashboard/SettingsSkeleton';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
-  Brain, LogOut, Anchor, Target, Sparkles, 
-  Settings2, Shield, ShieldCheck, Calendar, 
-  Clock, Dumbbell, Wind, BookOpen, Music, 
-  Home, Code, Pill, Timer, BarChart3, Layers, Zap, Info, Eye, EyeOff, Plus,
-  Volume2, Smartphone, Trophy, User, CheckCircle2, Globe, Loader2
+  LogOut, Anchor, Settings2, Clock, User, CheckCircle2, Globe, Loader2, Volume2, Smartphone, Trophy, Brain, Plus
 } from 'lucide-react';
-import { cn } from "@/lib/utils";
 import { 
-  Accordion, 
-  AccordionContent, 
-  AccordionItem, 
-  AccordionTrigger 
+  Accordion 
 } from '@/components/ui/accordion';
 import { HabitSettingsCard } from '@/components/settings/HabitSettingsCard';
 import { NewHabitModal } from '@/components/habits/NewHabitModal';
@@ -36,8 +28,8 @@ import { ResetEverythingCard } from '@/components/settings/ResetEverythingCard';
 import { ResetExperienceCard } from '@/components/settings/ResetExperienceCard';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { HabitOrderSettings } from '@/components/settings/HabitOrderSettings';
-import { SectionOrderSettings } from '@/components/settings/SectionOrderSettings'; // Import the new component
-import { commonTimezones } from '@/utils/time-utils'; // Import from new utility
+import { SectionOrderSettings } from '@/components/settings/SectionOrderSettings';
+import { commonTimezones } from '@/utils/time-utils';
 
 const Settings = () => {
   const { session, signOut } = useSession();
@@ -49,11 +41,10 @@ const Settings = () => {
   const [activeHabitId, setActiveHabitId] = useState<string | null>(null);
   const [showNewHabitModal, setShowNewHabitModal] = useState(false);
 
-  // Profile Edit State
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [timezone, setTimezone] = useState('UTC');
-  const [dayRolloverHour, setDayRolloverHour] = useState(0); // New state for day rollover
+  const [dayRolloverHour, setDayRolloverHour] = useState(0);
 
   const habits = useMemo(() => data?.habits || [], [data]);
   const profile = useMemo(() => data?.profile, [data]);
@@ -64,7 +55,7 @@ const Settings = () => {
       setLastName(profile.last_name || '');
       setTimezone(profile.timezone || 'UTC');
     }
-    if (dashboardData) { // Use dashboardData for dayRolloverHour as it's fetched there
+    if (dashboardData) {
       setDayRolloverHour(dashboardData.dayRolloverHour || 0);
     }
   }, [profile, dashboardData]);
@@ -83,16 +74,15 @@ const Settings = () => {
       first_name: firstName,
       last_name: lastName,
       timezone: timezone,
-      day_rollover_hour: dayRolloverHour, // Include dayRolloverHour
+      day_rollover_hour: dayRolloverHour,
     });
   };
 
-  // Modified to return a promise
   const updateHabitField = async (habitId: string, updates: any) => {
     const { error } = await supabase.from('user_habits').update(updates).eq('id', habitId);
     if (error) {
       showError('Failed to update settings');
-      throw error; // Re-throw to allow caller to catch
+      throw error;
     } else {
       showSuccess('Settings saved');
       queryClient.invalidateQueries({ queryKey: ['journeyData'] });
@@ -101,12 +91,7 @@ const Settings = () => {
   };
 
   const toggleDay = (habitId: string, currentDays: number[], dayIndex: number) => {
-    let newDays;
-    if (currentDays.includes(dayIndex)) {
-      newDays = currentDays.filter(d => d !== dayIndex);
-    } else {
-      newDays = [...currentDays, dayIndex].sort();
-    }
+    let newDays = currentDays.includes(dayIndex) ? currentDays.filter(d => d !== dayIndex) : [...currentDays, dayIndex].sort();
     updateHabitField(habitId, { days_of_week: newDays });
   };
 
@@ -114,7 +99,6 @@ const Settings = () => {
     <div className="w-full max-w-2xl mx-auto px-4 py-6 space-y-8 pb-32">
       <PageHeader title="Growth Settings" backLink="/" />
       
-      {/* Profile Header */}
       <div className="space-y-6">
         <Card className="rounded-3xl shadow-sm border-0">
           <CardContent className="p-6 flex items-center space-x-4">
@@ -133,7 +117,6 @@ const Settings = () => {
           </CardContent>
         </Card>
 
-        {/* Profile Information Edit */}
         <Card className="rounded-3xl shadow-sm border border-border bg-card">
           <CardHeader className="p-6 pb-0">
             <CardTitle className="text-sm font-black uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2">
@@ -144,144 +127,73 @@ const Settings = () => {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="firstName" className="text-xs font-bold">First Name</Label>
-                <Input 
-                  id="firstName" 
-                  value={firstName} 
-                  onChange={(e) => setFirstName(e.target.value)}
-                  className="rounded-xl h-11"
-                  placeholder="First"
-                />
+                <Input id="firstName" value={firstName} onChange={(e) => setFirstName(e.target.value)} className="rounded-xl h-11" placeholder="First" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="lastName" className="text-xs font-bold">Last Name</Label>
-                <Input 
-                  id="lastName" 
-                  value={lastName} 
-                  onChange={(e) => setLastName(e.target.value)}
-                  className="rounded-xl h-11"
-                  placeholder="Last"
-                />
+                <Input id="lastName" value={lastName} onChange={(e) => setLastName(e.target.value)} className="rounded-xl h-11" placeholder="Last" />
               </div>
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="timezone" className="text-xs font-bold">Current Timezone</Label>
               <div className="flex items-center gap-2">
                 <Globe className="w-4 h-4 text-muted-foreground" />
                 <Select value={timezone} onValueChange={setTimezone}>
-                  <SelectTrigger id="timezone" className="h-11 rounded-xl flex-grow">
-                    <SelectValue placeholder="Select timezone" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {commonTimezones.map((tz) => <SelectItem key={tz} value={tz}>{tz}</SelectItem>)}
-                  </SelectContent>
+                  <SelectTrigger id="timezone" className="h-11 rounded-xl flex-grow"><SelectValue placeholder="Select timezone" /></SelectTrigger>
+                  <SelectContent>{commonTimezones.map((tz) => <SelectItem key={tz} value={tz}>{tz}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
             </div>
-
-            {/* Day Rollover Setting */}
             <div className="space-y-2">
               <Label htmlFor="dayRollover" className="text-xs font-bold">Day Rollover Hour</Label>
               <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4 text-muted-foreground" />
-                <Select 
-                  value={String(dayRolloverHour)} 
-                  onValueChange={(val) => setDayRolloverHour(Number(val))}
-                >
-                  <SelectTrigger id="dayRollover" className="w-24 h-11 rounded-xl font-bold text-center">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Array.from({ length: 24 }, (_, i) => i).map(hour => (
-                      <SelectItem key={hour} value={String(hour)}>
-                        {hour.toString().padStart(2, '0')}:00
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
+                <Select value={String(dayRolloverHour)} onValueChange={(val) => setDayRolloverHour(Number(val))}>
+                  <SelectTrigger id="dayRollover" className="w-24 h-11 rounded-xl font-bold text-center"><SelectValue /></SelectTrigger>
+                  <SelectContent>{Array.from({ length: 24 }, (_, i) => i).map(hour => <SelectItem key={hour} value={String(hour)}>{hour.toString().padStart(2, '0')}:00</SelectItem>)}</SelectContent>
                 </Select>
               </div>
-              <p className="text-[10px] text-muted-foreground mt-1">
-                This is when your "new day" begins. Tasks completed before this hour will count towards the previous day.
-              </p>
             </div>
-
-            <Button 
-              className="w-full h-11 rounded-xl font-bold mt-2" 
-              onClick={handleUpdateProfile}
-              disabled={isUpdatingProfile}
-            >
+            <Button className="w-full h-11 rounded-xl font-bold mt-2" onClick={handleUpdateProfile} disabled={isUpdatingProfile}>
               {isUpdatingProfile ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
               Save Profile Changes
             </Button>
           </CardContent>
         </Card>
 
-        {/* Feedback Settings */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Card className="rounded-3xl shadow-sm border border-border bg-card">
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="bg-primary/10 rounded-xl p-2.5">
-                    <Volume2 className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-black uppercase text-[10px] tracking-tight">Sound</p>
-                    <p className="text-[10px] text-muted-foreground">Chimes on completion.</p>
-                  </div>
+                  <div className="bg-primary/10 rounded-xl p-2.5"><Volume2 className="w-5 h-5 text-primary" /></div>
+                  <div><p className="font-black uppercase text-[10px] tracking-tight">Sound</p><p className="text-[10px] text-muted-foreground">Chimes on completion.</p></div>
                 </div>
-                <Switch 
-                  checked={enableSound} 
-                  onCheckedChange={(val) => updateProfile({ enable_sound: val })} 
-                />
+                <Switch checked={enableSound} onCheckedChange={(val) => updateProfile({ enable_sound: val })} />
               </div>
             </CardContent>
           </Card>
-
           <Card className="rounded-3xl shadow-sm border border-border bg-card">
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="bg-primary/10 rounded-xl p-2.5">
-                    <Smartphone className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-black uppercase text-[10px] tracking-tight">Haptics</p>
-                    <p className="text-[10px] text-muted-foreground">Tactile feedback.</p>
-                  </div>
+                  <div className="bg-primary/10 rounded-xl p-2.5"><Smartphone className="w-5 h-5 text-primary" /></div>
+                  <div><p className="font-black uppercase text-[10px] tracking-tight">Haptics</p><p className="text-[10px] text-muted-foreground">Tactile feedback.</p></div>
                 </div>
-                <Switch 
-                  checked={enableHaptics} 
-                  onCheckedChange={(val) => updateProfile({ enable_haptics: val })} 
-                />
+                <Switch checked={enableHaptics} onCheckedChange={(val) => updateProfile({ enable_haptics: val })} />
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Daily Challenge Settings */}
         <Card className="rounded-3xl shadow-sm border border-border bg-card">
           <CardContent className="p-5">
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <div className="bg-primary/10 rounded-xl p-2.5">
-                  <Trophy className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <p className="font-black uppercase text-[10px] tracking-tight">Daily Challenge Target</p>
-                  <p className="text-[10px] text-muted-foreground">Number of tasks to complete daily.</p>
-                </div>
+                <div className="bg-primary/10 rounded-xl p-2.5"><Trophy className="w-5 h-5 text-primary" /></div>
+                <div><p className="font-black uppercase text-[10px] tracking-tight">Daily Challenge Target</p><p className="text-[10px] text-muted-foreground">Number of tasks to complete daily.</p></div>
               </div>
-              <div className="flex items-center gap-2">
-                <Input 
-                  type="number" 
-                  min="1" 
-                  max="10" 
-                  className="w-16 h-10 rounded-xl font-bold text-center" 
-                  value={challengeTarget}
-                  onChange={(e) => updateProfile({ daily_challenge_target: parseInt(e.target.value) })}
-                />
-              </div>
+              <Input type="number" min="1" max="10" className="w-16 h-10 rounded-xl font-bold text-center" value={challengeTarget} onChange={(e) => updateProfile({ daily_challenge_target: parseInt(e.target.value) })} />
             </div>
           </CardContent>
         </Card>
@@ -290,39 +202,24 @@ const Settings = () => {
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="bg-habit-purple-foreground rounded-xl p-2.5">
-                  <Brain className="w-6 h-6 text-habit-purple" />
-                </div>
-                <div>
-                  <p className="font-black uppercase tracking-tight">Neurodivergent Mode</p>
-                  <p className="text-xs text-muted-foreground">Enables small increments and modular task capsules.</p>
-                </div>
+                <div className="bg-habit-purple-foreground rounded-xl p-2.5"><Brain className="w-6 h-6 text-habit-purple" /></div>
+                <div><p className="font-black uppercase tracking-tight">Neurodivergent Mode</p><p className="text-xs text-muted-foreground">Enables small increments and modular task capsules.</p></div>
               </div>
-              <Switch 
-                checked={profile?.neurodivergent_mode} 
-                onCheckedChange={(val) => updateProfile({ neurodivergent_mode: val })} 
-              />
+              <Switch checked={profile?.neurodivergent_mode} onCheckedChange={(val) => updateProfile({ neurodivergent_mode: val })} />
             </div>
           </CardContent>
         </Card>
 
         <Card className="rounded-3xl shadow-sm border-2 border-primary bg-primary">
           <CardContent className="p-5">
-            <Button 
-              className="w-full h-14 rounded-2xl font-bold bg-primary-foreground text-primary hover:bg-primary-foreground/90"
-              onClick={() => setShowNewHabitModal(true)}
-            >
-              <Plus className="w-6 h-6 mr-2" />
-              Create Custom Habit
+            <Button className="w-full h-14 rounded-2xl font-bold bg-primary-foreground text-primary hover:bg-primary-foreground/90" onClick={() => setShowNewHabitModal(true)}>
+              <Plus className="w-6 h-6 mr-2" /> Create Custom Habit
             </Button>
           </CardContent>
         </Card>
       </div>
 
-      {/* New Section Order Settings Card */}
       <SectionOrderSettings />
-
-      {/* New Habit Order Settings Card */}
       <HabitOrderSettings />
 
       <div className="space-y-10">
@@ -333,13 +230,10 @@ const Settings = () => {
               <h2 className="text-sm font-black uppercase tracking-[0.2em] text-primary/80">Anchor Practices</h2>
             </div>
             <Accordion type="single" collapsible value={activeHabitId || ""} onValueChange={setActiveHabitId} className="w-full">
-              {anchors.map(habit => (
-                <HabitSettingsCard key={habit.id} habit={habit} onUpdateHabitField={updateHabitField} onToggleDay={toggleDay} isActiveHabit={activeHabitId === habit.id} />
-              ))}
+              {anchors.map(habit => <HabitSettingsCard key={habit.id} habit={habit} onUpdateHabitField={updateHabitField} onToggleDay={toggleDay} isActiveHabit={activeHabitId === habit.id} />)}
             </Accordion>
           </div>
         )}
-
         {daily.length > 0 && (
           <div className="space-y-4">
             <div className="flex items-center gap-2 px-1">
@@ -347,9 +241,7 @@ const Settings = () => {
               <h2 className="text-sm font-black uppercase tracking-[0.2em] text-muted-foreground">Daily Momentum</h2>
             </div>
             <Accordion type="single" collapsible value={activeHabitId || ""} onValueChange={setActiveHabitId} className="w-full">
-              {daily.map(habit => (
-                <HabitSettingsCard key={habit.id} habit={habit} onUpdateHabitField={updateHabitField} onToggleDay={toggleDay} isActiveHabit={activeHabitId === habit.id} />
-              ))}
+              {daily.map(habit => <HabitSettingsCard key={habit.id} habit={habit} onUpdateHabitField={updateHabitField} onToggleDay={toggleDay} isActiveHabit={activeHabitId === habit.id} />)}
             </Accordion>
           </div>
         )}

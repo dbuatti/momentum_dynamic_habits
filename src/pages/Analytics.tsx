@@ -4,14 +4,12 @@ import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
-  AlertCircle, Loader2, BarChart3, Calendar, Target, Zap, TrendingUp,
-  Clock, Layers, ShieldCheck, Info, Dumbbell, Wind, BookOpen, Music, Home, Code, Sparkles, Pill,
-  CheckCircle2, Filter, MessageSquare
+  AlertCircle, Loader2, BarChart3, Calendar, Zap, TrendingUp,
+  Clock, Layers, Filter
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { PageHeader } from '@/components/layout/PageHeader';
 import HabitHeatmap from '@/components/dashboard/HabitHeatmap';
-import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { useAnalyticsData } from '@/hooks/useAnalyticsData';
 import { ReflectionCard } from '@/components/analytics/ReflectionCard';
@@ -20,36 +18,14 @@ import { format } from 'date-fns';
 import { HabitPerformanceOverview } from '@/components/analytics/HabitPerformanceOverview';
 import { GrowthInsightsCard } from '@/components/analytics/GrowthInsightsCard';
 import { useDashboardData } from '@/hooks/useDashboardData';
-import { LevelProgressCard } from '@/components/dashboard/LevelProgressCard';
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart";
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer } from "recharts";
+import { HabitLevelBars } from '@/components/analytics/HabitLevelBars';
 
 const Analytics = () => {
-  const [timeframeFilter, setTimeframeFilter] = useState<string>('8_weeks'); // Default to 8 weeks
-  const { data: analyticsData, isLoading, isError } = useAnalyticsData(timeframeFilter); // Pass timeframeFilter
+  const [timeframeFilter, setTimeframeFilter] = useState<string>('8_weeks');
+  const { data: analyticsData, isLoading, isError } = useAnalyticsData(timeframeFilter);
   const { data: dashboardData, isLoading: isDashboardDataLoading } = useDashboardData();
   const [habitFilter, setHabitFilter] = useState<string>('all');
-  
-  const chartConfig = {
-    xp: {
-      label: "XP Earned",
-      color: "hsl(var(--warning))",
-    },
-  };
 
-  const xpChartData = useMemo(() => {
-    if (!analyticsData?.weeklyXp) return [];
-    return analyticsData.weeklyXp.map(item => ({
-      week: format(new Date(item.weekStart), 'MMM d'),
-      xp: item.xp
-    }));
-  }, [analyticsData?.weeklyXp]);
-
-  // Filter habits based on selection
   const filteredHabits = useMemo(() => {
     if (!analyticsData?.habits) return [];
     return habitFilter === 'all'
@@ -57,12 +33,9 @@ const Analytics = () => {
       : analyticsData.habits.filter(h => h.habit.habit_key === habitFilter);
   }, [habitFilter, analyticsData]);
 
-  // Generate heatmap data based on the current filter
   const habitCompletions = useMemo(() => {
     if (!filteredHabits.length) return [];
-    
     const completionsMap = new Map<string, number>();
-    
     filteredHabits.forEach(h => {
       Object.entries(h.weeklyCompletions).forEach(([weekStart, count]) => {
         const start = new Date(weekStart);
@@ -70,13 +43,11 @@ const Analytics = () => {
           const day = new Date(start);
           day.setDate(start.getDate() + i);
           const dateStr = format(day, 'yyyy-MM-dd');
-          // Add normalized daily counts
           const current = completionsMap.get(dateStr) || 0;
           completionsMap.set(dateStr, current + (Number(count) / 7));
         }
       });
     });
-
     return Array.from(completionsMap.entries()).map(([date, count]) => ({
       date,
       count: Math.round(count)
@@ -86,7 +57,7 @@ const Analytics = () => {
   if (isLoading || isDashboardDataLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        <Loader2 className="h-10 w-10 animate-spin text-white" />
       </div>
     );
   }
@@ -106,16 +77,12 @@ const Analytics = () => {
   const { patterns } = dashboardData;
 
   return (
-    // Updated width to max-w-2xl for better desktop visibility
     <div className="w-full max-w-2xl mx-auto px-4 py-8 space-y-10 pb-32">
       <PageHeader title="Growth Analytics" backLink="/" />
 
-      <LevelProgressCard
-        currentXp={dashboardData.xp}
-        currentLevel={dashboardData.level}
-      />
+      {/* JRPG Mastery Board */}
+      <HabitLevelBars habits={analyticsData.habits} />
 
-      {/* Filter Toolbar */}
       <section className="bg-secondary p-2 rounded-2xl border border-border flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2 pl-2">
           <Filter className="w-4 h-4 text-muted-foreground" />
@@ -129,13 +96,12 @@ const Analytics = () => {
             <SelectContent className="rounded-xl border-border">
               <SelectItem value="all">All Practices</SelectItem>
               {analyticsData.habits.map(h => (
-                <SelectItem key={h.habit.habit_key} value={h.habit.habit_key}> {/* Fixed: Use habit_key */}
+                <SelectItem key={h.habit.habit_key} value={h.habit.habit_key}>
                   {h.habit.name}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-
           <Select value={timeframeFilter} onValueChange={setTimeframeFilter}>
             <SelectTrigger className="w-[140px] h-10 rounded-xl bg-card border-border font-bold text-xs">
               <SelectValue placeholder="Timeframe" />
@@ -149,7 +115,6 @@ const Analytics = () => {
         </div>
       </section>
 
-      {/* High-Level KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
           { label: 'Days Active', val: overallWeeklySummary.activeDays, icon: Calendar, color: 'text-info' },
@@ -168,39 +133,6 @@ const Analytics = () => {
         ))}
       </div>
 
-      {/* XP Growth Chart */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 ml-1">
-          <TrendingUp className="w-4 h-4 text-muted-foreground" />
-          <h2 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Weekly XP Growth</h2>
-        </div>
-        <Card className="border-0 shadow-xl shadow-background/50 rounded-[2rem] p-6">
-          <ChartContainer config={chartConfig} className="h-[200px] w-full">
-            <BarChart data={xpChartData}>
-              <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-              <XAxis
-                dataKey="week"
-                axisLine={false}
-                tickLine={false}
-                tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10, fontWeight: 700 }}
-                dy={10}
-              />
-              <YAxis
-                hide
-              />
-              <ChartTooltip content={<ChartTooltipContent />} />
-              <Bar
-                dataKey="xp"
-                fill="var(--color-xp)"
-                radius={[6, 6, 0, 0]}
-                barSize={32}
-              />
-            </BarChart>
-          </ChartContainer>
-        </Card>
-      </div>
-
-      {/* Focus Pattern Card */}
       <Card className="border-0 shadow-xl shadow-background/50 rounded-[2rem] bg-primary text-primary-foreground overflow-hidden">
         <CardContent className="p-8 flex items-center justify-between">
           <div className="space-y-2">
@@ -216,7 +148,6 @@ const Analytics = () => {
         </CardContent>
       </Card>
 
-      {/* Consistency Visualization */}
       <div className="space-y-4">
         <div className="flex items-center gap-2 ml-1">
           <Layers className="w-4 h-4 text-muted-foreground" />
@@ -226,18 +157,16 @@ const Analytics = () => {
           <HabitHeatmap 
             completions={habitCompletions} 
             habitName={habitFilter === 'all' ? 'Overall Consistency' : 'Practice Consistency'} 
-            timeframe={timeframeFilter} // Pass timeframe to HabitHeatmap
+            timeframe={timeframeFilter}
           />
         </Card>
       </div>
 
-      {/* Performance Grid */}
       <div className="space-y-6">
         <HabitPerformanceOverview habits={filteredHabits} />
         <GrowthInsightsCard habits={analyticsData.habits} />
       </div>
 
-      {/* Reflection & Bonus */}
       <ReflectionCard
         prompt={reflectionPrompt}
         initialNotes={latestReflection?.notes || null}

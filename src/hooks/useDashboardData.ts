@@ -1,26 +1,24 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
-import { startOfDay, differenceInDays, startOfWeek, endOfWeek, subWeeks, addMonths, subDays, formatDistanceToNowStrict, isWithinInterval, parse } from 'date-fns';
-import { initialHabits } from '@/lib/habit-data';
+import { startOfDay, differenceInDays, startOfWeek, endOfWeek, subWeeks, formatDistanceToNowStrict, isWithinInterval, parse } from 'date-fns';
 import { ProcessedUserHabit } from '@/types/habit';
-import { calculateDynamicChunks, calculateDailyParts } from '@/utils/progress-utils';
+import { calculateDailyParts } from '@/utils/progress-utils';
 import { getTodayDateString } from '@/utils/time-utils';
 
-// Helper function to get day boundaries using RPC (copied from useHabitLog for self-containment)
 const getDayBoundaries = async (userId: string, dateString: string) => {
   const { data, error } = await supabase.rpc('get_day_boundaries', {
     p_user_id: userId,
     p_target_date: dateString,
   });
   if (error) throw error;
-  return data[0]; // { start_time: TIMESTAMPTZ, end_time: TIMESTAMPTZ }
+  return data[0];
 };
 
 export const fetchDashboardData = async (userId: string) => {
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('journey_start_date, daily_streak, last_active_at, first_name, last_name, timezone, xp, level, neurodivergent_mode, enable_sound, enable_haptics, day_rollover_hour, custom_habit_order, section_order') 
+    .select('journey_start_date, daily_streak, last_active_at, first_name, last_name, timezone, neurodivergent_mode, enable_sound, enable_haptics, day_rollover_hour, custom_habit_order, section_order') 
     .eq('id', userId)
     .single();
 
@@ -28,11 +26,8 @@ export const fetchDashboardData = async (userId: string) => {
   const timezone = profile?.timezone || 'UTC';
   const today = new Date();
   const currentDayOfWeek = today.getDay();
-  
-  // Use timezone-aware date string
   const todayDateString = getTodayDateString(timezone);
 
-  // 1. Get today's timezone-aware boundaries
   const boundaries = await getDayBoundaries(userId, todayDateString);
   const startTime = boundaries.start_time;
   const endTime = boundaries.end_time;
@@ -48,7 +43,6 @@ export const fetchDashboardData = async (userId: string) => {
     { data: randomTip, error: randomTipError },
   ] = await Promise.all([
     supabase.from('user_habits').select('*, measurement_type').eq('user_id', userId),
-    // 2. Fetch completed tasks within today's boundaries
     supabase.from('completedtasks').select('id, original_source, duration_used, xp_earned, completed_at, capsule_index').eq('user_id', userId).gte('completed_at', startTime).lt('completed_at', endTime),
     supabase.from('completedtasks').select('id, original_source, duration_used, xp_earned, completed_at').eq('user_id', userId).gte('completed_at', startOfWeek(today).toISOString()).lte('completed_at', endOfWeek(today).toISOString()),
     supabase.from('completedtasks').select('original_source, duration_used, xp_earned').eq('user_id', userId).gte('completed_at', startOfWeek(subWeeks(today, 1)).toISOString()).lte('completed_at', endOfWeek(subWeeks(today, 1)).toISOString()),
@@ -66,16 +60,11 @@ export const fetchDashboardData = async (userId: string) => {
   (completedThisWeek || []).forEach(task => {
     const key = task.original_source;
     weeklySessionCountMap.set(key, (weeklySessionCountMap.get(key) || 0) + 1);
-    
-    // Sum up minutes for the week
     const userHabit = habits?.find(h => h.habit_key === key);
     if (userHabit?.unit === 'min') {
-      const minutes = (task.duration_used || 0) / 60;
-      weeklyMinutesMap.set(key, (weeklyMinutesMap.get(key) || 0) + minutes);
+      weeklyMinutesMap.set(key, (weeklyMinutesMap.get(key) || 0) + ((task.duration_used || 0) / 60));
     } else if (userHabit) {
-      const xpPerUnit = userHabit.xp_per_unit || 1;
-      const units = (task.xp_earned || 0) / xpPerUnit;
-      weeklyMinutesMap.set(key, (weeklyMinutesMap.get(key) || 0) + units);
+      weeklyMinutesMap.set(key, (weeklyMinutesMap.get(key) || 0) + ((task.xp_earned || 0) / (userHabit.xp_per_unit || 1)));
     }
   });
 
@@ -87,40 +76,24 @@ export const fetchDashboardData = async (userId: string) => {
   (completedToday || []).forEach((task: any) => {
     const key = task.original_source;
     completedHabitKeysToday.add(key);
-    
     if (task.capsule_index !== null) {
       const habitMap = dailyCapsuleTasksMap.get(key) || {};
       habitMap[task.capsule_index] = task.id;
       dailyCapsuleTasksMap.set(key, habitMap);
     }
-
     const userHabit = habits?.find(h => h.habit_key === key);
     const mType = userHabit?.measurement_type || 'timer';
     const xpPerUnit = userHabit?.xp_per_unit || (userHabit?.unit === 'min' ? 30 : 1);
-
-    if (mType === 'timer') {
-      const seconds = task.duration_used || 0;
-      dailySecondsMap.set(key, (dailySecondsMap.get(key) || 0) + seconds);
-    } else {
-      const progress = (task.xp_earned || 0) / xpPerUnit;
-      dailyUnitProgressMap.set(key, (dailyUnitProgressMap.get(key) || 0) + progress);
-    }
+    if (mType === 'timer') dailySecondsMap.set(key, (dailySecondsMap.get(key) || 0) + (task.duration_used || 0));
+    else dailyUnitProgressMap.set(key, (dailyUnitProgressMap.get(key) || 0) + ((task.xp_earned || 0) / xpPerUnit));
   });
 
-  const processedHabits: ProcessedUserHabit[] = (habits || [])
-    .map(h => {
+  const processedHabits: ProcessedUserHabit[] = (habits || []).map(h => {
     const mType = h.measurement_type || 'timer';
-    let rawDailyProgress = 0;
-    if (mType === 'timer') {
-      rawDailyProgress = (dailySecondsMap.get(h.habit_key) || 0) / 60;
-    } else {
-      rawDailyProgress = dailyUnitProgressMap.get(h.habit_key) || 0;
-    }
-
+    const rawDailyProgress = mType === 'timer' ? (dailySecondsMap.get(h.habit_key) || 0) / 60 : (dailyUnitProgressMap.get(h.habit_key) || 0);
     const capsuleTaskMapping = dailyCapsuleTasksMap.get(h.habit_key) || {};
     const carryover = (h.measurement_type !== 'binary' && !h.is_fixed) ? (h.carryover_value || 0) : 0;
     const baseAdjustedDailyGoal = h.current_daily_goal + carryover;
-
     const activeDays = (h.days_of_week || []).map((d: any) => Number(d));
     const isScheduledForToday = activeDays.includes(currentDayOfWeek);
 
@@ -131,9 +104,7 @@ export const fetchDashboardData = async (userId: string) => {
         const start = parse(h.window_start, 'HH:mm', now);
         const end = parse(h.window_end, 'HH:mm', now);
         isWithinWindow = isWithinInterval(now, { start, end }); 
-      } catch (e) {
-        console.error("Window parsing error", e);
-      }
+      } catch (e) {}
     }
 
     const weeklyCompletions = weeklySessionCountMap.get(h.habit_key) || 0;
@@ -145,14 +116,11 @@ export const fetchDashboardData = async (userId: string) => {
     if (h.is_fixed && mType !== 'binary') {
       const threshold = mType === 'timer' ? 0.1 : 0.01;
       isComplete = rawDailyProgress >= (baseAdjustedDailyGoal - threshold);
-    } 
-    else if (h.complete_on_finish || mType === 'binary') {
+    } else if (h.complete_on_finish || mType === 'binary') {
       isComplete = completedHabitKeysToday.has(h.habit_key);
-    } 
-    else if (isWeeklyAnchor) {
+    } else if (isWeeklyAnchor) {
       isComplete = weeklyCompletions >= 1;
-    } 
-    else {
+    } else {
       const threshold = mType === 'timer' ? 0.1 : 0.01;
       isComplete = rawDailyProgress >= (baseAdjustedDailyGoal - threshold);
     }
@@ -191,36 +159,22 @@ export const fetchDashboardData = async (userId: string) => {
     } as any;
   });
 
-  // Apply custom sorting order if available
   const customOrder = profile?.custom_habit_order;
   if (customOrder && customOrder.length > 0) {
     processedHabits.sort((a, b) => {
       const indexA = customOrder.indexOf(a.habit_key);
       const indexB = customOrder.indexOf(b.habit_key);
-
-      if (indexA !== -1 && indexB !== -1) {
-        return indexA - indexB;
-      }
-      if (indexA !== -1) {
-        return -1;
-      }
-      if (indexB !== -1) {
-        return 1;
-      }
+      if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+      if (indexA !== -1) return -1;
+      if (indexB !== -1) return 1;
       return 0;
     });
   }
 
-
   const dailyMomentumHabits = processedHabits.filter(h => {
-    const isWeeklyAnchor = h.category === 'anchor' && h.frequency_per_week === 1;
-    const isWeeklyObjective = (h as any).is_weekly_goal;
-    
-    if (isWeeklyAnchor || isWeeklyObjective) return false; 
-    if (!h.is_visible) return false;
-    if (!h.isScheduledForToday) return false;
-    if (h.isLockedByDependency) return false;
-
+    if (h.category === 'anchor' && h.frequency_per_week === 1) return false; 
+    if ((h as any).is_weekly_goal) return false; 
+    if (!h.is_visible || !h.isScheduledForToday || h.isLockedByDependency) return false;
     return true;
   });
   
@@ -259,14 +213,12 @@ export const fetchDashboardData = async (userId: string) => {
     firstName: profile?.first_name || null, 
     lastName: profile?.last_name || null,
     tip: randomTip || null, 
-    xp: profile?.xp || 0, 
-    level: profile?.level || 1, 
     averageDailyTasks: totalSessions && totalDaysSinceStart > 0 ? (totalSessions / totalDaysSinceStart).toFixed(1) : '0.0',
     dailyMomentumParts,
     dayRolloverHour: profile?.day_rollover_hour || 0,
     customHabitOrder: profile?.custom_habit_order || [],
     sectionOrder: profile?.section_order || ['anchor', 'weekly_objective', 'daily_momentum'], 
-    timezone: timezone, // Added timezone to the return object
+    timezone: timezone,
   };
 };
 

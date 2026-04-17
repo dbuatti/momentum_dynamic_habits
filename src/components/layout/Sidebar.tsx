@@ -50,7 +50,7 @@ interface SidebarContentProps {
 
 const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick, isCollapsed, onToggleCollapse, isMobile }) => {
   const { session, signOut } = useSession();
-  const { data: dashboardData, isLoading: isDashboardLoading } = useDashboardData();
+  const { data: dashboardData } = useDashboardData();
   const location = useLocation();
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
@@ -160,7 +160,6 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ onLinkClick, isCollapse
             {!isCollapsed && (
               <div className="flex-grow min-w-0">
                 <p className="font-bold text-sm truncate">{displayName}</p>
-                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Level {dashboardData?.level || 1}</p>
               </div>
             )}
           </div>

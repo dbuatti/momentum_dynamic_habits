@@ -426,8 +426,6 @@ const Index = () => {
           lastActiveText={data.lastActiveText}
           firstName={data.firstName}
           lastName={data.lastName}
-          xp={data.xp}
-          level={data.level}
           tasksCompletedToday={completedParts}
           dailyChallengeTarget={totalParts}
         />

@@ -355,7 +355,7 @@ const Index = () => {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <div className="max-w-3xl mx-auto w-full px-4 py-6 pb-32">
-        <HomeHeader dayCounter={data.daysActive} lastActiveText={data.lastActiveText} firstName={data.firstName} lastName={data.lastName} xp={data.xp} level={data.level} tasksCompletedToday={completedParts} dailyChallengeTarget={totalParts} />
+        <HomeHeader dayCounter={data.daysActive} lastActiveText={data.lastActiveText} firstName={data.firstName} lastName={data.lastName} tasksCompletedToday={completedParts} dailyChallengeTarget={totalParts} />
         <main className="space-y-8">
           {data.patterns.streak > 0 && completedParts === 0 && new Date().getHours() >= 20 && (
             <Card className="bg-destructive/10 border-destructive border-2 rounded-2xl animate-pulse"><CardContent className="p-4 flex items-center gap-3"><AlertCircle className="w-6 h-6 text-destructive" /><div><p className="font-black text-sm text-destructive uppercase tracking-tight">Streak at Risk!</p><p className="text-xs font-bold opacity-80">Log something now to protect your {data.patterns.streak}-day streak.</p></div></CardContent></Card>
