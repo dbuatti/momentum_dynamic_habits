@@ -59,6 +59,7 @@ interface AnalyticsData {
   latestReflection: Reflection | null;
   reflectionPrompt: string;
   bestTime: string; // Added bestTime
+  weeklyXp: { weekStart: string; xp: number }[]; // Added weeklyXp
 }
 
 interface FetchAnalyticsDataParams {
@@ -264,6 +265,27 @@ const fetchAnalyticsData = async ({ userId, timeframe }: FetchAnalyticsDataParam
     consistency: 0, // Will be calculated in Analytics.tsx
   };
 
+  // Calculate weekly XP
+  const weeklyXpMap = new Map<string, number>();
+  
+  // Initialize all weeks in the timeframe with 0 XP
+  eachDayOfInterval({ start: startDateFilter, end: today }).forEach(day => {
+    const weekStart = format(startOfWeek(day, { weekStartsOn: 0 }), 'yyyy-MM-dd');
+    if (!weeklyXpMap.has(weekStart)) {
+      weeklyXpMap.set(weekStart, 0);
+    }
+  });
+
+  (completedTasks || []).forEach(task => {
+    const weekStart = format(startOfWeek(new Date(task.completed_at), { weekStartsOn: 0 }), 'yyyy-MM-dd');
+    const currentXp = weeklyXpMap.get(weekStart) || 0;
+    weeklyXpMap.set(weekStart, currentXp + (task.xp_earned || 0));
+  });
+
+  const weeklyXp = Array.from(weeklyXpMap.entries())
+    .map(([weekStart, xp]) => ({ weekStart, xp }))
+    .sort((a, b) => a.weekStart.localeCompare(b.weekStart));
+
   // Reflection prompt logic
   const reflectionPrompt = "Which habits felt easiest this week? Where did you struggle and why?";
   const latestReflection = (reflections && reflections.length > 0) ? reflections[0] : null;
@@ -280,6 +302,7 @@ const fetchAnalyticsData = async ({ userId, timeframe }: FetchAnalyticsDataParam
     latestReflection,
     reflectionPrompt,
     bestTime: bestTime || '—', // Include bestTime
+    weeklyXp, // Include weeklyXp
   };
 };
 

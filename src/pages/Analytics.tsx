@@ -20,6 +20,13 @@ import { format } from 'date-fns';
 import { HabitPerformanceOverview } from '@/components/analytics/HabitPerformanceOverview';
 import { GrowthInsightsCard } from '@/components/analytics/GrowthInsightsCard';
 import { useDashboardData } from '@/hooks/useDashboardData';
+import { LevelProgressCard } from '@/components/dashboard/LevelProgressCard';
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer } from "recharts";
 
 const Analytics = () => {
   const [timeframeFilter, setTimeframeFilter] = useState<string>('8_weeks'); // Default to 8 weeks
@@ -27,6 +34,20 @@ const Analytics = () => {
   const { data: dashboardData, isLoading: isDashboardDataLoading } = useDashboardData();
   const [habitFilter, setHabitFilter] = useState<string>('all');
   
+  const chartConfig = {
+    xp: {
+      label: "XP Earned",
+      color: "hsl(var(--warning))",
+    },
+  };
+
+  const xpChartData = useMemo(() => {
+    if (!analyticsData?.weeklyXp) return [];
+    return analyticsData.weeklyXp.map(item => ({
+      week: format(new Date(item.weekStart), 'MMM d'),
+      xp: item.xp
+    }));
+  }, [analyticsData?.weeklyXp]);
 
   // Filter habits based on selection
   const filteredHabits = useMemo(() => {
@@ -89,6 +110,11 @@ const Analytics = () => {
     <div className="w-full max-w-2xl mx-auto px-4 py-8 space-y-10 pb-32">
       <PageHeader title="Growth Analytics" backLink="/" />
 
+      <LevelProgressCard
+        currentXp={dashboardData.xp}
+        currentLevel={dashboardData.level}
+      />
+
       {/* Filter Toolbar */}
       <section className="bg-secondary p-2 rounded-2xl border border-border flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2 pl-2">
@@ -128,7 +154,7 @@ const Analytics = () => {
         {[
           { label: 'Days Active', val: overallWeeklySummary.activeDays, icon: Calendar, color: 'text-info' },
           { label: 'Current Streak', val: overallWeeklySummary.streak, icon: Zap, color: 'text-warning' },
-          { label: 'Consistency', val: `${overallWeeklySummary.consistency}%`, icon: TrendingUp, color: 'text-success' }
+          { label: 'Consistency', val: `${patterns.consistency}%`, icon: TrendingUp, color: 'text-success' }
         ].map((stat) => (
           <Card key={stat.label} className="border-0 shadow-xl shadow-background/50 rounded-3xl">
             <CardContent className="p-6 flex flex-col items-center text-center">
@@ -140,6 +166,38 @@ const Analytics = () => {
             </CardContent>
           </Card>
         ))}
+      </div>
+
+      {/* XP Growth Chart */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 ml-1">
+          <TrendingUp className="w-4 h-4 text-muted-foreground" />
+          <h2 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Weekly XP Growth</h2>
+        </div>
+        <Card className="border-0 shadow-xl shadow-background/50 rounded-[2rem] p-6">
+          <ChartContainer config={chartConfig} className="h-[200px] w-full">
+            <BarChart data={xpChartData}>
+              <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+              <XAxis
+                dataKey="week"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10, fontWeight: 700 }}
+                dy={10}
+              />
+              <YAxis
+                hide
+              />
+              <ChartTooltip content={<ChartTooltipContent />} />
+              <Bar
+                dataKey="xp"
+                fill="var(--color-xp)"
+                radius={[6, 6, 0, 0]}
+                barSize={32}
+              />
+            </BarChart>
+          </ChartContainer>
+        </Card>
       </div>
 
       {/* Focus Pattern Card */}

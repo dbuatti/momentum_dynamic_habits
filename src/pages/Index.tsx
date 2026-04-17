@@ -7,9 +7,9 @@ import { HabitLab } from '@/components/HabitLab';
 import { ScreenBreakTimer } from '@/components/ScreenBreakTimer';
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, LayoutGrid, RefreshCw, ChevronRight, ChevronLeft, Moon, Sparkles } from "lucide-react";
+import { Loader2, LayoutGrid, RefreshCw, ChevronRight, ChevronLeft, Moon, Sparkles, Star } from "lucide-react";
 import { useSession } from '@/contexts/SessionContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { motion, useAnimation, PanInfo, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -168,6 +168,19 @@ export default function Index() {
       "h-screen transition-colors duration-1000 overflow-hidden touch-none select-none",
       isAllDone ? "bg-black" : isCentralDone ? "bg-[#1a0d00]" : "bg-background"
     )}>
+      <div className="fixed top-10 left-10 z-[100]">
+        <Link to="/analytics">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-14 w-14 rounded-full bg-white/10 text-white/60 hover:bg-white/20 hover:text-white border-2 border-white/10 transition-all duration-500"
+            title="Analytics"
+          >
+            <Star className="w-6 h-6" />
+          </Button>
+        </Link>
+      </div>
+
       <AnimatePresence>
         {isCentralDone && !isAllDone && (
           <motion.div 
