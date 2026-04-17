@@ -1,14 +1,22 @@
 import { UserHabitRecord } from "@/types/habit";
 
 /**
+ * Standardized XP Rewards based on effort:
+ * - Time: 1 second = 1 XP (1 minute = 60 XP)
+ * - Count: 1 rep = 25 XP (Matches ~10-15 seconds of physical effort)
+ * - Binary: 1 completion = 200 XP (High reward for critical adherence)
+ */
+
+/**
  * Calculates the XP required to reach the NEXT level from the current level.
- * Level 1 -> 2: 50 XP
- * Level 2 -> 3: 75 XP
- * Level 3 -> 4: 112 XP
+ * Level 1 -> 2: 1000 XP
+ * Level 2 -> 3: 1500 XP
+ * Level 3 -> 4: 2250 XP
  */
 export const getXpForNextHabitLevel = (level: number): number => {
-  if (level <= 0) return 50;
-  return Math.round(50 * Math.pow(1.5, level - 1));
+  if (level <= 0) return 1000;
+  // Base 1000 XP, growing by 50% each level
+  return Math.round(1000 * Math.pow(1.5, level - 1));
 };
 
 /**
@@ -32,25 +40,27 @@ export const calculateHabitLevel = (xp: number): number => {
 };
 
 /**
- * Calculates how much XP is earned for a single completion.
- * Balanced for Simple Tasks:
- * - 1 Rep = 5 XP (since it takes ~3-5 seconds)
- * - 1 Second = 1 XP
+ * Calculates how much XP is earned for a single completion of a Simple Task.
  */
 export const getXpGainForTask = (type: 'count' | 'time', value: number): number => {
-  const multiplier = type === 'count' ? 5 : 1;
+  // value is seconds for 'time', reps for 'count'
+  const multiplier = type === 'count' ? 25 : 1;
   return value * multiplier;
 };
 
 /**
- * Calculates how much XP is earned for a habit completion.
- * Scales with the value (minutes or reps).
+ * Calculates how much XP is earned for a Dashboard Habit completion.
  */
-export const getXpGainPerCompletion = (value: number, isBonus: boolean = false): number => {
-  // For habits, 1 unit (min/rep) = 1 XP. 
-  // Bonus sessions (already completed today) give 50% XP.
-  const multiplier = isBonus ? 0.5 : 1;
-  return value * multiplier;
+export const getXpGainPerCompletion = (value: number, unit: string, isBonus: boolean = false): number => {
+  // value is minutes for 'min', reps for 'reps', doses for 'dose'
+  let multiplier = 1;
+  
+  if (unit === 'min') multiplier = 60;
+  else if (unit === 'reps') multiplier = 25;
+  else if (unit === 'dose') multiplier = 200;
+
+  const baseXP = value * multiplier;
+  return isBonus ? Math.round(baseXP * 0.5) : Math.round(baseXP);
 };
 
 /**

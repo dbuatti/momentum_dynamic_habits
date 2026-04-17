@@ -115,8 +115,8 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
 
   const wasCompletedTodayBeforeLog = await checkHabitCompletionOnDay(userId, habitKey, new Date(), userHabitData, timezone);
 
-  // Calculate Mastery XP based on effort (value)
-  const habitXpEarned = getXpGainPerCompletion(value, wasCompletedTodayBeforeLog);
+  // Calculate Mastery XP based on effort (value) and unit
+  const habitXpEarned = getXpGainPerCompletion(value, userHabitData.unit, wasCompletedTodayBeforeLog);
 
   const { data: insertedTask, error: insertError } = await supabase.from('completedtasks').insert({
     user_id: userId,
