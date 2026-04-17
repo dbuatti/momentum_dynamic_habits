@@ -14,7 +14,6 @@ import { Button } from '@/components/ui/button';
 import { motion, useAnimation, PanInfo, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { isSameDay } from 'date-fns';
-import { getTodayDateString } from '@/utils/time-utils';
 
 export default function Index() {
   const { session, loading: sessionLoading } = useSession();
@@ -128,14 +127,18 @@ export default function Index() {
 
   // Animate to the correct position whenever the view or window width changes
   useEffect(() => {
-    controls.start({ x: getXOffset() });
+    controls.start({ 
+      x: getXOffset(),
+      transition: { type: "spring", stiffness: 300, damping: 35 }
+    });
   }, [view, windowWidth, controls]);
 
   const handleDragEnd = (event: any, info: PanInfo) => {
-    const threshold = windowWidth * 0.2; // 20% of screen width to trigger swipe
+    const threshold = windowWidth * 0.15; // 15% of screen width to trigger swipe
     const velocityThreshold = 500;
     const { offset, velocity } = info;
 
+    // Determine if we should change view based on distance or velocity
     if (offset.x < -threshold || velocity.x < -velocityThreshold) {
       // Swiping Left (Next View)
       if (view === 'lab') setView('task');
@@ -146,8 +149,9 @@ export default function Index() {
       else if (view === 'task') setView('lab');
     }
     
-    // Always snap back to the current view's position if no transition occurred
-    controls.start({ x: getXOffset() });
+    // We don't call controls.start here because the useEffect above 
+    // will handle snapping to the correct (new or old) position 
+    // once the 'view' state is processed.
   };
 
   if (sessionLoading || tasksLoading) {
@@ -165,7 +169,7 @@ export default function Index() {
 
   return (
     <div className={cn(
-      "h-screen transition-colors duration-1000 overflow-hidden touch-none select-none",
+      "h-screen transition-colors duration-1000 overflow-hidden select-none",
       isAllDone ? "bg-black" : isCentralDone ? "bg-[#1a0d00]" : "bg-background"
     )}>
       <div className="fixed top-10 left-10 z-[100]">
@@ -204,10 +208,10 @@ export default function Index() {
         className="flex w-[300%] h-full relative z-10"
         animate={controls}
         initial={{ x: getXOffset() }}
-        transition={{ type: "spring", stiffness: 300, damping: 35 }}
         drag="x"
+        dragDirectionLock
         dragConstraints={{ left: -windowWidth * 2, right: 0 }}
-        dragElastic={0.1}
+        dragElastic={0.2}
         onDragEnd={handleDragEnd}
         dragMomentum={false}
       >
