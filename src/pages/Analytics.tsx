@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
-  AlertCircle, Loader2, BarChart3, Calendar, Zap, TrendingUp,
+  AlertCircle, Loader2, Calendar, Zap, TrendingUp,
   Clock, Layers, Filter
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -12,11 +12,8 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import HabitHeatmap from '@/components/dashboard/HabitHeatmap';
 import { cn } from '@/lib/utils';
 import { useAnalyticsData } from '@/hooks/useAnalyticsData';
-import { ReflectionCard } from '@/components/analytics/ReflectionCard';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
-import { HabitPerformanceOverview } from '@/components/analytics/HabitPerformanceOverview';
-import { GrowthInsightsCard } from '@/components/analytics/GrowthInsightsCard';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { HabitLevelBars } from '@/components/analytics/HabitLevelBars';
 
@@ -24,20 +21,20 @@ const Analytics = () => {
   const [timeframeFilter, setTimeframeFilter] = useState<string>('8_weeks');
   const { data: analyticsData, isLoading, isError } = useAnalyticsData(timeframeFilter);
   const { data: dashboardData, isLoading: isDashboardDataLoading } = useDashboardData();
-  const [habitFilter, setHabitFilter] = useState<string>('all');
+  const [taskFilter, setTaskFilter] = useState<string>('all');
 
-  const filteredHabits = useMemo(() => {
-    if (!analyticsData?.habits) return [];
-    return habitFilter === 'all'
-      ? analyticsData.habits
-      : analyticsData.habits.filter(h => h.habit.habit_key === habitFilter);
-  }, [habitFilter, analyticsData]);
+  const filteredTasks = useMemo(() => {
+    if (!analyticsData?.tasks) return [];
+    return taskFilter === 'all'
+      ? analyticsData.tasks
+      : analyticsData.tasks.filter(t => t.task.id === taskFilter);
+  }, [taskFilter, analyticsData]);
 
-  const habitCompletions = useMemo(() => {
-    if (!filteredHabits.length) return [];
+  const taskCompletions = useMemo(() => {
+    if (!filteredTasks.length) return [];
     const completionsMap = new Map<string, number>();
-    filteredHabits.forEach(h => {
-      Object.entries(h.weeklyCompletions).forEach(([weekStart, count]) => {
+    filteredTasks.forEach(t => {
+      Object.entries(t.weeklyCompletions).forEach(([weekStart, count]) => {
         const start = new Date(weekStart);
         for (let i = 0; i < 7; i++) {
           const day = new Date(start);
@@ -52,7 +49,7 @@ const Analytics = () => {
       date,
       count: Math.round(count)
     }));
-  }, [filteredHabits]);
+  }, [filteredTasks]);
 
   if (isLoading || isDashboardDataLoading) {
     return (
@@ -73,7 +70,7 @@ const Analytics = () => {
     );
   }
 
-  const { overallWeeklySummary, latestReflection, reflectionPrompt } = analyticsData;
+  const { overallWeeklySummary } = analyticsData;
   const { patterns } = dashboardData;
 
   return (
@@ -81,7 +78,7 @@ const Analytics = () => {
       <PageHeader title="Growth Analytics" backLink="/" />
 
       {/* JRPG Mastery Board */}
-      <HabitLevelBars habits={analyticsData.habits} />
+      <HabitLevelBars tasks={analyticsData.tasks} />
 
       <section className="bg-secondary p-2 rounded-2xl border border-border flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2 pl-2">
@@ -89,15 +86,15 @@ const Analytics = () => {
           <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Filter By</span>
         </div>
         <div className="flex items-center gap-3">
-          <Select value={habitFilter} onValueChange={setHabitFilter}>
+          <Select value={taskFilter} onValueChange={setTaskFilter}>
             <SelectTrigger className="w-[140px] h-10 rounded-xl bg-card border-border font-bold text-xs">
-              <SelectValue placeholder="All Habits" />
+              <SelectValue placeholder="All Tasks" />
             </SelectTrigger>
             <SelectContent className="rounded-xl border-border">
-              <SelectItem value="all">All Practices</SelectItem>
-              {analyticsData.habits.map(h => (
-                <SelectItem key={h.habit.habit_key} value={h.habit.habit_key}>
-                  {h.habit.name}
+              <SelectItem value="all">All Tasks</SelectItem>
+              {analyticsData.tasks.map(t => (
+                <SelectItem key={t.task.id} value={t.task.id}>
+                  {t.task.name}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -155,24 +152,36 @@ const Analytics = () => {
         </div>
         <Card className="border-0 shadow-xl shadow-background/50 rounded-[2rem] p-6">
           <HabitHeatmap 
-            completions={habitCompletions} 
-            habitName={habitFilter === 'all' ? 'Overall Consistency' : 'Practice Consistency'} 
+            completions={taskCompletions} 
+            habitName={taskFilter === 'all' ? 'Overall Consistency' : 'Task Consistency'} 
             timeframe={timeframeFilter}
           />
         </Card>
       </div>
 
       <div className="space-y-6">
-        <HabitPerformanceOverview habits={filteredHabits} />
-        <GrowthInsightsCard habits={analyticsData.habits} />
+        <Card className="rounded-2xl shadow-sm border-0">
+          <CardContent className="p-6 space-y-6">
+            <h3 className="font-black text-lg uppercase tracking-tight flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-primary" /> Task Performance
+            </h3>
+            {filteredTasks.map(summary => (
+              <div key={summary.task.id} className="p-4 bg-muted/30 rounded-xl border border-border space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="font-bold">{summary.task.name}</p>
+                  <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                    {summary.completionRate}% Consistency
+                  </span>
+                </div>
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Total Completions</span>
+                  <span className="font-bold text-foreground">{summary.totalCompletions}</span>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
       </div>
-
-      <ReflectionCard
-        prompt={reflectionPrompt}
-        initialNotes={latestReflection?.notes || null}
-        lastReflectionDate={latestReflection?.reflection_date || null}
-        xpBonusAwarded={latestReflection?.xp_bonus_awarded || false}
-      />
     </div>
   );
 };
