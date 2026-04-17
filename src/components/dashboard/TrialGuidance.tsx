@@ -16,12 +16,15 @@ import { Link } from 'react-router-dom';
 interface HabitMasteryGuidanceProps {
   habitKey: string;
   habitName: string;
-  habitXp: number;
-  habitLevel: number;
+  habitXp?: number;
+  habitLevel?: number;
   dailyGoal: number;
   unit: string;
   frequency: number;
   isTrial: boolean;
+  isAnchor?: boolean;
+  completionsInPlateau?: number;
+  plateauDaysRequired?: number;
 }
 
 const guidancePrompts = [
@@ -35,12 +38,15 @@ const guidancePrompts = [
 export const TrialGuidance: React.FC<HabitMasteryGuidanceProps> = ({
   habitKey,
   habitName,
-  habitXp,
-  habitLevel,
+  habitXp = 0,
+  habitLevel = 1,
   dailyGoal,
   unit,
   frequency,
-  isTrial
+  isTrial,
+  isAnchor,
+  completionsInPlateau,
+  plateauDaysRequired
 }) => {
   const today = new Date().toISOString().split('T')[0];
   const storageKey = `habitMasteryCollapsed:${habitKey}:${today}`;

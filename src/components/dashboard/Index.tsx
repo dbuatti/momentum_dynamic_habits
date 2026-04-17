@@ -329,6 +329,8 @@ const Index = () => {
             <TrialGuidance
               habitKey={habit.key}
               habitName={habit.name}
+              habitXp={habit.habit_xp}
+              habitLevel={habit.habit_level}
               isTrial={habit.is_trial_mode}
               isAnchor={habit.anchor_practice}
               completionsInPlateau={habit.completions_in_plateau}
