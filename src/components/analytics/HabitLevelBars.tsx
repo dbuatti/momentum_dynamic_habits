@@ -12,16 +12,18 @@ interface HabitLevelBarsProps {
 }
 
 const taskIconMap: Record<string, any> = {
+  'Pushups': Dumbbell,
   'Push-ups': Dumbbell,
   'Be Still': Target,
   'Screen Break': Timer,
 };
 
 export const HabitLevelBars: React.FC<HabitLevelBarsProps> = ({ tasks }) => {
-  // Filter for specific tasks requested by the user
-  const masteryTasks = tasks.filter(t => 
-    ['Push-ups', 'Be Still', 'Screen Break'].includes(t.task.name)
-  );
+  // Filter for specific tasks, handling potential naming variations
+  const masteryTasks = tasks.filter(t => {
+    const name = t.task.name;
+    return name === 'Pushups' || name === 'Push-ups' || name === 'Be Still' || name === 'Screen Break';
+  });
 
   return (
     <Card className="rounded-[2rem] border-0 shadow-xl shadow-background/50 bg-card/50 backdrop-blur-sm overflow-hidden">
