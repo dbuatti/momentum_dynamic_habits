@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { showSuccess, showError } from '@/utils/toast';
-import { calculateHabitLevel } from '@/utils/habit-leveling';
+import { calculateHabitLevel, getXpGainPerCompletion } from '@/utils/habit-leveling';
 import { UserHabitRecord } from '@/types/habit';
 import { getTodayDateString } from '@/utils/time-utils';
 
@@ -115,6 +115,9 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
 
   const wasCompletedTodayBeforeLog = await checkHabitCompletionOnDay(userId, habitKey, new Date(), userHabitData, timezone);
 
+  // Calculate Mastery XP based on effort (value)
+  const habitXpEarned = getXpGainPerCompletion(value, wasCompletedTodayBeforeLog);
+
   const { data: insertedTask, error: insertError } = await supabase.from('completedtasks').insert({
     user_id: userId,
     original_source: habitKey,
@@ -126,6 +129,7 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
     completed_at: new Date().toISOString(),
     note: note || null,
     capsule_index: capsuleIndex !== undefined ? capsuleIndex : null,
+    habit_xp_earned: habitXpEarned, // Store the effort-based XP
   }).select('id').single();
 
   if (insertError) throw insertError;
@@ -171,20 +175,6 @@ const logHabit = async ({ userId, habitKey, value, taskName, difficultyRating, n
     
     const threshold = userHabitData.measurement_type === 'timer' ? 0.1 : 0.01;
     isGoalMetAfterLog = totalDailyProgressAfterLog >= (userHabitData.current_daily_goal - threshold);
-  }
-
-  let habitXpEarned = 0;
-  if (isGoalMetAfterLog) {
-    habitXpEarned = wasCompletedTodayBeforeLog ? 0.2 : 1;
-    await supabase.from('completedtasks').update({ habit_xp_earned: habitXpEarned }).eq('id', insertedTask.id);
-  }
-
-  if (userHabitData.measurement_type !== 'binary' && !userHabitData.is_fixed && !userHabitData.complete_on_finish) {
-    const surplus = totalDailyProgressAfterLog - userHabitData.current_daily_goal;
-    const newCarryoverValue = Math.max(0, surplus);
-    await supabase.from('user_habits').update({ carryover_value: newCarryoverValue }).eq('id', userHabitData.id);
-  } else if (userHabitData.complete_on_finish) {
-    await supabase.from('user_habits').update({ carryover_value: 0 }).eq('id', userHabitData.id);
   }
 
   let newIsTrialMode = userHabitData.is_trial_mode;
@@ -366,7 +356,7 @@ export const useHabitLog = () => {
       queryClient.invalidateQueries({ queryKey: ['habitCapsules', session?.user?.id] });
       queryClient.invalidateQueries({ queryKey: ['completedTasks', session?.user?.id] });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       showError(`Failed to uncomplete: ${error.message}`);
     },
   });

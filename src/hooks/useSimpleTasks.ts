@@ -36,7 +36,6 @@ export function useSimpleTasks() {
       const tz = profile?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
       const todayStr = getTodayDateString(tz);
 
-      // Get timezone-aware boundaries for today
       const { data: boundaries, error: boundaryError } = await supabase.rpc('get_day_boundaries', {
         p_user_id: userId,
         p_target_date: todayStr
@@ -54,7 +53,7 @@ export function useSimpleTasks() {
       if (tasksError) throw tasksError;
 
       const tasksWithProgress = await Promise.all((tasksData || []).map(async (task) => {
-        // --- DECAY LOGIC START ---
+        // --- DECAY LOGIC ---
         const lastUpdate = parseISO(task.updated_at);
         const todayStart = parseISO(todayStartTime);
         
@@ -104,7 +103,6 @@ export function useSimpleTasks() {
             }
           }
         }
-        // --- DECAY LOGIC END ---
 
         // Stability progress (logs for current value)
         const { count: stabilityCount } = await supabase
@@ -113,11 +111,14 @@ export function useSimpleTasks() {
           .eq('task_id', task.id)
           .eq('value_at_completion', task.current_value);
         
-        // Total XP (total logs)
-        const { count: totalLogs } = await supabase
+        // Total XP (Sum of values in logs)
+        const { data: logsForXp } = await supabase
           .from('simple_task_logs')
-          .select('*', { count: 'exact', head: true })
+          .select('value_at_completion')
           .eq('task_id', task.id);
+
+        const habit_xp = (logsForXp || []).reduce((sum, log) => sum + (log.value_at_completion || 0), 0);
+        const habit_level = calculateHabitLevel(habit_xp);
 
         // Daily completion check
         const { count: dailyCount } = await supabase
@@ -126,9 +127,6 @@ export function useSimpleTasks() {
           .eq('task_id', task.id)
           .gte('completed_at', todayStartTime)
           .lt('completed_at', todayEndTime);
-        
-        const habit_xp = totalLogs || 0;
-        const habit_level = calculateHabitLevel(habit_xp);
 
         return {
           ...task,

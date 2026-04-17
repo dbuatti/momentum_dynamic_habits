@@ -70,8 +70,8 @@ const fetchAnalyticsData = async ({ userId, timeframe }: { userId: string; timef
   const processedTasks: TaskAnalyticsSummary[] = tasks.map(t => {
     const taskLogs = logs.filter(l => l.task_id === t.id);
     
-    // Calculate XP: 1 XP per completion
-    const xp = taskLogs.length;
+    // Calculate XP: Sum of values at completion
+    const xp = taskLogs.reduce((sum, log) => sum + (log.value_at_completion || 0), 0);
     const level = calculateHabitLevel(xp);
     const unit = t.task_type === 'time' ? 'sec' : 'reps';
 
@@ -103,11 +103,12 @@ const fetchAnalyticsData = async ({ userId, timeframe }: { userId: string; timef
     };
   });
 
-  // Weekly XP (1 XP per task completion)
+  // Weekly XP (Sum of values in logs)
   const weeklyXpMap = new Map<string, number>();
   logs.forEach(log => {
     const weekStart = format(startOfWeek(new Date(log.completed_at), { weekStartsOn: 0 }), 'yyyy-MM-dd');
-    weeklyXpMap.set(weekStart, (weeklyXpMap.get(weekStart) || 0) + 1);
+    const currentXp = weeklyXpMap.get(weekStart) || 0;
+    weeklyXpMap.set(weekStart, currentXp + (log.value_at_completion || 0));
   });
 
   const weeklyXp = Array.from(weeklyXpMap.entries())
