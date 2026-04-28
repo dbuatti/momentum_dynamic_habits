@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Square, Loader2, Coffee, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -10,6 +10,8 @@ import { audioManager } from "@/utils/audio";
 import { toast } from "sonner";
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
+import { getLevelXpStats } from '@/utils/habit-leveling';
+import { motion } from 'framer-motion';
 
 export function ScreenBreakTimer() {
   const { session } = useSession();
@@ -22,6 +24,16 @@ export function ScreenBreakTimer() {
   
   const screenBreakTask = tasks.find(t => t.name === 'Screen Break');
   const targetSeconds = screenBreakTask?.current_value || 5;
+
+  // Calculate mastery progress for the ring
+  const masteryStats = useMemo(() => {
+    if (!screenBreakTask) return { progress: 0, level: 1 };
+    const stats = getLevelXpStats(screenBreakTask.habit_xp || 0);
+    return {
+      progress: (stats.xpInLevel / stats.xpNeededForNext) * 100,
+      level: stats.currentLevel
+    };
+  }, [screenBreakTask]);
 
   useEffect(() => {
     const ensureTaskExists = async () => {
@@ -129,15 +141,54 @@ export function ScreenBreakTimer() {
     setIsSyncing(false);
   };
 
+  // SVG Ring Constants
+  const size = 64;
+  const strokeWidth = 3;
+  const center = size / 2;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const dashOffset = circumference - (masteryStats.progress / 100) * circumference;
+
   return (
     <div className="flex flex-col items-end gap-2">
-      <div className="relative">
+      <div className="relative flex items-center justify-center w-16 h-16">
+        {/* Mastery Progress Ring */}
+        <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none" viewBox={`0 0 ${size} ${size}`}>
+          {/* Background Track */}
+          <circle
+            cx={center}
+            cy={center}
+            r={radius}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={strokeWidth}
+            className="text-white/10"
+          />
+          {/* Progress Fill */}
+          <motion.circle
+            cx={center}
+            cy={center}
+            r={radius}
+            fill="none"
+            stroke="white"
+            strokeWidth={strokeWidth}
+            strokeLinecap="round"
+            initial={{ strokeDashoffset: circumference }}
+            animate={{ strokeDashoffset: dashOffset }}
+            transition={{ duration: 1, ease: "easeOut" }}
+            style={{
+              strokeDasharray: circumference,
+            }}
+            className="drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]"
+          />
+        </svg>
+
         <Button
           onClick={handleToggle}
           disabled={isSyncing}
           variant="ghost"
           className={cn(
-            "h-14 w-14 rounded-full p-0 transition-all duration-500 border-2",
+            "h-14 w-14 rounded-full p-0 transition-all duration-500 border-2 z-10",
             isTiming 
               ? "bg-white text-orange-500 shadow-xl scale-110 border-white animate-pulse" 
               : "bg-white/10 text-white/60 hover:bg-white/20 hover:text-white border-white/10"
@@ -154,7 +205,7 @@ export function ScreenBreakTimer() {
         </Button>
         
         {!isTiming && !isSyncing && (
-          <div className="absolute -bottom-1 -right-1 bg-white text-orange-500 text-[8px] font-black px-1.5 py-0.5 rounded-full shadow-sm border border-orange-100 flex items-center gap-0.5">
+          <div className="absolute -bottom-1 -right-1 bg-white text-orange-500 text-[8px] font-black px-1.5 py-0.5 rounded-full shadow-sm border border-orange-100 flex items-center gap-0.5 z-20">
             <Target className="w-2 h-2" />
             {targetSeconds}s
           </div>
