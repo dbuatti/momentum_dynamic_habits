@@ -30,6 +30,7 @@ import { useDashboardData } from '@/hooks/useDashboardData';
 import { HabitOrderSettings } from '@/components/settings/HabitOrderSettings';
 import { SectionOrderSettings } from '@/components/settings/SectionOrderSettings';
 import { commonTimezones } from '@/utils/time-utils';
+import { ExportDataCard } from '@/components/settings/ExportDataCard';
 
 const Settings = () => {
   const { session, signOut } = useSession();
@@ -248,6 +249,7 @@ const Settings = () => {
       </div>
 
       <div className="space-y-4">
+        <ExportDataCard />
         <ResetExperienceCard />
         <ResetEverythingCard />
       </div>
