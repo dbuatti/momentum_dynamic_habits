@@ -9,14 +9,14 @@ import { UserHabitRecord } from "@/types/habit";
 
 /**
  * Calculates the XP required to reach the NEXT level from the current level.
- * Level 1 -> 2: 1000 XP (The 'Trial' phase)
- * Level 2 -> 3: 1500 XP
- * Level 3 -> 4: 2250 XP
+ * Level 1 -> 2: 300 XP (Fast initial hook)
+ * Level 2 -> 3: 450 XP
+ * Level 3 -> 4: 675 XP
  */
 export const getXpForNextHabitLevel = (level: number): number => {
-  if (level <= 0) return 1000;
-  // Base 1000 XP, growing by 50% each level
-  return Math.round(1000 * Math.pow(1.5, level - 1));
+  if (level <= 0) return 300;
+  // Base 300 XP, growing by 50% each level
+  return Math.round(300 * Math.pow(1.5, level - 1));
 };
 
 /**
